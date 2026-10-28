@@ -1,0 +1,12 @@
+{
+  "version": 0,
+  "name": "signagecast",
+  "menu": {
+    "index": {
+      "label": "SignageCast",
+      "order": 1,
+      "keywords": [{ "matches": ["tv", "stream", "youtube", "fernseher"] }]
+    }
+  },
+  "content-security-policy": "img-src 'self' blob: data:"
+}

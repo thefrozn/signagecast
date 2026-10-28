@@ -1,0 +1,13 @@
+[Unit]
+Description=SignageCast – Datendienst (TV-Seite, Streamliste, Wache, API für die Verwaltung; nur 127.0.0.1:8080)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=signagecast
+ExecStart=/usr/bin/python3 -I /opt/signagecast/app/dienst.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,757 @@
+#!/usr/bin/env python3
+# SignageCast – Datendienst. Liefert die TV-Seite (www/) und ihre Daten, führt die Streamliste, sucht neue Streams,
+# misst die Qualität (Wache) und bietet der Verwaltung (Cockpit-Erweiterung) eine kleine API.
+# Lauscht nur auf 127.0.0.1:8080 – von außen ist nur der fertige Videostream (MediaMTX) und Cockpit erreichbar.
+# Nur Python-Standardbibliothek.
+import json, os, re, socket, subprocess, sys, threading, time, urllib.parse
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import einstellungen as E                     # noqa: E402
+from ha import HA, HAFehler                   # noqa: E402
+from streams import Streams, ID, DATEN, sonnenhoehe   # noqa: E402
+import wache                                  # noqa: E402
+import radio                                  # noqa: E402
+import layouts as L                           # noqa: E402
+import base64, hashlib, datetime, queue       # noqa: E402
+
+BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WWW = os.path.join(BASIS, "www")
+VERSION = open(os.path.join(BASIS, "VERSION")).read().strip() if os.path.exists(os.path.join(BASIS, "VERSION")) else "dev"
+MEDIAMTX_YML = os.environ.get("SC_MEDIAMTX", "/etc/signagecast/mediamtx.yml")
+MEDIAMTX_VORLAGE = os.path.join(BASIS, "render", "mediamtx.yml")
+HLS_PORT = 8888
+PROJEKT = "tschmidt82/signagecast"            # GitHub: Projektseite, Fehlermeldungen, Hinweis auf neue Versionen
+
+zustand = {"einstellungen": E.laden(), "ha_teil": {"wetter": {}, "vorhersage": [], "werte": {}},
+           "vorhersage": [], "vh_zeit": 0, "kalender": {}, "wache": {}, "cpu": None, "ha_fehler": None}
+BILDER = os.path.join(DATEN, "bilder")
+sperre = threading.Lock()
+neu_liste = threading.Event()
+einspieler_neu = threading.Event()
+
+
+def einst():
+    return zustand["einstellungen"]
+
+
+ha = HA(lambda: einst()["ha"]["url"])
+streams = Streams(einst)
+
+
+# ---------- Daten für die TV-Seite ----------
+def holen():
+    """Werte aller Entitäten, die irgendein Layout braucht, plus Wetter und Vorhersage (5 Tage, alle 10 min)."""
+    e = einst()
+    wetter = e["anzeige"]["wetter"]
+    gebraucht = L.entitaeten(e["layouts"], wetter)
+    werte = {}
+    for st in ha.get("/api/states"):
+        if st["entity_id"] in gebraucht:
+            a = st.get("attributes", {})
+            werte[st["entity_id"]] = {"state": st.get("state"), "einheit": a.get("unit_of_measurement", ""),
+                                      "name": a.get("friendly_name", ""),
+                                      **({k: a.get(k) for k in ("temperature", "humidity", "wind_speed", "wind_speed_unit")}
+                                         if st["entity_id"].startswith("weather.") else {})}
+    if wetter and time.time() - zustand["vh_zeit"] > 600:
+        try:
+            r = ha.post("/api/services/weather/get_forecasts?return_response", {"entity_id": wetter, "type": "daily"})
+            zustand["vorhersage"] = [{"tag": x["datetime"][:10], "zustand": x.get("condition"),
+                                      "max": x.get("temperature"), "min": x.get("templow")}
+                                     for x in r["service_response"][wetter]["forecast"][:5]]
+            zustand["vh_zeit"] = time.time()
+        except Exception:
+            pass
+    w = werte.get(wetter, {})
+    return {"wetter": {"entity": wetter, "zustand": w.get("state"), "temperatur": w.get("temperature"),
+                       "feuchte": w.get("humidity"), "wind": w.get("wind_speed"), "wind_einheit": w.get("wind_speed_unit") or "km/h"},
+            "vorhersage": zustand["vorhersage"], "werte": werte}
+
+
+def einspieler_aufloesen(x):
+    """Abspielbare Adresse eines Einspielers: {"art": "video"|"youtube", "url"|"video_id", "stand"}."""
+    import urllib.request
+    kopf = {"User-Agent": radio.UA["User-Agent"]}
+    if x["quelle"] == "tagesschau100":
+        d = json.load(urllib.request.urlopen(urllib.request.Request("https://www.tagesschau.de/api2u/channels", headers=kopf), timeout=15))
+        k = next(c for c in d.get("channels", []) if "100 Sekunden" in c.get("title", ""))
+        st = k.get("streams") or {}
+        url = st.get("h264xl") or st.get("h264m")
+        gross = url.replace(".webxl.h264.mp4", ".webxxl.h264.mp4") if url else None    # 1080p, wenn vorhanden
+        if gross and gross != url:
+            try:
+                urllib.request.urlopen(urllib.request.Request(gross, method="HEAD", headers=kopf), timeout=10)
+                url = gross
+            except Exception:
+                pass
+        return {"art": "video", "url": url, "stand": k.get("date", "")[:16]}
+    if x["quelle"] == "video":
+        return {"art": "video", "url": x["url"], "stand": ""}
+    from streams import aus_link
+    art_id = aus_link(x["url"])
+    if not art_id:
+        raise ValueError("kein YouTube-Link")
+    if art_id[0] == "video":
+        return {"art": "youtube", "video_id": art_id[1], "stand": ""}
+    # Kanal: neuestes Video aus dem öffentlichen Feed
+    t = urllib.request.urlopen(urllib.request.Request(f"https://www.youtube.com/feeds/videos.xml?channel_id={art_id[1]}", headers=kopf), timeout=15).read().decode()
+    m = re.search(r"<yt:videoId>([\w-]{11})</yt:videoId>.*?<published>([^<]+)</published>", t, re.S)
+    if not m:
+        raise ValueError("kein Video im Kanal gefunden")
+    return {"art": "youtube", "video_id": m.group(1), "stand": m.group(2)[:16]}
+
+
+def einspieler_schleife():
+    while True:
+        neu = {}
+        for x in einst()["einspieler"]:
+            if not x["aktiv"]:
+                continue
+            try:
+                neu[x["id"]] = einspieler_aufloesen(x)
+            except Exception as ex:
+                neu[x["id"]] = dict(zustand.get("einspieler", {}).get(x["id"], {}), fehler=str(ex)[:200])
+        zustand["einspieler"] = neu
+        einspieler_neu.wait(300)
+        einspieler_neu.clear()
+
+
+def update_schleife():
+    """Einmal am Tag nachsehen, ob es auf GitHub eine neuere Version gibt (nur Hinweis, installiert nichts)."""
+    import urllib.request
+    while True:
+        try:
+            req = urllib.request.Request(f"https://api.github.com/repos/{PROJEKT}/releases/latest",
+                                         headers={"User-Agent": radio.UA["User-Agent"], "Accept": "application/vnd.github+json"})
+            tag = json.load(urllib.request.urlopen(req, timeout=15)).get("tag_name", "")
+            zahlen = lambda v: tuple(int(x) for x in re.findall(r"\d+", v)[:3])
+            zustand["neue_version"] = tag if tag and zahlen(tag) > zahlen(VERSION) else None
+        except Exception:
+            pass
+        time.sleep(86400)
+
+
+def kalender_schleife():
+    """Termine der Kalender-Bausteine (z. B. Müllabfuhr) alle 10 min aus HA holen."""
+    while True:
+        e = einst()
+        kal = {}
+        for l in e["layouts"]:
+            for el in l["elemente"]:
+                if el["typ"] == "kalender" and el["optionen"]["entity"]:
+                    ent, tage = el["optionen"]["entity"], el["optionen"]["tage"]
+                    kal[ent] = max(kal.get(ent, 0), tage)
+        neu = {}
+        for ent, tage in kal.items():
+            start = datetime.datetime.now().astimezone()
+            ende = start + datetime.timedelta(days=tage)
+            try:
+                ev = ha.get(f"/api/calendars/{ent}?" + urllib.parse.urlencode({"start": start.isoformat(), "end": ende.isoformat()}))
+                neu[ent] = [{"titel": x.get("summary", "")[:80],
+                             "start": (x.get("start") or {}).get("dateTime") or (x.get("start") or {}).get("date"),
+                             "ganztag": "date" in (x.get("start") or {})} for x in ev][:20]
+            except Exception:
+                neu[ent] = zustand["kalender"].get(ent, [])
+        zustand["kalender"] = neu
+        time.sleep(600)
+
+
+def fernseher(tv_id=None):
+    """Einstellungen eines Fernsehers (ohne Kennung: der erste)."""
+    liste = einst()["fernseher"]
+    return next((t for t in liste if t["id"] == tv_id), None) if tv_id else liste[0]
+
+
+def tv_daten(tv_id):
+    e = einst()
+    t = fernseher(tv_id)
+    if not t:
+        return {"ok": False, "fehler": "unbekannter Fernseher"}
+    v = e["video"]
+    layout = L.aktuelles_layout(t, e["layouts"], time.strftime("%H:%M"))
+    hat_video = any(x["typ"] == "video" and x["sichtbar"] for x in layout.get("elemente", []))
+    vr = streams.vorrang if streams.vorrang and streams.vorrang["bis"] > time.time() \
+        and streams.vorrang.get("tv") in (None, t["id"]) else None
+    sender = next((x for x in e["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
+    liste = [x for x in streams.liste if x["kategorie"] not in t["kategorien_aus"]] \
+        if v["aktiv"] and t["video"] and hat_video else []
+    with sperre:
+        teil = dict(zustand["ha_teil"])
+    kal = {k: w for k, w in zustand["kalender"].items()
+           if any(x["typ"] == "kalender" and x["optionen"]["entity"] == k for x in layout.get("elemente", []))}
+    eins = []
+    for x in e["einspieler"]:
+        a = zustand.get("einspieler", {}).get(x["id"], {})
+        if x["aktiv"] and (not x["fernseher"] or t["id"] in x["fernseher"]) and (a.get("url") or a.get("video_id")):
+            eins.append({"id": x["id"], "name": x["name"], "minuten": x["minuten"], "von": x["von"], "bis": x["bis"], "ton": x["ton"],
+                         "art": a["art"], "url": a.get("url"), "video_id": a.get("video_id"), "stand": a.get("stand", "")})
+    st = e["standort"]
+    tz = L.tageszeit(sonnenhoehe(st["breite"], st["laenge"]), sonnenhoehe(st["breite"], st["laenge"], time.time() + 600))
+    return dict(teil, ok=True, ha_ok=zustand["ha_fehler"] is None, zeit=int(time.time()), sprache=e["sprache"] or "en", tageszeit=tz,
+                einspieler=eins if hat_video else [],
+                einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
+                tv=t["id"], layout=layout, kalender=kal, streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                ton=t["ton"], lautstaerke=t["lautstaerke"],
+                radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
+                       # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt
+                       "url": f"/radio/{t['id']}/{sender['id']}" if e["radio"]["puffer_s"] else sender["url"]}
+                if t["ton"] == "radio" and sender else None,
+                regeln={"takt_s": v["takt_min"] * 60, "mindeststufe": v["mindeststufe"], "schlecht_s": v["schlecht_s"],
+                        "sperre_s": int(v["sperre_h"] * 3600)})
+
+
+def radio_weiterleiten(handler, tv_id, sender_id):
+    """Radio mit Puffer: den Sender selbst abholen, erst puffer_s Sekunden sammeln und dem Browser auf einen Schlag
+    geben, danach laufend weiterreichen – so ist der Browser immer puffer_s voraus und überbrückt Aussetzer des
+    Senders. Bricht die Verbindung zum Sender ab, wird ohne Wissen des Browsers neu verbunden."""
+    import urllib.request
+    e = einst()
+    t = fernseher(tv_id)
+    sender = next((x for x in e["radio"]["sender"] if x["id"] == sender_id), None)
+    if not t or not sender or t["radio_sender"] != sender_id:
+        return handler.antwort(404, {"ok": False})
+    puffer_s = e["radio"]["puffer_s"]
+    daten, ende, typ = queue.Queue(maxsize=4000), threading.Event(), {}
+
+    def holen_sender():
+        while not ende.is_set():
+            try:
+                req = urllib.request.Request(sender["url"], headers=dict(radio.UA, **{"Icy-MetaData": "0"}))
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    typ.setdefault("ct", (r.headers.get("Content-Type") or "audio/mpeg").split(";")[0])
+                    while not ende.is_set():
+                        stueck = r.read(8192)
+                        if not stueck:
+                            break
+                        daten.put(stueck, timeout=30)
+            except Exception:
+                pass
+            if not ende.is_set():
+                zustand.setdefault("radio_neu", {})[tv_id] = zustand.get("radio_neu", {}).get(tv_id, 0) + 1
+                ende.wait(2)              # kurz warten, dann neu verbinden
+    threading.Thread(target=holen_sender, daemon=True).start()
+    try:
+        vorlauf, bis = [], time.time() + puffer_s
+        while time.time() < bis or not vorlauf:
+            try:
+                vorlauf.append(daten.get(timeout=max(0.2, bis - time.time())))
+            except queue.Empty:
+                if time.time() > bis + 30:
+                    return handler.antwort(502, {"ok": False})
+        handler.send_response(200)
+        handler.send_header("Content-Type", typ.get("ct", "audio/mpeg"))
+        handler.send_header("Cache-Control", "no-store")
+        handler.end_headers()
+        handler.wfile.write(b"".join(vorlauf))
+        while True:
+            try:
+                handler.wfile.write(daten.get(timeout=60))
+            except queue.Empty:
+                break                         # Sender eine Minute stumm: Browser verbindet selbst neu
+    except (BrokenPipeError, ConnectionResetError, OSError):
+        pass                                  # Browser hat aufgehört (Senderwechsel, Seite neu)
+    finally:
+        ende.set()
+
+
+def kamera_bild(entity):
+    """Kamerabild aus HA – nur für Kameras, die in einem Layout als Baustein stehen."""
+    if not any(el["typ"] == "kamera" and el["optionen"]["entity"] == entity
+               for l in einst()["layouts"] for el in l["elemente"]):
+        return None
+    import urllib.request
+    req = urllib.request.Request(einst()["ha"]["url"] + f"/api/camera_proxy/{entity}",
+                                 headers={"Authorization": "Bearer " + ha._gueltiger_token()})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return r.read(8_000_000)
+
+
+def bild_speichern(b64):
+    daten = base64.b64decode(str(b64).split(",")[-1], validate=False)
+    if len(daten) > 8_000_000:
+        raise E.Fehler("Bild zu groß (höchstens 8 MB)")
+    if daten[:3] == b"\xff\xd8\xff":
+        endung = "jpg"
+    elif daten[:8] == b"\x89PNG\r\n\x1a\n":
+        endung = "png"
+    else:
+        raise E.Fehler("Nur JPG oder PNG")
+    os.makedirs(BILDER, exist_ok=True)
+    name = hashlib.sha256(daten).hexdigest()[:16] + "." + endung
+    with open(os.path.join(BILDER, name), "wb") as f:
+        f.write(daten)
+    return name
+
+
+def ha_schleife():
+    while True:
+        try:
+            teil = holen()
+            zustand["ha_fehler"] = None
+            with sperre:
+                zustand["ha_teil"] = teil
+        except Exception as ex:
+            zustand["ha_fehler"] = str(ex)[:300]
+        time.sleep(15)
+
+
+def streams_schleife():
+    while True:
+        try:
+            streams.aktualisieren()
+        except Exception as ex:
+            streams.status["fehler"] = str(ex)[:300]
+        neu_liste.wait(300)
+        neu_liste.clear()
+
+
+def suche_schleife():
+    # Nur zur eingestellten Uhrzeit suchen (nicht nachholen nach einem Neustart – die Suche fragt YouTube viel ab)
+    letzte = time.strftime("%H:%M")
+    while True:
+        time.sleep(30)
+        e = einst()["suche"]
+        jetzt = time.strftime("%H:%M")
+        if e["aktiv"] and letzte < e["uhrzeit"] <= jetzt:
+            try:
+                streams.suchen()
+                neu_liste.set()
+            except Exception as ex:
+                streams.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": str(ex)[:300]}
+        letzte = jetzt if jetzt >= letzte else "00:00"     # Mitternacht
+
+
+# ---------- System ----------
+def cpu_schleife():
+    def lese():
+        w = [int(x) for x in open("/proc/stat").readline().split()[1:]]
+        return sum(w), w[3] + w[4]
+    a = lese()
+    while True:
+        time.sleep(5)
+        b = lese()
+        ges, leer = b[0] - a[0], b[1] - a[1]
+        zustand["cpu"] = round(100 * (ges - leer) / ges, 1) if ges else None
+        a = b
+
+
+def zuschauer():
+    n = set()
+    for datei in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            for z in open(datei).readlines()[1:]:
+                f = z.split()
+                if int(f[1].split(":")[1], 16) == HLS_PORT and f[3] == "01":
+                    n.add(f[2].rsplit(":", 1)[0])
+        except Exception:
+            pass
+    return len(n)
+
+
+def kette_pids(tv_id):
+    """Sitzungen (Xvfb, Chromium, ffmpeg) der Render-Kette eines Fernsehers, laut PID-Datei des Startskripts."""
+    try:
+        return [int(x) for x in open(os.path.join(DATEN, f"kette-{tv_id}.pids")).read().split()]
+    except (OSError, ValueError):
+        return []
+
+
+def kette_laeuft(tv_id):
+    pids = kette_pids(tv_id)
+    return len(pids) == 3 and all(os.path.exists(f"/proc/{p}") for p in pids)
+
+
+def anzeige_nr(t):
+    return f":{99 + t['nr']}"
+
+
+def status():
+    m = {}
+    for z in open("/proc/meminfo"):
+        k, w = z.split(":")
+        m[k] = int(w.split()[0])
+    sv = os.statvfs("/")
+    e = einst()
+    return {
+        "version": VERSION, "zeit": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "neue_version": zustand.get("neue_version"), "projekt": f"https://github.com/{PROJEKT}",
+        "cpu_prozent": zustand["cpu"], "last": os.getloadavg(), "kerne": os.cpu_count(),
+        "ram_mb": {"gesamt": m["MemTotal"] // 1024, "frei": m["MemAvailable"] // 1024},
+        "platte_gb": {"gesamt": round(sv.f_blocks * sv.f_frsize / 1e9, 1), "frei": round(sv.f_bavail * sv.f_frsize / 1e9, 1)},
+        "laufzeit_s": int(float(open("/proc/uptime").read().split()[0])),
+        "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
+        "fernseher": [fernseher_status(t) for t in e["fernseher"]],
+        "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"]},
+        "liste": streams.status, "anzahl_in_rotation": len(streams.liste),
+        "aufgaben": [{"name": "streamliste", "wann": "alle 5 min"},
+                     {"name": "suche", "wann": e["suche"]["uhrzeit"] if e["suche"]["aktiv"] else None,
+                      "zuletzt": streams.status.get("suche")},
+                     {"name": "wache", "wann": "alle 10 s, nur bei laufendem Stream"}],
+    }
+
+
+def fernseher_status(t):
+    w = zustand["wache"].get(t["id"])
+    sender = next((x["name"] for x in einst()["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
+    return {"id": t["id"], "name": t["name"], "laeuft": kette_laeuft(t["id"]), "wache": w,
+            "aktuell": {"video_id": w["id"], "name": next((x["name"] for x in streams.liste if x["video_id"] == w["id"]), w["id"])}
+            if w else None, "ton": t["ton"], "sender": sender if t["ton"] == "radio" else None, "video": t["video"],
+            "layout": L.aktuelles_layout(t, einst()["layouts"], time.strftime("%H:%M"))["name"],
+            "radio_neu_verbunden": zustand.get("radio_neu", {}).get(t["id"], 0)}
+
+
+def eigene_ip():
+    """IP, mit der der Container HA erreicht – die muss HA als vertrauenswürdig kennen."""
+    try:
+        host = urllib.parse.urlparse(einst()["ha"]["url"]).hostname
+        port = urllib.parse.urlparse(einst()["ha"]["url"]).port or 8123
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect((socket.gethostbyname(host), port))
+            return s.getsockname()[0]
+    except Exception:
+        return None
+
+
+def vorschau(tv_id):
+    t = fernseher(tv_id)
+    if not t or not kette_laeuft(t["id"]):
+        return None
+    r = subprocess.run(["ffmpeg", "-v", "error", "-f", "x11grab", "-video_size", "1920x1080", "-i", anzeige_nr(t),
+                        "-frames:v", "1", "-vf", "scale=960:-1", "-f", "mjpeg", "-"], capture_output=True, timeout=15)
+    return r.stdout if r.returncode == 0 and r.stdout else None
+
+
+def schreib_wenn_anders(pfad, inhalt):
+    try:
+        if open(pfad).read() == inhalt:
+            return
+    except OSError:
+        pass
+    with open(pfad, "w") as f:
+        f.write(inhalt)
+
+
+def render_schreiben(e):
+    """Je Fernseher die Werte für tv-render.sh (wirken beim nächsten Start seiner Kette) und die MediaMTX-Pfade
+    (MediaMTX lädt die Datei bei Änderung selbst neu)."""
+    pfade = ""
+    for t in e["fernseher"]:
+        aus = "3840 2160" if t["aufloesung"] == 2160 else "1920 1080"
+        schreib_wenn_anders(os.path.join(DATEN, f"render-{t['id']}.env"),
+                            f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n")
+        pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
+                  f"    runOnDemandStartTimeout: 40s\n    runOnDemandCloseAfter: {e['stream']['abschalten_s']}s\n")
+    try:
+        if os.path.exists(MEDIAMTX_YML):
+            schreib_wenn_anders(MEDIAMTX_YML, open(MEDIAMTX_VORLAGE).read().replace("{PFADE}", pfade.rstrip("\n")))
+    except OSError:
+        pass
+
+
+def kette_neu_starten(tv_id):
+    # Das Startskript des Fernsehers beenden (räumt Browser, ffmpeg und Xvfb auf); MediaMTX startet neu, solange jemand schaut
+    try:
+        pid = int(open(os.path.join(DATEN, f"kette-{tv_id}.skript")).read())
+        os.kill(pid, 2)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def devport(tv_id):
+    t = fernseher(tv_id)
+    return wache.BASIS_PORT + t["nr"] if t else None
+
+
+# ---------- Sicherung / Profil ----------
+def sicherung():
+    return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
+            "einstellungen": einst(), "streams": streams.alle(), "strikes": streams.strikes()}
+
+
+def einspielen(d, mit_strikes=True):
+    if not isinstance(d, dict) or d.get("art") not in ("signagecast-sicherung", "signagecast-profil",
+                                                         "tv-stream-sicherung", "tv-stream-profil"):   # alte Namen (bis 0.4.1)
+        raise E.Fehler("Keine SignageCast-Sicherung bzw. kein Profil")
+    if "einstellungen" in d:
+        zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d["einstellungen"]))
+        render_schreiben(einst())
+    if "streams" in d:
+        s = d["streams"]
+        if not isinstance(s.get("streams"), dict):
+            raise E.Fehler("Streamliste fehlt")
+        for sid, x in s["streams"].items():
+            if not (ID.fullmatch(sid) or re.fullmatch(r"UC[\w-]{22}", sid)):
+                raise E.Fehler(f"ungültige ID {sid!r}")
+        streams._speichern({"streams": s["streams"], "abgelehnt": [a for a in s.get("abgelehnt", []) if isinstance(a, str)]})
+    if mit_strikes and isinstance(d.get("strikes"), dict):
+        from streams import STRIKES, schreib
+        schreib(STRIKES, d["strikes"])
+    neu_liste.set()
+
+
+# ---------- HTTP ----------
+class Bearbeiter(SimpleHTTPRequestHandler):
+    def __init__(self, *a, **k):
+        super().__init__(*a, directory=WWW, **k)
+
+    def log_message(self, *a):
+        pass
+
+    def antwort(self, code, obj, typ="application/json; charset=utf-8"):
+        b = obj if isinstance(obj, bytes) else json.dumps(obj, ensure_ascii=False).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", typ)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(b)))
+        self.end_headers()
+        self.wfile.write(b)
+
+    def koerper(self, maxlen=12_000_000):
+        n = int(self.headers.get("Content-Length", "0") or 0)
+        if n > maxlen:
+            raise E.Fehler("zu groß")
+        return json.loads(self.rfile.read(n) or b"{}") if n else {}
+
+    def api_erlaubt(self):
+        # Nur die Verwaltung (Cockpit) schickt diesen Kopf; Browser-Seiten anderer Herkunft können ihn ohne
+        # CORS-Freigabe nicht setzen – so kann z. B. eingebetteter Inhalt die API nicht aufrufen.
+        return self.headers.get("X-SignageCast") == "1"
+
+    def do_GET(self):
+        p = urllib.parse.urlparse(self.path)
+        if p.path == "/daten.json":
+            tv = (urllib.parse.parse_qs(p.query).get("tv") or [None])[0]
+            return self.antwort(200, tv_daten(tv))
+        m = re.fullmatch(r"/kamera/(camera\.[a-z0-9_]+)\.jpg", p.path)
+        if m:                                     # für die TV-Seite (nur Kameras aus den Layouts)
+            try:
+                bild = kamera_bild(m.group(1))
+            except Exception:
+                bild = None
+            return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
+        m = re.fullmatch(r"/radio/([a-z][a-z0-9]{0,11})/([a-z0-9]{4,12})", p.path)
+        if m:                                     # Radio mit Puffer (für die TV-Seite)
+            return radio_weiterleiten(self, m.group(1), m.group(2))
+        m = re.fullmatch(r"/bild/([0-9a-f]{16}\.(jpg|png))", p.path)
+        if m:
+            try:
+                return self.antwort(200, open(os.path.join(BILDER, m.group(1)), "rb").read(), "image/" + ("jpeg" if m.group(2) == "jpg" else "png"))
+            except OSError:
+                return self.antwort(404, {"ok": False})
+        if p.path.startswith("/api/"):
+            if not self.api_erlaubt():
+                return self.antwort(403, {"ok": False})
+            return self.api_get(p.path, urllib.parse.parse_qs(p.query))
+        return super().do_GET()
+
+    def api_get(self, pfad, q):
+        if pfad == "/api/status":
+            return self.antwort(200, status())
+        if pfad == "/api/einstellungen":
+            return self.antwort(200, {"einstellungen": einst(), "kategorien": E.KATEGORIEN, "stufen": E.STUFEN,
+                                      "bausteine": {t: {k: std for k, (_, std) in o.items()} for t, o in L.TYPEN.items()},
+                                      "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
+                                      "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
+                                      "wechsel": L.WECHSEL})
+        if pfad == "/api/einspieler":
+            return self.antwort(200, {"einspieler": einst()["einspieler"], "stand": zustand.get("einspieler", {})})
+        if pfad == "/api/vorlagen":
+            return self.antwort(200, {"vorlagen": L.vorlagen()})
+        if pfad == "/api/vorschau/daten":
+            return self.antwort(200, tv_daten((q.get("tv") or [None])[0]))
+        if pfad == "/api/streams":
+            return self.antwort(200, streams.uebersicht())
+        if pfad == "/api/ha/test":
+            return self.antwort(200, dict(ha.testen(), eigene_ip=eigene_ip()))
+        if pfad == "/api/ha/einrichtung":
+            return self.antwort(200, {"eigene_ip": eigene_ip(), "url": einst()["ha"]["url"]})
+        if pfad == "/api/ha/entitaeten":
+            try:
+                liste = [{"id": s["entity_id"], "name": s.get("attributes", {}).get("friendly_name", ""),
+                          "einheit": s.get("attributes", {}).get("unit_of_measurement", ""), "wert": s.get("state")}
+                         for s in ha.get("/api/states")]
+                return self.antwort(200, {"ok": True, "entitaeten": sorted(liste, key=lambda x: x["id"])})
+            except Exception as ex:
+                return self.antwort(200, {"ok": False, "fehler": str(ex)})
+        if pfad == "/api/radio/vorschlaege":
+            try:
+                st = einst()["standort"]
+                return self.antwort(200, dict(radio.vorschlaege(st["breite"], st["laenge"], einst()["radio"]["region_woerter"]), ok=True))
+            except Exception as ex:
+                return self.antwort(200, {"ok": False, "fehler": str(ex)})
+        if pfad == "/api/radio/suche":
+            try:
+                return self.antwort(200, {"ok": True, "sender": radio.suchen((q.get("name") or [""])[0])})
+            except Exception as ex:
+                return self.antwort(200, {"ok": False, "fehler": str(ex)})
+        if pfad == "/api/ort/suche":
+            try:
+                return self.antwort(200, {"ok": True, "orte": radio.ort_suchen((q.get("q") or [""])[0], einst()["sprache"])})
+            except Exception as ex:
+                return self.antwort(200, {"ok": False, "fehler": str(ex)})
+        if pfad == "/api/vorschau.jpg":
+            bild = vorschau((q.get("tv") or [None])[0])
+            return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
+        if pfad == "/api/sicherung":
+            return self.antwort(200, sicherung())
+        if pfad == "/api/wache":
+            n = min(int((q.get("n") or ["60"])[0]), 2000)
+            datei = os.path.join(wache.ORDNER, time.strftime("%Y-%m-%d") + ".jsonl")
+            try:
+                zeilen = open(datei).readlines()[-n:]
+            except OSError:
+                zeilen = []
+            return self.antwort(200, [json.loads(z) for z in zeilen])
+        return self.antwort(404, {"ok": False})
+
+    def do_POST(self):
+        p = urllib.parse.urlparse(self.path).path
+        try:
+            d = self.koerper()
+        except Exception:
+            return self.antwort(400, {"ok": False, "fehler": "ungültige Anfrage"})
+        m = re.fullmatch(r"/meldung/(strike|qualitaet)", p)
+        if m:                                     # vom Player der TV-Seite
+            vid = str(d.get("video_id", ""))
+            if m.group(1) == "strike":
+                ok = streams.strike(vid, str(d.get("grund", "")))
+            else:
+                ok = streams.qualitaet_melden(vid, str(d.get("stufe", "")), str(d.get("beste", "")), str(d.get("phase", "")))
+            return self.antwort(200 if ok else 400, {"ok": ok})
+        if not p.startswith("/api/") or not self.api_erlaubt():
+            return self.antwort(403, {"ok": False})
+        try:
+            return self.antwort(200, dict(self.api_post(p, d) or {}, ok=True))
+        except (E.Fehler, ValueError, KeyError, HAFehler) as ex:
+            # 200 mit ok=false: die Verwaltung zeigt den Text direkt an
+            return self.antwort(200, {"ok": False, "fehler": str(ex).strip("'")})
+
+    def api_post(self, p, d):
+        if p == "/api/einstellungen":
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
+            render_schreiben(einst())
+            neu_liste.set()
+            einspieler_neu.set()
+            return {"einstellungen": einst()}
+        if p == "/api/streams":
+            s = streams.hinzufuegen(str(d.get("link", "")), d.get("name") or None, d.get("kategorie", "neu"),
+                                    d.get("breite"), d.get("laenge"))
+            neu_liste.set()
+            return {"stream": s}
+        m = re.fullmatch(r"/api/streams/([\w-]{11}|UC[\w-]{22})(/[a-z-]+)?", p)
+        if m:
+            sid, aktion = m.group(1), m.group(2)
+            if not aktion:
+                s = streams.aendern(sid, d)
+            elif aktion == "/entfernen":
+                s = streams.entfernen(sid, ablehnen=bool(d.get("ablehnen")))
+            elif aktion == "/strikes-zuruecksetzen":
+                s = streams.strikes_zuruecksetzen(d.get("video_id") or sid)
+            elif aktion == "/zeigen":
+                x = streams.alle()["streams"].get(sid)
+                if not x:
+                    raise KeyError(sid)
+                tv = d.get("tv") if fernseher(d.get("tv")) else None
+                streams.vorrang = {"video_id": d.get("video_id") or sid, "name": x["name"], "tv": tv,
+                                   "bis": time.time() + einst()["video"]["takt_min"] * 60}
+                s = streams.vorrang
+            else:
+                raise KeyError(aktion)
+            neu_liste.set()
+            return {"stream": s}
+        m = re.fullmatch(r"/api/abgelehnt/([\w-]{11}|UC[\w-]{22})/freigeben", p)
+        if m:
+            with_d = streams.alle()
+            with_d["abgelehnt"] = [a for a in with_d["abgelehnt"] if a != m.group(1)]
+            streams._speichern(with_d)
+            return {}
+        if p == "/api/suche/starten":
+            return {"suche": streams.suchen()}
+        if p == "/api/liste/neu":
+            neu_liste.set()
+            return {}
+        if p == "/api/radio/sender":
+            url = radio.adresse_pruefen(d.get("url", ""))
+            e = einst()
+            sender = e["radio"]["sender"] + [{"id": radio.neue_id(), "name": str(d.get("name") or "").strip()[:60] or url[:60], "url": url}]
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": sender}}))
+            return {"sender": sender[-1], "einstellungen": einst()}
+        m = re.fullmatch(r"/api/einspieler/([a-z0-9]{4,12})/jetzt", p)
+        if m:                                     # zum Testen sofort zeigen (die TV-Seiten holen es mit den nächsten Daten)
+            if m.group(1) not in zustand.get("einspieler", {}):
+                einspieler_neu.set()
+                raise ValueError("Einspieler noch nicht bereit – in ein paar Sekunden erneut versuchen")
+            zustand["einspieler_jetzt"] = {"id": m.group(1), "nr": int(time.time()), "bis": time.time() + 40}
+            return {}
+        if p == "/api/bilder":
+            return {"bild": bild_speichern(d.get("daten", ""))}
+        if p == "/api/radio/playlist":
+            # Inhalt einer M3U/PLS-Datei: jeden Eintrag prüfen (parallel) und die gültigen als Sender übernehmen
+            from concurrent.futures import ThreadPoolExecutor
+            eintraege = radio.playlist_lesen(d.get("text", ""))
+
+            def pruefen(nu):
+                try:
+                    return nu[0], radio.adresse_pruefen(nu[1]), None
+                except ValueError as ex:
+                    return nu[0], nu[1], str(ex)
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                ergebnis = list(pool.map(pruefen, eintraege))
+            e = einst()
+            vorhanden = {x["url"] for x in e["radio"]["sender"]}
+            neu = [{"id": radio.neue_id(), "name": (n or u)[:60], "url": u} for n, u, f in ergebnis if not f and u not in vorhanden]
+            if neu:
+                zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": e["radio"]["sender"] + neu}}))
+            return {"neu": [x["name"] for x in neu], "fehler": [f"{n or u}: {f}" for n, u, f in ergebnis if f],
+                    "doppelt": sum(1 for n, u, f in ergebnis if not f and u in vorhanden), "einstellungen": einst()}
+        m = re.fullmatch(r"/api/radio/sender/([a-z0-9]{4,12})", p)
+        if m:                                     # Sender bearbeiten: Name und/oder Adresse (neue Adresse wird geprüft)
+            e = einst()
+            alt = next((x for x in e["radio"]["sender"] if x["id"] == m.group(1)), None)
+            if not alt:
+                raise KeyError("Sender nicht gefunden")
+            url = alt["url"]
+            if str(d.get("url", "")).strip() and str(d["url"]).strip() != alt["url"]:
+                url = radio.adresse_pruefen(d["url"])
+            name = str(d.get("name") or "").strip()[:60] or alt["name"]
+            sender = [dict(x, name=name, url=url) if x["id"] == alt["id"] else x for x in e["radio"]["sender"]]
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": sender}}))
+            return {"einstellungen": einst()}
+        m = re.fullmatch(r"/api/radio/sender/([a-z0-9]{4,12})/entfernen", p)
+        if m:
+            e = einst()
+            sender = [x for x in e["radio"]["sender"] if x["id"] != m.group(1)]
+            tvs = [dict(t, radio_sender="" if t["radio_sender"] == m.group(1) else t["radio_sender"]) for t in e["fernseher"]]
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": sender}, "fernseher": tvs}))
+            return {"einstellungen": einst()}
+        if p in ("/api/aktion/seite-neu-laden", "/api/aktion/kette-neu-starten"):
+            ziele = [t for t in einst()["fernseher"] if not d.get("tv") or t["id"] == d.get("tv")]
+            if p.endswith("seite-neu-laden"):
+                erg = []
+                for t in ziele:
+                    try:
+                        erg.append(wache.seite_neu_laden(wache.BASIS_PORT + t["nr"]))
+                    except Exception:
+                        erg.append(False)
+                return {"erledigt": any(erg)}
+            return {"erledigt": any([kette_neu_starten(t["id"]) for t in ziele])}
+        if p == "/api/sicherung":
+            einspielen(d, mit_strikes=bool(d.get("strikes")))
+            return {}
+        raise KeyError(p)
+
+
+def main():
+    os.makedirs(DATEN, exist_ok=True)
+    render_schreiben(einst())
+    for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife):
+        threading.Thread(target=ziel, daemon=True).start()
+    threading.Thread(target=wache.schleife, daemon=True,
+                     args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]
+                                                      if kette_laeuft(t["id"])])).start()
+    ThreadingHTTPServer(("127.0.0.1", int(os.environ.get("SC_PORT", "8080"))), Bearbeiter).serve_forever()
+
+
+if __name__ == "__main__":
+    main()

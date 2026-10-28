@@ -1,0 +1,17 @@
+[Unit]
+Description=SignageCast – MediaMTX (Videostream, startet das Rendern auf Abruf)
+After=network-online.target signagecast.service
+Wants=network-online.target
+
+[Service]
+User=signagecast
+WorkingDirectory=/var/lib/signagecast
+ExecStart=/opt/mediamtx/mediamtx /etc/signagecast/mediamtx.yml
+Restart=always
+RestartSec=5
+# Wird eine Render-Kette wegen Speichermangels beendet, nur diese Kette neu starten – nicht alle Fernseher
+# (systemd würde sonst den ganzen Dienst stoppen, Standard OOMPolicy=stop)
+OOMPolicy=continue
+
+[Install]
+WantedBy=multi-user.target

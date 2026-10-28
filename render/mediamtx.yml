@@ -1,0 +1,23 @@
+# SignageCast – MediaMTX. Vorlage: den Abschnitt paths (je Fernseher ein Pfad http://<IP>:8888/<id>) setzt der Datendienst aus den
+# Einstellungen; MediaMTX lädt Änderungen selbst.
+logLevel: info
+api: no
+metrics: no
+pprof: no
+playback: no
+rtmp: no
+srt: no
+webrtc: no
+moq: no
+rtsp: yes
+rtspAddress: 127.0.0.1:8554        # nur intern (ffmpeg -> MediaMTX)
+rtspTransports: [tcp]
+hls: yes
+hlsAddress: :8888                  # Abspielseite und Stream: http://<IP>:8888/<id>
+hlsVariant: fmp4                   # nötig für H.265 im Browser
+hlsSegmentCount: 7
+hlsSegmentDuration: 2s
+hlsAllowOrigins: ['*']
+
+paths:
+{PFADE}

@@ -1,0 +1,92 @@
+/* SignageCast – TV-Seite: feste Fläche 1920x1080, Bausteine absolut nach Layout (Raster 40 px) */
+:root { --text: #fff; --schatten: 0 2px 12px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.6); --akzent: #3d8cd0;
+  --karte: #fff; --kartentext: #212121; --kartenleise: #555; --schrift: Roboto; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000;
+  font-family: var(--schrift), "Noto Sans", "DejaVu Sans", sans-serif; }
+#flaeche { position: absolute; inset: 0; color: var(--text); }
+#flaeche.hell { --text: #1d1d1f; --schatten: none; }
+#flaeche.gedimmt { --text: #6a6a6a; --schatten: none; }
+#hg { position: absolute; inset: 0; background: #333 center / cover no-repeat; transition: background-image 3s, filter 60s; }
+#verlauf { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; display: none;
+  background: url("bilder/verlauf.png") 0 0 / 100% 100% no-repeat; }
+#flaeche.abdunkeln #verlauf { display: block; }
+
+.baustein { position: absolute; box-sizing: border-box; overflow: hidden; white-space: nowrap;
+  text-shadow: var(--schatten); line-height: 1.1; display: flex; flex-direction: column; justify-content: center; }
+/* Position der Schrift: h-* waagrecht, v-* senkrecht (Spalten-Flex: align-items = waagrecht, justify = senkrecht) */
+.baustein.h-links { align-items: flex-start; text-align: left; }
+.baustein.h-mitte { align-items: center; text-align: center; }
+.baustein.h-rechts { align-items: flex-end; text-align: right; }
+.baustein.v-oben { justify-content: flex-start; }
+.baustein.v-mitte { justify-content: center; }
+.baustein.v-unten { justify-content: flex-end; }
+.baustein.duenn { font-weight: 200 !important; } .baustein.normal { font-weight: 400 !important; } .baustein.fett { font-weight: 700 !important; }
+.baustein.karte { background: var(--karte); color: var(--kartentext); border-radius: 12px; text-shadow: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12); margin: 5px; padding: 0 16px; }
+.baustein.versteckt { display: none; }
+.typ-uhr { font-weight: 200; }
+.typ-temperatur { font-weight: 300; }
+.typ-flaeche { text-shadow: none; }
+
+/* Kachel */
+.typ-kachel { flex-direction: row !important; }
+.typ-kachel.h-links, .typ-vorhersage.h-links { justify-content: flex-start; }
+.typ-kachel.h-mitte, .typ-vorhersage.h-mitte { justify-content: center; }
+.typ-kachel.h-rechts, .typ-vorhersage.h-rechts { justify-content: flex-end; }
+.typ-kachel.v-oben, .typ-vorhersage.v-oben { align-items: flex-start; }
+.typ-kachel.v-mitte, .typ-vorhersage.v-mitte { align-items: center; }
+.typ-kachel.v-unten, .typ-vorhersage.v-unten { align-items: flex-end; }
+.typ-kachel.v-oben, .typ-kachel.v-unten { padding-top: 12px; padding-bottom: 12px; }
+.typ-kachel .mdi { color: var(--akzent); margin-right: .55em; }
+.typ-kachel .name { font-weight: 500; }
+.typ-kachel .wert { color: var(--kartenleise); margin-top: .2em; }
+.baustein:not(.karte).typ-kachel .wert { color: inherit; opacity: .85; }
+
+/* Vorhersage */
+.typ-vorhersage { flex-direction: row !important; gap: 4%; }
+.typ-vorhersage.h-links { justify-content: space-around; }   /* links = Tage über die Breite verteilen (wie bisher) */
+.typ-vorhersage .tag { text-align: center; color: var(--kartenleise); }
+.baustein:not(.karte).typ-vorhersage .tag { color: inherit; }
+.typ-vorhersage .mdi { display: block; color: #f6b400; margin: .15em 0; }
+.typ-vorhersage .max { color: var(--kartentext); }
+.baustein:not(.karte).typ-vorhersage .max { color: inherit; }
+.typ-vorhersage .min { opacity: .7; }
+
+/* Räume, Kalender */
+.typ-raeume, .typ-kalender { justify-content: space-evenly; }
+/* senkrecht „Mitte“ = Zeilen gleichmäßig verteilen (wie vor 0.3.2); oben/unten = zusammen an den Rand */
+.typ-raeume.v-mitte, .typ-kalender.v-mitte { justify-content: space-evenly; }
+.typ-kalender .titel { font-weight: 600; margin-bottom: .2em; }
+.typ-kalender .zeile { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.typ-kalender .wann { opacity: .75; margin-right: .5em; }
+
+/* Kamera, Meldung */
+.typ-kamera img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.typ-kamera { padding: 0 !important; }
+.typ-meldung { background: rgba(0,0,0,.75); color: #fff; border-radius: 14px; padding: 0 24px; white-space: normal;
+  text-shadow: none; border: 3px solid var(--akzent); }
+
+/* Video */
+.typ-video { padding: 0 !important; background: #000 !important; border: 2px solid rgba(255,255,255,.7);
+  border-radius: 14px; box-shadow: 0 8px 26px rgba(0,0,0,.6); margin: 0 !important; }
+.typ-video:not(.karte) { border: 0; border-radius: 0; box-shadow: none; }
+.typ-video video.einspieler { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.typ-video iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; }
+.typ-video .leiste { position: absolute; bottom: 0; width: 50%; box-sizing: border-box; padding: 27px 17px 12px;
+  color: #fff; font: 500 19px sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.9); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.72)); }
+.typ-video .live { left: 0; }
+.typ-video .naechstes { right: 0; text-align: right; }
+.typ-video.ohneleiste .leiste { display: none !important; }
+.typ-video .leer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.75); font: 500 21px sans-serif; }
+
+/* Logo, mehrzeiliger Text, Laufband */
+.typ-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.typ-logo .platzhalter { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  border: 2px dashed currentColor; border-radius: 10px; opacity: .45; font-size: 28px; box-sizing: border-box; }
+.typ-text.mehrzeilig { white-space: normal; line-height: 1.25; }
+.typ-text.laufband { display: block; white-space: nowrap; position: absolute; }
+.typ-text.laufband span { display: inline-block; position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
+  animation: laufband linear infinite; }
+@keyframes laufband { from { left: 100%; transform: translate(0, -50%); } to { left: 0; transform: translate(-100%, -50%); } }

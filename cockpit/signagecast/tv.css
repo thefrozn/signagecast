@@ -1,0 +1,101 @@
+/* SignageCast – Verwaltung in Cockpit. Für Handy (eine Spalte, große Schalter) und PC. Hell/dunkel nach System. */
+:root { --hg: #f5f5f7; --karte: #fff; --text: #1d1d1f; --leise: #6e6e73; --linie: #d2d2d7; --akzent: #0066cc;
+        --gut: #1f8b4c; --warn: #b26a00; --schlecht: #c9302c; --eingabe: #fff; color-scheme: light; }
+@media (prefers-color-scheme: dark) {
+  :root { --hg: #151515; --karte: #222; --text: #f0f0f0; --leise: #a0a0a5; --linie: #3a3a3c; --akzent: #4ea1ff;
+          --gut: #3fbf6f; --warn: #e3a33a; --schlecht: #ff6b62; --eingabe: #2c2c2e; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--hg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { position: sticky; top: 0; z-index: 2; background: var(--karte); border-bottom: 1px solid var(--linie); padding: 10px 16px 0; }
+h1 { margin: 0 0 8px; font-size: 20px; }
+h2 { font-size: 17px; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 14px 0 6px; }
+nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px 10px; font: inherit; white-space: nowrap;
+  border-bottom: 3px solid transparent; cursor: pointer; }
+nav button.an { color: var(--text); border-bottom-color: var(--akzent); font-weight: 600; }
+main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+.raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.wert { font-size: 22px; font-weight: 600; }
+.leise { color: var(--leise); font-size: 13px; }
+.gut { color: var(--gut); } .warn { color: var(--warn); } .schlecht { color: var(--schlecht); }
+.zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.zeile > label:first-child { min-width: 180px; flex: 0 0 auto; }
+label { cursor: pointer; }
+input[type=text], input[type=number], input[type=time], input[type=url], select, textarea {
+  font: inherit; color: var(--text); background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px;
+  padding: 8px 10px; min-height: 40px; max-width: 100%; }
+input[type=text], input[type=url], textarea, select.breit { width: 360px; }
+input[type=number] { width: 110px; }
+textarea { width: 100%; min-height: 120px; font-family: ui-monospace, monospace; font-size: 13px; }
+button.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
+  padding: 8px 14px; min-height: 40px; cursor: pointer; }
+button.knopf.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+button.knopf.gefahr { color: var(--schlecht); }
+button.knopf:disabled { opacity: .5; cursor: default; }
+/* Schalter */
+.schalter { position: relative; display: inline-block; width: 48px; height: 28px; flex: 0 0 auto; }
+.schalter input { opacity: 0; width: 0; height: 0; }
+.schalter span { position: absolute; inset: 0; background: var(--linie); border-radius: 14px; transition: .15s; }
+.schalter span::before { content: ""; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px; background: #fff;
+  border-radius: 50%; transition: .15s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.schalter input:checked + span { background: var(--gut); }
+.schalter input:checked + span::before { transform: translateX(20px); }
+/* Streamliste */
+.stream { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: start; }
+.stream .titel { font-weight: 600; word-break: break-word; }
+.marken { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.marke { font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--linie); color: var(--leise); }
+.marke.gut { border-color: var(--gut); } .marke.warn { border-color: var(--warn); } .marke.schlecht { border-color: var(--schlecht); }
+.aktionen { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; grid-column: 1 / -1; }
+.aktionen .knopf { min-height: 34px; padding: 4px 10px; font-size: 14px; }
+.schalterspalte { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; font-size: 13px; }
+.schalterspalte label { display: flex; align-items: center; gap: 6px; }
+.bearbeiten { grid-column: 1 / -1; }
+img.vorschau { width: 100%; border-radius: 8px; border: 1px solid var(--linie); background: #000; aspect-ratio: 16/9; object-fit: contain; }
+pre { white-space: pre-wrap; background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px; padding: 10px;
+  font-size: 13px; overflow-x: auto; }
+.hinweis { margin: 12px auto 0; max-width: 1168px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--warn); background: var(--karte); }
+.hinweis button { float: right; }
+#meldung { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--hg);
+  padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; z-index: 5; }
+#meldung.an { opacity: .95; }
+.icon { font-size: 24px; width: 30px; text-align: center; color: var(--akzent); }
+a { color: var(--akzent); }
+.eintrag { border: 1px solid var(--linie); border-radius: 10px; padding: 4px 10px; margin-bottom: 8px; }
+@media (max-width: 640px) { .hinweis { margin: 10px; } .eintrag input[type=text] { width: 100% !important; } }
+@media (max-width: 640px) {
+  main { padding: 10px; }
+  .zeile > label:first-child { min-width: 100%; }
+  input[type=text], input[type=url], textarea, select.breit { width: 100%; }
+  .stream { grid-template-columns: 1fr; }
+  .schalterspalte { flex-direction: row; align-items: center; justify-content: flex-start; }
+}
+details { margin: 10px 0; } summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+/* Layout-Editor */
+.layoutbereich { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; align-items: start; }
+.leinwand { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; outline: none;
+  background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: calc(100% / 48) calc(100% / 27); touch-action: none; user-select: none; }
+.lw-baustein { position: absolute; box-sizing: border-box; border: 1px dashed rgba(255,255,255,.7); color: #fff; font-size: 12px;
+  overflow: hidden; cursor: move; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2px 4px;
+  text-shadow: 0 1px 2px #000; background: rgba(0,0,0,.18); }
+.lw-baustein.karte { background: rgba(255,255,255,.85); color: #222; text-shadow: none; border-style: solid; border-color: #bbb; }
+.lw-baustein.aus { opacity: .35; }
+.lw-baustein.gewaehlt { border: 2px solid var(--akzent); box-shadow: 0 0 0 2px rgba(0,102,204,.35); z-index: 999 !important; }
+.lw-text { pointer-events: none; overflow: hidden; text-overflow: ellipsis; }
+.lw-griff { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; background: var(--akzent); cursor: nwse-resize; border-radius: 3px 0 0 0; }
+.eintrag.gewaehlt { border-color: var(--akzent); }
+@media (max-width: 900px) { .layoutbereich { grid-template-columns: 1fr; } }
+.lw-baustein.lwtyp-video { background: rgba(0,0,0,.65) !important; color: #fff !important; text-shadow: none; border: 2px solid rgba(255,255,255,.7); }
+.zeile.pos label { min-width: 0 !important; display: inline-flex; align-items: center; gap: 4px; }
+.zeile.pos input { width: 64px; }
+/* 3x3-Feld für die Position der Schrift */
+.neuner { display: grid; grid-template-columns: repeat(3, 34px); gap: 4px; }
+.neuner button { width: 34px; height: 34px; border: 1px solid var(--linie); border-radius: 6px; background: var(--eingabe); cursor: pointer; position: relative; }
+.neuner button::after { content: ""; position: absolute; inset: 11px; border-radius: 50%; background: var(--linie); }
+.neuner button.an { border-color: var(--akzent); } .neuner button.an::after { background: var(--akzent); }
+.stilbilder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 6px 0; }
+.stilbilder img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: var(--linie); }
