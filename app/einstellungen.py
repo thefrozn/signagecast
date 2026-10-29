@@ -305,7 +305,12 @@ def pruefen(e):
             liste.append({"id": eid, "name": _text(x.get("name", "") or quelle, 40), "quelle": quelle, "url": url,
                           "minuten": minuten, "von": _text(x.get("von", "00:00"), 5, r"([01]\d|2[0-3]):[0-5]\d"),
                           "bis": _text(x.get("bis", "23:59"), 5, r"([01]\d|2[0-3]):[0-5]\d"), "ton": bool(x.get("ton", True)),
-                          "fernseher": [str(t)[:12] for t in (x.get("fernseher") or [])][:8], "aktiv": bool(x.get("aktiv", True))})
+                          "fernseher": [str(t)[:12] for t in (x.get("fernseher") or [])][:8], "aktiv": bool(x.get("aktiv", True)),
+                          # Puffer (seit 0.11): vorab = Container lädt die Ausgabe komplett herunter und spielt sie lokal ab;
+                          # vorlauf = direkt vom Server, Start erst nach vorlauf_s gepufferten Sekunden; aus = direkt
+                          "puffer": x.get("puffer") if x.get("puffer") in ("vorab", "vorlauf", "aus") else "vorab",
+                          "vorlauf_s": _zahl(x.get("vorlauf_s", 10), 0, 60, int),
+                          "vorab_mb": _zahl(x.get("vorab_mb", 0), 0, 2000, int)})      # 0 = komplett, sonst so viele MB vorab
         s["einspieler"] = liste
     if "quellen" in e:
         try:

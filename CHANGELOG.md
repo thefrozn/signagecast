@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.11.0 (2026-10-29)
+- **Clip buffer** (per clip): “preload in the container” (default) downloads each new edition as soon as it appears and
+  the TV plays it from the container – either **complete** or only the **first X MB** (the rest is fetched from the
+  server while playing, with byte ranges); “buffer ahead in the browser” (start after X seconds); or off.
+  The previous edition is kept until the new one is complete. Not for YouTube.
+- A clip that stalls for 20 s is stopped and the live video continues.
+
 ## v0.10.0 (2026-10-29)
 - **Cameras**: new data source type “camera” (RTSP, HLS or MJPEG). RTSP/HLS are pulled by the built-in MediaMTX only
   while shown and played with hls.js; MJPEG is passed through by the data service. Credentials in the address are masked

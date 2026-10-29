@@ -92,6 +92,7 @@ class LivePlayer {
     if (!this.einspieler) return;
     const ton = this.einspieler.ton;
     this.einspieler = null;
+    clearInterval(this.einspielerWache);
     if (this.video) { this.video.remove(); this.video = null; }
     this.id = null;                         // Rotation lädt im nächsten tick neu
     window.dispatchEvent(new CustomEvent("einspieler-ende", { detail: { ton } }));
@@ -173,15 +174,31 @@ class LivePlayer {
     this.leer.style.display = "none";
     const e = this.einspieler;
     if (e.art === "video") {
+      // Puffer: „vorab“ kommt schon als lokale Datei aus dem Container; bei „vorlauf“ erst starten, wenn so viele Sekunden
+      // im Browser gepuffert sind (höchstens 30 s warten). Steht das Bild danach 20 s still, Einspieler abbrechen.
+      const vorlauf = e.vorlauf_s || 0;
       const v = document.createElement("video");
-      Object.assign(v, { src: e.url, autoplay: true, muted: !e.ton, playsInline: true });
+      Object.assign(v, { src: e.url, autoplay: !vorlauf, preload: "auto", muted: !e.ton, playsInline: true });
       v.volume = Math.max(0, Math.min(1, this.lautstaerke / 100));
       v.className = "einspieler";
       v.addEventListener("ended", () => this.einspielerEnde());
       v.addEventListener("error", () => this.einspielerEnde());
       this.box.insertBefore(v, this.box.firstChild);
-      v.play().catch(() => {});
       this.video = v;
+      const beginn = Date.now();
+      let gestartet = !vorlauf, letzteZeit = -1, steht = 0;
+      if (!vorlauf) v.play().catch(() => {});
+      clearInterval(this.einspielerWache);
+      this.einspielerWache = setInterval(() => {
+        if (this.video !== v) { clearInterval(this.einspielerWache); return; }
+        if (!gestartet) {
+          const vorne = v.buffered.length ? v.buffered.end(v.buffered.length - 1) - v.currentTime : 0;
+          if (vorne >= vorlauf || v.readyState >= 4 || Date.now() - beginn > 30000) { gestartet = true; v.play().catch(() => {}); }
+          return;
+        }
+        if (v.currentTime !== letzteZeit) { letzteZeit = v.currentTime; steht = 0; return; }
+        if (++steht >= 20) this.einspielerEnde();          // 20 s ohne Fortschritt: zurück zum Live-Video
+      }, 1000);
     } else {
       this.z = { start: Date.now(), status: null, angemeldet: false };
       const f = document.createElement("iframe");

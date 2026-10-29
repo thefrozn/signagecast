@@ -5,7 +5,7 @@
 # Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
-import json, os, re, socket, subprocess, sys, threading, time, urllib.parse
+import json, os, re, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -188,6 +188,123 @@ def einspieler_aufloesen(x):
     return {"art": "youtube", "video_id": m.group(1), "stand": m.group(2)[:16]}
 
 
+EINSPIELER = os.path.join(DATEN, "einspieler")
+EINSPIELER_MAX = 500 * 1024 * 1024
+
+
+def einspieler_vorladen(x, a):
+    """Puffer „vorab“: die Ausgabe in den Container laden (nur MP4-Adressen, nie YouTube) und lokal ausliefern –
+    komplett (vorab_mb = 0) oder nur die ersten vorab_mb MB; den Rest holt einspieler_ausliefern beim Abspielen nach.
+    Bis eine neue Ausgabe fertig ist, gilt die vorherige weiter. -> a mit "lokal" (Adresse für die TV-Seite) und "vorab"."""
+    meta_pfad = os.path.join(EINSPIELER, f"{x['id']}.json")
+    datei = os.path.join(EINSPIELER, f"{x['id']}.mp4")
+    try:
+        meta = json.load(open(meta_pfad))
+    except (OSError, ValueError):
+        meta = {}
+    if a.get("art") != "video" or not a.get("url"):
+        return a
+    grenze = x["vorab_mb"] * 1024 * 1024 if x["vorab_mb"] else EINSPIELER_MAX
+    if meta.get("url") != a["url"] or meta.get("vorab_mb") != x["vorab_mb"] or not os.path.exists(datei):
+        os.makedirs(EINSPIELER, exist_ok=True)
+        tmp, t0, n, gesamt, ende_erreicht = datei + ".neu", time.time(), 0, None, False
+        try:
+            kopf = {"User-Agent": radio.UA["User-Agent"]}
+            if x["vorab_mb"]:
+                kopf["Range"] = f"bytes=0-{grenze - 1}"
+            with urllib.request.urlopen(urllib.request.Request(a["url"], headers=kopf), timeout=30) as r, open(tmp, "wb") as f:
+                if x["vorab_mb"] and r.status != 206:
+                    raise ValueError("Server kann keine Teile liefern (kein Range) – bitte „komplett“ wählen")
+                m = re.search(r"/(\d+)$", r.headers.get("Content-Range", "") or "")
+                gesamt = int(m.group(1)) if m else (int(r.headers["Content-Length"]) if r.headers.get("Content-Length") and r.status == 200 else None)
+                while n < grenze:
+                    teil = r.read(min(1 << 20, grenze - n))
+                    if not teil:
+                        ende_erreicht = True
+                        break
+                    n += len(teil)
+                    f.write(teil)
+            if not x["vorab_mb"] and not ende_erreicht:
+                raise ValueError("Einspieler größer als 500 MB")
+            komplett = ende_erreicht or (gesamt is not None and n >= gesamt)
+            if not komplett and gesamt is None:
+                raise ValueError("Server nennt keine Gesamtgröße – nur „komplett“ möglich")
+            os.replace(tmp, datei)
+            meta = {"url": a["url"], "vorab_mb": x["vorab_mb"], "groesse": n, "gesamt": gesamt if gesamt else n, "komplett": komplett,
+                    "zeit": time.strftime("%Y-%m-%d %H:%M"), "stand": a.get("stand", ""), "dauer_s": round(time.time() - t0, 1)}
+            with open(meta_pfad, "w") as f:
+                json.dump(meta, f)
+        except Exception as ex:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            a = dict(a, vorab_fehler=f"Vorab laden: {str(ex)[:150]}")
+    if os.path.exists(datei) and meta.get("url"):
+        a = dict(a, lokal=f"/einspieler/{x['id']}.mp4?v={hashlib.sha1((meta['url'] + str(meta.get('vorab_mb'))).encode()).hexdigest()[:10]}",
+                 vorab={k: meta.get(k) for k in ("groesse", "gesamt", "komplett", "zeit", "stand")} | {"aktuell": meta.get("url") == a["url"]})
+    return a
+
+
+def einspieler_ausliefern(h, eid):
+    """Vorab geladenen Einspieler an die TV-Seite geben: komplett aus der Datei, sonst Anfang aus dem Cache und den Rest
+    mit einer Range-Anfrage vom Server (der Browser bekommt eine durchgehende Datei)."""
+    datei = os.path.join(EINSPIELER, eid + ".mp4")
+    try:
+        meta = json.load(open(os.path.join(EINSPIELER, eid + ".json")))
+    except (OSError, ValueError):
+        return h.antwort(404, {"ok": False})
+    if meta.get("komplett"):
+        return datei_mit_range(h, datei, "video/mp4")
+    gesamt, cache = int(meta["gesamt"]), int(meta["groesse"])
+    start, ende = 0, gesamt - 1
+    m = re.fullmatch(r"bytes=(\d*)-(\d*)", h.headers.get("Range", "") or "")
+    if m and (m.group(1) or m.group(2)):
+        if m.group(1):
+            start = int(m.group(1)); ende = min(int(m.group(2)) if m.group(2) else gesamt - 1, gesamt - 1)
+        else:
+            start = max(0, gesamt - int(m.group(2)))
+        if start >= gesamt:
+            h.send_response(416); h.send_header("Content-Range", f"bytes */{gesamt}"); h.end_headers(); return
+        h.send_response(206); h.send_header("Content-Range", f"bytes {start}-{ende}/{gesamt}")
+    else:
+        h.send_response(200)
+    h.send_header("Content-Type", "video/mp4"); h.send_header("Accept-Ranges", "bytes")
+    h.send_header("Content-Length", str(ende - start + 1)); h.send_header("Cache-Control", "no-cache")
+    h.end_headers()
+    try:
+        pos = start
+        if pos < cache:                           # Anfang aus dem Cache
+            with open(datei, "rb") as f:
+                f.seek(pos)
+                while pos <= min(ende, cache - 1):
+                    teil = f.read(min(1 << 20, min(ende, cache - 1) - pos + 1))
+                    if not teil:
+                        break
+                    h.wfile.write(teil); pos += len(teil)
+        if pos <= ende:                           # Rest vom Server nachladen
+            anf = urllib.request.Request(meta["url"], headers={"User-Agent": radio.UA["User-Agent"], "Range": f"bytes={pos}-{ende}"})
+            with urllib.request.urlopen(anf, timeout=30) as r:
+                if r.status != 206:
+                    return                        # Server kann kein Range – Browser bricht ab, Wache beendet den Einspieler
+                while pos <= ende:
+                    teil = r.read(1 << 20)
+                    if not teil:
+                        break
+                    h.wfile.write(teil); pos += len(teil)
+    except (OSError, urllib.error.URLError):
+        pass
+
+
+def einspieler_aufraeumen(behalten):
+    try:
+        for n in os.listdir(EINSPIELER):
+            if n.split(".")[0] not in behalten:
+                os.remove(os.path.join(EINSPIELER, n))
+    except OSError:
+        pass
+
+
 def einspieler_schleife():
     while True:
         neu = {}
@@ -198,6 +315,9 @@ def einspieler_schleife():
                 neu[x["id"]] = einspieler_aufloesen(x)
             except Exception as ex:
                 neu[x["id"]] = dict(zustand.get("einspieler", {}).get(x["id"], {}), fehler=str(ex)[:200])
+            if x["puffer"] == "vorab":
+                neu[x["id"]] = einspieler_vorladen(x, neu[x["id"]])
+        einspieler_aufraeumen({x["id"] for x in einst()["einspieler"] if x["aktiv"] and x["puffer"] == "vorab"})
         zustand["einspieler"] = neu
         einspieler_neu.wait(300)
         einspieler_neu.clear()
@@ -297,7 +417,8 @@ def tv_daten(tv_id):
         a = zustand.get("einspieler", {}).get(x["id"], {})
         if x["aktiv"] and (not x["fernseher"] or t["id"] in x["fernseher"]) and (a.get("url") or a.get("video_id")):
             eins.append({"id": x["id"], "name": x["name"], "minuten": x["minuten"], "von": x["von"], "bis": x["bis"], "ton": x["ton"],
-                         "art": a["art"], "url": a.get("url"), "video_id": a.get("video_id"), "stand": a.get("stand", "")})
+                         "art": a["art"], "url": a.get("lokal") or a.get("url"), "video_id": a.get("video_id"), "stand": a.get("stand", ""),
+                         "vorlauf_s": x["vorlauf_s"] if x["puffer"] == "vorlauf" else 0})
     if e["anzeige"]["wetter_quelle"] == "met" and met.daten:
         teil["wetter"] = met.aktuell()
         teil["vorhersage"] = met.vorhersage(5)
@@ -653,6 +774,41 @@ def einspielen(d, mit_strikes=True):
     neu_liste.set()
 
 
+def datei_mit_range(h, pfad, typ):
+    try:
+        groesse = os.path.getsize(pfad)
+        f = open(pfad, "rb")
+    except OSError:
+        return h.antwort(404, {"ok": False})
+    with f:
+        start, ende = 0, groesse - 1
+        m = re.fullmatch(r"bytes=(\d*)-(\d*)", h.headers.get("Range", "") or "")
+        if m and (m.group(1) or m.group(2)):
+            if m.group(1):
+                start = int(m.group(1)); ende = int(m.group(2)) if m.group(2) else groesse - 1
+            else:
+                start = max(0, groesse - int(m.group(2)))
+            if start >= groesse:
+                h.send_response(416); h.send_header("Content-Range", f"bytes */{groesse}"); h.end_headers(); return
+            ende = min(ende, groesse - 1)
+            h.send_response(206); h.send_header("Content-Range", f"bytes {start}-{ende}/{groesse}")
+        else:
+            h.send_response(200)
+        h.send_header("Content-Type", typ); h.send_header("Accept-Ranges", "bytes")
+        h.send_header("Content-Length", str(ende - start + 1)); h.send_header("Cache-Control", "no-cache")
+        h.end_headers()
+        f.seek(start)
+        rest = ende - start + 1
+        try:
+            while rest > 0:
+                teil = f.read(min(1 << 20, rest))
+                if not teil:
+                    break
+                h.wfile.write(teil); rest -= len(teil)
+        except OSError:
+            pass
+
+
 def mjpeg_anfrage(q):
     """Adresse und Kopfzeilen für eine MJPEG-Kamera; Benutzer:Passwort in der Adresse -> Basic-Anmeldung."""
     kopf = {"User-Agent": Q.UA}
@@ -782,6 +938,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/radio/([a-z][a-z0-9]{0,11})/([a-z0-9]{4,12})", p.path)
         if m:                                     # Radio mit Puffer (für die TV-Seite)
             return radio_weiterleiten(self, m.group(1), m.group(2))
+        m = re.fullmatch(r"/einspieler/([a-z0-9]{4,12})\.mp4", p.path)
+        if m:                                     # vorab geladener Einspieler (mit Range, damit der Browser springen kann)
+            return einspieler_ausliefern(self, m.group(1))
         m = re.fullmatch(r"/qvideo/([a-z0-9_]{2,16})", p.path)
         if m:                                     # MJPEG-Kamera durchreichen (Zugangsdaten bleiben im Container)
             return mjpeg_weiterleiten(self, m.group(1))

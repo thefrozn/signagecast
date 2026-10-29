@@ -66,6 +66,11 @@ const TEXTE = {
     pwAendern: "Passwort ändern", pwGeaendert: "Passwort geändert", abmelden: "Abmelden",
     kodierungKarte: "Videokodierung", kodierungArt: { vaapi: "Grafikeinheit (VAAPI)", software: "Software (CPU)" },
     kodierungSoftware: "Keine nutzbare Grafik – Notbetrieb: H.264 in Full HD per CPU (ca. 1–2 Kerne, solange jemand zuschaut).",
+    epPuffer: "Puffer", epPufferArt: { vorab: "im Container vorab laden (empfohlen)", vorlauf: "Vorlauf im Browser", aus: "aus (direkt vom Server)" },
+    epMenge: "Menge", epKomplett: "komplett", epMb: "nur den Anfang (MB)", epVorlauf: "Vorlauf (s)",
+    epPufferText: "Vorab laden: Der Container holt jede neue Ausgabe, sobald sie erscheint, und der Fernseher spielt sie von dort – kein Hängen. " +
+      "Bei „nur den Anfang“ kommt der Rest beim Abspielen vom Server (weniger Platz, der Vorsprung überbrückt Aussetzer). Nicht für YouTube.",
+    epVorab: (mb, ges, st) => `vorab geladen: ${mb} MB${ges ? " von " + ges + " MB" : ""}${st ? " · Ausgabe " + st : ""}`,
     aenderungen: "Was ist neu?", projektseite: "Projektseite (GitHub)", fehlerMelden: "Fehler melden / Wunsch äußern",
     aufgaben: "Geplante Aufgaben", systemSeiten: "Dienste, Protokolle und Zeitpläne des Containers stehen im Cockpit-Menü " +
       "links unter „Dienste“ und „Protokolle“.",
@@ -163,6 +168,11 @@ const TEXTE = {
     pwAendern: "Change password", pwGeaendert: "Password changed", abmelden: "Log out",
     kodierungKarte: "Video encoding", kodierungArt: { vaapi: "Graphics unit (VAAPI)", software: "Software (CPU)" },
     kodierungSoftware: "No usable graphics – fallback: H.264 in Full HD on the CPU (about 1–2 cores while someone is watching).",
+    epPuffer: "Buffer", epPufferArt: { vorab: "preload in the container (recommended)", vorlauf: "buffer ahead in the browser", aus: "off (directly from the server)" },
+    epMenge: "Amount", epKomplett: "complete", epMb: "only the beginning (MB)", epVorlauf: "Buffer ahead (s)",
+    epPufferText: "Preload: the container fetches every new edition as soon as it appears and the TV plays it from there – no stalling. " +
+      "With “only the beginning” the rest comes from the server while playing (less space, the head start bridges dropouts). Not for YouTube.",
+    epVorab: (mb, ges, st) => `preloaded: ${mb} MB${ges ? " of " + ges + " MB" : ""}${st ? " · edition " + st : ""}`,
     aenderungen: "What's new?", projektseite: "Project page (GitHub)", fehlerMelden: "Report a bug / request a feature",
     aufgaben: "Scheduled tasks", systemSeiten: "Services, logs and timers of the container are in the Cockpit menu on the left.",
     hinzufuegen: "Add stream", link: "YouTube link or video ID", name: "Name (empty = title)", kategorie: "Category",
@@ -833,10 +843,28 @@ async function einspielerSeite(inhalt) {
         <div class="zeile"><label>${esc(T.epZeit)}</label><input type="time" name="von" value="${esc(x.von)}"> – <input type="time" name="bis" value="${esc(x.bis)}">
           <label><input type="checkbox" name="ton" ${x.ton ? "checked" : ""}> ${esc(T.epTon)}</label></div>
         <div class="zeile"><label>${esc(T.epFernseher)}</label>${E.fernseher.map((t) => `<label><input type="checkbox" name="tv_${esc(t.id)}" ${x.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join("")}</div>
-        <div class="zeile"><span class="leise">${st.stand ? esc(T.epStand) + ": " + esc(st.stand.replace("T", " ")) : ""}${st.fehler ? ` <span class="schlecht">${esc(T.epFehler)}: ${esc(st.fehler)}</span>` : ""}</span>
+        <div class="zeile" name="pufferZeile"><label>${esc(T.epPuffer)}</label><select name="puffer">${Object.keys(T.epPufferArt).map((k) => `<option value="${k}" ${k === (x.puffer || "vorab") ? "selected" : ""}>${esc(T.epPufferArt[k])}</option>`).join("")}</select>
+          <span name="mengeTeil"><label>${esc(T.epMenge)}</label><select name="menge"><option value="komplett" ${x.vorab_mb ? "" : "selected"}>${esc(T.epKomplett)}</option>
+            <option value="mb" ${x.vorab_mb ? "selected" : ""}>${esc(T.epMb)}</option></select>
+            <input type="number" name="vorab_mb" min="1" max="2000" value="${x.vorab_mb || 20}" style="width:90px"></span>
+          <span name="vorlaufTeil"><label>${esc(T.epVorlauf)}</label><input type="number" name="vorlauf_s" min="0" max="60" value="${x.vorlauf_s ?? 10}" style="width:80px"></span></div>
+        <p class="leise" name="pufferText">${esc(T.epPufferText)}</p>
+        <div class="zeile"><span class="leise">${st.stand ? esc(T.epStand) + ": " + esc(st.stand.replace("T", " ")) : ""}${st.fehler ? ` <span class="schlecht">${esc(T.epFehler)}: ${esc(st.fehler)}</span>` : ""}
+          ${st.vorab ? " · " + esc(T.epVorab((st.vorab.groesse / 1048576).toFixed(1), st.vorab.komplett ? 0 : (st.vorab.gesamt / 1048576).toFixed(1), (st.vorab.stand || "").replace("T", " ").slice(0, 16))) : ""}
+          ${st.vorab_fehler ? ` <span class="schlecht">${esc(st.vorab_fehler)}</span>` : ""}</span>
           <button class="knopf" name="jetzt">${esc(T.epJetzt)}</button><button class="knopf gefahr" name="weg">${esc(T.entfernen)}</button></div></div>`);
-      const urlSicht = () => { k.querySelector("[name=urlZeile]").style.display = k.querySelector("[name=quelle]").value === "tagesschau100" ? "none" : ""; };
-      k.querySelector("[name=quelle]").onchange = urlSicht; urlSicht();
+      const urlSicht = () => {
+        const q = k.querySelector("[name=quelle]").value, p = k.querySelector("[name=puffer]").value;
+        k.querySelector("[name=urlZeile]").style.display = q === "tagesschau100" ? "none" : "";
+        // YouTube lässt sich nicht puffern; Menge nur bei „vorab“, Sekunden nur bei „Vorlauf“
+        k.querySelector("[name=pufferZeile]").style.display = q === "youtube" ? "none" : "";
+        k.querySelector("[name=pufferText]").style.display = q === "youtube" ? "none" : "";
+        k.querySelector("[name=mengeTeil]").style.display = p === "vorab" ? "" : "none";
+        k.querySelector("[name=vorab_mb]").style.display = k.querySelector("[name=menge]").value === "mb" ? "" : "none";
+        k.querySelector("[name=vorlaufTeil]").style.display = p === "vorlauf" ? "" : "none";
+      };
+      for (const n of ["quelle", "puffer", "menge"]) k.querySelector(`[name=${n}]`).onchange = urlSicht;
+      urlSicht();
       k.querySelector("[name=weg]").onclick = () => k.remove();
       k.querySelector("[name=jetzt]").onclick = (e) => aktion(e.target, () => senden(`/api/einspieler/${encodeURIComponent(x.id)}/jetzt`), T.epJetztOk);
       return k;
@@ -845,7 +873,8 @@ async function einspielerSeite(inhalt) {
     $("#epPlus").onclick = () => {
       const p = ziel.querySelector("p"); if (p) p.remove();
       ziel.appendChild(karte({ id: Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, "a").padEnd(8, "x"), name: "tagesschau in 100 Sekunden",
-        quelle: "tagesschau100", url: "", minuten: [0, 30], von: "06:00", bis: "23:00", ton: true, fernseher: [], aktiv: true }));
+        quelle: "tagesschau100", url: "", minuten: [0, 30], von: "06:00", bis: "23:00", ton: true, fernseher: [], aktiv: true,
+        puffer: "vorab", vorab_mb: 0, vorlauf_s: 10 }));
     };
     $("#epOk").onclick = async (e) => {
       const neu = [...ziel.querySelectorAll(".ep")].map((k) => {
@@ -854,7 +883,9 @@ async function einspielerSeite(inhalt) {
           .concat(w("andere").value.split(",").map((x) => parseInt(x, 10)).filter((x) => x >= 0 && x <= 59));
         return { id: k.dataset.id, name: w("name").value, quelle: w("quelle").value, url: w("url").value.trim(), minuten: minuten.length ? minuten : [0],
                  von: w("von").value, bis: w("bis").value, ton: w("ton").checked, aktiv: w("aktiv").checked,
-                 fernseher: E.fernseher.filter((t) => w("tv_" + t.id).checked).map((t) => t.id) };
+                 fernseher: E.fernseher.filter((t) => w("tv_" + t.id).checked).map((t) => t.id),
+                 puffer: w("puffer").value, vorlauf_s: Number(w("vorlauf_s").value) || 0,
+                 vorab_mb: w("menge").value === "mb" ? Math.max(1, Number(w("vorab_mb").value) || 20) : 0 };
       });
       await speichernE({ einspieler: neu }, e.target);
       setTimeout(() => zeichnen().catch(() => {}), 4000);         // Stand/Fehler der Quellen nachladen
