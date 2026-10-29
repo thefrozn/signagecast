@@ -9,6 +9,8 @@ You design the screen in a **drag-and-drop editor** and manage everything in the
 
 Made for the living room, waiting rooms of practices and company receptions. Free and open source (MIT).
 
+**📸 [Screenshot tour](docs/TOUR.md)** – the TV and every page of the admin, step by step.
+
 *Deutsche Kurzfassung weiter unten.*
 
 ![Practice template](docs/praxis.jpg)
@@ -213,6 +215,8 @@ Questions, bugs and ideas: [GitHub issues](https://github.com/thefrozn/signageca
 ---
 
 ## Deutsch (kurz)
+
+**📸 [Bildschirm-Tour](docs/TOUR.md)** (englisch, mit deutscher Zusammenfassung).
 
 SignageCast macht aus einem Fernseher einen ruhigen Infobildschirm: Uhr, Wetter (MET Norway) und auf Wunsch Werte aus **Home Assistant**,
 dazu ein großes Fenster mit **Live-Kameras von Tieren und Natur** aus aller Welt – nur dort, wo gerade Tag ist.
