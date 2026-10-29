@@ -1,13 +1,13 @@
 #!/bin/sh
 # SignageCast – install or update inside an existing Debian 13 (LXC or VM) / Installation oder Update in Debian 13.
 #
-#   curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh
 #
 # Downloads the latest release from GitHub, verifies its SHA-256 checksum and runs installieren.sh.
 # Running it again updates SignageCast; settings and data are kept.
 # Options (environment): SIGNAGECAST_VERSION=v0.6.0 (instead of the latest), SIGNAGECAST_TARBALL=<url> (testing).
 set -eu
-REPO=tschmidt82/signagecast
+REPO=thefrozn/signagecast
 
 [ "$(id -u)" = 0 ] || { echo "Please run as root / Bitte als root ausführen."; exit 1; }
 if ! command -v curl >/dev/null 2>&1; then

@@ -12,7 +12,8 @@ SignageCast itself is licensed under the MIT License (see `LICENSE`). It contain
 
 Online services used at runtime (public endpoints, no account): YouTube (official embed player, public pages and oEmbed),
 radio-browser.info (station directory), OpenStreetMap Nominatim (place search, only on demand), tagesschau.de API
-(optional clip), GitHub API (update notice). Please respect their terms of use.
+(optional clip), GitHub API (update notice), MET Norway Locationforecast (weather, data licensed CC BY 4.0 –
+credit “Weather data: MET Norway” is shown on the TV), NTP pool (time check, UDP 123). Please respect their terms of use.
 
 Live streams shown are third-party content and remain the property of their operators; SignageCast only embeds them
 with the official YouTube player and only if the operator allows embedding.

@@ -10,6 +10,17 @@
 // - Einspieler (z. B. tagesschau in 100 Sekunden): zur eingestellten Minute unterbricht der Beitrag die Rotation und läuft
 //   ganz durch (MP4 als <video> oder YouTube-Video), danach geht es normal weiter. Mit Ton pausiert solange das Radio
 //   (Ereignisse "einspieler-start"/"einspieler-ende" an die Seite). Keine Strikes während eines Einspielers.
+// Zeit: Abweichung zur Zeitquelle (NTP, vom Datendienst gemessen) und optionale Zeitzone – für Uhr, Takt, Einspieler
+const ZEIT = { abweichung: 0, zone: null };
+function jetztMs() { return Date.now() + ZEIT.abweichung; }
+function ortszeit() {
+  const d = new Date(jetztMs());
+  if (!ZEIT.zone) return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds(), tag: d.toDateString(), d };
+  const t = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: ZEIT.zone, hour12: false, year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]));
+  return { h: Number(t.hour) % 24, m: Number(t.minute), s: Number(t.second), tag: `${t.year}-${t.month}-${t.day}`, d };
+}
+
 const STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"];
 const PRUEFUNG = { startetNichtS: 30, puffertS: 15, stehtS: 20, startMeldenS: 30, endeVorWechselS: 20 };
 
@@ -40,6 +51,8 @@ class LivePlayer {
     if (d.regeln) this.regeln = d.regeln;
     this.versatz = d.versatz || 0;
     this.einspielerListe = Array.isArray(d.einspieler) ? d.einspieler : [];
+    ZEIT.abweichung = d.zeit_abweichung_ms || 0;
+    ZEIT.zone = d.zeitzone || null;
     const j = d.einspieler_jetzt;               // „Jetzt zeigen“ aus der Verwaltung
     if (j && !this.gespielt["jetzt " + j.nr] && !this.einspieler) {
       const e = this.einspielerListe.find((x) => x.id === j.id);
@@ -65,12 +78,12 @@ class LivePlayer {
 
   // Fälliger Einspieler: Minute passt, in den ersten 50 s der Minute, im Zeitfenster, für diese Minute noch nicht gespielt
   faellig() {
-    const d = new Date(), hhmm = d.toTimeString().slice(0, 5);
-    if (d.getSeconds() >= 50) return null;
+    const o = ortszeit(), hhmm = String(o.h).padStart(2, "0") + ":" + String(o.m).padStart(2, "0");
+    if (o.s >= 50) return null;
     for (const e of this.einspielerListe) {
       const drin = e.von <= e.bis ? hhmm >= e.von && hhmm <= e.bis : hhmm >= e.von || hhmm <= e.bis;
-      const schluessel = `${e.id} ${d.toDateString()} ${hhmm}`;
-      if (e.minuten.includes(d.getMinutes()) && drin && !this.gespielt[schluessel]) { this.gespielt[schluessel] = 1; return e; }
+      const schluessel = `${e.id} ${o.tag} ${hhmm}`;
+      if (e.minuten.includes(o.m) && drin && !this.gespielt[schluessel]) { this.gespielt[schluessel] = 1; return e; }
     }
     return null;
   }
@@ -86,8 +99,8 @@ class LivePlayer {
 
   plan() {
     const jetzt = Date.now();
-    const d = new Date();
-    const sekTag = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    const o = ortszeit();
+    const sekTag = o.h * 3600 + o.m * 60 + o.s;
     const takt = this.regeln.takt_s || 180;
     const slot = Math.floor(sekTag / takt) + this.versatz * 7, rest = takt - (sekTag % takt);
     const frei = this.streams.filter((s) => !(this.gesperrt[s.video_id] > jetzt));

@@ -2,7 +2,7 @@
 
 **Turn any TV into a calm information screen – with live wildlife cams from around the world.**
 
-SignageCast shows clock, weather and any values from **Home Assistant** together with a large window of
+SignageCast shows clock, weather (MET Norway) and – optionally – any values from **Home Assistant** together with a large window of
 **live nature and wildlife cams** (YouTube) – always where it is currently daytime. Everything is rendered in a small
 Linux container and sent to the TV as a **4K video stream**; the TV only has to open one address in its browser.
 You design the screen in a **drag-and-drop editor** and manage everything in the browser, also from your phone.
@@ -38,7 +38,7 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 
 - A PC with **Intel graphics** (Quick Sync / VAAPI, e.g. a mini PC with an Intel CPU from the 7th generation on),
   running **Proxmox VE** or **Debian 13**. The container needs 2–4 cores, 10 GB disk and about 1 GB RAM per TV.
-- **Home Assistant** in the same network (for weather and your values).
+- Optional: **Home Assistant** in the same network (for your own values; weather comes from MET Norway).
 - A TV whose browser plays **H.265 / HEVC** (for 4K; most smart TVs from about 2018). Full HD output is also possible.
 
 ## Installation
@@ -46,7 +46,7 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 **Proxmox VE** – run on the Proxmox host shell, answer the questions (Enter = suggestion):
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/proxmox/ct.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
 It creates a Debian 13 container, passes the Intel GPU through and installs SignageCast.
@@ -54,7 +54,7 @@ It creates a Debian 13 container, passes the Intel GPU through and installs Sign
 **Existing Debian 13** (LXC or VM with `/dev/dri/renderD128`) – as root:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh
 ```
 
 Running the same command again updates SignageCast; settings and data are kept.
@@ -67,7 +67,7 @@ Running the same command again updates SignageCast; settings and data are kept.
    password **tvadmin** – then please change it (top right → Accounts → tvadmin → Set password).
 2. Menu **SignageCast → Connection**: enter the Home Assistant address and follow the guide shown there. Home Assistant
    trusts the container via `trusted_networks` – no password or token is stored. Take the location from Home Assistant.
-3. **Display**: choose the weather entity. **Layout**: adapt the standard layout or start from a template.
+3. **Display**: weather comes from MET Norway (or choose a Home Assistant weather entity). **Layout**: adapt the standard layout or start from a template.
 4. On the TV open **http://&lt;container-IP&gt;:8888/tv** in the browser and set it as start page.
 5. Optional: **Radio**, **Clips**, more **TVs**, schedules.
 
@@ -94,13 +94,13 @@ see [NOTICE.md](NOTICE.md).
 
 ## Support
 
-Questions, bugs and ideas: [GitHub issues](https://github.com/tschmidt82/signagecast/issues).
+Questions, bugs and ideas: [GitHub issues](https://github.com/thefrozn/signagecast/issues).
 
 ---
 
 ## Deutsch (kurz)
 
-SignageCast macht aus einem Fernseher einen ruhigen Infobildschirm: Uhr, Wetter und Werte aus **Home Assistant**,
+SignageCast macht aus einem Fernseher einen ruhigen Infobildschirm: Uhr, Wetter (MET Norway) und auf Wunsch Werte aus **Home Assistant**,
 dazu ein großes Fenster mit **Live-Kameras von Tieren und Natur** aus aller Welt – nur dort, wo gerade Tag ist.
 Gezeichnet wird in einem kleinen Linux-Container, der Fernseher öffnet nur eine Adresse im Browser. Das Bild gestaltest
 du im **Layout-Editor** (Bausteine ziehen, Größe ändern, Vorlagen für Wohnzimmer, Wartezimmer und Firma),
@@ -109,14 +109,14 @@ dazu Hintergründe nach Tageszeit, Internetradio, Einspieler wie „tagesschau i
 **Installation auf Proxmox** (in der Shell des Proxmox-Hosts):
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/proxmox/ct.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
-**In einem vorhandenen Debian 13** (als root): `curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/install.sh | sh`
+**In einem vorhandenen Debian 13** (als root): `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh`
 
 Danach **https://&lt;IP&gt;:9090** öffnen, Anmeldung **tvadmin** / Startpasswort **tvadmin** (bitte ändern),
 unter **Verbindung** Home Assistant einrichten (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.
-Voraussetzungen: Intel-Grafik, Home Assistant, ein Fernseher-Browser mit H.265.
+Voraussetzungen: Intel-Grafik, ein Fernseher-Browser mit H.265; Home Assistant optional.
 
 ## License
 

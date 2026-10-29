@@ -13,6 +13,8 @@ from streams import Streams, ID, DATEN, sonnenhoehe   # noqa: E402
 import wache                                  # noqa: E402
 import radio                                  # noqa: E402
 import layouts as L                           # noqa: E402
+import wetter as W                            # noqa: E402
+import zeit as Z                              # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,11 +23,14 @@ VERSION = open(os.path.join(BASIS, "VERSION")).read().strip() if os.path.exists(
 MEDIAMTX_YML = os.environ.get("SC_MEDIAMTX", "/etc/signagecast/mediamtx.yml")
 MEDIAMTX_VORLAGE = os.path.join(BASIS, "render", "mediamtx.yml")
 HLS_PORT = 8888
-PROJEKT = "tschmidt82/signagecast"            # GitHub: Projektseite, Fehlermeldungen, Hinweis auf neue Versionen
+PROJEKT = "thefrozn/signagecast"            # GitHub: Projektseite, Fehlermeldungen, Hinweis auf neue Versionen
 
 zustand = {"einstellungen": E.laden(), "ha_teil": {"wetter": {}, "vorhersage": [], "werte": {}},
            "vorhersage": [], "vh_zeit": 0, "kalender": {}, "wache": {}, "cpu": None, "ha_fehler": None}
 BILDER = os.path.join(DATEN, "bilder")
+met = W.MetWetter()
+zeit_neu = threading.Event()
+wetter_neu = threading.Event()
 sperre = threading.Lock()
 neu_liste = threading.Event()
 einspieler_neu = threading.Event()
@@ -53,7 +58,7 @@ def holen():
                                       "name": a.get("friendly_name", ""),
                                       **({k: a.get(k) for k in ("temperature", "humidity", "wind_speed", "wind_speed_unit")}
                                          if st["entity_id"].startswith("weather.") else {})}
-    if wetter and time.time() - zustand["vh_zeit"] > 600:
+    if wetter and e["anzeige"]["wetter_quelle"] == "ha" and time.time() - zustand["vh_zeit"] > 600:
         try:
             r = ha.post("/api/services/weather/get_forecasts?return_response", {"entity_id": wetter, "type": "daily"})
             zustand["vorhersage"] = [{"tag": x["datetime"][:10], "zustand": x.get("condition"),
@@ -66,6 +71,73 @@ def holen():
     return {"wetter": {"entity": wetter, "zustand": w.get("state"), "temperatur": w.get("temperature"),
                        "feuchte": w.get("humidity"), "wind": w.get("wind_speed"), "wind_einheit": w.get("wind_speed_unit") or "km/h"},
             "vorhersage": zustand["vorhersage"], "werte": werte}
+
+
+def wetter_schleife():
+    """Eigenes Wetter (MET Norway): alle 5 min nachsehen – abgerufen wird nur, wenn die Daten abgelaufen sind."""
+    while True:
+        e = einst()
+        if e["anzeige"]["wetter_quelle"] == "met":
+            met.holen(e["standort"]["breite"], e["standort"]["laenge"])
+        wetter_neu.wait(300)
+        wetter_neu.clear()
+
+
+def zeit_schleife():
+    """Abweichung der Systemuhr zur Zeitquelle (NTP) alle 30 min messen; bei geänderter Einstellung sofort."""
+    while True:
+        e = einst()
+        server = e["zeit"]["ntp"]
+        if not server:
+            try:
+                server = Z.standard_server(radio.ort_beschreiben(e["standort"]["breite"], e["standort"]["laenge"]).get("laendercode"))
+            except Exception:
+                server = "pool.ntp.org"
+        zeitzone_setzen()
+        host = Z.host_synchronisiert()
+        try:
+            abw, laufzeit = Z.messen(server)
+            # Uhr vom Host synchronisiert und genau genug -> nichts korrigieren (nur kontrollieren);
+            # sonst die gemessene Abweichung auf Uhr, Takt und Einspieler anwenden
+            zustand["zeit"] = {"server": server, "abweichung_s": round(abw, 4), "laufzeit_ms": round(laufzeit * 1000),
+                               "gemessen": time.strftime("%Y-%m-%d %H:%M"), "fehler": None, "host_synchronisiert": host,
+                               "korrektur": not (host and abs(abw) < 1.0)}
+        except Exception as ex:
+            zustand["zeit"] = dict(zustand.get("zeit") or {}, server=server, fehler=str(ex)[:200], host_synchronisiert=host,
+                                   korrektur=False)
+        zeit_neu.wait(1800)
+        zeit_neu.clear()
+
+
+def system_zeitzone():
+    try:
+        return os.path.realpath("/etc/localtime").split("zoneinfo/", 1)[1]
+    except Exception:
+        return time.tzname[0]
+
+
+def zeitzone_setzen():
+    """Zeitstempel und Tagesgrenzen (Vorhersage, Zeitplan) in der wirksamen Zeitzone – auch wenn der Container in UTC läuft."""
+    os.environ["TZ"] = wirksame_zeitzone()
+    time.tzset()
+
+
+def wirksame_zeitzone():
+    """Eingestellte Zeitzone, sonst die automatische."""
+    return einst()["zeit"]["zeitzone"] or auto_zeitzone()
+
+
+def auto_zeitzone():
+    """Die des Systems – läuft das System in UTC, die des Landes am Standort."""
+    e = einst()
+    sz = system_zeitzone()
+    if sz in ("Etc/UTC", "UTC", "Etc/Universal", "Universal", "Zulu"):
+        try:
+            land = radio.ort_beschreiben(e["standort"]["breite"], e["standort"]["laenge"]).get("laendercode", "")
+            return Z.ZONE_NACH_LAND.get(land, sz)
+        except Exception:
+            return sz
+    return sz
 
 
 def einspieler_aufloesen(x):
@@ -185,10 +257,16 @@ def tv_daten(tv_id):
         if x["aktiv"] and (not x["fernseher"] or t["id"] in x["fernseher"]) and (a.get("url") or a.get("video_id")):
             eins.append({"id": x["id"], "name": x["name"], "minuten": x["minuten"], "von": x["von"], "bis": x["bis"], "ton": x["ton"],
                          "art": a["art"], "url": a.get("url"), "video_id": a.get("video_id"), "stand": a.get("stand", "")})
+    if e["anzeige"]["wetter_quelle"] == "met" and met.daten:
+        teil["wetter"] = met.aktuell()
+        teil["vorhersage"] = met.vorhersage(5)
+    zt = zustand.get("zeit") or {}
     st = e["standort"]
     tz = L.tageszeit(sonnenhoehe(st["breite"], st["laenge"]), sonnenhoehe(st["breite"], st["laenge"], time.time() + 600))
     return dict(teil, ok=True, ha_ok=zustand["ha_fehler"] is None, zeit=int(time.time()), sprache=e["sprache"] or "en", tageszeit=tz,
                 einspieler=eins if hat_video else [],
+                zeit_abweichung_ms=round((zt.get("abweichung_s") or 0) * 1000) if zt.get("korrektur") else 0,
+                zeitzone=wirksame_zeitzone(),
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
                 tv=t["id"], layout=layout, kalender=kal, streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
@@ -284,6 +362,14 @@ def bild_speichern(b64):
 
 
 def ha_schleife():
+    # Update von ≤ 0.6: dort stand immer eine Wetter-Entität drin (Voreinstellung). Ist HA beim ersten Abruf nicht
+    # erreichbar, auf das eigene Wetter umstellen – sonst bliebe das Wetter leer.
+    try:
+        roh = json.load(open(E.PFAD)).get("anzeige", {})
+        alt_ohne_quelle = "wetter_quelle" not in roh
+    except Exception:
+        alt_ohne_quelle = False
+    erster = True
     while True:
         try:
             teil = holen()
@@ -292,6 +378,10 @@ def ha_schleife():
                 zustand["ha_teil"] = teil
         except Exception as ex:
             zustand["ha_fehler"] = str(ex)[:300]
+            if erster and alt_ohne_quelle and einst()["anzeige"]["wetter_quelle"] == "ha":
+                zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"anzeige": {"wetter_quelle": "met"}}))
+                wetter_neu.set()
+        erster = False
         time.sleep(15)
 
 
@@ -375,6 +465,9 @@ def status():
     return {
         "version": VERSION, "zeit": time.strftime("%Y-%m-%d %H:%M:%S"),
         "neue_version": zustand.get("neue_version"), "projekt": f"https://github.com/{PROJEKT}",
+        "wetter": {"quelle": e["anzeige"]["wetter_quelle"], "abruf": met.abruf, "fehler": met.fehler,
+                   "jetzt": met.aktuell() if e["anzeige"]["wetter_quelle"] == "met" else None},
+        "zeit_quelle": dict(zustand.get("zeit") or {}, zeitzone=wirksame_zeitzone(), system_zeitzone=system_zeitzone()),
         "cpu_prozent": zustand["cpu"], "last": os.getloadavg(), "kerne": os.cpu_count(),
         "ram_mb": {"gesamt": m["MemTotal"] // 1024, "frei": m["MemAvailable"] // 1024},
         "platte_gb": {"gesamt": round(sv.f_blocks * sv.f_frsize / 1e9, 1), "frei": round(sv.f_bavail * sv.f_frsize / 1e9, 1)},
@@ -556,6 +649,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "wechsel": L.WECHSEL})
         if pfad == "/api/einspieler":
             return self.antwort(200, {"einspieler": einst()["einspieler"], "stand": zustand.get("einspieler", {})})
+        if pfad == "/api/zeitzonen":
+            import zoneinfo
+            return self.antwort(200, {"zeitzonen": sorted(zoneinfo.available_timezones()), "system": auto_zeitzone()})
         if pfad == "/api/vorlagen":
             return self.antwort(200, {"vorlagen": L.vorlagen()})
         if pfad == "/api/vorschau/daten":
@@ -633,6 +729,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             render_schreiben(einst())
             neu_liste.set()
             einspieler_neu.set()
+            zeit_neu.set()
+            wetter_neu.set()
             return {"einstellungen": einst()}
         if p == "/api/streams":
             s = streams.hinzufuegen(str(d.get("link", "")), d.get("name") or None, d.get("kategorie", "neu"),
@@ -745,7 +843,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
 def main():
     os.makedirs(DATEN, exist_ok=True)
     render_schreiben(einst())
-    for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife):
+    zeitzone_setzen()
+    for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
+                 wetter_schleife, zeit_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

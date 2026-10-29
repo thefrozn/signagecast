@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # SignageCast – create a ready-to-use LXC container on a Proxmox VE host (run as root on the host):
 #
-#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/proxmox/ct.sh)"
+#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 #
 # Asks a few questions (Enter = suggested value), creates an unprivileged Debian 13 container with the Intel GPU
 # (/dev/dri/renderD128) passed through and installs SignageCast inside it.
 # Without questions: SIGNAGECAST_YES=1 plus optional CTID, CT_HOSTNAME, CORES, RAM, DISK, STORAGE, BRIDGE, IP (dhcp or
 # 192.168.1.50/24), GW as environment variables.
 set -euo pipefail
-REPO=tschmidt82/signagecast
+REPO=thefrozn/signagecast
 INSTALL_URL=${SIGNAGECAST_INSTALL_URL:-https://raw.githubusercontent.com/$REPO/main/install.sh}
 
 rot() { printf '\033[31m%s\033[0m\n' "$*"; }
@@ -54,7 +54,7 @@ echo "== Creating container $CTID"
 NETZ="name=eth0,bridge=$BRIDGE,ip=$IP"
 [ "$IP" != dhcp ] && [ -n "$GW" ] && NETZ="$NETZ,gw=$GW"
 pct create "$CTID" "$TSTORE:vztmpl/$VORLAGE" --hostname "$CT_HOSTNAME" --cores "$CORES" --memory "$RAM" --swap 512 \
-  --rootfs "$STORAGE:$DISK" --net0 "$NETZ" --unprivileged 1 --features nesting=1 --onboot 1 \
+  --rootfs "$STORAGE:$DISK" --net0 "$NETZ" --unprivileged 1 --features nesting=1 --onboot 1 --timezone host \
   --dev0 /dev/dri/renderD128,mode=0666 --description "SignageCast – https://github.com/$REPO" >/dev/null
 pct start "$CTID"
 

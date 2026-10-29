@@ -15,13 +15,13 @@ const TEXTE = {
           "hail": "Hagel", "lightning": "Gewitter", "lightning-rainy": "Gewitter, Regen", "partlycloudy": "Teilweise bewölkt",
           "pouring": "Starkregen", "rainy": "Regnerisch", "snowy": "Schnee", "snowy-rainy": "Schneeregen", "sunny": "Sonnig",
           "windy": "Windig", "windy-variant": "Windig, bewölkt" },
-        feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes",
+        feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes", wetterQuelle: "Wetterdaten: MET Norway",
         heute: "Heute", morgen: "Morgen", keineTermine: "Keine Termine", locale: "de-DE" },
   en: { lage: { "clear-night": "Clear night", "cloudy": "Cloudy", "exceptional": "Exceptional", "fog": "Fog", "hail": "Hail",
           "lightning": "Thunderstorm", "lightning-rainy": "Thunderstorm, rain", "partlycloudy": "Partly cloudy",
           "pouring": "Pouring", "rainy": "Rainy", "snowy": "Snowy", "snowy-rainy": "Sleet", "sunny": "Sunny",
           "windy": "Windy", "windy-variant": "Windy, cloudy" },
-        feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next",
+        feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway",
         heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB" },
 };
 const FAKTOR = { uhr: 0.82, temperatur: 0.72, datum: 0.5, wetterlage: 0.6, feuchte: 0.5, wind: 0.5, sender: 0.5, text: 0.55, meldung: 0.42 };
@@ -266,14 +266,15 @@ function fuellen() {
 }
 
 function uhr() {
-  const jetzt = new Date();
+  const jetzt = new Date(jetztMs());
+  const zone = ZEIT.zone ? { timeZone: ZEIT.zone } : {};
   for (const { e, d } of bausteine) {
     if (e.typ === "uhr") {
-      d.textContent = jetzt.toLocaleTimeString(T.locale, { hour: "2-digit", minute: "2-digit", ...(e.optionen.sekunden ? { second: "2-digit" } : {}) });
+      d.textContent = jetzt.toLocaleTimeString(T.locale, { hour: "2-digit", minute: "2-digit", ...(e.optionen.sekunden ? { second: "2-digit" } : {}), ...zone });
       if (!d.dataset.gepasst) { einpassen(d, FAKTOR.uhr); d.dataset.gepasst = 1; }
     } else if (e.typ === "datum") {
       d.textContent = jetzt.toLocaleDateString(T.locale, { ...(e.optionen.wochentag ? { weekday: "long" } : {}), day: "numeric", month: "long",
-                                                           ...(e.optionen.jahr ? { year: "numeric" } : {}) });
+                                                           ...(e.optionen.jahr ? { year: "numeric" } : {}), ...zone });
       if (!d.dataset.gepasst) { einpassen(d, FAKTOR.datum); d.dataset.gepasst = 1; }
     } else if (e.typ === "meldung" && !d.classList.contains("versteckt")) {
       const m = meldungen[e.optionen.entity];
@@ -328,7 +329,9 @@ async function laden() {
     const lj = JSON.stringify(d.layout);
     if (lj !== layoutJson) { layoutJson = lj; bauen(d.layout); }
     if (!d.layout.schwarz) { hintergrund(d.layout); fuellen(); }
-    if (player) player.setze(d);
+    if (player) player.setze(d); else { ZEIT.abweichung = d.zeit_abweichung_ms || 0; ZEIT.zone = d.zeitzone || null; }
+    // Quellenhinweis für das eigene Wetter (Lizenz CC BY 4.0 von MET Norway)
+    $("quelle").textContent = d.wetter && d.wetter.quelle === "MET Norway" && !d.layout.schwarz ? T.wetterQuelle : "";
     radioSetzen(d);
   } catch (_) { /* nächster Versuch */ }
 }

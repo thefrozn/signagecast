@@ -25,6 +25,7 @@ STANDARD = {
         "puffer_s": 15,                   # Sekunden Vorlauf (Datendienst puffert den Sender) – 0 = direkt abspielen
     },
     "anzeige": {
+        "wetter_quelle": "met",           # met = eigenes Wetter (MET Norway, Standort aus „Verbindung“) | ha = Wetter-Entität aus HA
         "wetter": "weather.forecast_home",
         "vorhersage": True,
         "raeume": [],                     # bis 0.2: Räume/Kacheln hier – seit 0.3 als Bausteine im Layout
@@ -104,6 +105,8 @@ STANDARD = {
     # Einspieler: zu festen Minuten (z. B. :00 und :30) unterbricht ein Beitrag die Rotation im Videofenster
     "einspieler": [],                     # [{"id", "name", "quelle": tagesschau100|video|youtube, "url", "minuten": [0, 30],
                                           #   "von": "06:00", "bis": "23:59", "ton": True, "fernseher": [] (leer = alle), "aktiv": True}]
+    # Zeitquelle: NTP-Server (leer = Länder-Pool zum Standort, z. B. de.pool.ntp.org) und Zeitzone (leer = System)
+    "zeit": {"ntp": "", "zeitzone": ""},
     "stream": {
         "abschalten_s": 60,               # so lange nach dem letzten Zuschauer bis alles aus ist (plus 60 s HLS)
     },
@@ -224,6 +227,19 @@ def pruefen(e):
     if "puffer_s" in ra: s["radio"]["puffer_s"] = _zahl(ra["puffer_s"], 0, 120, int)
     an = e.get("anzeige", {})
     if "wetter" in an: s["anzeige"]["wetter"] = _text(an["wetter"], 100, r"weather\.[a-z0-9_]+|")
+    if "wetter_quelle" in an:
+        s["anzeige"]["wetter_quelle"] = an["wetter_quelle"] if an["wetter_quelle"] in ("met", "ha") else "met"
+    elif an.get("wetter"):
+        s["anzeige"]["wetter_quelle"] = "ha"      # bis 0.6: Wetter kam immer aus HA – so lassen, bis jemand umstellt
+    z = e.get("zeit", {})
+    if "ntp" in z:
+        s["zeit"]["ntp"] = _text(z["ntp"], 100, r"([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+|")
+    if "zeitzone" in z:
+        import zoneinfo
+        zz = _text(z["zeitzone"], 60)
+        if zz and zz not in zoneinfo.available_timezones():
+            raise Fehler(f"unbekannte Zeitzone {zz!r}")
+        s["zeit"]["zeitzone"] = zz
     if "vorhersage" in an: s["anzeige"]["vorhersage"] = bool(an["vorhersage"])
     if "raeume" in an:
         s["anzeige"]["raeume"] = [{"name": _text(r.get("name", ""), 30), "entity": _text(r.get("entity", ""), 100, ENTITY)}

@@ -35,7 +35,14 @@ const TEXTE = {
     epNeu: "Einspieler hinzufügen", epQuelle: "Quelle", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (immer die aktuelle Ausgabe)", video: "Video-Adresse (MP4)", youtube: "YouTube-Video oder Kanal (neuestes Video)" },
     epUrl: "Adresse / Link", epMinuten: "Minuten der Stunde", epAndere: "andere (z. B. 0,20,40)", epZeit: "nur zwischen", epTon: "mit Ton",
     epFernseher: "Fernseher (keiner gewählt = alle)", epAktiv: "aktiv", epJetzt: "Jetzt zeigen", epJetztOk: "Läuft in bis zu 15 s am Fernseher",
-    epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.", layoutWahl: "Layout", zeitplan: "Zeitplan (optional)",
+    epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.",
+    wetterQuelle: "Wetterquelle", wetterQuelleArt: { met: "Eigenes Wetter (MET Norway, für den Standort)", ha: "Home Assistant (Wetter-Entität)" },
+    metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort im Reiter „Verbindung“ – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
+    zeitTitel: "Zeitquelle", ntpServer: "NTP-Server", ntpAuto: "automatisch", zeitzone: "Zeitzone", systemZone: "automatisch",
+    zeitText: "Der Container nimmt die Uhrzeit des Hosts (z. B. Proxmox). SignageCast prüft alle 30 Minuten gegen die Zeitquelle: Ist die Uhr des Hosts synchronisiert, bleibt alles, wie es ist; sonst (oder bei mehr als 1 s Abweichung) korrigiert SignageCast Uhr, Takt und Einspieler. NTP-Server leer = Länder-Pool zum Standort (z. B. de.pool.ntp.org). Zeitzone automatisch = die des Systems, bei UTC die des Landes am Standort.",
+    hostSync: "Zeit vom Host (Proxmox), synchronisiert – keine Korrektur nötig", hostNichtSync: "Uhr des Hosts nicht synchronisiert – SignageCast korrigiert per NTP",
+    abweichung: "Abweichung", zeitWarnung: "Mehr als 2 s Abweichung – bitte die Uhr des Hosts prüfen (z. B. chrony/NTP auf Proxmox).",
+    wetterKarte: "Wetter", zeitKarte: "Zeit", layoutWahl: "Layout", zeitplan: "Zeitplan (optional)",
     zeitplanText: "Zu bestimmten Zeiten ein anderes Layout zeigen, z. B. nachts nur die Uhr oder ganz schwarz (spart Strom).",
     schwarz: "schwarz (aus)", von: "von", bis: "bis", zeitNeu: "Zeitraum hinzufügen", wetterText: "Wetterbild, Temperatur und Vorhersage kommen von dieser Entität; Räume, Kacheln und alles andere stellst du im Reiter „Layout“ ein.",
     speichern: "Speichern", gespeichert: "Gespeichert", deaktiviert: "ausgeschaltet", fehler: "Fehler", laedt: "Lädt …", ja: "ja", nein: "nein",
@@ -117,7 +124,14 @@ const TEXTE = {
     epNeu: "Add clip", epQuelle: "Source", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (always the latest)", video: "Video address (MP4)", youtube: "YouTube video or channel (latest video)" },
     epUrl: "Address / link", epMinuten: "Minutes of the hour", epAndere: "other (e.g. 0,20,40)", epZeit: "only between", epTon: "with sound",
     epFernseher: "TVs (none selected = all)", epAktiv: "active", epJetzt: "Show now", epJetztOk: "Plays on the TV within 15 s",
-    epStand: "Version", epFehler: "Error", epKeine: "No clips yet.", layoutWahl: "Layout", zeitplan: "Schedule (optional)",
+    epStand: "Version", epFehler: "Error", epKeine: "No clips yet.",
+    wetterQuelle: "Weather source", wetterQuelleArt: { met: "Own weather (MET Norway, for the location)", ha: "Home Assistant (weather entity)" },
+    metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location in the “Connection” tab – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
+    zeitTitel: "Time source", ntpServer: "NTP server", ntpAuto: "automatic", zeitzone: "Time zone", systemZone: "automatic",
+    zeitText: "The container uses the host clock (e.g. Proxmox). Every 30 minutes SignageCast checks it against the time source: if the host clock is synchronised, nothing changes; otherwise (or if it is more than 1 s off) SignageCast corrects clock, rotation and clips. Empty NTP server = country pool for the location (e.g. de.pool.ntp.org). Automatic time zone = the system's, or the location's country if the system runs in UTC.",
+    hostSync: "Time from the host (Proxmox), synchronised – no correction needed", hostNichtSync: "Host clock not synchronised – SignageCast corrects via NTP",
+    abweichung: "Offset", zeitWarnung: "Offset above 2 s – please check the host clock (e.g. chrony/NTP on Proxmox).",
+    wetterKarte: "Weather", zeitKarte: "Time", layoutWahl: "Layout", zeitplan: "Schedule (optional)",
     zeitplanText: "Show another layout at certain times, e.g. only the clock or completely black at night (saves power).",
     schwarz: "black (off)", von: "from", bis: "to", zeitNeu: "Add period", wetterText: "Weather picture, temperature and forecast come from this entity; rooms, tiles and everything else are set in the “Layout” tab.",
     speichern: "Save", gespeichert: "Saved", deaktiviert: "switched off", fehler: "Error", laedt: "Loading …", ja: "yes", nein: "no",
@@ -277,8 +291,8 @@ async function uebersicht(inhalt) {
         <div class="zeile"><button class="knopf" id="sNeu">${esc(T.seiteNeu)}</button>
           <button class="knopf" id="kNeu">${esc(T.ketteNeu)}</button><button class="knopf" id="lNeu">${esc(T.listeNeu)}</button></div>
         <p class="leise">${esc(T.systemSeiten)}</p>
-        <p class="leise"><a href="https://github.com/tschmidt82/signagecast" target="_blank" rel="noopener">${esc(T.projektseite)}</a> ·
-          <a href="https://github.com/tschmidt82/signagecast/issues" target="_blank" rel="noopener">${esc(T.fehlerMelden)}</a></p></div>
+        <p class="leise"><a href="https://github.com/thefrozn/signagecast" target="_blank" rel="noopener">${esc(T.projektseite)}</a> ·
+          <a href="https://github.com/thefrozn/signagecast/issues" target="_blank" rel="noopener">${esc(T.fehlerMelden)}</a></p></div>
     </div>`;
   $("#vNeu").onclick = () => vorschau();
   if ($("#vTv")) $("#vTv").onchange = () => vorschau();
@@ -296,6 +310,13 @@ async function uebersicht(inhalt) {
     }).join("");
     const k = [
       [T.zuschauer, String(s.stream.zuschauer), ""],
+      [T.wetterKarte, s.wetter.jetzt ? `${s.wetter.jetzt.temperatur} °C` : (s.wetter.quelle === "ha" ? "HA" : "–"),
+        esc(s.wetter.quelle === "met" ? `MET Norway · ${s.wetter.abruf || ""}${s.wetter.fehler ? " · " + s.wetter.fehler : ""}` : T.wetterQuelleArt.ha)],
+      [T.zeitKarte, s.zeit_quelle && s.zeit_quelle.abweichung_s != null ? `${s.zeit_quelle.abweichung_s > 0 ? "+" : ""}${s.zeit_quelle.abweichung_s} s` : "–",
+        esc((s.zeit_quelle || {}).korrektur === false && (s.zeit_quelle || {}).host_synchronisiert ? T.hostSync
+            : (s.zeit_quelle || {}).korrektur ? T.hostNichtSync : "") + "<br>" +
+        esc(`${(s.zeit_quelle || {}).server || ""} · ${(s.zeit_quelle || {}).zeitzone || ""}`) +
+        (Math.abs((s.zeit_quelle || {}).abweichung_s || 0) > 2 ? `<br><span class="warn">${esc(T.zeitWarnung)}</span>` : "")],
       [T.ha, s.ha.ok ? `<span class="gut">${esc(T.verbunden)}</span>` : `<span class="schlecht">${esc(T.getrennt)}</span>`, esc(s.ha.fehler || s.ha.url)],
       [T.rotation, String(s.anzahl_in_rotation), `${esc(T.liste)} ${esc(T.zuletzt)} ${esc(s.liste.zeit || "–")}` +
         (s.liste.pause_bis > Date.now() / 1000 ? ` · <span class="warn">${esc(T.pause)} ${uhrzeit(s.liste.pause_bis)}</span>` : "")],
@@ -305,7 +326,7 @@ async function uebersicht(inhalt) {
     ];
     const hinweis = $("#updateHinweis");
     if (hinweis) hinweis.innerHTML = s.neue_version ? `<div class="karte warn"><b>${esc(T.neueVersion(s.neue_version))}</b>
-      <pre>curl -fsSL https://raw.githubusercontent.com/tschmidt82/signagecast/main/install.sh | sh</pre>
+      <pre>curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh</pre>
       <p class="leise">${esc(T.updateText)} <a href="${esc(s.projekt)}/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></p></div>` : "";
     $("#kacheln").innerHTML = k.map(([t, w2, u]) => `<div class="karte"><div class="leise">${esc(t)}</div><div class="wert">${w2}</div><div class="leise">${u}</div></div>`).join("");
     $("#aufgaben").innerHTML = s.aufgaben.map((a) => `<div class="zeile"><b>${esc(T.aufgabe[a.name] || a.name)}</b>
@@ -439,13 +460,17 @@ async function anzeige(inhalt) {
   inhalt.innerHTML = `<datalist id="ents">${ents.filter((x) => x.id.startsWith("weather.")).map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</datalist>
     <div class="karte">
       <div class="zeile"><label>${esc(T.sprache)}</label><select id="sprache"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-      <div class="zeile"><label>${esc(T.wetter)}</label><input type="text" id="wetter" list="ents" value="${esc(E.anzeige.wetter)}"></div>
-      <p class="leise">${esc(T.wetterText)}</p>
-      ${ents.length ? "" : `<p class="warn">${esc(T.entitaetenFehlen)}</p>`}</div>
+      <div class="zeile"><label>${esc(T.wetterQuelle)}</label><select id="quelle" class="breit">${Object.keys(T.wetterQuelleArt).map((k) =>
+        `<option value="${k}" ${k === E.anzeige.wetter_quelle ? "selected" : ""}>${esc(T.wetterQuelleArt[k])}</option>`).join("")}</select></div>
+      <p class="leise" id="metText">${esc(T.metText)}</p>
+      <div class="zeile" id="haZeile"><label>${esc(T.wetter)}</label><input type="text" id="wetter" list="ents" value="${esc(E.anzeige.wetter)}"></div>
+      <p class="leise">${esc(T.wetterText)}</p></div>
     <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
-  $("#sprache").value = E.sprache;
+  $("#sprache").value = E.sprache || "de";
+  const sicht = () => { const ha = $("#quelle").value === "ha"; $("#haZeile").style.display = ha ? "" : "none"; $("#metText").style.display = ha ? "none" : ""; };
+  $("#quelle").onchange = sicht; sicht();
   $("#ok").onclick = async (e) => {
-    await speichernE({ sprache: $("#sprache").value, anzeige: { wetter: $("#wetter").value } }, e.target);
+    await speichernE({ sprache: $("#sprache").value, anzeige: { wetter_quelle: $("#quelle").value, wetter: $("#wetter").value } }, e.target);
     T = TEXTE[E.sprache] || TEXTE.de; reiterZeichnen(); hinweiseZeichnen();
   };
 }
@@ -530,6 +555,10 @@ async function verbindung(inhalt) {
       <div class="zeile"><input type="number" step="0.0001" id="breite" value="${E.standort.breite}" aria-label="${esc(T.breite)}">
         <input type="number" step="0.0001" id="laenge" value="${E.standort.laenge}" aria-label="${esc(T.laenge)}">
         <button class="knopf" id="ausHA">${esc(T.standortAusHA)}</button><button class="knopf haupt" id="okOrt">${esc(T.speichern)}</button></div></div>
+    <div class="karte"><h2>${esc(T.zeitTitel)}</h2><p class="leise">${esc(T.zeitText)}</p>
+      <div class="zeile"><label>${esc(T.ntpServer)}</label><input type="text" id="ntp" value="${esc(E.zeit.ntp)}" placeholder="${esc(T.ntpAuto)}"></div>
+      <div class="zeile"><label>${esc(T.zeitzone)}</label><select id="zone" class="breit"><option value="">${esc(T.systemZone)}</option></select></div>
+      <div class="zeile"><button class="knopf haupt" id="okZeit">${esc(T.speichern)}</button><span class="leise" id="zeitStand"></span></div></div>
     <div class="karte"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
       <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>`;
   const test = async () => {
@@ -543,6 +572,20 @@ async function verbindung(inhalt) {
     const r = await test(); if (!r.ok) throw new Error(r.fehler);
     $("#breite").value = r.breite; $("#laenge").value = r.laenge;
   }, null);
+  holen("/api/zeitzonen").then((z) => {
+    $("#zone").options[0].textContent = `${T.systemZone} (${z.system})`;
+    for (const n of z.zeitzonen) $("#zone").add(new Option(n, n, false, n === E.zeit.zeitzone));
+  }).catch(() => {});
+  const zeitStand = async () => {
+    const s = await holen("/api/status"), z = s.zeit_quelle || {};
+    $("#zeitStand").textContent = (z.host_synchronisiert && !z.korrektur ? T.hostSync + " · " : z.korrektur ? T.hostNichtSync + " · " : "") +
+      (z.server ? `${z.server}: ${T.abweichung} ${z.abweichung_s ?? "?"} s · ${z.gemessen || ""}${z.fehler ? " · " + z.fehler : ""}` : "");
+  };
+  zeitStand();
+  $("#okZeit").onclick = (e) => aktion(e.target, async () => {
+    const d = await senden("/api/einstellungen", { zeit: { ntp: $("#ntp").value.trim(), zeitzone: $("#zone").value } });
+    E = d.einstellungen; setTimeout(() => zeitStand().catch(() => {}), 5000);
+  });
   $("#okOrt").onclick = (e) => speichernE({ standort: { breite: Number($("#breite").value), laenge: Number($("#laenge").value), name: $("#ortText").value } }, e.target);
   const ortSuchen = (e) => aktion(e.target, async () => {
     const r = await holen("/api/ort/suche?q=" + encodeURIComponent($("#ortText").value));

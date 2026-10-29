@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.7.0 (2026-10-29)
+- Own weather from **MET Norway** (api.met.no, free, worldwide, no key) – Home Assistant is no longer needed for weather
+  and forecast. Default for new installations; updates switch to it automatically if Home Assistant is not reachable.
+  Choice under Display → weather source. The TV shows the required credit “Weather data: MET Norway”.
+- **Time source**: SignageCast checks the clock against an NTP server (default: the country pool for the location, e.g.
+  `de.pool.ntp.org`). If the host (e.g. Proxmox) keeps its clock synchronised, nothing is changed; otherwise clock,
+  rotation and clips are corrected. Time zone selectable; a container running in UTC uses the time zone of the
+  location's country. `proxmox/ct.sh` now creates the container with the host's time zone.
+- Project moved to github.com/thefrozn/signagecast (GitHub account renamed; old links redirect).
+
 ## v0.6.0 – first public release (2026-10-28)
 - One-line installation: Proxmox host (`proxmox/ct.sh`) or existing Debian 13 (`install.sh`), releases with SHA-256 checksums.
 - Admin language follows the browser on a new installation (German/English).
