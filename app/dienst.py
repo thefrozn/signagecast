@@ -52,7 +52,7 @@ def einst_aussen():
     return dict(e, quellen=Q.maskieren(e["quellen"]))
 
 
-qn = Q.Quellen(lambda: einst())
+qn = Q.Quellen(lambda: einst(), os.path.join(DATEN, "verlauf.json"))
 
 
 ha = HA(lambda: einst()["ha"]["url"])
@@ -243,6 +243,32 @@ def kalender_schleife():
         time.sleep(600)
 
 
+def verlauf_ha_schleife():
+    """Verlauf der HA-Entitäten in Diagramm-Bausteinen alle 5 min aus der HA-Historie holen (nur Zahlen)."""
+    while True:
+        ents = {}
+        for l in einst()["layouts"]:
+            for el in l["elemente"]:
+                if el["typ"] == "diagramm" and el["optionen"].get("entity"):
+                    ents[el["optionen"]["entity"]] = max(ents.get(el["optionen"]["entity"], 0), el["optionen"]["stunden"])
+        neu = {}
+        for ent, std in ents.items():
+            start = (datetime.datetime.now().astimezone() - datetime.timedelta(hours=std)).isoformat()
+            try:
+                roh = ha.get(f"/api/history/period/{urllib.parse.quote(start)}?" +
+                             urllib.parse.urlencode({"filter_entity_id": ent, "minimal_response": "", "no_attributes": ""}))
+                pkt = []
+                for x in (roh[0] if roh else []):
+                    z = Q.als_zahl(x.get("state"))
+                    if z is not None and x.get("last_changed"):
+                        pkt.append([int(datetime.datetime.fromisoformat(x["last_changed"]).timestamp()), z])
+                neu[ent] = pkt
+            except Exception:
+                neu[ent] = (zustand.get("verlauf_ha") or {}).get(ent, [])
+        zustand["verlauf_ha"] = neu
+        time.sleep(300)
+
+
 def fernseher(tv_id=None):
     """Einstellungen eines Fernsehers (ohne Kennung: der erste)."""
     liste = einst()["fernseher"]
@@ -275,7 +301,7 @@ def tv_daten(tv_id):
     if e["anzeige"]["wetter_quelle"] == "met" and met.daten:
         teil["wetter"] = met.aktuell()
         teil["vorhersage"] = met.vorhersage(5)
-    api, bed = Q.baustein_werte(layout, qn, e["sprache"] or "en", e["quellen"])
+    api, bed = Q.baustein_werte(layout, qn, e["sprache"] or "en", e["quellen"], zustand.get("verlauf_ha"))
     if bed:
         teil["werte"] = dict(teil.get("werte") or {}, **bed)
     zt = zustand.get("zeit") or {}
@@ -561,6 +587,12 @@ def render_schreiben(e):
                             f"KODIERUNG={'software' if software else 'vaapi'}\n")
         pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
                   f"    runOnDemandStartTimeout: 40s\n    runOnDemandCloseAfter: {e['stream']['abschalten_s']}s\n")
+    # Kameras (Datenquellen der Art „video“, RTSP/HLS): MediaMTX holt sie nur, solange jemand schaut; lesen darf sie
+    # nur der Container selbst (siehe authInternalUsers in render/mediamtx.yml)
+    for q in e.get("quellen", []):
+        if q["art"] == "video" and q["aktiv"] and Q.video_format(q) in ("rtsp", "hls"):
+            pfade += (f"  cam_{q['id']}:\n    source: {json.dumps(q['url'])}\n    sourceOnDemand: yes\n"
+                      f"    sourceOnDemandStartTimeout: 15s\n    sourceOnDemandCloseAfter: 20s\n")
     try:
         if os.path.exists(MEDIAMTX_YML):
             schreib_wenn_anders(MEDIAMTX_YML, open(MEDIAMTX_VORLAGE).read().replace("{PFADE}", pfade.rstrip("\n")))
@@ -621,6 +653,92 @@ def einspielen(d, mit_strikes=True):
     neu_liste.set()
 
 
+def mjpeg_anfrage(q):
+    """Adresse und Kopfzeilen für eine MJPEG-Kamera; Benutzer:Passwort in der Adresse -> Basic-Anmeldung."""
+    kopf = {"User-Agent": Q.UA}
+    kopf.update({k["name"]: k["wert"] for k in q["kopf"]})
+    url, pw = Q._url_passwort(q["url"], "")
+    if pw is not None:
+        t = urllib.parse.urlsplit(q["url"])
+        kopf["Authorization"] = "Basic " + base64.b64encode(f"{urllib.parse.unquote(t.username or '')}:{urllib.parse.unquote(pw)}".encode()).decode()
+        url = urllib.parse.urlunsplit(t._replace(netloc=t.hostname + (f":{t.port}" if t.port else "")))
+    return url, kopf
+
+
+def mjpeg_weiterleiten(h, qid):
+    q = next((x for x in einst()["quellen"] if x["id"] == qid and x["art"] == "video" and x["aktiv"]), None)
+    if not q or Q.video_format(q) != "mjpeg":
+        return h.antwort(404, {"ok": False})
+    url, kopf = mjpeg_anfrage(q)
+    try:
+        r = urllib.request.urlopen(urllib.request.Request(url, headers=kopf), timeout=10)
+    except Exception:
+        return h.antwort(502, {"ok": False})
+    with r:
+        h.send_response(200)
+        h.send_header("Content-Type", r.headers.get("Content-Type", "multipart/x-mixed-replace"))
+        h.send_header("Cache-Control", "no-store")
+        h.end_headers()
+        try:
+            while True:
+                teil = r.read1(65536) if hasattr(r, "read1") else r.read(65536)
+                if not teil:
+                    break
+                h.wfile.write(teil)
+        except (OSError, ValueError):
+            pass
+
+
+def video_pruefen(q):
+    """Kamera testen: RTSP/HLS mit ffprobe (Codec, Größe), MJPEG mit einem ersten Abruf."""
+    f = Q.video_format(q)
+    if f == "mjpeg":                              # endloser Stream: nur den Anfang lesen
+        url, kopf = mjpeg_anfrage(q)
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=kopf), timeout=10) as r:
+                art, anfang = r.headers.get("Content-Type", ""), r.read(65536)
+        except urllib.error.HTTPError as ex:
+            raise Q.Fehler(f"Kamera: HTTP {ex.code} {ex.reason}")
+        except Exception as ex:
+            raise Q.Fehler(f"Kamera nicht erreichbar: {ex}")
+        if not (art.startswith("multipart/") or art.startswith("image/") or b"\xff\xd8\xff" in anfang):
+            raise Q.Fehler(f"kein MJPEG (Content-Type {art or 'fehlt'})")
+        return {"format": f, "content_type": art, "erste_bytes": len(anfang)}
+    arg = ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height", "-of", "json"]
+    if f == "rtsp":
+        arg += ["-rtsp_transport", "tcp"]
+    try:
+        r = subprocess.run(arg + ["-i", q["url"]], capture_output=True, text=True, timeout=25)
+    except subprocess.TimeoutExpired:
+        raise Q.Fehler("Kamera antwortet nicht (25 s)")
+    if r.returncode:
+        raise Q.Fehler("Kamera: " + (r.stderr.strip().splitlines() or ["nicht erreichbar"])[-1].replace(q["url"], "…")[:200])
+    streams_ = json.loads(r.stdout or "{}").get("streams", [])
+    d = {"format": f, "streams": streams_}
+    if any(x.get("codec_name") in ("hevc", "h265") for x in streams_):
+        d["hinweis"] = "H.265: kann Chromium im Container nicht dekodieren – an der Kamera H.264 einstellen"
+    return d
+
+
+def einbettbar(url):
+    """Erlaubt die Seite das Einbetten (X-Frame-Options / CSP frame-ancestors)? Es wird nichts umgangen."""
+    try:
+        anf = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 SignageCast"})
+        with urllib.request.urlopen(anf, timeout=10) as r:
+            xfo = (r.headers.get("X-Frame-Options") or "").lower()
+            csp = (r.headers.get("Content-Security-Policy") or "").lower()
+    except urllib.error.HTTPError as ex:
+        return {"einbettbar": None, "grund": f"HTTP {ex.code}"}
+    except Exception as ex:
+        return {"einbettbar": None, "grund": str(ex)[:200]}
+    m = re.search(r"frame-ancestors([^;]*)", csp)
+    if m and "*" not in m.group(1):
+        return {"einbettbar": False, "grund": "Content-Security-Policy frame-ancestors" + m.group(1)[:120]}
+    if xfo in ("deny", "sameorigin"):
+        return {"einbettbar": False, "grund": f"X-Frame-Options: {xfo.upper()}"}
+    return {"einbettbar": True, "grund": ""}
+
+
 # ---------- HTTP ----------
 class Bearbeiter(SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
@@ -664,6 +782,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/radio/([a-z][a-z0-9]{0,11})/([a-z0-9]{4,12})", p.path)
         if m:                                     # Radio mit Puffer (für die TV-Seite)
             return radio_weiterleiten(self, m.group(1), m.group(2))
+        m = re.fullmatch(r"/qvideo/([a-z0-9_]{2,16})", p.path)
+        if m:                                     # MJPEG-Kamera durchreichen (Zugangsdaten bleiben im Container)
+            return mjpeg_weiterleiten(self, m.group(1))
         m = re.fullmatch(r"/qbild/([a-z0-9_]{2,16})", p.path)
         if m:                                     # Bild aus einer Datenquelle (für die TV-Seite)
             q = next((x for x in einst()["quellen"] if x["id"] == m.group(1)), None)
@@ -792,6 +913,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 roh = [d.get("quelle") or {}]
                 Q.demaskieren(roh, einst()["quellen"])
                 q = Q.pruefen(roh)[0]
+                if q["art"] == "video":
+                    t0 = time.time()
+                    v = video_pruefen(q)
+                    return {"dauer_ms": round((time.time() - t0) * 1000), "daten": v}
                 daten, ms = qn.abrufen(q)
             except Q.Fehler as ex:
                 raise E.Fehler(str(ex))
@@ -799,6 +924,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 return {"ok": True, "dauer_ms": ms, "daten": {"bild": f"{daten['typ']}, {daten['groesse'] // 1024} KB"},
                         "bild": f"data:{daten['typ']};base64,{base64.b64encode(daten['bild']).decode()}" if daten["groesse"] < 1_500_000 else None}
             return {"ok": True, "dauer_ms": ms, "daten": Q.gekuerzt(daten)}
+        if p == "/api/webseite/pruefen":
+            return einbettbar(str(d.get("url", "")))
         if p == "/api/quellen/jetzt":
             s = qn.stand.get(str(d.get("id", "")))
             if s:
@@ -937,7 +1064,7 @@ def main():
         import verwaltung
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
-                 wetter_schleife, zeit_schleife, qn.schleife):
+                 wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

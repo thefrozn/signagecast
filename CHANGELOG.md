@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.10.0 (2026-10-29)
+- **Cameras**: new data source type “camera” (RTSP, HLS or MJPEG). RTSP/HLS are pulled by the built-in MediaMTX only
+  while shown and played with hls.js; MJPEG is passed through by the data service. Credentials in the address are masked
+  in the admin and left out of backups. Camera paths can only be read inside the container. Test shows codec and size.
+- **History / chart** element: Home Assistant history of an entity, or values of a data source recorded by SignageCast
+  (up to 7 days).
+- **iCal calendars**: new data source type with recurring events (daily/weekly/monthly/yearly, exceptions, moved
+  events, time zones); the calendar element can use it instead of a Home Assistant entity.
+- **Web page** element: embedded page with zoom, crop and reload interval; “Check” shows whether the site allows embedding.
+- Data source tab: format choice for cameras, example “public holidays (iCal)”; elements only offer matching sources.
+
 ## v0.9.0 (2026-10-29)
 - **Data sources** (new tab): your own JSON APIs, RSS/Atom feeds and pictures, fetched by the container at an interval
   you choose (30 s – 24 h, longer waits after errors). Import from a `curl` command, test with a clickable response tree,

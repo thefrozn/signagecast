@@ -42,6 +42,7 @@ const meldungen = {};                         // entity -> {wert, seit}
 // ---------- Fläche aus dem Layout bauen ----------
 function bauen(layout) {
   const f = $("flaeche");
+  for (const b of bausteine) if (b.stopp) b.stopp();          // Kameras/Webseiten sauber beenden
   f.querySelectorAll(".baustein").forEach((b) => b.remove());
   if (player) { player.stoppen(); player = null; }
   bausteine = [];
@@ -84,6 +85,8 @@ function bauen(layout) {
       ? `<span class="lampe"></span><div><div class="name">${esc(e.optionen.name)}</div><div class="wert"></div></div>`
       : `<div class="kopf"><span class="name">${esc(e.optionen.name)}</span><span class="wert"></span></div><div class="spur"><div class="fuellung"></div></div>`;
     if (e.typ === "qrcode") d.innerHTML = `<div class="qr"></div>${e.optionen.beschriftung ? `<div class="beschriftung">${esc(e.optionen.beschriftung)}</div>` : ""}`;
+    if (e.typ === "diagramm") d.innerHTML = `<div class="kopf"><span class="name">${esc(e.optionen.name)}</span><span class="wert"></span></div><div class="kurve"></div>`;
+    if (e.typ === "webcam") d.classList.add(e.optionen.anpassung === "einpassen" ? "einpassen" : "fuellen");
     if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
@@ -232,7 +235,8 @@ function fuellen() {
         d.textContent = daten.radio && daten.radio.anzeigen ? `♪ ${daten.radio.name}` : "";
         sichtbar = sichtbar && !!d.textContent; break;
       case "kalender": {
-        const termine = ((daten.kalender || {})[o.entity] || []).slice(0, o.anzahl);
+        const aus_ical = o.quelle ? ((daten.api || {})[e.id] || {}).termine : null;
+        const termine = (aus_ical || (daten.kalender || {})[o.entity] || []).slice(0, o.anzahl);
         const zeilen = termine.length + (o.titel ? 1 : 0) || 1;
         d.style.fontSize = Math.min(d.clientHeight / zeilen * 0.5, 34) + "px";
         const heute = new Date(); heute.setHours(0, 0, 0, 0);
@@ -335,6 +339,24 @@ function fuellen() {
         sichtbar = sichtbar && !!inhalt;
         break;
       }
+      case "webcam": {
+        const a = (daten.api || {})[e.id];
+        sichtbar = sichtbar && !!a;
+        if (sichtbar) kameraStarten(b, a); else kameraStoppen(b);
+        break;
+      }
+      case "diagramm": {
+        const a = (daten.api || {})[e.id] || { punkte: [] };
+        d.querySelector(".wert").textContent = a.text || "";
+        d.style.fontSize = Math.min(d.clientHeight * 0.12, 36) + "px";
+        diagrammZeichnen(d.querySelector(".kurve"), a.punkte);
+        break;
+      }
+      case "webseite": {
+        sichtbar = sichtbar && !!o.url;
+        if (sichtbar) webseite(b); else if (b.stopp) { b.stopp(); }
+        break;
+      }
       case "meldung": {
         const s = wert(o.entity);
         const m = meldungen[o.entity];
@@ -354,6 +376,86 @@ function fuellen() {
     else if (sichtbar && FAKTOR[e.typ] && e.typ !== "uhr" && e.typ !== "datum") einpassen(d, FAKTOR[e.typ]);
   }
   uhr();
+}
+
+// ---------- Kamera: HLS (über MediaMTX im Container, mit hls.js) oder MJPEG (über den Datendienst) ----------
+let hlsLaden = null;
+function hlsBereit() {
+  if (window.Hls) return Promise.resolve();
+  if (!hlsLaden) hlsLaden = new Promise((ok, fehler) => {            // nur laden, wenn eine Kamera im Layout ist
+    const sc = document.createElement("script"); sc.src = "hls/hls.light.min.js"; sc.onload = ok; sc.onerror = fehler;
+    document.head.appendChild(sc);
+  });
+  return hlsLaden;
+}
+function kameraStoppen(b) {
+  if (b.hls) { b.hls.destroy(); b.hls = null; }
+  if (b.medien) { b.medien.remove(); b.medien = null; }
+  clearTimeout(b.neuVersuch); b.kamUrl = "";
+}
+function kameraStarten(b, a) {
+  if (b.kamUrl === a.url) return;
+  kameraStoppen(b);
+  b.kamUrl = a.url;
+  b.stopp = () => kameraStoppen(b);
+  const neu = () => { b.neuVersuch = setTimeout(() => { const u = b.kamUrl; kameraStoppen(b); if (u) kameraStarten(b, a); }, 10000); };
+  if (a.art === "mjpeg") {
+    const img = document.createElement("img");
+    img.onerror = neu;
+    img.src = a.url + "?t=" + Date.now();
+    b.d.appendChild(img); b.medien = img;
+    return;
+  }
+  const v = document.createElement("video");
+  v.muted = !b.e.optionen.ton; v.autoplay = true; v.playsInline = true;
+  b.d.appendChild(v); b.medien = v;
+  hlsBereit().then(() => {
+    if (b.medien !== v) return;
+    const h = new Hls({ lowLatencyMode: false, liveSyncDurationCount: 2, manifestLoadingMaxRetry: 4, levelLoadingMaxRetry: 4 });
+    b.hls = h;
+    h.on(Hls.Events.ERROR, (_, x) => { if (x.fatal) neu(); });
+    h.loadSource(a.url); h.attachMedia(v);
+    v.play().catch(() => {});
+  }).catch(neu);
+}
+
+// ---------- Diagramm: Verlauf als Linie mit Fläche, kleinster/größter Wert am Rand ----------
+function diagrammZeichnen(z, punkte) {
+  const w = z.clientWidth, h = z.clientHeight;
+  if (!w || !h) return;
+  if (!punkte || punkte.length < 2) { z.innerHTML = ""; return; }
+  const ts = punkte.map((p) => p[0]), vs = punkte.map((p) => p[1]);
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  if (hi === lo) { hi += 1; lo -= 1; }
+  const t0 = ts[0], t1 = ts[ts.length - 1] || t0 + 1, rand = 4, beschr = 40;
+  const x = (t) => beschr + (t - t0) / Math.max(1, t1 - t0) * (w - beschr - rand);
+  const y = (v) => rand + (1 - (v - lo) / (hi - lo)) * (h - 2 * rand);
+  const linie = punkte.map((p) => `${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const f = "var(--akzent)";
+  const zahl1 = (n) => zahl(n, Math.abs(hi - lo) < 10 ? 1 : 0);
+  z.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polygon points="${beschr},${h - rand} ${linie} ${x(t1).toFixed(1)},${h - rand}" fill="${f}" opacity=".18"/>
+    <polyline points="${linie}" fill="none" stroke="${f}" stroke-width="3" stroke-linejoin="round"/>
+    <text x="0" y="${rand + 14}" class="achse">${zahl1(hi)}</text><text x="0" y="${h - rand}" class="achse">${zahl1(lo)}</text></svg>`;
+}
+
+// ---------- Webseite: eingebettet (nur wenn die Seite es erlaubt), mit Zoom, Ausschnitt und Neuladen ----------
+function webseite(b) {
+  const o = b.e.optionen, d = b.d;
+  const skala = (o.zoom || 100) / 100;
+  if (!b.rahmen || b.rahmenUrl !== o.url) {
+    if (b.rahmen) b.rahmen.remove();
+    const f = document.createElement("iframe");
+    f.setAttribute("sandbox", "allow-scripts allow-same-origin");   // keine Pop-ups, keine Formulare, kein Wegnavigieren
+    f.setAttribute("referrerpolicy", "no-referrer");
+    f.setAttribute("scrolling", "no");                                  // keine Bildlaufleisten am Fernseher
+    f.src = o.url; b.rahmen = f; b.rahmenUrl = o.url; b.geladen = Date.now();
+    d.appendChild(f);
+    b.stopp = () => { if (b.rahmen) { b.rahmen.remove(); b.rahmen = null; b.rahmenUrl = ""; } };
+  }
+  Object.assign(b.rahmen.style, { left: -o.versatz_x * skala + "px", top: -o.versatz_y * skala + "px",
+    width: d.clientWidth / skala + o.versatz_x + "px", height: d.clientHeight / skala + o.versatz_y + "px", transform: `scale(${skala})` });
+  if (o.neu_laden_min > 0 && Date.now() - b.geladen > o.neu_laden_min * 60000) { b.geladen = Date.now(); b.rahmen.src = o.url; }
 }
 
 // Countdown: Rest bis zum Ziel in Tagen/Stunden/Minuten/Sekunden nach der Vorlage, danach der Ende-Text

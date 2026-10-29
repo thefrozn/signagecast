@@ -19,5 +19,23 @@ hlsSegmentCount: 7
 hlsSegmentDuration: 2s
 hlsAllowOrigins: ['*']
 
+# Wer darf was: alles nur vom Container selbst (ffmpeg veröffentlicht, Chromium liest Kameras cam_*);
+# von außen nur die Fernseher-Pfade lesen – Kameras (cam_<id>) bleiben im Container
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass:
+    ips: ['127.0.0.1', '::1']
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: read
+        path: ~^[a-z][a-z0-9]{0,11}$
+
 paths:
 {PFADE}

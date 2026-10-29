@@ -34,7 +34,8 @@ const LTEXTE = {
     typ: { uhr: "Uhr", datum: "Datum", temperatur: "Temperatur", wetterlage: "Wetterlage", feuchte: "Luftfeuchte", wind: "Wind",
            vorhersage: "Vorhersage", raeume: "Räume", kachel: "Kachel (HA-Wert)", video: "Live-Video", sender: "Radio-Sender",
            text: "Freier Text", logo: "Logo / Bild", kamera: "Kamera (HA)", kalender: "Kalender / Müllabfuhr", meldung: "Meldung von HA", flaeche: "Fläche (Farbe)",
-           apiwert: "API-Wert", apiliste: "API-Liste / Feed", apibild: "API-Bild", anzeige: "Anzeige (Balken/Ampel)", countdown: "Countdown", qrcode: "QR-Code" },
+           apiwert: "API-Wert", apiliste: "API-Liste / Feed", apibild: "API-Bild", anzeige: "Anzeige (Balken/Ampel)", countdown: "Countdown", qrcode: "QR-Code",
+           webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite" },
     opt: { sekunden: "mit Sekunden", wochentag: "mit Wochentag", jahr: "mit Jahr", entity: "Entität (aus HA)", tage: "Tage",
            liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", text: "Text",
            bild: "Bild hochladen (PNG mit durchsichtigem Hintergrund oder JPG)", laufband: "als Laufband (läuft durch)",
@@ -42,19 +43,25 @@ const LTEXTE = {
            quelle: "Datenquelle", pfad: "Pfad in der Antwort", vorlage: "Vorlage (leer = nur der Wert)", einheit: "Einheit", nachkomma: "Nachkommastellen (-1 = wie geliefert)",
            faktor: "Faktor (z. B. 0,01 für cm → m)", zeile: "Zeile (Platzhalter je Eintrag)", anpassung: "Bild", darstellung: "Darstellung", min: "Minimum", max: "Maximum",
            gelb: "gelb ab", rot: "rot ab", umkehren: "umgekehrt (niedrige Werte schlecht)", ziel: "Ziel (Datum/Uhrzeit)", ende: "Text nach Ablauf",
-           inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung" },
+           inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung",
+           ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie)", zoom: "Zoom (%)",
+           versatz_x: "Ausschnitt: von links (px)", versatz_y: "Ausschnitt: von oben (px)" },
     optHilfe: { temperatur: "leer = Wetter aus „Anzeige“; oder ein Temperatur-Sensor", kamera: "z. B. Türklingel – mit Bedingung nur bei Klingeln zeigen",
                 meldung: "Text-Entität in HA (z. B. input_text.tv_meldung). Ändert sich der Text, erscheint er als Banner.",
-                kalender: "Kalender-Entität, z. B. Müllabfuhr (Waste Collection Schedule) oder Familienkalender",
+                kalender: "Kalender-Entität, z. B. Müllabfuhr (Waste Collection Schedule) oder Familienkalender – oder eine iCal-Datenquelle (dann ohne HA)",
                 apiwert: "Wert aus einer Datenquelle (Reiter „Datenquellen“). Vorlage mit Platzhaltern, z. B. „{value} cm“ oder „{a.b} · {c}“; {quelle:pfad} holt Werte aus anderen Quellen.",
                 apiliste: "Liste aus einer Datenquelle, z. B. RSS (Pfad „eintraege“, Zeile „{titel}“) oder eine JSON-Liste. In der Zeile beziehen sich Platzhalter auf den Eintrag, {.} = der Eintrag selbst.",
                 apibild: "Bild-Quelle oder eine JSON-Quelle mit Pfad zu einer Bild-Adresse.",
                 anzeige: "Zahl aus einer Datenquelle als Balken (Minimum–Maximum) oder Ampel (grün, gelb ab, rot ab).",
                 countdown: "Ziel fest eintragen oder aus einer Datenquelle. Platzhalter: {tage}, {stunden}, {minuten}, {sekunden}.",
                 qrcode: "Wird auf dem Fernseher erzeugt. WLAN: WIFI:T:WPA;S:Name;P:Passwort;; – Platzhalter {quelle:pfad} möglich.",
-                text: "Platzhalter wie {quelle:pfad} werden durch Werte aus Datenquellen ersetzt." },
+                text: "Platzhalter wie {quelle:pfad} werden durch Werte aus Datenquellen ersetzt.",
+                webcam: "Kamera aus „Datenquellen“ (Art Kamera). Läuft nur, solange der Baustein sichtbar ist – z. B. mit Bedingung nur beim Klingeln.",
+                diagramm: "Entweder eine HA-Entität (Verlauf aus der HA-Historie) oder Datenquelle + Pfad – deren Werte merkt sich SignageCast ab jetzt (bis 7 Tage).",
+                webseite: "Nur Seiten, die das Einbetten erlauben („Prüfen“). Zoom und Ausschnitt wählen den sichtbaren Teil." },
     wahl: { balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)" },
     keineQuelle: "– Datenquelle wählen –", waehlen: "wählen …", bedQuelle: "Wert aus", bedHA: "Home Assistant", bedPfad: "Pfad",
+    pruefen: "Prüfen", einbettbarJa: "Seite erlaubt das Einbetten", einbettbarNein: "Seite verbietet das Einbetten", einbettbarUnklar: "nicht prüfbar",
     raumNeu: "Raum hinzufügen", op: { "=": "ist gleich", "!=": "ist nicht", ">": "größer als", "<": "kleiner als", an: "ist an/offen", aus: "ist aus/zu" },
   },
   en: {
@@ -87,7 +94,8 @@ const LTEXTE = {
     typ: { uhr: "Clock", datum: "Date", temperatur: "Temperature", wetterlage: "Weather", feuchte: "Humidity", wind: "Wind",
            vorhersage: "Forecast", raeume: "Rooms", kachel: "Tile (HA value)", video: "Live video", sender: "Radio station",
            text: "Free text", logo: "Logo / picture", kamera: "Camera (HA)", kalender: "Calendar / waste collection", meldung: "Message from HA", flaeche: "Area (colour)",
-           apiwert: "API value", apiliste: "API list / feed", apibild: "API picture", anzeige: "Gauge (bar/traffic light)", countdown: "Countdown", qrcode: "QR code" },
+           apiwert: "API value", apiliste: "API list / feed", apibild: "API picture", anzeige: "Gauge (bar/traffic light)", countdown: "Countdown", qrcode: "QR code",
+           webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page" },
     opt: { sekunden: "with seconds", wochentag: "with weekday", jahr: "with year", entity: "Entity (from HA)", tage: "Days",
            liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", text: "Text",
            bild: "Upload picture (PNG with transparent background or JPG)", laufband: "as ticker (scrolling)",
@@ -95,26 +103,35 @@ const LTEXTE = {
            quelle: "Data source", pfad: "Path in the response", vorlage: "Template (empty = value only)", einheit: "Unit", nachkomma: "Decimals (-1 = as delivered)",
            faktor: "Factor (e.g. 0.01 for cm → m)", zeile: "Row (placeholders per entry)", anpassung: "Picture", darstellung: "Display", min: "Minimum", max: "Maximum",
            gelb: "yellow from", rot: "red from", umkehren: "reversed (low values are bad)", ziel: "Target (date/time)", ende: "Text when reached",
-           inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption" },
+           inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption",
+           ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never)", zoom: "Zoom (%)",
+           versatz_x: "Crop: from left (px)", versatz_y: "Crop: from top (px)" },
     optHilfe: { temperatur: "empty = weather from “Display”; or a temperature sensor", kamera: "e.g. doorbell – with a condition only when it rings",
                 meldung: "Text entity in HA (e.g. input_text.tv_message). When the text changes it appears as a banner.",
-                kalender: "Calendar entity, e.g. waste collection or family calendar",
+                kalender: "Calendar entity, e.g. waste collection or family calendar – or an iCal data source (then without HA)",
                 apiwert: "Value from a data source (tab “Data sources”). Template with placeholders, e.g. “{value} cm” or “{a.b} · {c}”; {source:path} takes values from other sources.",
                 apiliste: "List from a data source, e.g. RSS (path “eintraege”, row “{titel}”) or a JSON list. In the row placeholders refer to the entry, {.} = the entry itself.",
                 apibild: "Picture source, or a JSON source with a path to a picture address.",
                 anzeige: "Number from a data source as a bar (minimum–maximum) or traffic light (green, yellow from, red from).",
                 countdown: "Enter the target or take it from a data source. Placeholders: {tage} (days), {stunden} (hours), {minuten}, {sekunden}.",
                 qrcode: "Generated on the TV. Wi-Fi: WIFI:T:WPA;S:name;P:password;; – placeholders {source:path} possible.",
-                text: "Placeholders like {source:path} are replaced with values from data sources." },
+                text: "Placeholders like {source:path} are replaced with values from data sources.",
+                webcam: "Camera from “Data sources” (type camera). Only runs while the element is visible – e.g. with a condition only when the doorbell rings.",
+                diagramm: "Either an HA entity (history from HA) or data source + path – SignageCast records its values from now on (up to 7 days).",
+                webseite: "Only pages that allow embedding (“Check”). Zoom and crop choose the visible part." },
     wahl: { balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)" },
     keineQuelle: "– choose data source –", waehlen: "pick …", bedQuelle: "Value from", bedHA: "Home Assistant", bedPfad: "Path",
+    pruefen: "Check", einbettbarJa: "page allows embedding", einbettbarNein: "page forbids embedding", einbettbarUnklar: "could not check",
     raumNeu: "Add room", op: { "=": "equals", "!=": "is not", ">": "greater than", "<": "less than", an: "is on/open", aus: "is off/closed" },
   },
 };
 const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 2], wetterlage: [9, 1], feuchte: [9, 1], wind: [9, 1],
   vorhersage: [8, 5], raeume: [9, 5], kachel: [5, 5], video: [24, 14], sender: [9, 1], text: [12, 2], kamera: [12, 7],
   kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4], apiwert: [8, 3], apiliste: [14, 6], apibild: [10, 8], anzeige: [8, 3],
-  countdown: [10, 2], qrcode: [5, 6] };
+  countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12] };
+// welche Arten von Datenquellen ein Baustein anbietet
+const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical"], apibild: ["bild", "json"], apiliste: ["json", "rss", "ical", "text"],
+  diagramm: ["json", "text"], apiwert: ["json", "text", "rss", "ical"], anzeige: ["json", "text"], countdown: ["json", "text", "ical"] };
 const WAHL = { darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"] };
 const ENT_DOMAINS = { temperatur: ["weather", "sensor"], wetterlage: ["weather"], feuchte: ["weather", "sensor"], wind: ["weather", "sensor"],
   kamera: ["camera"], kalender: ["calendar"], meldung: ["input_text", "sensor", "text"] };
@@ -343,7 +360,10 @@ async function layoutSeite(inhalt) {
           <button class="knopf gefahr" name="rw">✕</button></div>`).join("")}</div><button class="knopf" id="raumPlus">${esc(L.raumNeu)}</button>`;
       if (typeof w === "boolean") return `<div class="zeile"><label>${lab}</label>${schalter("o_" + k, w)}</div>`;
       if (k === "quelle") return `<div class="zeile"><label>${lab}</label><select name="o_quelle"><option value="">${esc(L.keineQuelle)}</option>
-        ${(E.quellen || []).map((q) => `<option value="${esc(q.id)}" ${q.id === w ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>`;
+        ${(E.quellen || []).filter((q) => !QUELL_ARTEN[e.typ] || QUELL_ARTEN[e.typ].includes(q.art) || q.id === w)
+            .map((q) => `<option value="${esc(q.id)}" ${q.id === w ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>`;
+      if (k === "url") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_url" value="${esc(w ?? "")}" spellcheck="false" style="width:100%">
+        <button class="knopf" type="button" name="urlPruefen">${esc(L.pruefen)}</button><span class="leise" id="urlErg"></span></div>`;
       if (k === "pfad") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_pfad" value="${esc(w ?? "")}" spellcheck="false">
         <button class="knopf" type="button" name="pfadWahl">${esc(L.waehlen)}</button></div><div class="pfadBaum"></div>`;
       if (WAHL[k]) return `<div class="zeile"><label>${lab}</label><select name="o_${k}">${WAHL[k].map((x) => `<option value="${x}" ${x === w ? "selected" : ""}>${esc(L.wahl[x] || x)}</option>`).join("")}</select></div>`;
@@ -419,6 +439,12 @@ async function layoutSeite(inhalt) {
       if (handy()) listeZeichnen(); else leinwandZeichnen();
     });
     // Pfad aus der letzten Antwort der Datenquelle wählen (Baum)
+    const up = ziel.querySelector("[name=urlPruefen]");
+    if (up) up.onclick = (ev) => aktion(ev.target, async () => {
+      const r = await senden("/api/webseite/pruefen", { url: ziel.querySelector("[name=o_url]").value });
+      ziel.querySelector("#urlErg").innerHTML = r.einbettbar === true ? `<span class="gut">${esc(L.einbettbarJa)}</span>`
+        : r.einbettbar === false ? `<span class="schlecht">${esc(L.einbettbarNein)}: ${esc(r.grund)}</span>` : `${esc(L.einbettbarUnklar)}: ${esc(r.grund)}`;
+    }, null);
     const pw = ziel.querySelector("[name=pfadWahl]");
     if (pw) pw.onclick = (ev) => aktion(ev.target, () => pfadWaehlen(ziel.querySelector(".pfadBaum"), ziel.querySelector("[name=o_quelle]").value,
       (p) => { ziel.querySelector("[name=o_pfad]").value = p; aendern(); }), null);
@@ -466,7 +492,7 @@ function vorschauText(e, L) {
     case "text": return (o.laufband ? "⟵ " : "") + (o.text || L.typ.text);
     case "logo": return "🖼 " + (o.bild ? "Logo" : L.typ.logo);
     case "kamera": return "📷 " + (o.entity || L.typ.kamera);
-    case "kalender": return "📅 " + (o.titel || o.entity || L.typ.kalender);
+    case "kalender": return "📅 " + (o.titel || o.entity || o.quelle || L.typ.kalender);
     case "meldung": return "💬 " + (o.entity || L.typ.meldung);
     case "video": return "▶ " + L.typ.video;
     case "apiwert": return `${o.name ? o.name + ": " : ""}${o.vorlage || (o.pfad ? "{" + o.pfad + "}" : L.typ.apiwert)}${o.einheit ? " " + o.einheit : ""}`;
@@ -475,6 +501,9 @@ function vorschauText(e, L) {
     case "anzeige": return (o.darstellung === "ampel" ? "● " : "▬ ") + (o.name || o.pfad || L.typ.anzeige);
     case "countdown": return "⏳ " + (o.vorlage || L.typ.countdown);
     case "qrcode": return "▦ " + (o.beschriftung || L.typ.qrcode);
+    case "webcam": return "🎥 " + (o.quelle || L.typ.webcam);
+    case "diagramm": return "📈 " + (o.name || o.entity || o.pfad || L.typ.diagramm);
+    case "webseite": return "🌐 " + (o.url.replace(/^https?:\/\//, "").slice(0, 30) || L.typ.webseite);
     default: return L.typ[e.typ] || e.typ;
   }
 }

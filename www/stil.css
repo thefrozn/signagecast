@@ -125,3 +125,16 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-qrcode .qr { flex: 1; min-height: 0; width: 100%; display: flex; justify-content: center; align-items: center; }
 .typ-qrcode .qr svg { height: 100%; width: auto; max-width: 100%; background: #fff; border-radius: 6px; }
 .typ-qrcode .beschriftung { font-size: 22px; margin-top: 6px; }
+
+/* seit 0.10: Kamera, Diagramm, Webseite */
+.typ-webcam { padding: 0 !important; background: #000; }
+.typ-webcam video, .typ-webcam img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.typ-webcam.einpassen video, .typ-webcam.einpassen img { object-fit: contain; }
+.typ-diagramm { justify-content: flex-start; padding-top: 8px; padding-bottom: 8px; }
+.typ-diagramm .kopf { display: flex; justify-content: space-between; width: 100%; gap: 1em; }
+.typ-diagramm .wert { font-weight: 500; }
+.typ-diagramm .kurve { flex: 1; width: 100%; min-height: 0; margin-top: .3em; }
+.typ-diagramm svg { display: block; overflow: visible; }
+.typ-diagramm .achse { font-size: 13px; fill: currentColor; opacity: .7; }
+.typ-webseite { padding: 0 !important; background: #fff; }
+.typ-webseite iframe { position: absolute; border: 0; transform-origin: 0 0; background: #fff; }

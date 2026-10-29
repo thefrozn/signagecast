@@ -9,7 +9,9 @@ const QTEXTE = {
       "In den Layout-Bausteinen „API-Wert“, „API-Liste“, „API-Bild“, „Anzeige“, „Countdown“, „QR-Code“ und im freien Text wählst du dann einen Wert daraus.",
     neu: "Neue Quelle", ausCurl: "Aus curl übernehmen", beispiel: "Beispiel einfügen …", keine: "Noch keine Datenquelle.",
     curlText: "curl-Befehl hier einfügen (z. B. aus einer API-Anleitung). Er wird nur gelesen, nicht ausgeführt.", uebernehmen: "Übernehmen",
-    name: "Name", kennung: "Kennung (a–z, 0–9, _ – steht in Platzhaltern)", art: "Art", artName: { json: "JSON-API", text: "Text", rss: "RSS-/Atom-Feed", bild: "Bild" },
+    name: "Name", kennung: "Kennung (a–z, 0–9, _ – steht in Platzhaltern)", art: "Art", artName: { json: "JSON-API", text: "Text", rss: "RSS-/Atom-Feed", bild: "Bild", ical: "Kalender (iCal)", video: "Kamera (Video)" },
+    format: "Format", formatName: { auto: "automatisch", rtsp: "RTSP", hls: "HLS (.m3u8)", mjpeg: "MJPEG" },
+    videoHinweis: "Kamera: RTSP oder HLS holt der Container nur, solange ein Fernseher sie zeigt (H.264 nötig); MJPEG wird durchgereicht. Zugangsdaten in der Adresse (rtsp://benutzer:passwort@…) bleiben im Container und erscheinen hier als ••••.",
     url: "Adresse", methode: "Methode", intervall: "Abrufen alle", einheit: { 1: "Sekunden", 60: "Minuten", 3600: "Stunden" }, aktiv: "aktiv",
     kopf: "Kopfzeilen (z. B. Authorization, X-API-Key)", kopfNeu: "Kopfzeile hinzufügen", geheim: "geheim", inhalt: "Inhalt (bei POST)",
     testen: "Testen", speichern: "Speichern", abbrechen: "Abbrechen", bearbeiten: "Bearbeiten", loeschen: "Löschen", jetzt: "Jetzt abrufen",
@@ -19,14 +21,16 @@ const QTEXTE = {
     platzhalterHilfe: (id, p) => `Im Baustein: Pfad „${p}“ · im freien Text: {${id}:${p}}`, hinweise: "Hinweise",
     leer: "(leer)", eintraege: "Einträge", geheimHinweis: "Geheime Werte werden nach dem Speichern nur als •••• angezeigt und nicht in Sicherungen übernommen (außer du wählst es).",
     beispiele: { pegel: "Pegelstand (PEGELONLINE, Rhein bei Köln)", news: "Nachrichten (tagesschau.de RSS)", kurs: "Bitcoin-Kurs in Euro (CoinGecko)",
-                 pollen: "Pollenflug (Deutscher Wetterdienst)" },
+                 pollen: "Pollenflug (Deutscher Wetterdienst)", feiertage: "Feiertage (Google-Kalender, iCal)" },
   },
   en: {
     text: "Your own data for the elements: the container queries the address at the interval you set (API keys stay in the container). " +
       "In the layout elements “API value”, “API list”, “API picture”, “Gauge”, “Countdown”, “QR code” and in free text you then pick a value from it.",
     neu: "New source", ausCurl: "Import from curl", beispiel: "Insert example …", keine: "No data source yet.",
     curlText: "Paste a curl command here (e.g. from an API guide). It is only read, never executed.", uebernehmen: "Import",
-    name: "Name", kennung: "Identifier (a–z, 0–9, _ – used in placeholders)", art: "Type", artName: { json: "JSON API", text: "Text", rss: "RSS/Atom feed", bild: "Picture" },
+    name: "Name", kennung: "Identifier (a–z, 0–9, _ – used in placeholders)", art: "Type", artName: { json: "JSON API", text: "Text", rss: "RSS/Atom feed", bild: "Picture", ical: "Calendar (iCal)", video: "Camera (video)" },
+    format: "Format", formatName: { auto: "automatic", rtsp: "RTSP", hls: "HLS (.m3u8)", mjpeg: "MJPEG" },
+    videoHinweis: "Camera: RTSP or HLS is only fetched by the container while a TV shows it (H.264 required); MJPEG is passed through. Credentials in the address (rtsp://user:password@…) stay in the container and show as •••• here.",
     url: "Address", methode: "Method", intervall: "Fetch every", einheit: { 1: "seconds", 60: "minutes", 3600: "hours" }, aktiv: "active",
     kopf: "Headers (e.g. Authorization, X-API-Key)", kopfNeu: "Add header", geheim: "secret", inhalt: "Body (for POST)",
     testen: "Test", speichern: "Save", abbrechen: "Cancel", bearbeiten: "Edit", loeschen: "Delete", jetzt: "Fetch now",
@@ -36,7 +40,7 @@ const QTEXTE = {
     platzhalterHilfe: (id, p) => `In an element: path “${p}” · in free text: {${id}:${p}}`, hinweise: "Notes",
     leer: "(empty)", eintraege: "entries", geheimHinweis: "Secret values are shown as •••• after saving and are not included in backups (unless you choose so).",
     beispiele: { pegel: "Water level (PEGELONLINE, Rhine at Cologne)", news: "News (tagesschau.de RSS)", kurs: "Bitcoin price in euro (CoinGecko)",
-                 pollen: "Pollen forecast (German Weather Service)" },
+                 pollen: "Pollen forecast (German Weather Service)", feiertage: "Public holidays Germany (Google calendar, iCal)" },
   },
 };
 const QBEISPIELE = {
@@ -45,6 +49,8 @@ const QBEISPIELE = {
   news: { id: "news", name: "tagesschau.de", art: "rss", intervall_s: 900, url: "https://www.tagesschau.de/index~rss2.xml" },
   kurs: { id: "kurs", name: "Bitcoin", art: "json", intervall_s: 600, url: "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur" },
   pollen: { id: "pollen", name: "Pollenflug DWD", art: "json", intervall_s: 3600, url: "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json" },
+  feiertage: { id: "feiertage", name: "Feiertage", art: "ical", intervall_s: 86400,
+               url: "https://calendar.google.com/calendar/ical/de.german%23holiday%40group.v.calendar.google.com/public/basic.ics" },
 };
 const QT = () => QTEXTE[E.sprache] || QTEXTE.de;
 
@@ -98,8 +104,8 @@ async function quellenSeite(inhalt) {
     ziel.innerHTML = E.quellen.map((q) => {
       const s = st[q.id] || {};
       const iv = q.intervall_s % 3600 === 0 ? `${q.intervall_s / 3600} h` : q.intervall_s % 60 === 0 ? `${q.intervall_s / 60} min` : `${q.intervall_s} s`;
-      return `<div class="karte" data-id="${esc(q.id)}"><h2>${esc(q.name)} <span class="leise">· ${esc(q.id)} · ${esc(Q.artName[q.art])} · ${iv}${q.aktiv ? "" : " · –"}</span></h2>
-        <div class="leise umbruch">${esc(q.methode)} ${esc(q.url)}</div>
+      return `<div class="karte" data-id="${esc(q.id)}"><h2>${esc(q.name)} <span class="leise">· ${esc(q.id)} · ${esc(Q.artName[q.art])}${q.art === "video" ? "" : " · " + iv}${q.aktiv ? "" : " · –"}</span></h2>
+        <div class="leise umbruch">${q.art === "video" ? "" : esc(q.methode) + " "}${esc(q.url)}</div>
         <div class="leise">${esc(Q.letzter)}: ${esc(zeitText(s.abruf))}${s.dauer_ms != null ? ` (${s.dauer_ms} ${Q.ms})` : ""} · ${esc(Q.naechster)}: ${esc(zeitText(s.naechster))}
           ${s.fehler ? `<br><span class="schlecht">${esc(Q.fehler)}: ${esc(s.fehler)}${s.versuche ? ` (${s.versuche} ${esc(Q.versuche)})` : ""}</span>` : ""}</div>
         <div class="zeile"><button class="knopf" data-a="bearbeiten">${esc(Q.bearbeiten)}</button><button class="knopf" data-a="daten">${esc(Q.daten)}</button>
@@ -134,7 +140,7 @@ async function quellenSeite(inhalt) {
 
   // ---------- Editor ----------
   const oeffnen = (q, id) => {
-    bearbeitet = Object.assign({ id: "", name: "", art: "json", url: "https://", methode: "GET", kopf: [], inhalt: "", intervall_s: 300, aktiv: true }, q);
+    bearbeitet = Object.assign({ id: "", name: "", art: "json", url: "https://", methode: "GET", kopf: [], inhalt: "", intervall_s: 300, aktiv: true, format: "auto" }, q);
     altId = id;
     zeichnen();
     $("#qEditor").scrollIntoView({ behavior: "smooth" });
@@ -149,8 +155,10 @@ async function quellenSeite(inhalt) {
       <div class="zeile"><label>${esc(Q.kennung)}</label><input type="text" id="qId" value="${esc(q.id)}" style="width:160px" pattern="[a-z0-9_]{2,16}"></div>
       <div class="zeile"><label>${esc(Q.art)}</label><select id="qArt">${Object.keys(Q.artName).map((k) => `<option value="${k}" ${k === q.art ? "selected" : ""}>${esc(Q.artName[k])}</option>`).join("")}</select>
         <label>${esc(Q.methode)}</label><select id="qMethode">${["GET", "POST"].map((m) => `<option ${m === q.methode ? "selected" : ""}>${m}</option>`).join("")}</select></div>
-      <div class="zeile"><label>${esc(Q.url)}</label><input type="url" id="qUrl" value="${esc(q.url)}" style="width:100%;max-width:640px"></div>
-      <div class="zeile"><label>${esc(Q.intervall)}</label><input type="number" id="qIv" min="1" value="${q.intervall_s / ein}">
+      <div class="zeile"><label>${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" style="width:100%;max-width:640px" spellcheck="false"></div>
+      <div class="zeile" data-nur="video"><label>${esc(Q.format)}</label><select id="qFormat">${Object.keys(Q.formatName).map((k) => `<option value="${k}" ${k === q.format ? "selected" : ""}>${esc(Q.formatName[k])}</option>`).join("")}</select></div>
+      <p class="leise" data-nur="video">${esc(Q.videoHinweis)}</p>
+      <div class="zeile" data-nicht="video"><label>${esc(Q.intervall)}</label><input type="number" id="qIv" min="1" value="${q.intervall_s / ein}">
         <select id="qIvE">${[1, 60, 3600].map((e) => `<option value="${e}" ${e === ein ? "selected" : ""}>${esc(Q.einheit[e])}</option>`).join("")}</select>
         <label>${esc(Q.aktiv)}</label>${schalter("qAktiv", q.aktiv)}</div>
       <h3>${esc(Q.kopf)}</h3><div id="qKopf">${q.kopf.map((k) => `<div class="zeile kopfzeile"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" style="width:180px">
@@ -165,6 +173,7 @@ async function quellenSeite(inhalt) {
       q.name = $("#qName").value.trim(); q.id = $("#qId").value.trim().toLowerCase();
       q.art = $("#qArt").value; q.methode = $("#qMethode").value; q.url = $("#qUrl").value.trim();
       q.intervall_s = Math.max(30, Math.round(Number($("#qIv").value) * Number($("#qIvE").value)));
+      q.format = $("#qFormat").value;
       q.aktiv = z.querySelector("[name=qAktiv]").checked;
       q.kopf = [...z.querySelectorAll(".kopfzeile")].map((r) => ({ name: r.querySelector("[name=kn]").value.trim(), wert: r.querySelector("[name=kw]").value,
                                                                   geheim: r.querySelector("[name=kg]").checked })).filter((k) => k.name);
@@ -173,6 +182,13 @@ async function quellenSeite(inhalt) {
       return q;
     };
     $("#qMethode").onchange = () => { $("#qInhaltZeile").hidden = $("#qMethode").value !== "POST"; };
+    const artZeigen = () => {                    // Video: kein Intervall/keine Methode, dafür Format
+      const v = $("#qArt").value === "video";
+      z.querySelectorAll("[data-nur=video]").forEach((x) => { x.hidden = !v; });
+      z.querySelectorAll("[data-nicht=video]").forEach((x) => { x.hidden = v; });
+      $("#qMethode").disabled = v;
+    };
+    $("#qArt").onchange = artZeigen; artZeigen();
     $("#qName").onchange = () => { if (!$("#qId").value) $("#qId").value = $("#qName").value.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 16); };
     z.querySelectorAll("[name=kg]").forEach((c) => { c.onchange = () => { c.closest(".kopfzeile").querySelector("[name=kw]").type = c.checked ? "password" : "text"; }; });
     z.querySelectorAll("[name=kx]").forEach((b) => { b.onclick = () => { lesen(); b.closest(".kopfzeile").remove(); lesen(); zeichnen(); }; });

@@ -25,6 +25,9 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
   (paste a `curl` command, test it, pick values by clicking in the response tree; API keys stay in the container).
   Elements: API value, API list / feed (also as ticker), API picture, gauge (bar or traffic light), countdown, QR code,
   placeholders like `{source:path}` in any text, and conditions on API values.
+- **Cameras, charts, calendars, web pages** – IP cameras (RTSP, HLS or MJPEG; e.g. the doorbell only when it rings),
+  history charts (Home Assistant history or recorded API values), calendars from any iCal address (waste collection,
+  Google/Outlook – without Home Assistant), and embedded web pages that allow it (zoom, crop, reload interval).
 - **Templates** – Standard, Video large, Video only, Info without video, *Practice – calm (waiting room)*,
   *Company – corporate design*, *Window to the world*, Night.
 - **Backgrounds by time of day** – picture sets (nature, city, sky, mountains, sea) for sunrise, day, sunset and night,
@@ -118,6 +121,10 @@ see [NOTICE.md](NOTICE.md).
 - **Data sources:** only http/https, response at most 1 MB (pictures 5 MB), 10 s timeout, interval 30 s to 24 h; on
   errors the next attempt waits longer (up to 1 h). Secret headers are shown as •••• and left out of backups unless you
   tick “include secrets”. The TV page only receives the finished values, never addresses or keys.
+- **Cameras:** RTSP/HLS cameras are pulled by MediaMTX only while a TV shows them and can only be read inside the
+  container (not on port 8888 from the network). The camera must deliver **H.264** (Chromium in the container cannot
+  decode H.265). Rootless Podman with the default port forwarder may hide the client address – use host networking there.
+- **Web pages** are embedded only if the site allows it (X-Frame-Options / frame-ancestors); nothing is circumvented.
 
 ## Support
 
@@ -149,6 +156,7 @@ Danach **https://&lt;IP&gt;:9090** öffnen, Anmeldung **tvadmin** / Startpasswor
 unter **Verbindung** Home Assistant einrichten (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.
 Eigene Daten: Reiter **Datenquellen** (JSON-API, RSS-Feed, Bild; curl-Befehl einfügen, Wert im Antwort-Baum anklicken) und
 die Bausteine API-Wert, API-Liste, API-Bild, Anzeige (Balken/Ampel), Countdown, QR-Code sowie Platzhalter `{quelle:pfad}`.
+Dazu Kameras (RTSP/HLS/MJPEG), Verlauf-Diagramme, Kalender per iCal-Adresse und eingebettete Webseiten.
 Voraussetzungen: Intel-Grafik, ein Fernseher-Browser mit H.265; Home Assistant optional.
 
 ## License

@@ -68,6 +68,11 @@ def _pfad(w):
     if len(w) > 160 or "\n" in w:
         raise ValueError("Pfad zu lang")
     return w
+def _url(w):
+    w = str(w or "").strip()
+    if w and not re.fullmatch(r"https?://[^\s\"'<>]{1,1000}", w):
+        raise ValueError("Adresse mit http:// oder https://")
+    return w
 def _icon_leer(w):
     return _icon(w) if str(w or "").strip() else ""
 def _wahl(*werte):
@@ -94,7 +99,8 @@ TYPEN = {
     "text":       {"text": (_t(300), ""), "laufband": (_b, False)},
     "logo":       {"bild": (_bild, "")},
     "kamera":     {"entity": (_ent(["camera"]), ""), "intervall": (_zahl(1, 60), 2)},
-    "kalender":   {"entity": (_ent(["calendar"]), ""), "anzahl": (_zahl(1, 10), 4), "tage": (_zahl(1, 60), 14), "titel": (_t(40), "")},
+    "kalender":   {"entity": (_ent(["calendar"]), ""), "quelle": (_qid, ""), "anzahl": (_zahl(1, 10), 4), "tage": (_zahl(1, 60), 14),
+                   "titel": (_t(40), "")},                                   # quelle = iCal-Datenquelle statt HA (seit 0.10)
     "meldung":    {"entity": (_ent(["input_text", "sensor", "text"]), ""), "dauer": (_zahl(3, 600), 20)},
     "flaeche":    {"farbe": (_farbe, "#f0f0f0"), "deckkraft": (_zahl(0, 100), 100)},
     # eigene Datenquellen (seit 0.9); Platzhalter {pfad} bzw. {quelle:pfad}
@@ -109,10 +115,17 @@ TYPEN = {
     "countdown":  {"ziel": (_t(40), ""), "quelle": (_qid, ""), "pfad": (_pfad, ""), "vorlage": (_t(120), "noch {tage} Tage"),
                    "ende": (_t(60), "Heute!")},
     "qrcode":     {"inhalt": (_t(900), ""), "beschriftung": (_t(60), "")},
+    # seit 0.10: Kamera, Verlauf, Webseite
+    "webcam":     {"quelle": (_qid, ""), "ton": (_b, False), "anpassung": (_wahl("fuellen", "einpassen"), "fuellen")},
+    "diagramm":   {"quelle": (_qid, ""), "pfad": (_pfad, ""), "entity": (_ent(["sensor", "input_number", "number", "counter"]), ""),
+                   "stunden": (_zahl(1, 168), 24), "name": (_t(30), ""), "einheit": (_t(12), ""), "nachkomma": (_zahl(-1, 6), 1),
+                   "faktor": (_t(16), "1")},
+    "webseite":   {"url": (_url, ""), "neu_laden_min": (_zahl(0, 1440), 15), "zoom": (_zahl(25, 300), 100),
+                   "versatz_x": (_zahl(0, 10000), 0), "versatz_y": (_zahl(0, 10000), 0)},
 }
 # Mindestgröße je Typ (Felder)
 MINDEST = {"logo": (2, 1), "video": (8, 5), "kamera": (4, 3), "kalender": (6, 3), "raeume": (4, 2), "vorhersage": (4, 3),
-           "apibild": (2, 2), "qrcode": (2, 2), "apiliste": (4, 1)}
+           "apibild": (2, 2), "qrcode": (2, 2), "apiliste": (4, 1), "webcam": (4, 3), "diagramm": (4, 2), "webseite": (4, 3)}
 
 
 def _pruefe_bedingung(b):
