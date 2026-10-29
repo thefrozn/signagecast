@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.8.0 (2026-10-29)
+- **Docker / Podman image** `ghcr.io/thefrozn/signagecast` (amd64), built automatically for every release. All data in
+  the volume `/data`; `compose.yaml` included. In the container the admin page is served without Cockpit (port 9090)
+  with its own login: initial password random and printed in the log (or `SC_PASSWORT`), changeable under Connection.
+  `SC_HOST_IP` tells the Home Assistant guide the host's IP.
+- **Hardware detection**: a short test encode decides – graphics with H.265 via VAAPI (Intel Quick Sync, 4K) or a
+  software fallback with H.264 in Full HD on the CPU. Shown in the overview; also used by LXC installations.
+- Chromium uses /tmp instead of a small /dev/shm (Docker default 64 MB).
+- Fix: a new installation without settings file had no layout for a moment (TV page error until the profile was loaded).
+- Example picture of the practice template is neutral now.
+
 ## v0.7.0 (2026-10-29)
 - Own weather from **MET Norway** (api.met.no, free, worldwide, no key) – Home Assistant is no longer needed for weather
   and forecast. Default for new installations; updates switch to it automatically if Home Assistant is not reachable.

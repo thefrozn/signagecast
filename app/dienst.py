@@ -2,6 +2,8 @@
 # SignageCast – Datendienst. Liefert die TV-Seite (www/) und ihre Daten, führt die Streamliste, sucht neue Streams,
 # misst die Qualität (Wache) und bietet der Verwaltung (Cockpit-Erweiterung) eine kleine API.
 # Lauscht nur auf 127.0.0.1:8080 – von außen ist nur der fertige Videostream (MediaMTX) und Cockpit erreichbar.
+# Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
+# selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
 import json, os, re, socket, subprocess, sys, threading, time, urllib.parse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -15,6 +17,7 @@ import radio                                  # noqa: E402
 import layouts as L                           # noqa: E402
 import wetter as W                            # noqa: E402
 import zeit as Z                              # noqa: E402
+import hardware as HW                         # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,6 +27,8 @@ MEDIAMTX_YML = os.environ.get("SC_MEDIAMTX", "/etc/signagecast/mediamtx.yml")
 MEDIAMTX_VORLAGE = os.path.join(BASIS, "render", "mediamtx.yml")
 HLS_PORT = 8888
 PROJEKT = "thefrozn/signagecast"            # GitHub: Projektseite, Fehlermeldungen, Hinweis auf neue Versionen
+CONTAINER = os.environ.get("SC_BETRIEB") == "container"     # Docker/Podman statt LXC
+START = time.time()
 
 zustand = {"einstellungen": E.laden(), "ha_teil": {"wetter": {}, "vorhersage": [], "werte": {}},
            "vorhersage": [], "vh_zeit": 0, "kalender": {}, "wache": {}, "cpu": None, "ha_fehler": None}
@@ -471,7 +476,8 @@ def status():
         "cpu_prozent": zustand["cpu"], "last": os.getloadavg(), "kerne": os.cpu_count(),
         "ram_mb": {"gesamt": m["MemTotal"] // 1024, "frei": m["MemAvailable"] // 1024},
         "platte_gb": {"gesamt": round(sv.f_blocks * sv.f_frsize / 1e9, 1), "frei": round(sv.f_bavail * sv.f_frsize / 1e9, 1)},
-        "laufzeit_s": int(float(open("/proc/uptime").read().split()[0])),
+        "laufzeit_s": int(time.time() - START) if CONTAINER else int(float(open("/proc/uptime").read().split()[0])),
+        "betrieb": "container" if CONTAINER else "lxc", "kodierung": zustand.get("kodierung"),
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
         "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"]},
@@ -494,7 +500,12 @@ def fernseher_status(t):
 
 
 def eigene_ip():
-    """IP, mit der der Container HA erreicht – die muss HA als vertrauenswürdig kennen."""
+    """IP, mit der der Container HA erreicht – die muss HA als vertrauenswürdig kennen. Im Docker-Container sieht HA
+    die IP des Hosts (NAT): die steht in SC_HOST_IP; ohne sie nimmt die Verwaltung die Adresse aus dem Browser."""
+    if os.environ.get("SC_HOST_IP"):
+        return os.environ["SC_HOST_IP"]
+    if CONTAINER and not os.environ.get("SC_HOST_NETZ"):
+        return None
     try:
         host = urllib.parse.urlparse(einst()["ha"]["url"]).hostname
         port = urllib.parse.urlparse(einst()["ha"]["url"]).port or 8123
@@ -529,9 +540,12 @@ def render_schreiben(e):
     (MediaMTX lädt die Datei bei Änderung selbst neu)."""
     pfade = ""
     for t in e["fernseher"]:
-        aus = "3840 2160" if t["aufloesung"] == 2160 else "1920 1080"
+        k = zustand.get("kodierung") or {}
+        software = k.get("art") == "software"           # ohne nutzbare Grafik: H.264 in Full HD per CPU
+        aus = "3840 2160" if t["aufloesung"] == 2160 and not software else "1920 1080"
         schreib_wenn_anders(os.path.join(DATEN, f"render-{t['id']}.env"),
-                            f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n")
+                            f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n"
+                            f"KODIERUNG={'software' if software else 'vaapi'}\n")
         pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
                   f"    runOnDemandStartTimeout: 40s\n    runOnDemandCloseAfter: {e['stream']['abschalten_s']}s\n")
     try:
@@ -844,6 +858,16 @@ def main():
     os.makedirs(DATEN, exist_ok=True)
     render_schreiben(einst())
     zeitzone_setzen()
+
+    def kodierung():
+        zustand["kodierung"] = HW.pruefen()
+        k = zustand["kodierung"]
+        print(f"Kodierung: {k['art']} ({k['codec']}, bis {k['max_hoehe']}p)" + (f" – {k['grund']}" if k.get("grund") else ""), flush=True)
+        render_schreiben(einst())
+    threading.Thread(target=kodierung, daemon=True).start()
+    if os.environ.get("SC_VERWALTUNG_PORT"):
+        import verwaltung
+        threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife):
         threading.Thread(target=ziel, daemon=True).start()

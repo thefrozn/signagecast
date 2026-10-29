@@ -37,7 +37,8 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 ## Requirements
 
 - A PC with **Intel graphics** (Quick Sync / VAAPI, e.g. a mini PC with an Intel CPU from the 7th generation on),
-  running **Proxmox VE** or **Debian 13**. The container needs 2–4 cores, 10 GB disk and about 1 GB RAM per TV.
+  running **Proxmox VE**, **Debian 13** or **Docker / Podman**. 2–4 cores, 10 GB disk and about 1 GB RAM per TV.
+  Without usable graphics SignageCast falls back to H.264 in Full HD on the CPU (about 1–2 cores while someone watches).
 - Optional: **Home Assistant** in the same network (for your own values; weather comes from MET Norway).
 - A TV whose browser plays **H.265 / HEVC** (for 4K; most smart TVs from about 2018). Full HD output is also possible.
 
@@ -59,12 +60,31 @@ curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.s
 
 Running the same command again updates SignageCast; settings and data are kept.
 
+**Docker / Podman** (any Linux host, also NAS systems like Unraid, Synology, TrueNAS) – one line:
+
+```bash
+docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
+  -p 8888:8888 -p 9090:9090 -v signagecast:/data \
+  -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
+```
+
+or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same command with `podman`.
+
+- `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
+  Rootless Podman additionally needs `--group-add keep-groups`.
+- **Admin:** http://&lt;host&gt;:9090 – the initial password is printed in the log: `docker logs signagecast`
+  (or set your own with `-e SC_PASSWORT=…`). Change it under **Connection**. No Cockpit inside the container.
+- `SC_HOST_IP` = the IP of the Docker host; the Home Assistant guide in the admin shows it (HA sees the host's IP).
+- All settings and data are in the volume `/data`. **Update:** `docker pull ghcr.io/thefrozn/signagecast:latest`, then
+  recreate the container (`docker compose up -d`, or `docker rm -f signagecast` and the `docker run` line again).
+
 **Manual:** download a release, unpack it and run `sh installieren.sh`.
 
 ## First steps
 
 1. Open **https://&lt;container-IP&gt;:9090** (accept the certificate warning), log in as **tvadmin** with the initial
    password **tvadmin** – then please change it (top right → Accounts → tvadmin → Set password).
+   (Docker / Podman: **http://&lt;host&gt;:9090**, password from the log – see above.)
 2. Menu **SignageCast → Connection**: enter the Home Assistant address and follow the guide shown there. Home Assistant
    trusts the container via `trusted_networks` – no password or token is stored. Take the location from Home Assistant.
 3. **Display**: weather comes from MET Norway (or choose a Home Assistant weather entity). **Layout**: adapt the standard layout or start from a template.
@@ -78,7 +98,7 @@ Running the same command again updates SignageCast; settings and data are kept.
 | Data service `signagecast` | `/opt/signagecast/app/`, only 127.0.0.1:8080 | TV page, Home Assistant values, stream list, search, quality watch, API for the admin |
 | Render chain | `/opt/signagecast/render/tv-render.sh` | Xvfb + Chromium (Full HD) → ffmpeg → Intel GPU (upscale, H.265) + AAC → MediaMTX |
 | MediaMTX `signagecast-mediamtx` | `/opt/mediamtx`, port 8888 | HLS stream, starts rendering on demand |
-| Admin | `/usr/share/cockpit/signagecast`, port 9090 | Cockpit extension |
+| Admin | `/usr/share/cockpit/signagecast`, port 9090 | Cockpit extension (Docker/Podman: same page served by `app/verwaltung.py` with its own login) |
 | Settings / data | `/etc/signagecast/`, `/var/lib/signagecast/` | backup and restore in the admin |
 
 Only the Python standard library and Debian packages are used. Third-party components and picture sources:
@@ -113,6 +133,10 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/mai
 ```
 
 **In einem vorhandenen Debian 13** (als root): `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh`
+
+**Docker / Podman:** `docker run -d --name signagecast --restart unless-stopped --device /dev/dri -p 8888:8888 -p 9090:9090 -v signagecast:/data -e TZ=Europe/Berlin -e SC_HOST_IP=<IP des Hosts> ghcr.io/thefrozn/signagecast:latest`
+(oder `compose.yaml`). Verwaltung **http://&lt;Host&gt;:9090**, Startpasswort steht im Protokoll (`docker logs signagecast`).
+Ohne Intel-Grafik läuft ein Notbetrieb mit H.264 in Full HD per CPU.
 
 Danach **https://&lt;IP&gt;:9090** öffnen, Anmeldung **tvadmin** / Startpasswort **tvadmin** (bitte ändern),
 unter **Verbindung** Home Assistant einrichten (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.

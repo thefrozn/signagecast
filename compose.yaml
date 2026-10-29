@@ -1,0 +1,20 @@
+# SignageCast mit Docker Compose / Podman Compose:  docker compose up -d
+# Danach: Verwaltung http://<host>:9090 (Startpasswort: docker compose logs signagecast), Fernseher http://<host>:8888/tv
+services:
+  signagecast:
+    image: ghcr.io/thefrozn/signagecast:latest
+    container_name: signagecast
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri            # Intel-Grafik (Quick Sync) – ohne: Software-Notbetrieb in Full HD
+    ports:
+      - "8888:8888"                  # Stream für die Fernseher
+      - "9090:9090"                  # Verwaltung
+    volumes:
+      - signagecast:/data
+    environment:
+      TZ: Europe/Berlin
+      SC_HOST_IP: ""                 # IP des Docker-Hosts (für die Home-Assistant-Anleitung), z. B. 192.168.1.20
+      # SC_PASSWORT: "…"             # Startpasswort selbst vorgeben (sonst zufällig, steht im Protokoll)
+volumes:
+  signagecast:

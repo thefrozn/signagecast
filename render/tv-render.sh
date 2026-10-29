@@ -3,18 +3,21 @@
 # öffnet (MTX_PATH = Kennung des Fernsehers), und beendet sie, wenn niemand mehr zuschaut.
 # Xvfb + Chromium zeigen die TV-Seite (http://127.0.0.1:8080/?tv=<id>) in Full HD und spielen den Ton (Radio oder
 # Tierton) in einen eigenen virtuellen Tonkanal (PulseAudio-Null-Sink); ffmpeg nimmt Bild und Ton auf, die
-# Grafikeinheit (VAAPI) rechnet auf die Ausgabegröße hoch und kodiert H.265, der Ton wird AAC.
+# Grafikeinheit (VAAPI) rechnet auf die Ausgabegröße hoch und kodiert H.265, der Ton wird AAC. Ohne nutzbare Grafik
+# (KODIERUNG=software, erkennt der Datendienst) kodiert die CPU H.264 in Full HD.
 # Werte je Fernseher (Bildschirm, DevTools-Port, Größe, Bitrate) aus /var/lib/signagecast/render-<id>.env (Datendienst).
 set -u
 TV=${MTX_PATH:-tv}
 case "$TV" in *[!a-z0-9]*|"") echo "ungültige Kennung"; exit 1;; esac
 DATEN=/var/lib/signagecast
-DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16
+DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi
 [ -r "$DATEN/render-$TV.env" ] && . "$DATEN/render-$TV.env"
 OW=${AUSGABE% *}; OH=${AUSGABE#* }
 W=1920; H=1080                                   # Chromium zeichnet in Full HD (in 4K wäre er überlastet)
 PROFIL=$DATEN/chromium-$TV
 ERW=/opt/signagecast/render/h264-fluessig
+# Docker gibt /dev/shm nur 64 MB – zu wenig für Chromium; dann nimmt er /tmp
+SHM=""; [ "$(df -Pk /dev/shm 2>/dev/null | awk 'NR==2 {print $2}')" -lt 524288 ] 2>/dev/null && SHM=--disable-dev-shm-usage
 SINK=tv_$TV
 export XDG_RUNTIME_DIR=$DATEN/run
 export PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native
@@ -57,15 +60,21 @@ PULSE_SINK=$SINK LANG=de_DE.UTF-8 LANGUAGE=de DISPLAY=$DISP setsid chromium --la
   --disable-features=Translate,TranslateUI,MediaRouter,DisableLoadExtensionCommandLineSwitch --disable-translate \
   --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --force-device-scale-factor=1 \
   --window-position=0,0 --window-size=${W},${H} --user-data-dir="$PROFIL" \
-  --remote-debugging-port=$DEVPORT --remote-debugging-address=127.0.0.1 --load-extension="$ERW" \
+  --remote-debugging-port=$DEVPORT --remote-debugging-address=127.0.0.1 --load-extension="$ERW" $SHM \
   "http://127.0.0.1:8080/?tv=$TV" >/dev/null 2>&1 & CR=$!
 echo "$CR" >> "$PIDS"
 sleep 12   # Seite und Videos laden lassen
 
+if [ "$KODIERUNG" = software ]; then
+  # Notbetrieb ohne Grafik: H.264 Full HD per CPU (ca. 1–2 Kerne), höchstens 8 Mbit/s
+  [ "$BITRATE" -gt 8 ] && BITRATE=8
+  VIDEO="-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p"
+else
+  VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v hevc_vaapi -profile:v main"
+fi
 setsid ffmpeg -hide_banner -loglevel error -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
   -video_size ${W}x${H} -i $DISP -thread_queue_size 512 -f pulse -i "$SINK.monitor" \
-  -vaapi_device /dev/dri/renderD128 -vf "hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12" \
-  -c:v hevc_vaapi -profile:v main -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
+  $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
   -c:a aac -b:a 128k -ac 2 \
   -f rtsp -rtsp_transport tcp "rtsp://127.0.0.1:${RTSP_PORT:-8554}/$TV" & FF=$!
 echo "$FF" >> "$PIDS"

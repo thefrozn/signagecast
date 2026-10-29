@@ -2,9 +2,13 @@
 # auch kommerziell nutzbar mit Quellenhinweis (CC BY 4.0, „Wetterdaten: MET Norway“). Nutzungsregeln: aussagekräftiger
 # User-Agent, Koordinaten mit höchstens 4 Nachkommastellen, „Expires“ beachten, nachfragen mit If-Modified-Since.
 # Liefert dieselbe Form wie das HA-Wetter (Zustände wie HA: sunny, partlycloudy, rainy …).
-import datetime, json, time, urllib.error, urllib.request
+import datetime, json, os, time, urllib.error, urllib.request
 
-UA = "SignageCast/0.7 github.com/thefrozn/signagecast"
+try:
+    _V = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSION")).read().strip()
+except OSError:
+    _V = "dev"
+UA = f"SignageCast/{_V} github.com/thefrozn/signagecast"     # MET verlangt einen aussagekräftigen User-Agent
 URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={:.4f}&lon={:.4f}"
 
 

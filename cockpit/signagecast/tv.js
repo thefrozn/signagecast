@@ -1,10 +1,14 @@
 // SignageCast – Verwaltung als Cockpit-Erweiterung. Spricht nur mit dem Datendienst im Container (127.0.0.1:8080).
+// Im Docker-/Podman-Betrieb liefert app/verwaltung.py dieselbe Seite mit einem Cockpit-Ersatz aus (CONTAINER = true).
 // Ohne Fremd-Bibliotheken; Texte Deutsch/Englisch (Sprache aus den Einstellungen).
 "use strict";
 
 const KOPF = { "X-SignageCast": "1", "Content-Type": "application/json" };
 const dienst = cockpit.http(8080, { address: "127.0.0.1" });
 const dienstBinaer = cockpit.http(8080, { address: "127.0.0.1", binary: true });
+const CONTAINER = !!cockpit.signagecastContainer;
+const hostSync = () => CONTAINER ? T.hostSync.replace(" (Proxmox)", "") : T.hostSync;   // im Container ist der Host selten Proxmox
+const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 
 // ---------- Texte ----------
 const TEXTE = {
@@ -55,6 +59,13 @@ const TEXTE = {
     vorschau: "Bild am Fernseher", vorschauNeu: "Bild aktualisieren", keineVorschau: "Kein Bild – der Stream läuft gerade nicht.",
     seiteNeu: "TV-Seite neu laden", ketteNeu: "Stream neu starten", listeNeu: "Liste neu berechnen", erledigt: "Erledigt",
     neueVersion: (v) => `Neue Version ${v} verfügbar`, updateText: "Zum Aktualisieren den Befehl als root im Container ausführen (Einstellungen und Daten bleiben).",
+    updateTextContainer: "Zum Aktualisieren das neue Image holen und den Container neu erstellen (Einstellungen und Daten im Volume bleiben):",
+    systemSeitenContainer: "Protokolle: docker logs signagecast (bzw. podman logs). Neustart und Update über Docker/Podman.",
+    passwortHinweisContainer: "Hinweis: Du meldest dich noch mit dem Startpasswort aus dem Protokoll an – bitte unter „Verbindung“ ein eigenes festlegen.",
+    verwaltungTitel: "Anmeldung an der Verwaltung", pwAlt: "Bisheriges Passwort", pwNeu: "Neues Passwort (mind. 8 Zeichen)",
+    pwAendern: "Passwort ändern", pwGeaendert: "Passwort geändert", abmelden: "Abmelden",
+    kodierungKarte: "Videokodierung", kodierungArt: { vaapi: "Grafikeinheit (VAAPI)", software: "Software (CPU)" },
+    kodierungSoftware: "Keine nutzbare Grafik – Notbetrieb: H.264 in Full HD per CPU (ca. 1–2 Kerne, solange jemand zuschaut).",
     aenderungen: "Was ist neu?", projektseite: "Projektseite (GitHub)", fehlerMelden: "Fehler melden / Wunsch äußern",
     aufgaben: "Geplante Aufgaben", systemSeiten: "Dienste, Protokolle und Zeitpläne des Containers stehen im Cockpit-Menü " +
       "links unter „Dienste“ und „Protokolle“.",
@@ -144,6 +155,13 @@ const TEXTE = {
     vorschau: "Picture on the TV", vorschauNeu: "Refresh picture", keineVorschau: "No picture – the stream is not running.",
     seiteNeu: "Reload TV page", ketteNeu: "Restart stream", listeNeu: "Rebuild list", erledigt: "Done",
     neueVersion: (v) => `New version ${v} available`, updateText: "To update, run this command as root inside the container (settings and data are kept).",
+    updateTextContainer: "To update, pull the new image and recreate the container (settings and data in the volume are kept):",
+    systemSeitenContainer: "Logs: docker logs signagecast (or podman logs). Restart and update via Docker/Podman.",
+    passwortHinweisContainer: "Note: you are still using the initial password from the log – please set your own under “Connection”.",
+    verwaltungTitel: "Admin login", pwAlt: "Current password", pwNeu: "New password (min. 8 characters)",
+    pwAendern: "Change password", pwGeaendert: "Password changed", abmelden: "Log out",
+    kodierungKarte: "Video encoding", kodierungArt: { vaapi: "Graphics unit (VAAPI)", software: "Software (CPU)" },
+    kodierungSoftware: "No usable graphics – fallback: H.264 in Full HD on the CPU (about 1–2 cores while someone is watching).",
     aenderungen: "What's new?", projektseite: "Project page (GitHub)", fehlerMelden: "Report a bug / request a feature",
     aufgaben: "Scheduled tasks", systemSeiten: "Services, logs and timers of the container are in the Cockpit menu on the left.",
     hinzufuegen: "Add stream", link: "YouTube link or video ID", name: "Name (empty = title)", kategorie: "Category",
@@ -250,6 +268,12 @@ function hinweiseZeichnen() {
   h.innerHTML = "";
   let weg = false;
   try { weg = localStorage.getItem("signagecast-pw-hinweis") === "weg"; } catch (_) { /* egal */ }
+  if (CONTAINER) {                          // Container: nur solange das Startpasswort aus dem Protokoll gilt
+    fetch("/verwaltung/info", { credentials: "same-origin" }).then((r) => r.json()).then((i) => {
+      if (i.startpasswort) h.appendChild(el(`<div class="hinweis">${esc(T.passwortHinweisContainer)}</div>`));
+    }).catch(() => {});
+    return;
+  }
   if (weg) return;
   const n = el(`<div class="hinweis"><button class="knopf">${esc(T.ausblenden)}</button>${esc(T.passwortHinweis)}</div>`);
   n.querySelector("button").onclick = () => { try { localStorage.setItem("signagecast-pw-hinweis", "weg"); } catch (_) { /* egal */ } n.remove(); };
@@ -290,7 +314,7 @@ async function uebersicht(inhalt) {
       <div class="karte"><h2>${esc(T.aufgaben)}</h2><div id="aufgaben"></div>
         <div class="zeile"><button class="knopf" id="sNeu">${esc(T.seiteNeu)}</button>
           <button class="knopf" id="kNeu">${esc(T.ketteNeu)}</button><button class="knopf" id="lNeu">${esc(T.listeNeu)}</button></div>
-        <p class="leise">${esc(T.systemSeiten)}</p>
+        <p class="leise">${esc(CONTAINER ? T.systemSeitenContainer : T.systemSeiten)}</p>
         <p class="leise"><a href="https://github.com/thefrozn/signagecast" target="_blank" rel="noopener">${esc(T.projektseite)}</a> ·
           <a href="https://github.com/thefrozn/signagecast/issues" target="_blank" rel="noopener">${esc(T.fehlerMelden)}</a></p></div>
     </div>`;
@@ -313,7 +337,7 @@ async function uebersicht(inhalt) {
       [T.wetterKarte, s.wetter.jetzt ? `${s.wetter.jetzt.temperatur} °C` : (s.wetter.quelle === "ha" ? "HA" : "–"),
         esc(s.wetter.quelle === "met" ? `MET Norway · ${s.wetter.abruf || ""}${s.wetter.fehler ? " · " + s.wetter.fehler : ""}` : T.wetterQuelleArt.ha)],
       [T.zeitKarte, s.zeit_quelle && s.zeit_quelle.abweichung_s != null ? `${s.zeit_quelle.abweichung_s > 0 ? "+" : ""}${s.zeit_quelle.abweichung_s} s` : "–",
-        esc((s.zeit_quelle || {}).korrektur === false && (s.zeit_quelle || {}).host_synchronisiert ? T.hostSync
+        esc((s.zeit_quelle || {}).korrektur === false && (s.zeit_quelle || {}).host_synchronisiert ? hostSync()
             : (s.zeit_quelle || {}).korrektur ? T.hostNichtSync : "") + "<br>" +
         esc(`${(s.zeit_quelle || {}).server || ""} · ${(s.zeit_quelle || {}).zeitzone || ""}`) +
         (Math.abs((s.zeit_quelle || {}).abweichung_s || 0) > 2 ? `<br><span class="warn">${esc(T.zeitWarnung)}</span>` : "")],
@@ -324,10 +348,14 @@ async function uebersicht(inhalt) {
       [T.ram, `${s.ram_mb.frei} MB`, `von ${s.ram_mb.gesamt} MB · ${esc(T.platte)} ${s.platte_gb.frei} / ${s.platte_gb.gesamt} GB`],
       [T.laufzeit, dauer(s.laufzeit_s), `Version ${esc(s.version)}`],
     ];
+    if (s.kodierung) k.splice(3, 0, [T.kodierungKarte, esc(T.kodierungArt[s.kodierung.art] || s.kodierung.art),
+      esc(`${s.kodierung.codec}, ${s.kodierung.max_hoehe === 2160 ? "4K" : "Full HD"}${s.kodierung.treiber ? " · " + s.kodierung.treiber : ""}`) +
+      (s.kodierung.art === "software" ? `<br><span class="warn">${esc(T.kodierungSoftware)}</span>` : "")]);
     const hinweis = $("#updateHinweis");
     if (hinweis) hinweis.innerHTML = s.neue_version ? `<div class="karte warn"><b>${esc(T.neueVersion(s.neue_version))}</b>
-      <pre>curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh</pre>
-      <p class="leise">${esc(T.updateText)} <a href="${esc(s.projekt)}/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></p></div>` : "";
+      ${CONTAINER ? `<p class="leise">${esc(T.updateTextContainer)}</p><pre>docker pull ${IMAGE}\ndocker compose up -d   # oder: docker rm -f signagecast &amp;&amp; docker run …</pre>`
+        : `<pre>curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh</pre><p class="leise">${esc(T.updateText)}</p>`}
+      <p class="leise"><a href="${esc(s.projekt)}/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></p></div>` : "";
     $("#kacheln").innerHTML = k.map(([t, w2, u]) => `<div class="karte"><div class="leise">${esc(t)}</div><div class="wert">${w2}</div><div class="leise">${u}</div></div>`).join("");
     $("#aufgaben").innerHTML = s.aufgaben.map((a) => `<div class="zeile"><b>${esc(T.aufgabe[a.name] || a.name)}</b>
       <span class="leise">${esc(a.wann || T.deaktiviert)}${a.zuletzt ? " · " + esc(T.zuletzt) + " " + esc(a.zuletzt.zeit || "") : ""}</span></div>`).join("");
@@ -535,6 +563,7 @@ async function sucheSeite(inhalt) {
 // ---------- Verbindung ----------
 async function verbindung(inhalt) {
   const info = await holen("/api/ha/einrichtung");
+  if (CONTAINER && !info.eigene_ip) info.eigene_ip = location.hostname;   // Docker: HA sieht die IP des Hosts
   const yaml = `homeassistant:
   auth_providers:
     - type: trusted_networks
@@ -560,7 +589,20 @@ async function verbindung(inhalt) {
       <div class="zeile"><label>${esc(T.zeitzone)}</label><select id="zone" class="breit"><option value="">${esc(T.systemZone)}</option></select></div>
       <div class="zeile"><button class="knopf haupt" id="okZeit">${esc(T.speichern)}</button><span class="leise" id="zeitStand"></span></div></div>
     <div class="karte"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
-      <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>`;
+      <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>
+    ${CONTAINER ? `<div class="karte"><h2>${esc(T.verwaltungTitel)}</h2>
+      <div class="zeile"><label>${esc(T.pwAlt)}</label><input type="password" id="pwAlt" autocomplete="current-password"></div>
+      <div class="zeile"><label>${esc(T.pwNeu)}</label><input type="password" id="pwNeu" autocomplete="new-password" minlength="8"></div>
+      <div class="zeile"><button class="knopf haupt" id="pwOk">${esc(T.pwAendern)}</button>
+        <form method="post" action="/abmelden"><button class="knopf" type="submit">${esc(T.abmelden)}</button></form></div></div>` : ""}`;
+  if (CONTAINER) $("#pwOk").onclick = (e) => aktion(e.target, async () => {
+    const r = await fetch("/verwaltung/passwort", { method: "POST", credentials: "same-origin",
+      headers: { "X-SignageCast": "1", "Content-Type": "application/json" },
+      body: JSON.stringify({ alt: $("#pwAlt").value, neu: $("#pwNeu").value }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.fehler);
+    $("#pwAlt").value = ""; $("#pwNeu").value = ""; hinweiseZeichnen();
+  }, T.pwGeaendert);
   const test = async () => {
     const r = await holen("/api/ha/test");
     $("#testErg").innerHTML = r.ok ? `<span class="gut">${esc(T.testOk(r.version))}</span> · ${esc(r.ort || "")}` : `<span class="schlecht">${esc(r.fehler)}</span>`;
@@ -578,7 +620,7 @@ async function verbindung(inhalt) {
   }).catch(() => {});
   const zeitStand = async () => {
     const s = await holen("/api/status"), z = s.zeit_quelle || {};
-    $("#zeitStand").textContent = (z.host_synchronisiert && !z.korrektur ? T.hostSync + " · " : z.korrektur ? T.hostNichtSync + " · " : "") +
+    $("#zeitStand").textContent = (z.host_synchronisiert && !z.korrektur ? hostSync() + " · " : z.korrektur ? T.hostNichtSync + " · " : "") +
       (z.server ? `${z.server}: ${T.abweichung} ${z.abweichung_s ?? "?"} s · ${z.gemessen || ""}${z.fehler ? " · " + z.fehler : ""}` : "");
   };
   zeitStand();

@@ -24,10 +24,10 @@ main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
 .zeile > label:first-child { min-width: 180px; flex: 0 0 auto; }
 label { cursor: pointer; }
-input[type=text], input[type=number], input[type=time], input[type=url], select, textarea {
+input[type=text], input[type=number], input[type=time], input[type=url], input[type=password], select, textarea {
   font: inherit; color: var(--text); background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px;
   padding: 8px 10px; min-height: 40px; max-width: 100%; }
-input[type=text], input[type=url], textarea, select.breit { width: 360px; }
+input[type=text], input[type=url], input[type=password], textarea, select.breit { width: 360px; }
 input[type=number] { width: 110px; }
 textarea { width: 100%; min-height: 120px; font-family: ui-monospace, monospace; font-size: 13px; }
 button.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
@@ -69,7 +69,7 @@ a { color: var(--akzent); }
 @media (max-width: 640px) {
   main { padding: 10px; }
   .zeile > label:first-child { min-width: 100%; }
-  input[type=text], input[type=url], textarea, select.breit { width: 100%; }
+  input[type=text], input[type=url], input[type=password], textarea, select.breit { width: 100%; }
   .stream { grid-template-columns: 1fr; }
   .schalterspalte { flex-direction: row; align-items: center; justify-content: flex-start; }
 }

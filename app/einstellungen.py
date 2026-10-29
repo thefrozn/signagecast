@@ -325,10 +325,8 @@ def laden():
     try:
         with open(PFAD) as f:
             return pruefen(json.load(f))
-    except FileNotFoundError:
-        return copy.deepcopy(STANDARD)
-    except Fehler:
-        return copy.deepcopy(STANDARD)
+    except (FileNotFoundError, Fehler):
+        return pruefen(copy.deepcopy(STANDARD))       # baut u. a. das Layout „Standard“ – sonst fehlt der TV-Seite ein Layout
 
 
 def speichern(e):
