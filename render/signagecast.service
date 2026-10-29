@@ -5,6 +5,8 @@ Wants=network-online.target
 
 [Service]
 User=signagecast
+# optionale Einstellungen wie SC_STREAM_PORT=… (legt installieren.sh an, wenn beim Installieren angegeben)
+EnvironmentFile=-/etc/signagecast/umgebung
 ExecStart=/usr/bin/python3 -I /opt/signagecast/app/dienst.py
 Restart=always
 RestartSec=5

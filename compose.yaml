@@ -1,5 +1,5 @@
 # SignageCast mit Docker Compose / Podman Compose:  docker compose up -d
-# Danach: Verwaltung http://<host>:9090 (Startpasswort: docker compose logs signagecast), Fernseher http://<host>:8888/tv
+# Danach: Verwaltung http://<host>:19090 (Startpasswort: docker compose logs signagecast), Fernseher http://<host>:8888/tv
 services:
   signagecast:
     image: ghcr.io/thefrozn/signagecast:latest
@@ -9,7 +9,7 @@ services:
       - /dev/dri:/dev/dri            # Intel-Grafik (Quick Sync) – ohne: Software-Notbetrieb in Full HD
     ports:
       - "8888:8888"                  # Stream für die Fernseher
-      - "9090:9090"                  # Verwaltung
+      - "19090:19090"                # Verwaltung (19090, weil auf vielen Servern Cockpit 9090 belegt)
     volumes:
       - signagecast:/data
     environment:

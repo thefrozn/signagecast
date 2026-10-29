@@ -38,7 +38,7 @@ if [ -n "$NEU" ]; then   # Neuinstallation: mit der Startliste (Tier- und Natur-
   curl -sS -o /dev/null -H "X-SignageCast: 1" -H "Content-Type: application/json" \
     --data-binary @/opt/signagecast/profile/start.json http://127.0.0.1:8080/api/sicherung && echo "Startliste eingespielt."
 fi
-echo "SignageCast $(cat /opt/signagecast/VERSION): Verwaltung http://<host>:${SC_VERWALTUNG_PORT:-9090} · Stream http://<host>:8888/tv"
+echo "SignageCast $(cat /opt/signagecast/VERSION): Verwaltung http://<host>:${SC_VERWALTUNG_PORT:-19090} · Stream http://<host>:${SC_STREAM_PORT:-8888}/tv"
 
 wait -n $DIENST $MTX || true
 kill -TERM $DIENST $MTX 2>/dev/null || true

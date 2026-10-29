@@ -26,7 +26,7 @@ WWW = os.path.join(BASIS, "www")
 VERSION = open(os.path.join(BASIS, "VERSION")).read().strip() if os.path.exists(os.path.join(BASIS, "VERSION")) else "dev"
 MEDIAMTX_YML = os.environ.get("SC_MEDIAMTX", "/etc/signagecast/mediamtx.yml")
 MEDIAMTX_VORLAGE = os.path.join(BASIS, "render", "mediamtx.yml")
-HLS_PORT = 8888
+HLS_PORT = int(os.environ.get("SC_STREAM_PORT", "8888"))   # Stream für die Fernseher (MediaMTX); änderbar über SC_STREAM_PORT
 PROJEKT = "thefrozn/signagecast"            # GitHub: Projektseite, Fehlermeldungen, Hinweis auf neue Versionen
 CONTAINER = os.environ.get("SC_BETRIEB") == "container"     # Docker/Podman statt LXC
 START = time.time()
@@ -716,7 +716,8 @@ def render_schreiben(e):
                       f"    sourceOnDemandStartTimeout: 15s\n    sourceOnDemandCloseAfter: 20s\n")
     try:
         if os.path.exists(MEDIAMTX_YML):
-            schreib_wenn_anders(MEDIAMTX_YML, open(MEDIAMTX_VORLAGE).read().replace("{PFADE}", pfade.rstrip("\n")))
+            vorlage = open(MEDIAMTX_VORLAGE).read().replace("hlsAddress: :8888", f"hlsAddress: :{HLS_PORT}")
+            schreib_wenn_anders(MEDIAMTX_YML, vorlage.replace("{PFADE}", pfade.rstrip("\n")))
     except OSError:
         pass
 
@@ -989,7 +990,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/ha/test":
             return self.antwort(200, dict(ha.testen(), eigene_ip=eigene_ip()))
         if pfad == "/api/ha/einrichtung":
-            return self.antwort(200, {"eigene_ip": eigene_ip(), "url": einst()["ha"]["url"]})
+            return self.antwort(200, {"eigene_ip": eigene_ip(), "url": einst()["ha"]["url"], "stream_port": HLS_PORT})
         if pfad == "/api/ha/entitaeten":
             try:
                 liste = [{"id": s["entity_id"], "name": s.get("attributes", {}).get("friendly_name", ""),

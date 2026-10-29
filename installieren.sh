@@ -1,6 +1,9 @@
 #!/bin/sh
 # SignageCast – Installation und Update auf Debian 13 (z. B. Proxmox-LXC mit durchgereichter Intel-Grafik /dev/dri/renderD128).
 # Aufruf als root im Projektordner:  sh installieren.sh [--profil datei.json]
+# Optional: SC_STREAM_PORT=8899 sh installieren.sh  – anderer Port für den Stream (Standard 8888, wird gemerkt).
+# In einem Container (LXC) bekommt der Benutzer tvadmin das Startpasswort „tvadmin“; auf einem echten Rechner (nativ)
+# ein zufälliges, das am Ende angezeigt wird. Ist Cockpit schon installiert, erscheint SignageCast dort als Menüpunkt.
 # Ein erneuter Aufruf aktualisiert Programm und Dienste; Einstellungen und Daten bleiben erhalten.
 set -eu
 QUELLE=$(cd "$(dirname "$0")" && pwd)
@@ -15,6 +18,20 @@ fi
 [ "$(id -u)" = 0 ] || { echo "Bitte als root ausführen."; exit 1; }
 grep -q 'VERSION_ID="13"' /etc/os-release || echo "Warnung: getestet nur mit Debian 13."
 [ -e /dev/dri/renderD128 ] || echo "Warnung: /dev/dri/renderD128 fehlt – ohne Grafikeinheit kann der Stream nicht kodiert werden."
+
+# Container (lxc, docker …) oder nativ (VM/echter Rechner)?
+UMGEBUNG=$(systemd-detect-virt -c 2>/dev/null || true); [ -n "$UMGEBUNG" ] || UMGEBUNG=none
+# Stream-Port: angegeben > gemerkt > 8888
+PORT=${SC_STREAM_PORT:-$(sed -n 's/^SC_STREAM_PORT=//p' /etc/signagecast/umgebung 2>/dev/null || true)}
+PORT=${PORT:-8888}
+case "$PORT" in *[!0-9]*|"") echo "SC_STREAM_PORT muss eine Zahl sein."; exit 1;; esac
+# Ist der Port schon von einem anderen Programm belegt? (MediaMTX von SignageCast selbst ist ok)
+if command -v ss >/dev/null && ss -ltnpH "sport = :$PORT" 2>/dev/null | grep -v '"mediamtx"' | grep -q .; then
+  echo "Port $PORT ist schon belegt:"; ss -ltnpH "sport = :$PORT"
+  echo "Bitte einen anderen Stream-Port wählen, z. B.:  SC_STREAM_PORT=$((PORT + 11)) sh installieren.sh"
+  exit 1
+fi
+[ -d /usr/share/cockpit ] && [ ! -d /usr/share/cockpit/signagecast ] && COCKPIT_DA=1
 
 echo "== Pakete"
 export DEBIAN_FRONTEND=noninteractive
@@ -60,6 +77,10 @@ if [ -d /etc/tv-stream ] && [ ! -d /etc/signagecast ]; then
 fi
 install -d -o signagecast -g signagecast -m 750 /var/lib/signagecast
 install -d -o signagecast -g signagecast -m 700 /etc/signagecast
+if [ "$PORT" != 8888 ] || [ -f /etc/signagecast/umgebung ]; then
+  echo "SC_STREAM_PORT=$PORT" > /etc/signagecast/umgebung
+  chown signagecast:signagecast /etc/signagecast/umgebung && chmod 600 /etc/signagecast/umgebung
+fi
 chown -R signagecast:signagecast /etc/signagecast /var/lib/signagecast
 
 echo "== Programm"
@@ -80,7 +101,13 @@ chmod -R a+rX /usr/share/cockpit/signagecast
 systemctl enable --now cockpit.socket >/dev/null 2>&1
 if ! id tvadmin >/dev/null 2>&1; then
   useradd -m -s /bin/bash tvadmin
-  echo "tvadmin:tvadmin" | chpasswd
+  if [ "$UMGEBUNG" = none ]; then
+    # Echter Rechner: kein bekanntes Passwort für ein Linux-Konto, das sich über Cockpit anmelden kann
+    STARTPW=$(head -c 64 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 14)
+  else
+    STARTPW=tvadmin
+  fi
+  echo "tvadmin:$STARTPW" | chpasswd
   NEUER_ADMIN=1
 fi
 usermod -aG systemd-journal tvadmin
@@ -107,7 +134,10 @@ IP=$(hostname -I | awk '{print $1}')
 echo
 echo "Fertig (Version $(cat /opt/signagecast/VERSION))."
 [ -n "${UMZUG:-}" ] && echo "  Alte Installation „TV-Stream“ übernommen. Der frühere Systembenutzer „tv“ wird nicht mehr gebraucht."
-echo "  Verwaltung:  https://$IP:9090   (Benutzer tvadmin)"
-[ -n "${NEUER_ADMIN:-}" ] && echo "  Startpasswort = Benutzername. Bitte nach dem ersten Anmelden ändern (Konten → tvadmin)."
-echo "  Stream (TV): http://$IP:8888/tv   (weitere Fernseher: http://$IP:8888/<kennung>)"
+echo "  Verwaltung:  https://$IP:9090   (Benutzer tvadmin$([ -n "${COCKPIT_DA:-}" ] && echo " – oder dein Cockpit-Benutzer; SignageCast ist ein neuer Menüpunkt"))"
+if [ -n "${NEUER_ADMIN:-}" ]; then
+  if [ "$STARTPW" = tvadmin ]; then echo "  Startpasswort = Benutzername. Bitte nach dem ersten Anmelden ändern (Konten → tvadmin)."
+  else echo "  Startpasswort für tvadmin: $STARTPW   (nur jetzt sichtbar – bitte notieren oder ändern: passwd tvadmin)"; fi
+fi
+echo "  Stream (TV): http://$IP:$PORT/tv   (weitere Fernseher: http://$IP:$PORT/<kennung>)"
 echo "  Danach in der Verwaltung unter „Verbindung“ Home Assistant einrichten (Anleitung steht dort)."

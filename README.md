@@ -59,19 +59,20 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/mai
 
 It creates a Debian 13 container, passes the Intel GPU through and installs SignageCast.
 
-**Existing Debian 13** (LXC or VM with `/dev/dri/renderD128`) – as root:
+**Existing Debian 13** (LXC, VM or a real computer with `/dev/dri/renderD128`) – as root:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh
 ```
 
-Running the same command again updates SignageCast; settings and data are kept.
+Running the same command again updates SignageCast; settings and data are kept. If port 8888 is taken, choose another
+stream port: `curl -fsSL …/install.sh | SC_STREAM_PORT=8899 sh` (it is remembered for updates).
 
 **Docker / Podman** (any Linux host, also NAS systems like Unraid, Synology, TrueNAS) – one line:
 
 ```bash
 docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
-  -p 8888:8888 -p 9090:9090 -v signagecast:/data \
+  -p 8888:8888 -p 19090:19090 -v signagecast:/data \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
@@ -79,7 +80,7 @@ or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same
 
 - `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
   Rootless Podman additionally needs `--group-add keep-groups`.
-- **Admin:** http://&lt;host&gt;:9090 – the initial password is printed in the log: `docker logs signagecast`
+- **Admin:** http://&lt;host&gt;:**19090** – the initial password is printed in the log: `docker logs signagecast`
   (or set your own with `-e SC_PASSWORT=…`). Change it under **Connection**. No Cockpit inside the container.
 - `SC_HOST_IP` = the IP of the Docker host; the Home Assistant guide in the admin shows it (HA sees the host's IP).
 - All settings and data are in the volume `/data`. **Update:** `docker pull ghcr.io/thefrozn/signagecast:latest`, then
@@ -87,11 +88,30 @@ or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same
 
 **Manual:** download a release, unpack it and run `sh installieren.sh`.
 
+### Ports, login and Cockpit per installation type
+
+| Installation | Admin | TV stream | Initial login |
+|---|---|---|---|
+| Proxmox LXC (`ct.sh`) or Debian **container** | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>` | user `tvadmin`, password `tvadmin` – please change it |
+| Debian **VM / real computer** (`install.sh`, “native”) | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>`, other port with `SC_STREAM_PORT` | user `tvadmin` with a **random password shown once** at the end of the installation – or your own Cockpit user |
+| **Docker / Podman** | **http://&lt;host&gt;:19090** (own login, no Cockpit) | `http://<host>:8888/<tv>` | random password in `docker logs signagecast` (or `SC_PASSWORT`) |
+
+- **Cockpit already installed?** On a native installation SignageCast integrates into your existing Cockpit: it only
+  adds the menu entry **“SignageCast”** (files in `/usr/share/cockpit/signagecast`) – no second port, no second login,
+  your Cockpit settings stay untouched, and the system pages (services, logs, updates) remain available.
+  Note: Cockpit cannot hide an extension per user – everyone who may log in to this Cockpit can also configure SignageCast.
+- **Why 19090 for Docker/Podman?** Many servers already run Cockpit on 9090. With host networking (recommended for
+  rootless Podman) both would collide. Change it with `SC_VERWALTUNG_PORT`, the stream port with `SC_STREAM_PORT`.
+- **Why a random password on native installations?** `tvadmin` is a Linux account that can log in to Cockpit; on a real
+  computer a known default password would be a risk. In a container it only affects the container.
+- The installer checks whether the stream port is free and stops with a hint if another program uses it.
+
 ## First steps
 
 1. Open **https://&lt;container-IP&gt;:9090** (accept the certificate warning), log in as **tvadmin** with the initial
    password **tvadmin** – then please change it (top right → Accounts → tvadmin → Set password).
-   (Docker / Podman: **http://&lt;host&gt;:9090**, password from the log – see above.)
+   (Native installation: the random password shown at the end of the installation, or your own Cockpit user.
+   Docker / Podman: **http://&lt;host&gt;:19090**, password from the log – see above.)
 2. Menu **SignageCast → Connection**: enter the Home Assistant address and follow the guide shown there. Home Assistant
    trusts the container via `trusted_networks` – no password or token is stored. Take the location from Home Assistant.
 3. **Display**: weather comes from MET Norway (or choose a Home Assistant weather entity). **Layout**: adapt the standard layout or start from a template.
@@ -146,13 +166,27 @@ dazu Hintergründe nach Tageszeit, Internetradio, Einspieler wie „tagesschau i
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
-**In einem vorhandenen Debian 13** (als root): `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh`
+**In einem vorhandenen Debian 13** (als root; LXC, VM oder echter Rechner): `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh`
+– anderer Stream-Port mit `… | SC_STREAM_PORT=8899 sh`.
 
-**Docker / Podman:** `docker run -d --name signagecast --restart unless-stopped --device /dev/dri -p 8888:8888 -p 9090:9090 -v signagecast:/data -e TZ=Europe/Berlin -e SC_HOST_IP=<IP des Hosts> ghcr.io/thefrozn/signagecast:latest`
-(oder `compose.yaml`). Verwaltung **http://&lt;Host&gt;:9090**, Startpasswort steht im Protokoll (`docker logs signagecast`).
+**Docker / Podman:** `docker run -d --name signagecast --restart unless-stopped --device /dev/dri -p 8888:8888 -p 19090:19090 -v signagecast:/data -e TZ=Europe/Berlin -e SC_HOST_IP=<IP des Hosts> ghcr.io/thefrozn/signagecast:latest`
+(oder `compose.yaml`). Verwaltung **http://&lt;Host&gt;:19090**, Startpasswort steht im Protokoll (`docker logs signagecast`).
+
+**Ports und Anmeldung je Installationsweg:**
+
+| Weg | Verwaltung | Stream | Erste Anmeldung |
+|---|---|---|---|
+| Proxmox-LXC bzw. Debian-**Container** | https://&lt;IP&gt;:9090 (Cockpit) | :8888 | `tvadmin` / `tvadmin` (bitte ändern) |
+| Debian **VM / echter Rechner** (nativ) | https://&lt;IP&gt;:9090 (Cockpit) | :8888, änderbar mit `SC_STREAM_PORT` | `tvadmin` mit **zufälligem Passwort**, das am Ende der Installation einmal angezeigt wird – oder dein eigener Cockpit-Benutzer |
+| **Docker / Podman** | http://&lt;Host&gt;:**19090** (eigene Anmeldung) | :8888 | zufälliges Passwort im Protokoll |
+
+**Schon Cockpit installiert?** Bei der nativen Installation fügt sich SignageCast in dein vorhandenes Cockpit ein – es
+kommt nur der Menüpunkt „SignageCast“ dazu, kein zweiter Port, keine zweite Anmeldung, deine Einstellungen bleiben.
+Hinweis: Cockpit kann Erweiterungen nicht pro Benutzer ausblenden – wer sich an diesem Cockpit anmelden darf, kann auch
+SignageCast einstellen. Docker/Podman nutzt 19090, weil auf vielen Servern Cockpit schon 9090 belegt.
 Ohne Intel-Grafik läuft ein Notbetrieb mit H.264 in Full HD per CPU.
 
-Danach **https://&lt;IP&gt;:9090** öffnen, Anmeldung **tvadmin** / Startpasswort **tvadmin** (bitte ändern),
+Danach die Verwaltung öffnen (siehe Tabelle) und
 unter **Verbindung** Home Assistant einrichten (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.
 Eigene Daten: Reiter **Datenquellen** (JSON-API, RSS-Feed, Bild; curl-Befehl einfügen, Wert im Antwort-Baum anklicken) und
 die Bausteine API-Wert, API-Liste, API-Bild, Anzeige (Balken/Ampel), Countdown, QR-Code sowie Platzhalter `{quelle:pfad}`.

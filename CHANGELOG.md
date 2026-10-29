@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.11.1 (2026-10-29)
+- **Docker / Podman: admin now on port 19090** (was 9090) – many servers already run Cockpit on 9090, which collides
+  with host networking. Changeable with `SC_VERWALTUNG_PORT`. Update: map `-p 19090:19090` (or set `SC_VERWALTUNG_PORT=9090`).
+- **Native installation** (Debian VM or real computer): `tvadmin` gets a random initial password shown once at the end
+  (containers keep `tvadmin`); an existing Cockpit is reused – SignageCast appears as a menu entry.
+- **Stream port configurable** with `SC_STREAM_PORT` (installer remembers it in `/etc/signagecast/umgebung`); the
+  installer stops with a hint if the port is already taken. The admin shows TV addresses with the actual port.
+- README: table of ports, login and Cockpit integration per installation type.
+
 ## v0.11.0 (2026-10-29)
 - **Clip buffer** (per clip): “preload in the container” (default) downloads each new edition as soon as it appears and
   the TV plays it from the container – either **complete** or only the **first X MB** (the rest is fetched from the

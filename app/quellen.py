@@ -687,7 +687,7 @@ class Quellen:
 
 # ---------- Werte der Bausteine für die TV-Seite ----------
 API_TYPEN = ("apiwert", "apiliste", "apibild", "anzeige", "countdown", "qrcode", "text", "webcam", "diagramm", "kalender")
-HLS_INTERN = "http://127.0.0.1:8888"          # MediaMTX im Container (Pfade cam_<id> nur von 127.0.0.1 lesbar)
+HLS_INTERN = f"http://127.0.0.1:{os.environ.get('SC_STREAM_PORT', '8888')}"          # MediaMTX im Container (Pfade cam_<id> nur von 127.0.0.1 lesbar)
 
 
 def baustein_werte(layout, quellen, sprache, einst_quellen, ha_verlauf=None):

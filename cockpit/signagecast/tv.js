@@ -680,7 +680,7 @@ async function fernseherSeite(inhalt) {
       const k = el(`<div class="karte" data-i="${i}">
         <div class="zeile"><label>${esc(T.senderName)}</label><input type="text" name="name" value="${esc(t.name)}"></div>
         <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" style="width:140px"></div>
-        <div class="zeile"><label>${esc(T.adresse)}</label><code>http://${esc(ip)}:8888/${esc(t.id)}</code></div>
+        <div class="zeile"><label>${esc(T.adresse)}</label><code>http://${esc(ip)}:${esc(st.stream_port || 8888)}/${esc(t.id)}</code></div>
         <div class="zeile"><label>${esc(T.layoutWahl)}</label><select name="layout">${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === t.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
         <details ${(t.zeitplan || []).length ? "open" : ""}><summary>${esc(T.zeitplan)} (${(t.zeitplan || []).length})</summary>
           <p class="leise">${esc(T.zeitplanText)}</p><div name="zeiten">${(t.zeitplan || []).map((z) => zeitZeile(z)).join("")}</div>

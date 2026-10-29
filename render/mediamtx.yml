@@ -13,7 +13,7 @@ rtsp: yes
 rtspAddress: 127.0.0.1:8554        # nur intern (ffmpeg -> MediaMTX)
 rtspTransports: [tcp]
 hls: yes
-hlsAddress: :8888                  # Abspielseite und Stream: http://<IP>:8888/<id>
+hlsAddress: :8888                  # Abspielseite und Stream: http://<IP>:<port>/<id> (Port aus SC_STREAM_PORT, Standard 8888)
 hlsVariant: fmp4                   # nötig für H.265 im Browser
 hlsSegmentCount: 7
 hlsSegmentDuration: 2s
