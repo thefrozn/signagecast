@@ -2,6 +2,7 @@
 # SignageCast – Installation und Update auf Debian 13 (z. B. Proxmox-LXC mit durchgereichter Intel-Grafik /dev/dri/renderD128).
 # Aufruf als root im Projektordner:  sh installieren.sh [--profil datei.json]
 # Optional: SC_STREAM_PORT=8899 sh installieren.sh  – anderer Port für den Stream (Standard 8888, wird gemerkt).
+# Optional: SC_SICHERUNG=/pfad/sicherung.zip [SC_SICHERUNG_PASSWORT=…] – Sicherung (ZIP oder .json) gleich einspielen.
 # In einem Container (LXC) bekommt der Benutzer tvadmin das Startpasswort „tvadmin“; auf einem echten Rechner (nativ)
 # ein zufälliges, das am Ende angezeigt wird. Ist Cockpit schon installiert, erscheint SignageCast dort als Menüpunkt.
 # Ein erneuter Aufruf aktualisiert Programm und Dienste; Einstellungen und Daten bleiben erhalten.
@@ -41,7 +42,7 @@ fi
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free mesa-va-drivers \
   pulseaudio pulseaudio-utils fonts-roboto-unhinted fonts-dejavu-core fonts-open-sans fonts-lato fonts-montserrat \
-  fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 curl ca-certificates procps \
+  fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 python3-pyzipper curl ca-certificates procps \
   cockpit-ws cockpit-system cockpit-bridge >/dev/null
 
 echo "== MediaMTX $MTX_VERSION"
@@ -123,6 +124,26 @@ systemctl enable signagecast signagecast-mediamtx >/dev/null 2>&1
 systemctl restart signagecast
 if [ -n "$MTX_NEU" ]; then systemctl restart signagecast-mediamtx; else systemctl is-active -q signagecast-mediamtx || systemctl start signagecast-mediamtx; fi
 
+if [ -n "${SC_SICHERUNG:-}" ]; then
+  # Sicherung einer anderen Instanz übernehmen (Passwort nur über die Umgebung, nie als Argument)
+  echo "== Sicherung einspielen: $SC_SICHERUNG"
+  for i in 1 2 3 4 5 6 7 8 9 10; do curl -s -o /dev/null http://127.0.0.1:8080/daten.json && break; sleep 1; done
+  python3 -I - "$SC_SICHERUNG" <<'PY'
+import base64, json, os, sys, urllib.request
+pfad = sys.argv[1]
+roh = open(pfad, "rb").read()
+if pfad.endswith(".json"):
+    ziel, daten = "/api/sicherung", json.loads(roh)
+else:
+    ziel, daten = "/api/sicherung/zip", {"daten": base64.b64encode(roh).decode(), "passwort": os.environ.get("SC_SICHERUNG_PASSWORT", ""), "strikes": True}
+anf = urllib.request.Request("http://127.0.0.1:8080" + ziel, data=json.dumps(daten).encode(),
+                             headers={"X-SignageCast": "1", "Content-Type": "application/json"})
+r = json.load(urllib.request.urlopen(anf, timeout=300))
+print("   eingespielt" if r.get("ok") else "   Fehler: " + str(r.get("fehler")))
+sys.exit(0 if r.get("ok") else 1)
+PY
+  PROFIL=""                               # Sicherung ersetzt die Startliste
+fi
 if [ -n "$PROFIL" ]; then
   echo "== Profil einspielen: $PROFIL"
   for i in 1 2 3 4 5 6 7 8 9 10; do curl -s -o /dev/null http://127.0.0.1:8080/daten.json && break; sleep 1; done

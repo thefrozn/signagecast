@@ -19,6 +19,7 @@ import wetter as W                            # noqa: E402
 import zeit as Z                              # noqa: E402
 import hardware as HW                         # noqa: E402
 import meldung as M                           # noqa: E402
+import sicherung as S                         # noqa: E402
 import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -48,9 +49,10 @@ def einst():
 
 
 def einst_aussen():
-    """Einstellungen für die Verwaltung: geheime Kopfzeilen der Datenquellen nur als ••••."""
+    """Einstellungen für die Verwaltung: geheime Kopfzeilen der Datenquellen und das Sicherungs-Passwort nur als ••••."""
     e = einst()
-    return dict(e, quellen=Q.maskieren(e["quellen"]))
+    return dict(e, quellen=Q.maskieren(e["quellen"]),
+                sicherung=dict(e["sicherung"], passwort=Q.MASKE if e["sicherung"]["passwort"] else ""))
 
 
 qn = Q.Quellen(lambda: einst(), os.path.join(DATEN, "verlauf.json"))
@@ -743,12 +745,84 @@ def devport(tv_id):
 
 
 # ---------- Sicherung / Profil ----------
+SICHERUNGEN = os.path.join(DATEN, "sicherungen")
+
+
 def sicherung(mit_geheimnissen=False):
     e = einst()
     if not mit_geheimnissen:              # Standard: ohne API-Schlüssel/Passwörter (Datei kann weitergegeben werden)
-        e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]))
+        e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""))
     return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
             "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()}
+
+
+def sicherung_zip(mit_geheimnissen, passwort=None):
+    """Komplette Sicherung als ZIP: sicherung.json (wie bisher) + Bilder + Verlauf (+ Passwort der Verwaltung im Docker-
+    Betrieb). Mit Zugangsdaten nur mit starkem Passwort (AES-256)."""
+    if mit_geheimnissen and not passwort:
+        raise M.Meldung("sich_geheim_ohne_pw")
+    if passwort:
+        S.passwort_pruefen(passwort)
+    dateien = {"sicherung.json": json.dumps(sicherung(mit_geheimnissen), ensure_ascii=False, indent=1).encode()}
+    try:
+        for n in os.listdir(BILDER):
+            if S.BILD.fullmatch(n):
+                dateien[f"bilder/{n}"] = open(os.path.join(BILDER, n), "rb").read()
+    except OSError:
+        pass
+    if qn.verlauf:
+        with qn.verlauf.sperre:
+            dateien["verlauf.json"] = json.dumps(qn.verlauf.reihen).encode()
+    vw = os.path.join(os.path.dirname(E.PFAD), "verwaltung.json")
+    if mit_geheimnissen and CONTAINER and os.path.exists(vw):
+        dateien["verwaltung.json"] = open(vw, "rb").read()
+    dateien["manifest.json"] = json.dumps({"art": S.ART, "version": VERSION, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
+                                           "mit_geheimnissen": bool(mit_geheimnissen), "verschluesselt": bool(passwort),
+                                           "dateien": sorted(dateien)}, indent=1).encode()
+    return S.erstellen(dateien, passwort)
+
+
+def sicherung_zip_einspielen(roh, passwort=None, mit_strikes=True):
+    dateien = S.lesen(roh, passwort)
+    d = json.loads(dateien["sicherung.json"])
+    einspielen(d, mit_strikes=mit_strikes)
+    os.makedirs(BILDER, exist_ok=True)
+    for name, inhalt in dateien.items():
+        if name.startswith("bilder/") and S.BILD.fullmatch(name[7:]):
+            with open(os.path.join(BILDER, name[7:]), "wb") as f:
+                f.write(inhalt)
+    if "verlauf.json" in dateien and qn.verlauf:
+        reihen = json.loads(dateien["verlauf.json"])
+        with qn.verlauf.sperre:
+            qn.verlauf.reihen = {k: v for k, v in reihen.items() if isinstance(v, list)}
+        qn.verlauf.speichern()
+    if "verwaltung.json" in dateien and CONTAINER:
+        vw = os.path.join(os.path.dirname(E.PFAD), "verwaltung.json")
+        fd = os.open(vw, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "wb") as f:
+            f.write(dateien["verwaltung.json"])
+    return json.loads(dateien["manifest.json"])
+
+
+def sicherung_schleife():
+    """Automatische Sicherung nach Plan (täglich/wöchentlich zur Uhrzeit), abgelegt im Container, die letzten N bleiben."""
+    erledigt = None
+    while True:
+        si = einst()["sicherung"]
+        jetzt = time.localtime()
+        heute = time.strftime("%Y-%m-%d", jetzt)
+        faellig = si["plan"] != "aus" and time.strftime("%H:%M", jetzt) == si["uhrzeit"] and erledigt != heute \
+            and (si["plan"] == "taeglich" or jetzt.tm_wday == si["wochentag"])
+        if faellig:
+            erledigt = heute
+            try:
+                geheim = si["mit_geheimnissen"]
+                roh = sicherung_zip(geheim, si["passwort"] if geheim else None)
+                zustand["sicherung_auto"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"),
+                                             "name": S.ablegen(SICHERUNGEN, roh, True, geheim, si["behalten"]), "fehler_m": None}
+            except Exception as ex:
+                zustand["sicherung_auto"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": str(ex)[:200], "fehler_m": M.als_dict(ex)}
+        time.sleep(20)
 
 
 def einspielen(d, mit_strikes=True):
@@ -757,6 +831,8 @@ def einspielen(d, mit_strikes=True):
         raise E.Fehler("Keine SignageCast-Sicherung bzw. kein Profil")
     if "einstellungen" in d:
         neu = d["einstellungen"]
+        if isinstance(neu, dict) and isinstance(neu.get("sicherung"), dict) and not neu["sicherung"].get("passwort"):
+            neu["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]     # ohne Geheimnisse: vorhandenes behalten
         if isinstance(neu, dict) and isinstance(neu.get("quellen"), list):
             # Sicherung ohne Geheimnisse: leere geheime Werte aus der laufenden Einrichtung übernehmen
             for q in neu["quellen"]:
@@ -1025,6 +1101,14 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
         if pfad == "/api/sicherung":
             return self.antwort(200, sicherung((q.get("geheim") or ["0"])[0] == "1"))
+        if pfad == "/api/sicherungen":
+            return self.antwort(200, {"ok": True, "liste": S.liste(SICHERUNGEN), "auto": zustand.get("sicherung_auto"),
+                                      "aes": S.pyzipper is not None})
+        if pfad == "/api/sicherung/datei":
+            name = (q.get("name") or [""])[0]
+            if not S.NAME.fullmatch(name) or not os.path.exists(os.path.join(SICHERUNGEN, name)):
+                return self.antwort(404, {"ok": False})
+            return self.antwort(200, open(os.path.join(SICHERUNGEN, name), "rb").read(), "application/zip")
         if pfad == "/api/quellen/status":
             return self.antwort(200, {"ok": True, "status": qn.status()})
         if pfad == "/api/quellen/daten":
@@ -1047,7 +1131,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
     def do_POST(self):
         p = urllib.parse.urlparse(self.path).path
         try:
-            d = self.koerper()
+            d = self.koerper(420_000_000 if p == "/api/sicherung/zip" else 12_000_000)
         except Exception:
             return self.antwort(400, {"ok": False, "fehler": "ungültige Anfrage"})
         m = re.fullmatch(r"/meldung/(strike|qualitaet)", p)
@@ -1070,6 +1154,21 @@ class Bearbeiter(SimpleHTTPRequestHandler):
     def api_post(self, p, d):
         if p == "/api/einstellungen" and isinstance(d.get("quellen"), list):
             Q.demaskieren(d["quellen"], einst()["quellen"])
+        if p == "/api/einstellungen" and isinstance(d.get("sicherung"), dict) and d["sicherung"].get("passwort") == Q.MASKE:
+            d["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]
+        if p == "/api/sicherung/erstellen":
+            geheim = bool(d.get("mit_geheimnissen"))
+            roh = sicherung_zip(geheim, str(d.get("passwort") or "") or None)
+            return {"name": S.ablegen(SICHERUNGEN, roh, False, geheim)}
+        if p == "/api/sicherung/loeschen":
+            name = str(d.get("name", ""))
+            if not S.NAME.fullmatch(name):
+                raise M.Meldung("sich_name")
+            os.remove(os.path.join(SICHERUNGEN, name))
+            return {}
+        if p == "/api/sicherung/zip":
+            roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
+            return {"manifest": sicherung_zip_einspielen(roh, str(d.get("passwort") or "") or None, bool(d.get("strikes")))}
         if p == "/api/quellen/curl":
             try:
                 return Q.aus_curl(d.get("befehl", ""))
@@ -1239,7 +1338,7 @@ def main():
         import verwaltung
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
-                 wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife):
+                 wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.12.0 (2026-10-29)
+- **Backup as ZIP** (Backup tab): settings, stream list, strikes, **uploaded pictures** and **chart history**
+  (Docker: also the admin password). When creating a backup the admin asks explicitly whether credentials and passwords
+  should be included – then the ZIP is **AES-256 encrypted** (WinZip AES via python3-pyzipper, the password never
+  appears on a command line) and a **strong password is required** (12+ characters, three character classes, or a
+  passphrase of 20+ characters). Opens with SignageCast, 7-Zip or WinRAR.
+- **Automatic backups** daily or weekly at a set time, stored in the container (folder only readable by the service),
+  keeping the last N; optionally with credentials (then with its own strong password, shown as •••• in the admin).
+- **Restore** in the admin (ZIP or old .json, password if encrypted) or directly when installing a new instance:
+  `SC_SICHERUNG=/path/backup.zip SC_SICHERUNG_PASSWORT=… sh installieren.sh` (also via install.sh).
+- New dependency: `python3-pyzipper` (Debian package).
+
 ## v0.11.3 (2026-10-29)
 - Messages from data sources, cameras, weather, time and clips carry a code (`app/meldung.py`); the admin shows them in
   its language (English texts added; German stays the service's original text). Errors returned when saving or testing

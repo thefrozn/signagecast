@@ -15,7 +15,7 @@ RUN sed -i "s/^Components:.*/Components: main contrib non-free non-free-firmware
  && apt-get install -y --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free mesa-va-drivers \
       pulseaudio pulseaudio-utils fonts-roboto-unhinted fonts-dejavu-core fonts-open-sans fonts-lato fonts-montserrat \
       fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji \
-      python3 curl ca-certificates procps tini tzdata \
+      python3 python3-pyzipper curl ca-certificates procps tini tzdata \
  && rm -rf /var/lib/apt/lists/* \
  && F=mediamtx_${MTX_VERSION}_linux_amd64.tar.gz && cd /tmp \
  && curl -sSfLO "https://github.com/bluenviron/mediamtx/releases/download/$MTX_VERSION/$F" \

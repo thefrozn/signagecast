@@ -110,8 +110,18 @@ const TEXTE = {
       "Wichtig: trusted_networks muss als erster Eintrag stehen, sonst erscheint eine Anmeldeseite. Steht dort schon ein homeassistant:-Abschnitt, nur die Zeilen darunter ergänzen.",
     sicherungLaden: "Sicherung herunterladen", sicherungEinspielen: "Sicherung oder Profil einspielen",
     mitGeheim: "mit Geheimnissen (API-Schlüssel, Passwörter der Datenquellen) – Datei dann nicht weitergeben",
-    mitStrikes: "auch Strikes übernehmen", eingespielt: "Eingespielt", sicherungText: "Die Sicherung enthält Einstellungen, " +
-      "Streamliste (mit Schutz-, Sperr- und Fundliste) und Strikes. Ein Profil ist eine Sicherung als Vorlage für eine neue Installation.",
+    sichNeu: "Sicherung erstellen", mitGeheimFrage: "Zugangsdaten und Passwörter mitnehmen? (API-Schlüssel, Kamera-Passwörter, Passwort der automatischen Sicherung)",
+    pwPflicht: "Dann wird die ZIP mit AES-256 verschlüsselt – ein starkes Passwort ist Pflicht (mind. 12 Zeichen, Groß/klein, Ziffern, Sonderzeichen; oder Passphrase ab 20 Zeichen). Öffnen geht mit SignageCast, 7-Zip oder WinRAR. Ohne das Passwort ist die Sicherung verloren.",
+    pw1: "Passwort", pw2: "Passwort wiederholen", pwGut: "Passwort stark genug", pwSchwach: "Passwort zu schwach", pwUngleich: "Die Passwörter sind verschieden",
+    sichErstellen: "Sicherung erstellen und herunterladen", sichFertig: "Sicherung erstellt", sichListe: "Gespeicherte Sicherungen (im Container)",
+    sichAuto: "automatisch", sichManuell: "von Hand", sichMitGeheim: "mit Zugangsdaten", sichKeine: "Noch keine Sicherung gespeichert.",
+    sichLetzteAuto: "Letzte automatische Sicherung", sichWegFrage: "Diese Sicherung löschen?", herunterladen: "Herunterladen",
+    sichAutoTitel: "Automatisch sichern", sichPlan: "Wann", sichPlanArt: { aus: "aus", taeglich: "täglich", woechentlich: "wöchentlich" },
+    wochentage: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"], sichBehalten: "Aufheben (Anzahl)",
+    sichAutoText: "Die automatischen Sicherungen liegen im Container; lade ab und zu eine herunter, damit sie auch einen Ausfall des Containers überstehen.",
+    pwEinspielen: "Passwort (falls verschlüsselt)",
+    mitStrikes: "auch Strikes übernehmen", eingespielt: "Eingespielt", sicherungText: "Die Sicherung (ZIP) enthält Einstellungen, " +
+      "Streamliste (mit Schutz-, Sperr- und Fundliste), Strikes, hochgeladene Bilder und den Verlauf der Diagramme – alles für eine neue Installation. Alte .json-Sicherungen und Profile lassen sich weiter einspielen.",
     wirklichEinspielen: "Einstellungen und Streamliste werden ersetzt. Fortfahren?",
     kat: { safari: "Safari Afrika", affen: "Affen", meer: "Unterwasser & Meer", vogel: "Vögel", baer: "Bären, Wölfe, Eisbären",
            wald: "Wald & Wildtiere", zoo: "Zoo & Exoten", neu: "Neu gefunden" },
@@ -182,6 +192,11 @@ const TEXTE = {
       ep_kein_range: "the server cannot deliver parts (no Range) – please choose “complete”", ep_zu_gross: "clip larger than 500 MB",
       ep_keine_groesse: "the server gives no total size – only “complete” possible",
       ep_nicht_bereit: "clip not ready yet – try again in a few seconds",
+      sich_pw_kurz: "Password too short – at least 12 characters",
+      sich_pw_schwach: "Password too weak – mix upper and lower case, digits and symbols (or a passphrase of 20+ characters)",
+      sich_pw_fehlt: "The backup is encrypted – please enter the password", sich_pw_falsch: "Wrong password for the backup",
+      sich_ungueltig: "Not a SignageCast backup", sich_zu_gross: "Backup too large", sich_kein_aes: "Encryption not available (package python3-pyzipper missing)",
+      sich_geheim_ohne_pw: "With credentials and passwords only with a password (AES-256)", sich_name: "Unknown backup",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
@@ -236,8 +251,18 @@ const TEXTE = {
       "Important: trusted_networks must be the first provider, otherwise a login page appears. If there is already a homeassistant: section, only add the lines below it.",
     sicherungLaden: "Download backup", sicherungEinspielen: "Restore backup or profile",
     mitGeheim: "include secrets (API keys, passwords of data sources) – then do not share the file",
-    mitStrikes: "also restore strikes", eingespielt: "Restored", sicherungText: "The backup contains settings, stream list " +
-      "(with protected, rejected and found streams) and strikes. A profile is a backup used as a template for a new installation.",
+    sichNeu: "Create backup", mitGeheimFrage: "Include credentials and passwords? (API keys, camera passwords, password of the automatic backup)",
+    pwPflicht: "The ZIP is then encrypted with AES-256 – a strong password is required (min. 12 characters, upper/lower case, digits, symbols; or a passphrase of 20+ characters). It opens with SignageCast, 7-Zip or WinRAR. Without the password the backup is lost.",
+    pw1: "Password", pw2: "Repeat password", pwGut: "Password strong enough", pwSchwach: "Password too weak", pwUngleich: "The passwords differ",
+    sichErstellen: "Create and download backup", sichFertig: "Backup created", sichListe: "Stored backups (in the container)",
+    sichAuto: "automatic", sichManuell: "manual", sichMitGeheim: "with credentials", sichKeine: "No backup stored yet.",
+    sichLetzteAuto: "Last automatic backup", sichWegFrage: "Delete this backup?", herunterladen: "Download",
+    sichAutoTitel: "Automatic backup", sichPlan: "When", sichPlanArt: { aus: "off", taeglich: "daily", woechentlich: "weekly" },
+    wochentage: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], sichBehalten: "Keep (number)",
+    sichAutoText: "Automatic backups are stored in the container; download one now and then so it survives a loss of the container.",
+    pwEinspielen: "Password (if encrypted)",
+    mitStrikes: "also restore strikes", eingespielt: "Restored", sicherungText: "The backup (ZIP) contains settings, stream list " +
+      "(with protected, rejected and found streams), strikes, uploaded pictures and the chart history – everything for a new installation. Old .json backups and profiles can still be restored.",
     wirklichEinspielen: "Settings and stream list will be replaced. Continue?",
     kat: { safari: "Safari Africa", affen: "Apes & monkeys", meer: "Underwater & sea", vogel: "Birds", baer: "Bears, wolves, polar bears",
            wald: "Forest & wildlife", zoo: "Zoo & exotic", neu: "Newly found" },
@@ -930,28 +955,95 @@ async function einspielerSeite(inhalt) {
 
 // ---------- Sicherung ----------
 async function sicherungSeite(inhalt) {
-  inhalt.innerHTML = `<div class="karte"><p>${esc(T.sicherungText)}</p>
-      <div class="zeile"><label><input type="checkbox" id="mitGeheim"> ${esc(T.mitGeheim)}</label></div>
-      <div class="zeile"><button class="knopf haupt" id="laden">${esc(T.sicherungLaden)}</button></div></div>
-    <div class="karte"><h2>${esc(T.sicherungEinspielen)}</h2>
-      <div class="zeile"><input type="file" id="datei" accept=".json,application/json"></div>
-      <div class="zeile"><label><input type="checkbox" id="mitStrikes"> ${esc(T.mitStrikes)}</label></div>
-      <div class="zeile"><button class="knopf" id="ein">${esc(T.sicherungEinspielen)}</button></div></div>`;
-  $("#laden").onclick = (e) => aktion(e.target, async () => {
-    const d = await holen("/api/sicherung" + ($("#mitGeheim").checked ? "?geheim=1" : ""));
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 1)], { type: "application/json" }));
-    a.download = `signagecast-sicherung-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-  }, null);
-  $("#ein").onclick = (e) => aktion(e.target, async () => {
-    const f = $("#datei").files[0]; if (!f) throw new Error("–");
-    if (!confirm(T.wirklichEinspielen)) return;
-    const d = JSON.parse(await f.text());
-    if (!$("#mitStrikes").checked) delete d.strikes;
-    await senden("/api/sicherung", d);
-    await einstellungenLaden(); reiterZeichnen(); hinweiseZeichnen();
-  }, T.eingespielt);
+  // Sicherung als ZIP (seit 0.12): Einstellungen, Streams, Strikes, Bilder, Verlauf. Mit Zugangsdaten und Passwörtern nur
+  // AES-256-verschlüsselt mit starkem Passwort. Alte .json-Sicherungen lassen sich weiter einspielen.
+  const S = E.sicherung;
+  const groesse = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
+  const zeichnen = async () => {
+    const d = await holen("/api/sicherungen");
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.sichNeu)}</h2><p class="leise">${esc(T.sicherungText)}</p>
+        <div class="zeile"><label><input type="checkbox" id="mitGeheim"> <b>${esc(T.mitGeheimFrage)}</b></label></div>
+        <div id="pwBlock" hidden><p class="leise">${esc(T.pwPflicht)}</p>
+          <div class="zeile"><label>${esc(T.pw1)}</label><input type="password" id="pw1" autocomplete="new-password"></div>
+          <div class="zeile"><label>${esc(T.pw2)}</label><input type="password" id="pw2" autocomplete="new-password"></div>
+          <p class="leise" id="pwStaerke"></p></div>
+        <div class="zeile"><button class="knopf haupt" id="erstellen">${esc(T.sichErstellen)}</button></div></div>
+      <div class="karte"><h2>${esc(T.sichListe)}</h2>
+        ${d.liste.length ? d.liste.map((x) => `<div class="zeile eintrag"><span style="flex:1">${esc(x.zeit)} · ${esc(x.auto ? T.sichAuto : T.sichManuell)} · ${groesse(x.groesse)}
+            ${x.verschluesselt ? " · 🔒 AES-256" : ""}${x.geheim ? " · " + esc(T.sichMitGeheim) : ""}</span>
+            <button class="knopf" data-laden="${esc(x.name)}">${esc(T.herunterladen)}</button><button class="knopf gefahr" data-weg="${esc(x.name)}">✕</button></div>`).join("")
+          : `<p class="leise">${esc(T.sichKeine)}</p>`}
+        ${d.auto ? `<p class="leise">${esc(T.sichLetzteAuto)}: ${esc(d.auto.zeit)}${d.auto.fehler ? ` <span class="schlecht">${esc(meldungText(d.auto.fehler_m, d.auto.fehler))}</span>` : ""}</p>` : ""}</div>
+      <div class="karte"><h2>${esc(T.sichAutoTitel)}</h2>
+        <div class="zeile"><label>${esc(T.sichPlan)}</label><select id="plan">${["aus", "taeglich", "woechentlich"].map((k) => `<option value="${k}" ${k === S.plan ? "selected" : ""}>${esc(T.sichPlanArt[k])}</option>`).join("")}</select>
+          <select id="wtag">${T.wochentage.map((w, i) => `<option value="${i}" ${i === S.wochentag ? "selected" : ""}>${esc(w)}</option>`).join("")}</select>
+          <input type="time" id="uhr" value="${esc(S.uhrzeit)}"></div>
+        <div class="zeile"><label>${esc(T.sichBehalten)}</label><input type="number" id="behalten" min="1" max="60" value="${S.behalten}"></div>
+        <div class="zeile"><label><input type="checkbox" id="autoGeheim" ${S.mit_geheimnissen ? "checked" : ""}> ${esc(T.mitGeheimFrage)}</label></div>
+        <div id="autoPw" ${S.mit_geheimnissen ? "" : "hidden"}><div class="zeile"><label>${esc(T.pw1)}</label><input type="password" id="apw1" value="${esc(S.passwort)}" autocomplete="new-password"></div>
+          <div class="zeile"><label>${esc(T.pw2)}</label><input type="password" id="apw2" value="${esc(S.passwort)}" autocomplete="new-password"></div></div>
+        <p class="leise">${esc(T.sichAutoText)}</p>
+        <div class="zeile"><button class="knopf haupt" id="autoOk">${esc(T.speichern)}</button></div></div>
+      <div class="karte"><h2>${esc(T.sicherungEinspielen)}</h2>
+        <div class="zeile"><input type="file" id="datei" accept=".zip,.json,application/zip,application/json"></div>
+        <div class="zeile"><label>${esc(T.pwEinspielen)}</label><input type="password" id="pwEin" autocomplete="off"></div>
+        <div class="zeile"><label><input type="checkbox" id="mitStrikes"> ${esc(T.mitStrikes)}</label></div>
+        <div class="zeile"><button class="knopf" id="ein">${esc(T.sicherungEinspielen)}</button></div></div>`;
+    const staerke = () => {
+      const p = $("#pw1").value, arten = [/[a-z]/, /[A-Z]/, /\d/, /[^a-zA-Z\d]/].filter((r) => r.test(p)).length;
+      const gut = p.length >= 12 && (arten >= 3 || p.length >= 20) && new Set(p).size >= 6;
+      $("#pwStaerke").innerHTML = !p ? "" : gut ? `<span class="gut">${esc(T.pwGut)}</span>` : `<span class="schlecht">${esc(T.pwSchwach)}</span>`;
+      return gut;
+    };
+    $("#mitGeheim").onchange = () => { $("#pwBlock").hidden = !$("#mitGeheim").checked; };
+    $("#pw1").oninput = staerke;
+    $("#autoGeheim").onchange = () => { $("#autoPw").hidden = !$("#autoGeheim").checked; };
+    const planSicht = () => { $("#wtag").hidden = $("#plan").value !== "woechentlich"; $("#uhr").hidden = $("#plan").value === "aus"; };
+    $("#plan").onchange = planSicht; planSicht();
+    const laden = async (name) => {
+      const roh = await dienstBinaer.get("/api/sicherung/datei", { name }, { "X-SignageCast": "1" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([roh], { type: "application/zip" }));
+      a.download = `signagecast-${name}`;
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+    $("#erstellen").onclick = (e) => aktion(e.target, async () => {
+      const geheim = $("#mitGeheim").checked;
+      let pw = "";
+      if (geheim) {
+        pw = $("#pw1").value;
+        if (pw !== $("#pw2").value) throw new Error(T.pwUngleich);
+        if (!staerke()) throw new Error(T.pwSchwach);
+      }
+      const r = await senden("/api/sicherung/erstellen", { mit_geheimnissen: geheim, passwort: pw });
+      await laden(r.name);
+      await zeichnen();
+    }, T.sichFertig);
+    inhalt.querySelectorAll("[data-laden]").forEach((k) => { k.onclick = (e) => aktion(e.target, () => laden(k.dataset.laden), null); });
+    inhalt.querySelectorAll("[data-weg]").forEach((k) => {
+      k.onclick = (e) => { if (confirm(T.sichWegFrage)) aktion(e.target, async () => { await senden("/api/sicherung/loeschen", { name: k.dataset.weg }); await zeichnen(); }); };
+    });
+    $("#autoOk").onclick = (e) => aktion(e.target, async () => {
+      const geheim = $("#autoGeheim").checked;
+      if (geheim && $("#apw1").value !== $("#apw2").value) throw new Error(T.pwUngleich);
+      await speichernE({ sicherung: { plan: $("#plan").value, wochentag: Number($("#wtag").value), uhrzeit: $("#uhr").value,
+                                      behalten: Number($("#behalten").value) || 7, mit_geheimnissen: geheim, passwort: geheim ? $("#apw1").value : "" } }, null);
+    });
+    $("#ein").onclick = (e) => aktion(e.target, async () => {
+      const f = $("#datei").files[0]; if (!f) throw new Error("–");
+      if (!confirm(T.wirklichEinspielen)) return;
+      if (/\.json$/i.test(f.name)) {                     // alte Sicherung / Profil
+        const d = JSON.parse(await f.text());
+        if (!$("#mitStrikes").checked) delete d.strikes;
+        await senden("/api/sicherung", d);
+      } else {
+        const b64 = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(f); });
+        await senden("/api/sicherung/zip", { daten: b64, passwort: $("#pwEin").value, strikes: $("#mitStrikes").checked });
+      }
+      await einstellungenLaden(); reiterZeichnen(); hinweiseZeichnen();
+    }, T.eingespielt);
+  };
+  await zeichnen();
 }
 
 // ---------- Start ----------

@@ -156,7 +156,8 @@ class Bearbeiter(BaseHTTPRequestHandler):
         kopf = {"X-SignageCast": "1"}
         if self.headers.get("Content-Type"):
             kopf["Content-Type"] = self.headers["Content-Type"]
-        anf = urllib.request.Request(DIENST + self.path[len("/dienst"):], data=self.inhalt() if self.command == "POST" else None,
+        grenze = 420 * 1024 * 1024 if self.path.startswith("/dienst/api/sicherung/zip") else 32 * 1024 * 1024
+        anf = urllib.request.Request(DIENST + self.path[len("/dienst"):], data=self.inhalt(grenze) if self.command == "POST" else None,
                                      headers=kopf, method=self.command)
         try:
             with urllib.request.urlopen(anf, timeout=120) as r:

@@ -41,6 +41,16 @@ DE = {
     "ep_zu_gross": "Einspieler größer als 500 MB",
     "ep_keine_groesse": "Server nennt keine Gesamtgröße – nur „komplett“ möglich",
     "ep_nicht_bereit": "Einspieler noch nicht bereit – in ein paar Sekunden erneut versuchen",
+    # Sicherung
+    "sich_pw_kurz": "Passwort zu kurz – mindestens 12 Zeichen",
+    "sich_pw_schwach": "Passwort zu schwach – Groß- und Kleinbuchstaben, Ziffern und Sonderzeichen mischen (oder eine Passphrase ab 20 Zeichen)",
+    "sich_pw_fehlt": "Die Sicherung ist verschlüsselt – bitte das Passwort angeben",
+    "sich_pw_falsch": "Falsches Passwort für die Sicherung",
+    "sich_ungueltig": "Keine SignageCast-Sicherung",
+    "sich_zu_gross": "Sicherung zu groß",
+    "sich_kein_aes": "Verschlüsselung nicht verfügbar (Paket python3-pyzipper fehlt)",
+    "sich_geheim_ohne_pw": "Mit Zugangsdaten und Passwörtern nur mit Passwort (AES-256)",
+    "sich_name": "Unbekannte Sicherung",
 }
 
 

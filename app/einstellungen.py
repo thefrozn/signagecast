@@ -4,6 +4,8 @@
 import copy, json, os, re
 import layouts as L
 import quellen as Q
+from meldung import Meldung
+import sicherung as S
 
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
@@ -34,6 +36,8 @@ STANDARD = {
     },
     "layouts": [],                        # leer = beim Laden aus „anzeige“ das Layout „Standard“ bauen
     "quellen": [],                        # eigene Datenquellen (API/RSS/Bild), siehe app/quellen.py
+    # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
+    "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
     "video": {
         "aktiv": True,
         "takt_min": 3,                    # Minuten je Stream
@@ -312,6 +316,19 @@ def pruefen(e):
                           "vorlauf_s": _zahl(x.get("vorlauf_s", 10), 0, 60, int),
                           "vorab_mb": _zahl(x.get("vorab_mb", 0), 0, 2000, int)})      # 0 = komplett, sonst so viele MB vorab
         s["einspieler"] = liste
+    si = e.get("sicherung", {})
+    ss_ = s["sicherung"]
+    if "plan" in si: ss_["plan"] = si["plan"] if si["plan"] in ("aus", "taeglich", "woechentlich") else "aus"
+    if "wochentag" in si: ss_["wochentag"] = _zahl(si["wochentag"], 0, 6, int)
+    if "uhrzeit" in si: ss_["uhrzeit"] = _text(si["uhrzeit"], 5, r"([01]\d|2[0-3]):[0-5]\d")
+    if "behalten" in si: ss_["behalten"] = _zahl(si["behalten"], 1, 60, int)
+    if "mit_geheimnissen" in si: ss_["mit_geheimnissen"] = bool(si["mit_geheimnissen"])
+    if "passwort" in si:
+        ss_["passwort"] = str(si["passwort"] or "")[:200]
+        if ss_["passwort"]:
+            S.passwort_pruefen(ss_["passwort"])          # auch das Passwort der automatischen Sicherung muss stark sein
+    if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
+        raise Meldung("sich_geheim_ohne_pw")
     if "quellen" in e:
         try:
             s["quellen"] = Q.pruefen(e["quellen"])
