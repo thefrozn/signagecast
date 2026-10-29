@@ -38,6 +38,9 @@ STANDARD = {
     "quellen": [],                        # eigene Datenquellen (API/RSS/Bild), siehe app/quellen.py
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
+    # Updates (seit 0.13): melden = nur anzeigen; system auch „sicherheit“ (nur Sicherheitsupdates) oder „auto“ – automatisch
+    # nur im Wartungsfenster und nur, wenn niemand zuschaut
+    "updates": {"system": "melden", "signagecast": "melden", "fenster_von": "03:00", "fenster_bis": "05:00"},
     "video": {
         "aktiv": True,
         "takt_min": 3,                    # Minuten je Stream
@@ -316,6 +319,11 @@ def pruefen(e):
                           "vorlauf_s": _zahl(x.get("vorlauf_s", 10), 0, 60, int),
                           "vorab_mb": _zahl(x.get("vorab_mb", 0), 0, 2000, int)})      # 0 = komplett, sonst so viele MB vorab
         s["einspieler"] = liste
+    up = e.get("updates", {})
+    if "system" in up: s["updates"]["system"] = up["system"] if up["system"] in ("melden", "sicherheit", "auto") else "melden"
+    if "signagecast" in up: s["updates"]["signagecast"] = up["signagecast"] if up["signagecast"] in ("melden", "auto") else "melden"
+    for k in ("fenster_von", "fenster_bis"):
+        if k in up: s["updates"][k] = _text(up[k], 5, r"([01]\d|2[0-3]):[0-5]\d")
     si = e.get("sicherung", {})
     ss_ = s["sicherung"]
     if "plan" in si: ss_["plan"] = si["plan"] if si["plan"] in ("aus", "taeglich", "woechentlich") else "aus"

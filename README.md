@@ -176,6 +176,29 @@ see [NOTICE.md](NOTICE.md).
   decode H.265). Rootless Podman with the default port forwarder may hide the client address – use host networking there.
 - **Web pages** are embedded only if the site allows it (X-Frame-Options / frame-ancestors); nothing is circumvented.
 
+## Updates and backups
+
+**Updates tab** (LXC and native installations): available Debian updates (security updates marked) and the latest
+SignageCast release, with buttons to check, install all, install security updates only, update SignageCast and return
+to the previous version. Optionally automatic – system (all or security only) and SignageCast separately – but only
+within a maintenance window and only while nobody is watching. Default: notify only.
+
+- **Signed releases:** from v0.13.0 every release is signed with [minisign](https://jedisct1.github.io/minisign/).
+  The in-app update and `install.sh` only install a package whose signature matches the public key built into
+  SignageCast – a checksum alone would not help if the GitHub account were taken over.
+  Public key: `RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD`
+  (check manually: `minisign -Vm signagecast-vX.Y.Z.tar.gz -P <key>`).
+- **Safe update:** settings and data are backed up first; the previous version is kept. If SignageCast does not run
+  within a minute after the update, it returns to the previous version automatically.
+- **How it works:** the admin page runs without root rights. It only drops a request file with one word (`pruefen`,
+  `system`, `sicherheit`, `signagecast`, `zurueck`); a systemd path unit starts the fixed root script
+  `werkzeug/aktualisieren.sh`, which accepts only these actions – no sudo, no polkit.
+- **Docker / Podman:** updates come with the image (`docker pull …`, `podman auto-update`); the tab shows the commands.
+
+**Backup tab:** see the changelog for v0.12.0 – ZIP with settings, stream list, pictures and history; credentials only
+in an AES-256 encrypted ZIP with a strong password; automatic backups; restore in the admin or when installing
+(`SC_SICHERUNG=… SC_SICHERUNG_PASSWORT=…`).
+
 ## Thanks
 
 Special thanks to **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** by boschkundendienst – a
@@ -235,6 +258,11 @@ Intel-CPU mit Grafik ab der 7. Generation läuft gut. Ohne nutzbare Grafik gibt 
 **Raspberry Pi** eignet sich nicht als Server: Der Pi 5 hat keinen Video-Encoder, der Pi 4 nur H.264 bis 1080p und zu
 wenig CPU für Browser und Video. Erfahrung des Autors: Core i5-7500T mit HD 630 unter Proxmox, LXC mit 4 Kernen/3 GB,
 4K-Stream mit Live-Video und Ton bei etwa **10–11 W** CPU-Paket, im Leerlauf etwa 1,2 W (Details oben).
+
+**Updates & Sicherung:** Reiter „Updates“ (System- und SignageCast-Updates per Knopf oder automatisch im Wartungsfenster,
+nur wenn niemand zuschaut; Rückkehr zur vorigen Version, automatisch bei Fehlern) und „Sicherung“ (ZIP, mit Zugangsdaten
+nur AES-256 mit starkem Passwort). Ab v0.13.0 sind alle Releases mit minisign **signiert**; Updates installieren nur
+Pakete mit gültiger Signatur (öffentlicher Schlüssel `RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD`).
 
 **Danke** an **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** von boschkundendienst – das
 Raspberry-Pi-Signage-Projekt war die Inspiration für die Überlegungen hinter SignageCast (selbst betrieben, im Browser

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.13.0 (2026-10-29)
+- **Updates tab** (LXC/native): check for Debian and SignageCast updates, install all or security updates only,
+  update SignageCast, return to the previous version. **Automatic** per type (system: notify / security only / all;
+  SignageCast: notify / automatic) within a maintenance window and only while nobody is watching; default notify only.
+- **Signed releases** (minisign). The in-app update and `install.sh` require a valid signature for releases from
+  v0.13.0 on; older releases are installed with a note.
+- **Safe update:** backup of settings and data before the update, previous version kept (`/opt/signagecast.vorher`),
+  automatic return if the service does not run within 60 s.
+- Privilege separation: the admin drops a request file; a systemd path unit starts the fixed root script
+  `werkzeug/aktualisieren.sh` (only fixed actions, symlink-safe, own root-only folder).
+- New dependency: `minisign` (Debian package).
+
 ## v0.12.0 (2026-10-29)
 - **Backup as ZIP** (Backup tab): settings, stream list, strikes, **uploaded pictures** and **chart history**
   (Docker: also the admin password). When creating a backup the admin asks explicitly whether credentials and passwords

@@ -326,6 +326,79 @@ def einspieler_schleife():
         einspieler_neu.clear()
 
 
+# ---------- Updates (LXC/nativ): Anfrage an das root-Skript werkzeug/aktualisieren.sh ----------
+UPDATE_ANFRAGE = os.path.join(DATEN, "update-anfrage")
+UPDATE_AKTIONEN = ("pruefen", "system", "sicherheit", "signagecast", "zurueck")
+
+
+def updates_moeglich():
+    return not CONTAINER and os.path.exists("/etc/systemd/system/signagecast-aktualisieren.path")
+
+
+def update_status(aktion=None):
+    try:
+        return json.load(open(os.path.join(DATEN, f"aktualisierung-{aktion}.json" if aktion else "aktualisierung.json")))
+    except (OSError, ValueError):
+        return None
+
+
+def update_anfragen(aktion):
+    if not updates_moeglich():
+        raise M.Meldung("upd_container")
+    if aktion not in UPDATE_AKTIONEN:
+        raise M.Meldung("upd_aktion")
+    st = update_status() or {}
+    laeuft = st.get("phase") == "laeuft" and time.time() - os.path.getmtime(os.path.join(DATEN, "aktualisierung.json")) < 3600
+    if laeuft or os.path.exists(UPDATE_ANFRAGE):
+        raise M.Meldung("upd_laeuft")
+    with open(UPDATE_ANFRAGE, "w") as f:
+        f.write(aktion)
+
+
+def update_info():
+    vorher = None
+    try:
+        vorher = open("/opt/signagecast.vorher/VERSION").read().strip()
+    except OSError:
+        pass
+    return {"ok": True, "moeglich": updates_moeglich(), "betrieb": "container" if CONTAINER else "lxc", "version": VERSION,
+            "neue_version": zustand.get("neue_version"), "vorher": vorher, "letzte": update_status(),
+            "pruefung": update_status("pruefen"), "anfrage_offen": os.path.exists(UPDATE_ANFRAGE)}
+
+
+def update_auto_schleife():
+    """Täglich prüfen; im Wartungsfenster, wenn niemand zuschaut, je nach Einstellung automatisch aktualisieren
+    (SignageCast vor dem System, höchstens eine Aktion pro Durchlauf, jede Art einmal pro Tag)."""
+    time.sleep(120)
+    erledigt = {}
+    while True:
+        try:
+            if updates_moeglich():
+                u = einst()["updates"]
+                p = update_status("pruefen") or {}
+                alt = time.time() - os.path.getmtime(os.path.join(DATEN, "aktualisierung-pruefen.json")) if p else 1e9
+                heute = time.strftime("%Y-%m-%d")
+                jetzt = time.strftime("%H:%M")
+                im_fenster = u["fenster_von"] <= jetzt < u["fenster_bis"] if u["fenster_von"] < u["fenster_bis"] \
+                    else (jetzt >= u["fenster_von"] or jetzt < u["fenster_bis"])
+                if alt > 20 * 3600:
+                    update_anfragen("pruefen")
+                elif im_fenster and zuschauer() == 0:
+                    pakete = p.get("pakete") or []
+                    if u["signagecast"] == "auto" and zustand.get("neue_version") and erledigt.get("signagecast") != heute:
+                        erledigt["signagecast"] = heute
+                        update_anfragen("signagecast")
+                    elif u["system"] == "auto" and pakete and erledigt.get("system") != heute:
+                        erledigt["system"] = heute
+                        update_anfragen("system")
+                    elif u["system"] == "sicherheit" and any(x.get("sicherheit") for x in pakete) and erledigt.get("system") != heute:
+                        erledigt["system"] = heute
+                        update_anfragen("sicherheit")
+        except Exception:
+            pass                                  # z. B. „läuft bereits“ – beim nächsten Durchlauf erneut
+        time.sleep(60)
+
+
 def update_schleife():
     """Einmal am Tag nachsehen, ob es auf GitHub eine neuere Version gibt (nur Hinweis, installiert nichts)."""
     import urllib.request
@@ -1101,6 +1174,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
         if pfad == "/api/sicherung":
             return self.antwort(200, sicherung((q.get("geheim") or ["0"])[0] == "1"))
+        if pfad == "/api/updates":
+            return self.antwort(200, update_info())
         if pfad == "/api/sicherungen":
             return self.antwort(200, {"ok": True, "liste": S.liste(SICHERUNGEN), "auto": zustand.get("sicherung_auto"),
                                       "aes": S.pyzipper is not None})
@@ -1156,6 +1231,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             Q.demaskieren(d["quellen"], einst()["quellen"])
         if p == "/api/einstellungen" and isinstance(d.get("sicherung"), dict) and d["sicherung"].get("passwort") == Q.MASKE:
             d["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]
+        if p == "/api/updates/anfrage":
+            update_anfragen(str(d.get("aktion", "")))
+            return {}
         if p == "/api/sicherung/erstellen":
             geheim = bool(d.get("mit_geheimnissen"))
             roh = sicherung_zip(geheim, str(d.get("passwort") or "") or None)
@@ -1338,7 +1416,8 @@ def main():
         import verwaltung
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
-                 wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife):
+                 wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
+                 update_auto_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

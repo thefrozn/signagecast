@@ -51,6 +51,10 @@ DE = {
     "sich_kein_aes": "Verschlüsselung nicht verfügbar (Paket python3-pyzipper fehlt)",
     "sich_geheim_ohne_pw": "Mit Zugangsdaten und Passwörtern nur mit Passwort (AES-256)",
     "sich_name": "Unbekannte Sicherung",
+    # Updates
+    "upd_laeuft": "Es läuft bereits ein Update – bitte warten",
+    "upd_aktion": "Unbekannte Update-Aktion",
+    "upd_container": "Im Docker-/Podman-Betrieb wird über das Image aktualisiert (docker pull)",
 }
 
 

@@ -1,0 +1,9 @@
+[Unit]
+Description=SignageCast – Updates (System und SignageCast, mit Signaturprüfung und Rückkehr bei Fehlern)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/signagecast/werkzeug/aktualisieren.sh
+TimeoutStartSec=1h

@@ -1,0 +1,11 @@
+[Unit]
+Description=SignageCast – Anfrage der Verwaltung für Updates (startet signagecast-aktualisieren.service)
+
+[Path]
+# Die Verwaltung (Benutzer signagecast) legt nur diese Datei mit einem Wort ab (pruefen, system, sicherheit,
+# signagecast, zurueck); das Skript prüft das Wort und löscht die Datei.
+PathExists=/var/lib/signagecast/update-anfrage
+Unit=signagecast-aktualisieren.service
+
+[Install]
+WantedBy=multi-user.target

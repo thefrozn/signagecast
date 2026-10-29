@@ -42,7 +42,7 @@ fi
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free mesa-va-drivers \
   pulseaudio pulseaudio-utils fonts-roboto-unhinted fonts-dejavu-core fonts-open-sans fonts-lato fonts-montserrat \
-  fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 python3-pyzipper curl ca-certificates procps \
+  fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 python3-pyzipper curl ca-certificates procps minisign \
   cockpit-ws cockpit-system cockpit-bridge >/dev/null
 
 echo "== MediaMTX $MTX_VERSION"
@@ -86,10 +86,13 @@ chown -R signagecast:signagecast /etc/signagecast /var/lib/signagecast
 
 echo "== Programm"
 rm -rf /opt/signagecast.neu && mkdir -p /opt/signagecast.neu
-cp -r "$QUELLE/app" "$QUELLE/www" "$QUELLE/render" "$QUELLE/VERSION" /opt/signagecast.neu/
-chown -R root:root /opt/signagecast.neu && chmod -R a+rX,go-w /opt/signagecast.neu && chmod 755 /opt/signagecast.neu/render/tv-render.sh
-rm -rf /opt/signagecast.alt; [ -d /opt/signagecast ] && mv /opt/signagecast /opt/signagecast.alt
-mv /opt/signagecast.neu /opt/signagecast && rm -rf /opt/signagecast.alt
+cp -r "$QUELLE/app" "$QUELLE/www" "$QUELLE/render" "$QUELLE/werkzeug" "$QUELLE/VERSION" /opt/signagecast.neu/
+mkdir -p /opt/signagecast.neu/cockpit && cp -r "$QUELLE/cockpit/signagecast" /opt/signagecast.neu/cockpit/   # für die Rückkehr
+chown -R root:root /opt/signagecast.neu && chmod -R a+rX,go-w /opt/signagecast.neu
+chmod 755 /opt/signagecast.neu/render/tv-render.sh /opt/signagecast.neu/werkzeug/aktualisieren.sh
+# Vorige Version aufheben – für „Zurück zur vorigen Version“ und die automatische Rückkehr nach einem fehlerhaften Update
+rm -rf /opt/signagecast.vorher /opt/signagecast.alt; [ -d /opt/signagecast ] && mv /opt/signagecast /opt/signagecast.vorher
+mv /opt/signagecast.neu /opt/signagecast
 # Startfassung mit einem Pfad "tv"; der Datendienst schreibt danach die Pfade aller Fernseher hinein
 if [ ! -f /etc/signagecast/mediamtx.yml ] || grep -q "runOnDemand: /usr/local/bin\|{ABSCHALTEN}" /etc/signagecast/mediamtx.yml; then
   sed "s#{PFADE}#  tv:\n    runOnDemand: /opt/signagecast/render/tv-render.sh#" /opt/signagecast/render/mediamtx.yml > /etc/signagecast/mediamtx.yml
@@ -115,12 +118,16 @@ usermod -aG systemd-journal tvadmin
 
 echo "== Dienste"
 install -m 644 /opt/signagecast/render/signagecast.service /etc/systemd/system/signagecast.service
+# Updates aus der Verwaltung: Anfrage-Datei -> root-Skript mit festen Aktionen (kein sudo, kein polkit)
+install -m 644 /opt/signagecast/render/signagecast-aktualisieren.service /etc/systemd/system/signagecast-aktualisieren.service
+install -m 644 /opt/signagecast/render/signagecast-aktualisieren.path /etc/systemd/system/signagecast-aktualisieren.path
 # MediaMTX nur neu starten, wenn sich seine Dienstdatei geändert hat – sonst läuft der Stream am Fernseher weiter
 # (Änderungen an tv-render.sh wirken beim nächsten Start der Kette, die Pfade schreibt der Datendienst)
 MTX_NEU=1; cmp -s /opt/signagecast/render/signagecast-mediamtx.service /etc/systemd/system/signagecast-mediamtx.service && MTX_NEU=""
 install -m 644 /opt/signagecast/render/signagecast-mediamtx.service /etc/systemd/system/signagecast-mediamtx.service
 systemctl daemon-reload
 systemctl enable signagecast signagecast-mediamtx >/dev/null 2>&1
+systemctl enable --now signagecast-aktualisieren.path >/dev/null 2>&1
 systemctl restart signagecast
 if [ -n "$MTX_NEU" ]; then systemctl restart signagecast-mediamtx; else systemctl is-active -q signagecast-mediamtx || systemctl start signagecast-mediamtx; fi
 

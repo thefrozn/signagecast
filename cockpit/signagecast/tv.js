@@ -14,7 +14,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Video & Regeln", suche: "Stream-Suche", verbindung: "Verbindung", sicherung: "Sicherung" },
+              video: "Video & Regeln", suche: "Stream-Suche", verbindung: "Verbindung", updates: "Updates", sicherung: "Sicherung" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
@@ -120,6 +120,18 @@ const TEXTE = {
     wochentage: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"], sichBehalten: "Aufheben (Anzahl)",
     sichAutoText: "Die automatischen Sicherungen liegen im Container; lade ab und zu eine herunter, damit sie auch einen Ausfall des Containers überstehen.",
     pwEinspielen: "Passwort (falls verschlüsselt)",
+    upSc: "SignageCast", upInstalliert: "installiert", upNeueste: "neueste", upAktuell: "aktuell", upJetzt: "Jetzt aktualisieren",
+    upZurueck: (v) => `Zurück zu ${v}`, upZurueckFrage: "Zur vorigen Version zurückkehren? Einstellungen von vor dem letzten Update werden wiederhergestellt.",
+    upScText: "Vor dem Update werden Einstellungen und Daten gesichert. Installiert wird nur ein Release mit gültiger Signatur. Läuft SignageCast danach nicht innerhalb einer Minute, geht es automatisch zurück. Der Fernseher kann dabei kurz neu verbinden.",
+    upSystem: "System (Debian)", upPruefen: "Jetzt prüfen", upAlle: "Alle installieren", upNurSicher: "Nur Sicherheitsupdates",
+    upKeine: "Keine System-Updates verfügbar.", upAnzahl: (n, s) => `${n} Update${n === 1 ? "" : "s"}${s ? `, davon ${s} Sicherheit` : ""}`,
+    upGeprueft: "zuletzt geprüft", upNie: "noch nicht geprüft", upNeustart: "Neustart nötig, damit Kernel-Updates wirken",
+    upLetzte: "Letzte Aktion", upPhase: { laeuft: "läuft …", ok: "erledigt", fehler: "Fehler", zurueck: "zurückgekehrt" },
+    upAktion: { pruefen: "Prüfen", system: "System-Updates", sicherheit: "Sicherheitsupdates", signagecast: "SignageCast-Update", zurueck: "Zurück zur vorigen Version", unbekannt: "–" },
+    upAuto: "Automatik", upAutoSystem: "System", upAutoSc: "SignageCast", upModus: { melden: "nur melden", sicherheit: "Sicherheitsupdates automatisch", auto: "automatisch" },
+    upFenster: "Wartungsfenster", upAutoText: "Automatisch nur im Wartungsfenster und nur, wenn gerade niemand zuschaut. Geprüft wird einmal am Tag.",
+    upGestartet: "Gestartet – der Stand aktualisiert sich hier",
+    upContainer: "Im Docker-/Podman-Betrieb aktualisiert man über das Image – System und SignageCast stecken beide darin:",
     mitStrikes: "auch Strikes übernehmen", eingespielt: "Eingespielt", sicherungText: "Die Sicherung (ZIP) enthält Einstellungen, " +
       "Streamliste (mit Schutz-, Sperr- und Fundliste), Strikes, hochgeladene Bilder und den Verlauf der Diagramme – alles für eine neue Installation. Alte .json-Sicherungen und Profile lassen sich weiter einspielen.",
     wirklichEinspielen: "Einstellungen und Streamliste werden ersetzt. Fortfahren?",
@@ -129,7 +141,7 @@ const TEXTE = {
   },
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Video & rules", suche: "Stream search", verbindung: "Connection", sicherung: "Backup" },
+              video: "Video & rules", suche: "Stream search", verbindung: "Connection", updates: "Updates", sicherung: "Backup" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
@@ -197,6 +209,8 @@ const TEXTE = {
       sich_pw_fehlt: "The backup is encrypted – please enter the password", sich_pw_falsch: "Wrong password for the backup",
       sich_ungueltig: "Not a SignageCast backup", sich_zu_gross: "Backup too large", sich_kein_aes: "Encryption not available (package python3-pyzipper missing)",
       sich_geheim_ohne_pw: "With credentials and passwords only with a password (AES-256)", sich_name: "Unknown backup",
+      upd_laeuft: "An update is already running – please wait", upd_aktion: "Unknown update action",
+      upd_container: "With Docker/Podman update via the image (docker pull)",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
@@ -261,6 +275,18 @@ const TEXTE = {
     wochentage: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], sichBehalten: "Keep (number)",
     sichAutoText: "Automatic backups are stored in the container; download one now and then so it survives a loss of the container.",
     pwEinspielen: "Password (if encrypted)",
+    upSc: "SignageCast", upInstalliert: "installed", upNeueste: "latest", upAktuell: "up to date", upJetzt: "Update now",
+    upZurueck: (v) => `Back to ${v}`, upZurueckFrage: "Return to the previous version? Settings from before the last update are restored.",
+    upScText: "Settings and data are backed up before the update. Only a release with a valid signature is installed. If SignageCast does not run within a minute afterwards, it returns to the previous version automatically. The TV may reconnect briefly.",
+    upSystem: "System (Debian)", upPruefen: "Check now", upAlle: "Install all", upNurSicher: "Security updates only",
+    upKeine: "No system updates available.", upAnzahl: (n, s) => `${n} update${n === 1 ? "" : "s"}${s ? `, ${s} security` : ""}`,
+    upGeprueft: "last checked", upNie: "not checked yet", upNeustart: "Restart needed for kernel updates",
+    upLetzte: "Last action", upPhase: { laeuft: "running …", ok: "done", fehler: "error", zurueck: "returned" },
+    upAktion: { pruefen: "Check", system: "System updates", sicherheit: "Security updates", signagecast: "SignageCast update", zurueck: "Back to previous version", unbekannt: "–" },
+    upAuto: "Automatic", upAutoSystem: "System", upAutoSc: "SignageCast", upModus: { melden: "notify only", sicherheit: "security updates automatically", auto: "automatically" },
+    upFenster: "Maintenance window", upAutoText: "Automatic only within the maintenance window and only while nobody is watching. Checked once a day.",
+    upGestartet: "Started – the status updates here",
+    upContainer: "With Docker/Podman you update via the image – system and SignageCast are both inside:",
     mitStrikes: "also restore strikes", eingespielt: "Restored", sicherungText: "The backup (ZIP) contains settings, stream list " +
       "(with protected, rejected and found streams), strikes, uploaded pictures and the chart history – everything for a new installation. Old .json backups and profiles can still be restored.",
     wirklichEinspielen: "Settings and stream list will be replaced. Continue?",
@@ -313,7 +339,7 @@ let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, S
 
 // ---------- Reiter ----------
 const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, streams: streamsSeite, radio: radioSeite, einspieler: einspielerSeite, anzeige, video,
-                 suche: sucheSeite, verbindung, sicherung: sicherungSeite };
+                 suche: sucheSeite, verbindung, updates: updatesSeite, sicherung: sicherungSeite };
 let aktiv = "uebersicht", timer = null;
 function reiterZeichnen() {
   const nav = $("#reiter");
@@ -1042,6 +1068,56 @@ async function sicherungSeite(inhalt) {
       }
       await einstellungenLaden(); reiterZeichnen(); hinweiseZeichnen();
     }, T.eingespielt);
+  };
+  await zeichnen();
+}
+
+// ---------- Updates (seit 0.13): Anfrage an das root-Skript, Stand aus dessen Statusdateien ----------
+async function updatesSeite(inhalt) {
+  // Zeit aus dem Zeitstempel in Ortszeit (das root-Skript läuft in der Systemzeit des Containers, oft UTC)
+  const wann = (x) => (x && x.ts ? new Date(x.ts * 1000).toLocaleString(E.sprache === "en" ? "en-GB" : "de-DE", { dateStyle: "short", timeStyle: "short" }) : (x && x.zeit) || "");
+  const zeichnen = async () => {
+    const d = await holen("/api/updates");
+    if (!d.moeglich) {
+      inhalt.innerHTML = `<div class="karte"><h2>Updates</h2><p>${esc(T.upContainer)}</p>
+        <pre>docker pull ghcr.io/thefrozn/signagecast:latest\ndocker compose up -d</pre><p class="leise">Podman: podman auto-update</p></div>`;
+      return;
+    }
+    const p = d.pruefung || {}, pakete = p.pakete || [], sicher = pakete.filter((x) => x.sicherheit).length;
+    const neueste = d.neue_version || p.neueste || "";
+    const neuer = d.neue_version && d.neue_version !== "v" + d.version;
+    const l = d.letzte, laeuft = (l && l.phase === "laeuft") || d.anfrage_offen;
+    const U = E.updates;
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.upSc)}</h2>
+        <p>${esc(T.upInstalliert)}: <b>${esc(d.version)}</b> · ${esc(T.upNeueste)}: <b>${esc(neueste || "–")}</b>${neuer ? "" : ` <span class="gut">${esc(T.upAktuell)}</span>`}</p>
+        <p class="leise">${esc(T.upScText)}</p>
+        <div class="zeile">${neuer ? `<button class="knopf haupt" data-a="signagecast" ${laeuft ? "disabled" : ""}>${esc(T.upJetzt)}</button>` : ""}
+          ${d.vorher ? `<button class="knopf" data-a="zurueck" ${laeuft ? "disabled" : ""}>${esc(T.upZurueck(d.vorher))}</button>` : ""}
+          <a href="https://github.com/thefrozn/signagecast/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></div></div>
+      <div class="karte"><h2>${esc(T.upSystem)}</h2>
+        <p>${p.zeit ? `${pakete.length ? esc(T.upAnzahl(pakete.length, sicher)) : esc(T.upKeine)} · ${esc(T.upGeprueft)} ${esc(wann(p))}` : esc(T.upNie)}
+          ${p.neustart_noetig ? `<br><span class="warn">${esc(T.upNeustart)}</span>` : ""}</p>
+        ${pakete.length ? `<details><summary>${pakete.length}</summary>${pakete.map((x) => `<div class="leise">${x.sicherheit ? "🔒 " : ""}${esc(x.name)} ${esc(x.alt)} → ${esc(x.neu)}</div>`).join("")}</details>` : ""}
+        <div class="zeile"><button class="knopf" data-a="pruefen" ${laeuft ? "disabled" : ""}>${esc(T.upPruefen)}</button>
+          ${pakete.length ? `<button class="knopf haupt" data-a="system" ${laeuft ? "disabled" : ""}>${esc(T.upAlle)}</button>` : ""}
+          ${sicher ? `<button class="knopf" data-a="sicherheit" ${laeuft ? "disabled" : ""}>${esc(T.upNurSicher)}</button>` : ""}</div></div>
+      <div class="karte"><h2>${esc(T.upLetzte)}</h2><p>${l ? `<b>${esc(T.upAktion[l.aktion] || l.aktion)}</b> · ${esc(T.upPhase[l.phase] || l.phase)}${E.sprache === "de" || l.phase === "fehler" ? " · " + esc(l.meldung) : ""} · ${esc(wann(l))}` : "–"}</p></div>
+      <div class="karte"><h2>${esc(T.upAuto)}</h2>
+        <div class="zeile"><label>${esc(T.upAutoSystem)}</label><select id="upSys">${["melden", "sicherheit", "auto"].map((k) => `<option value="${k}" ${k === U.system ? "selected" : ""}>${esc(T.upModus[k])}</option>`).join("")}</select></div>
+        <div class="zeile"><label>${esc(T.upAutoSc)}</label><select id="upSc">${["melden", "auto"].map((k) => `<option value="${k}" ${k === U.signagecast ? "selected" : ""}>${esc(T.upModus[k])}</option>`).join("")}</select></div>
+        <div class="zeile"><label>${esc(T.upFenster)}</label><input type="time" id="upVon" value="${esc(U.fenster_von)}"> – <input type="time" id="upBis" value="${esc(U.fenster_bis)}"></div>
+        <p class="leise">${esc(T.upAutoText)}</p>
+        <div class="zeile"><button class="knopf haupt" id="upOk">${esc(T.speichern)}</button></div></div>`;
+    inhalt.querySelectorAll("[data-a]").forEach((k) => {
+      k.onclick = (e) => {
+        if (k.dataset.a === "zurueck" && !confirm(T.upZurueckFrage)) return;
+        aktion(e.target, async () => { await senden("/api/updates/anfrage", { aktion: k.dataset.a }); setTimeout(() => zeichnen().catch(() => {}), 1500); }, T.upGestartet);
+      };
+    });
+    $("#upOk").onclick = (e) => speichernE({ updates: { system: $("#upSys").value, signagecast: $("#upSc").value,
+                                                        fenster_von: $("#upVon").value, fenster_bis: $("#upBis").value } }, e.target);
+    clearInterval(timer);
+    timer = setInterval(() => { if (laeuft) zeichnen().catch(() => {}); }, 3000);   // während einer Aktion mitlaufen
   };
   await zeichnen();
 }
