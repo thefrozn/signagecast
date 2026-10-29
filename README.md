@@ -21,6 +21,10 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 - **Layout editor** – drag, resize and configure elements on a 48 × 27 grid: clock, date, weather, forecast, rooms, tiles
   with any Home Assistant value, live video, radio station, free text and ticker, logo, camera, calendar / waste
   collection, messages from Home Assistant. Conditions (“only show when …”), fonts, colours, 9 text positions.
+- **Your own data sources** – any JSON API, RSS/Atom feed or picture address, fetched by the container at your interval
+  (paste a `curl` command, test it, pick values by clicking in the response tree; API keys stay in the container).
+  Elements: API value, API list / feed (also as ticker), API picture, gauge (bar or traffic light), countdown, QR code,
+  placeholders like `{source:path}` in any text, and conditions on API values.
 - **Templates** – Standard, Video large, Video only, Info without video, *Practice – calm (waiting room)*,
   *Company – corporate design*, *Window to the world*, Night.
 - **Backgrounds by time of day** – picture sets (nature, city, sky, mountains, sea) for sunrise, day, sunset and night,
@@ -111,6 +115,9 @@ see [NOTICE.md](NOTICE.md).
 - The small browser extension `render/h264-fluessig` tells YouTube that H.264 up to 1080p plays smoothly – Chromium in
   the container decodes without GPU and would otherwise report “not smooth”, and YouTube would deliver only 144p.
 - The admin user `tvadmin` has no administrator rights in the container.
+- **Data sources:** only http/https, response at most 1 MB (pictures 5 MB), 10 s timeout, interval 30 s to 24 h; on
+  errors the next attempt waits longer (up to 1 h). Secret headers are shown as •••• and left out of backups unless you
+  tick “include secrets”. The TV page only receives the finished values, never addresses or keys.
 
 ## Support
 
@@ -140,6 +147,8 @@ Ohne Intel-Grafik läuft ein Notbetrieb mit H.264 in Full HD per CPU.
 
 Danach **https://&lt;IP&gt;:9090** öffnen, Anmeldung **tvadmin** / Startpasswort **tvadmin** (bitte ändern),
 unter **Verbindung** Home Assistant einrichten (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.
+Eigene Daten: Reiter **Datenquellen** (JSON-API, RSS-Feed, Bild; curl-Befehl einfügen, Wert im Antwort-Baum anklicken) und
+die Bausteine API-Wert, API-Liste, API-Bild, Anzeige (Balken/Ampel), Countdown, QR-Code sowie Platzhalter `{quelle:pfad}`.
 Voraussetzungen: Intel-Grafik, ein Fernseher-Browser mit H.265; Home Assistant optional.
 
 ## License

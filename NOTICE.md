@@ -7,6 +7,7 @@ SignageCast itself is licensed under the MIT License (see `LICENSE`). It contain
 | [Material Design Icons](https://pictogrammers.com/library/mdi/) 7.4.47 (Pictogrammers) | `www/mdi/`, `cockpit/signagecast/mdi/` | Apache License 2.0 |
 | Weather pictures | `www/bilder/*.jpg`, `www/bilder/verlauf.png` | CC0 / public domain – sources in `www/bilder/QUELLEN.md` |
 | Background picture sets (20 pictures) | `www/bilder/stile/` | CC0 / public domain – sources in `www/bilder/stile/QUELLEN.md` |
+| [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 (Kazuhiko Arase) | `www/qrcode.js` | MIT License |
 | [MediaMTX](https://github.com/bluenviron/mediamtx) v1.21.3 | downloaded by `installieren.sh` (checksum verified), not included | MIT License |
 | Chromium, ffmpeg, Xvfb, PulseAudio, Cockpit, fonts | Debian packages, installed by `installieren.sh` | their respective licenses |
 

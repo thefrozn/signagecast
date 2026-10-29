@@ -13,7 +13,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Video & Regeln", suche: "Stream-Suche", verbindung: "Verbindung", sicherung: "Sicherung" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
@@ -101,6 +101,7 @@ const TEXTE = {
     ], anleitungEnde: "4. Konfiguration prüfen (Entwicklerwerkzeuge → YAML → Konfiguration prüfen) und HA neu starten. Danach hier „Verbindung testen“. " +
       "Wichtig: trusted_networks muss als erster Eintrag stehen, sonst erscheint eine Anmeldeseite. Steht dort schon ein homeassistant:-Abschnitt, nur die Zeilen darunter ergänzen.",
     sicherungLaden: "Sicherung herunterladen", sicherungEinspielen: "Sicherung oder Profil einspielen",
+    mitGeheim: "mit Geheimnissen (API-Schlüssel, Passwörter der Datenquellen) – Datei dann nicht weitergeben",
     mitStrikes: "auch Strikes übernehmen", eingespielt: "Eingespielt", sicherungText: "Die Sicherung enthält Einstellungen, " +
       "Streamliste (mit Schutz-, Sperr- und Fundliste) und Strikes. Ein Profil ist eine Sicherung als Vorlage für eine neue Installation.",
     wirklichEinspielen: "Einstellungen und Streamliste werden ersetzt. Fortfahren?",
@@ -109,7 +110,7 @@ const TEXTE = {
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+    reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Video & rules", suche: "Stream search", verbindung: "Connection", sicherung: "Backup" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
@@ -196,6 +197,7 @@ const TEXTE = {
     ], anleitungEnde: "4. Check the configuration (Developer tools → YAML → Check configuration) and restart HA. Then press “Test connection” here. " +
       "Important: trusted_networks must be the first provider, otherwise a login page appears. If there is already a homeassistant: section, only add the lines below it.",
     sicherungLaden: "Download backup", sicherungEinspielen: "Restore backup or profile",
+    mitGeheim: "include secrets (API keys, passwords of data sources) – then do not share the file",
     mitStrikes: "also restore strikes", eingespielt: "Restored", sicherungText: "The backup contains settings, stream list " +
       "(with protected, rejected and found streams) and strikes. A profile is a backup used as a template for a new installation.",
     wirklichEinspielen: "Settings and stream list will be replaced. Continue?",
@@ -242,7 +244,7 @@ const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 
 let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
 
 // ---------- Reiter ----------
-const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, streams: streamsSeite, radio: radioSeite, einspieler: einspielerSeite, anzeige, video,
+const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, streams: streamsSeite, radio: radioSeite, einspieler: einspielerSeite, anzeige, video,
                  suche: sucheSeite, verbindung, sicherung: sicherungSeite };
 let aktiv = "uebersicht", timer = null;
 function reiterZeichnen() {
@@ -864,13 +866,14 @@ async function einspielerSeite(inhalt) {
 // ---------- Sicherung ----------
 async function sicherungSeite(inhalt) {
   inhalt.innerHTML = `<div class="karte"><p>${esc(T.sicherungText)}</p>
+      <div class="zeile"><label><input type="checkbox" id="mitGeheim"> ${esc(T.mitGeheim)}</label></div>
       <div class="zeile"><button class="knopf haupt" id="laden">${esc(T.sicherungLaden)}</button></div></div>
     <div class="karte"><h2>${esc(T.sicherungEinspielen)}</h2>
       <div class="zeile"><input type="file" id="datei" accept=".json,application/json"></div>
       <div class="zeile"><label><input type="checkbox" id="mitStrikes"> ${esc(T.mitStrikes)}</label></div>
       <div class="zeile"><button class="knopf" id="ein">${esc(T.sicherungEinspielen)}</button></div></div>`;
   $("#laden").onclick = (e) => aktion(e.target, async () => {
-    const d = await holen("/api/sicherung");
+    const d = await holen("/api/sicherung" + ($("#mitGeheim").checked ? "?geheim=1" : ""));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 1)], { type: "application/json" }));
     a.download = `signagecast-sicherung-${new Date().toISOString().slice(0, 10)}.json`;

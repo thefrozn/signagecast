@@ -18,6 +18,7 @@ import layouts as L                           # noqa: E402
 import wetter as W                            # noqa: E402
 import zeit as Z                              # noqa: E402
 import hardware as HW                         # noqa: E402
+import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +44,15 @@ einspieler_neu = threading.Event()
 
 def einst():
     return zustand["einstellungen"]
+
+
+def einst_aussen():
+    """Einstellungen für die Verwaltung: geheime Kopfzeilen der Datenquellen nur als ••••."""
+    e = einst()
+    return dict(e, quellen=Q.maskieren(e["quellen"]))
+
+
+qn = Q.Quellen(lambda: einst())
 
 
 ha = HA(lambda: einst()["ha"]["url"])
@@ -265,6 +275,9 @@ def tv_daten(tv_id):
     if e["anzeige"]["wetter_quelle"] == "met" and met.daten:
         teil["wetter"] = met.aktuell()
         teil["vorhersage"] = met.vorhersage(5)
+    api, bed = Q.baustein_werte(layout, qn, e["sprache"] or "en", e["quellen"])
+    if bed:
+        teil["werte"] = dict(teil.get("werte") or {}, **bed)
     zt = zustand.get("zeit") or {}
     st = e["standort"]
     tz = L.tageszeit(sonnenhoehe(st["breite"], st["laenge"]), sonnenhoehe(st["breite"], st["laenge"], time.time() + 600))
@@ -273,7 +286,7 @@ def tv_daten(tv_id):
                 zeit_abweichung_ms=round((zt.get("abweichung_s") or 0) * 1000) if zt.get("korrektur") else 0,
                 zeitzone=wirksame_zeitzone(),
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
-                tv=t["id"], layout=layout, kalender=kal, streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                tv=t["id"], layout=layout, kalender=kal, api=api, streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
                 radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
                        # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt
@@ -571,9 +584,12 @@ def devport(tv_id):
 
 
 # ---------- Sicherung / Profil ----------
-def sicherung():
+def sicherung(mit_geheimnissen=False):
+    e = einst()
+    if not mit_geheimnissen:              # Standard: ohne API-Schlüssel/Passwörter (Datei kann weitergegeben werden)
+        e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]))
     return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
-            "einstellungen": einst(), "streams": streams.alle(), "strikes": streams.strikes()}
+            "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()}
 
 
 def einspielen(d, mit_strikes=True):
@@ -581,7 +597,15 @@ def einspielen(d, mit_strikes=True):
                                                          "tv-stream-sicherung", "tv-stream-profil"):   # alte Namen (bis 0.4.1)
         raise E.Fehler("Keine SignageCast-Sicherung bzw. kein Profil")
     if "einstellungen" in d:
-        zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d["einstellungen"]))
+        neu = d["einstellungen"]
+        if isinstance(neu, dict) and isinstance(neu.get("quellen"), list):
+            # Sicherung ohne Geheimnisse: leere geheime Werte aus der laufenden Einrichtung übernehmen
+            for q in neu["quellen"]:
+                for k in q.get("kopf") or []:
+                    if k.get("geheim") and not k.get("wert"):
+                        k["wert"] = Q.MASKE
+            Q.demaskieren(neu["quellen"], einst()["quellen"])
+        zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), neu))
         render_schreiben(einst())
     if "streams" in d:
         s = d["streams"]
@@ -640,6 +664,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/radio/([a-z][a-z0-9]{0,11})/([a-z0-9]{4,12})", p.path)
         if m:                                     # Radio mit Puffer (für die TV-Seite)
             return radio_weiterleiten(self, m.group(1), m.group(2))
+        m = re.fullmatch(r"/qbild/([a-z0-9_]{2,16})", p.path)
+        if m:                                     # Bild aus einer Datenquelle (für die TV-Seite)
+            q = next((x for x in einst()["quellen"] if x["id"] == m.group(1)), None)
+            pfad = (urllib.parse.parse_qs(p.query).get("p") or [""])[0]
+            b = None
+            if q and q["art"] == "bild":
+                b = qn.daten(q["id"])
+            elif q and pfad and qn.daten(q["id"]) is not None:
+                b = qn.bild_aus_url(q, Q.wert_bei(qn.daten(q["id"]), pfad))
+            return self.antwort(200, b["bild"], b["typ"]) if b else self.antwort(404, {"ok": False})
         m = re.fullmatch(r"/bild/([0-9a-f]{16}\.(jpg|png))", p.path)
         if m:
             try:
@@ -656,7 +690,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/status":
             return self.antwort(200, status())
         if pfad == "/api/einstellungen":
-            return self.antwort(200, {"einstellungen": einst(), "kategorien": E.KATEGORIEN, "stufen": E.STUFEN,
+            return self.antwort(200, {"einstellungen": einst_aussen(), "kategorien": E.KATEGORIEN, "stufen": E.STUFEN,
                                       "bausteine": {t: {k: std for k, (_, std) in o.items()} for t, o in L.TYPEN.items()},
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
@@ -704,7 +738,15 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             bild = vorschau((q.get("tv") or [None])[0])
             return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
         if pfad == "/api/sicherung":
-            return self.antwort(200, sicherung())
+            return self.antwort(200, sicherung((q.get("geheim") or ["0"])[0] == "1"))
+        if pfad == "/api/quellen/status":
+            return self.antwort(200, {"ok": True, "status": qn.status()})
+        if pfad == "/api/quellen/daten":
+            qid = (q.get("id") or [""])[0]
+            d = qn.daten(qid)
+            if isinstance(d, dict) and "bild" in d and isinstance(d.get("bild"), bytes):
+                d = {"bild": f"{d['typ']}, {d['groesse'] // 1024} KB"}
+            return self.antwort(200, {"ok": d is not None, "daten": Q.gekuerzt(d), "fehler": (qn.stand.get(qid) or {}).get("fehler")})
         if pfad == "/api/wache":
             n = min(int((q.get("n") or ["60"])[0]), 2000)
             datei = os.path.join(wache.ORDNER, time.strftime("%Y-%m-%d") + ".jsonl")
@@ -738,6 +780,31 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": False, "fehler": str(ex).strip("'")})
 
     def api_post(self, p, d):
+        if p == "/api/einstellungen" and isinstance(d.get("quellen"), list):
+            Q.demaskieren(d["quellen"], einst()["quellen"])
+        if p == "/api/quellen/curl":
+            try:
+                return Q.aus_curl(d.get("befehl", ""))
+            except Q.Fehler as ex:
+                raise E.Fehler(str(ex))
+        if p == "/api/quellen/test":
+            try:
+                roh = [d.get("quelle") or {}]
+                Q.demaskieren(roh, einst()["quellen"])
+                q = Q.pruefen(roh)[0]
+                daten, ms = qn.abrufen(q)
+            except Q.Fehler as ex:
+                raise E.Fehler(str(ex))
+            if q["art"] == "bild":
+                return {"ok": True, "dauer_ms": ms, "daten": {"bild": f"{daten['typ']}, {daten['groesse'] // 1024} KB"},
+                        "bild": f"data:{daten['typ']};base64,{base64.b64encode(daten['bild']).decode()}" if daten["groesse"] < 1_500_000 else None}
+            return {"ok": True, "dauer_ms": ms, "daten": Q.gekuerzt(daten)}
+        if p == "/api/quellen/jetzt":
+            s = qn.stand.get(str(d.get("id", "")))
+            if s:
+                s["naechster"] = 0
+                qn.neu.set()
+            return {}
         if p == "/api/einstellungen":
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
             render_schreiben(einst())
@@ -745,7 +812,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             einspieler_neu.set()
             zeit_neu.set()
             wetter_neu.set()
-            return {"einstellungen": einst()}
+            qn.neu.set()
+            return {"einstellungen": einst_aussen()}
         if p == "/api/streams":
             s = streams.hinzufuegen(str(d.get("link", "")), d.get("name") or None, d.get("kategorie", "neu"),
                                     d.get("breite"), d.get("laenge"))
@@ -788,7 +856,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             e = einst()
             sender = e["radio"]["sender"] + [{"id": radio.neue_id(), "name": str(d.get("name") or "").strip()[:60] or url[:60], "url": url}]
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": sender}}))
-            return {"sender": sender[-1], "einstellungen": einst()}
+            return {"sender": sender[-1], "einstellungen": einst_aussen()}
         m = re.fullmatch(r"/api/einspieler/([a-z0-9]{4,12})/jetzt", p)
         if m:                                     # zum Testen sofort zeigen (die TV-Seiten holen es mit den nächsten Daten)
             if m.group(1) not in zustand.get("einspieler", {}):
@@ -816,7 +884,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if neu:
                 zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": e["radio"]["sender"] + neu}}))
             return {"neu": [x["name"] for x in neu], "fehler": [f"{n or u}: {f}" for n, u, f in ergebnis if f],
-                    "doppelt": sum(1 for n, u, f in ergebnis if not f and u in vorhanden), "einstellungen": einst()}
+                    "doppelt": sum(1 for n, u, f in ergebnis if not f and u in vorhanden), "einstellungen": einst_aussen()}
         m = re.fullmatch(r"/api/radio/sender/([a-z0-9]{4,12})", p)
         if m:                                     # Sender bearbeiten: Name und/oder Adresse (neue Adresse wird geprüft)
             e = einst()
@@ -829,14 +897,14 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             name = str(d.get("name") or "").strip()[:60] or alt["name"]
             sender = [dict(x, name=name, url=url) if x["id"] == alt["id"] else x for x in e["radio"]["sender"]]
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": sender}}))
-            return {"einstellungen": einst()}
+            return {"einstellungen": einst_aussen()}
         m = re.fullmatch(r"/api/radio/sender/([a-z0-9]{4,12})/entfernen", p)
         if m:
             e = einst()
             sender = [x for x in e["radio"]["sender"] if x["id"] != m.group(1)]
             tvs = [dict(t, radio_sender="" if t["radio_sender"] == m.group(1) else t["radio_sender"]) for t in e["fernseher"]]
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": sender}, "fernseher": tvs}))
-            return {"einstellungen": einst()}
+            return {"einstellungen": einst_aussen()}
         if p in ("/api/aktion/seite-neu-laden", "/api/aktion/kette-neu-starten"):
             ziele = [t for t in einst()["fernseher"] if not d.get("tv") or t["id"] == d.get("tv")]
             if p.endswith("seite-neu-laden"):
@@ -869,7 +937,7 @@ def main():
         import verwaltung
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
-                 wetter_schleife, zeit_schleife):
+                 wetter_schleife, zeit_schleife, qn.schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

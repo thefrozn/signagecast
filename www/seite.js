@@ -24,7 +24,7 @@ const TEXTE = {
         feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway",
         heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB" },
 };
-const FAKTOR = { uhr: 0.82, temperatur: 0.72, datum: 0.5, wetterlage: 0.6, feuchte: 0.5, wind: 0.5, sender: 0.5, text: 0.55, meldung: 0.42 };
+const FAKTOR = { uhr: 0.82, temperatur: 0.72, datum: 0.5, wetterlage: 0.6, feuchte: 0.5, wind: 0.5, sender: 0.5, text: 0.55, meldung: 0.42, countdown: 0.55 };
 let T = TEXTE.de;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -73,6 +73,17 @@ function bauen(layout) {
         if (e.h >= 3) d.classList.add("mehrzeilig");
       }
     }
+    if (e.typ === "apiwert") d.innerHTML = (e.optionen.icon ? `<span class="mdi ${esc(e.optionen.icon)}"></span>` : "") +
+      `<div>${e.optionen.name ? `<div class="name">${esc(e.optionen.name)}</div>` : ""}<div class="wert"></div></div>`;
+    if (e.typ === "apiliste") {
+      if (e.optionen.laufband) { d.classList.add("laufband"); d.innerHTML = "<span></span>"; }
+      else d.innerHTML = (e.optionen.titel ? `<div class="titel">${esc(e.optionen.titel)}</div>` : "") + `<div class="zeilen"></div>`;
+    }
+    if (e.typ === "apibild") { d.innerHTML = `<img alt="">`; d.classList.add(e.optionen.anpassung === "fuellen" ? "fuellen" : "einpassen"); }
+    if (e.typ === "anzeige") d.innerHTML = e.optionen.darstellung === "ampel"
+      ? `<span class="lampe"></span><div><div class="name">${esc(e.optionen.name)}</div><div class="wert"></div></div>`
+      : `<div class="kopf"><span class="name">${esc(e.optionen.name)}</span><span class="wert"></span></div><div class="spur"><div class="fuellung"></div></div>`;
+    if (e.typ === "qrcode") d.innerHTML = `<div class="qr"></div>${e.optionen.beschriftung ? `<div class="beschriftung">${esc(e.optionen.beschriftung)}</div>` : ""}`;
     if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
@@ -154,8 +165,8 @@ function laufband(d) {
 
 function bedingungErfuellt(b) {
   if (!b) return true;
-  const w = (daten.werte[b.entity] || {}).state;
-  if (w === undefined) return false;
+  const w = (daten.werte[b.entity || `api:${b.quelle}:${b.pfad}`] || {}).state;
+  if (w === undefined || w === null) return false;
   const an = ["on", "open", "home", "true", "playing", "detected", "unlocked"].includes(String(w).toLowerCase());
   switch (b.op) {
     case "=": return String(w) === b.wert;
@@ -244,6 +255,86 @@ function fuellen() {
         }
         break;
       }
+      case "text": {
+        const a = (daten.api || {})[e.id];
+        if (a && a.text !== b.apiText) {
+          b.apiText = a.text;
+          if (o.laufband) { d.querySelector("span").textContent = a.text; delete d.dataset.laeuft; }
+          else d.textContent = a.text;
+        }
+        break;
+      }
+      case "apiwert": {
+        const a = (daten.api || {})[e.id] || {};
+        d.querySelector(".wert").textContent = a.text || "";
+        d.style.fontSize = Math.min(d.clientHeight * (o.name ? 0.3 : 0.5), 120) + "px";
+        for (let i = 0; i < 15 && d.scrollWidth > d.clientWidth + 1; i++) d.style.fontSize = parseFloat(d.style.fontSize) * 0.9 + "px";
+        sichtbar = sichtbar && (a.da !== false || !o.quelle);
+        break;
+      }
+      case "apiliste": {
+        const a = (daten.api || {})[e.id] || { zeilen: [] };
+        const neu = JSON.stringify(a.zeilen);
+        if (neu !== b.apiText) {
+          b.apiText = neu;
+          if (o.laufband) {
+            d.querySelector("span").textContent = a.zeilen.join("   ·   "); delete d.dataset.laeuft;
+          } else {
+            const z = d.querySelector(".zeilen");
+            z.innerHTML = a.zeilen.map((x) => `<div class="zeile">${esc(x)}</div>`).join("");
+            const n = Math.max(1, a.zeilen.length + (o.titel ? 1.3 : 0));
+            d.style.fontSize = Math.min(d.clientHeight / n * 0.62, 44) + "px";
+            for (let i = 0; i < 15 && d.scrollHeight > d.clientHeight + 1; i++) d.style.fontSize = parseFloat(d.style.fontSize) * 0.92 + "px";
+          }
+        }
+        sichtbar = sichtbar && a.zeilen.length > 0;
+        break;
+      }
+      case "apibild": {
+        const a = (daten.api || {})[e.id];
+        const img = d.querySelector("img");
+        if (a && a.bild && img.dataset.src !== a.bild) { img.dataset.src = a.bild; img.src = a.bild; }
+        sichtbar = sichtbar && !!(a && a.bild);
+        break;
+      }
+      case "anzeige": {
+        const a = (daten.api || {})[e.id] || {};
+        const z = a.zahl;
+        d.querySelector(".wert").textContent = a.text || "";
+        let farbe = "gruen";
+        if (z != null) {
+          const schlecht = (g) => (o.umkehren ? z <= g : z >= g);
+          farbe = schlecht(o.rot) ? "rot" : schlecht(o.gelb) ? "gelb" : "gruen";
+        }
+        d.dataset.farbe = z == null ? "" : farbe;
+        if (o.darstellung === "ampel") d.style.fontSize = Math.min(d.clientHeight * 0.22, d.clientWidth * 0.1) + "px";
+        else {
+          d.style.fontSize = Math.min(d.clientHeight * 0.28, d.clientWidth * 0.08) + "px";
+          const anteil = z == null || o.max === o.min ? 0 : Math.max(0, Math.min(1, (z - o.min) / (o.max - o.min)));
+          d.querySelector(".fuellung").style.width = anteil * 100 + "%";
+        }
+        break;
+      }
+      case "countdown": {
+        b.ziel = ((daten.api || {})[e.id] || {}).ziel || "";
+        sichtbar = sichtbar && !!b.ziel;
+        countdown(b);
+        break;
+      }
+      case "qrcode": {
+        const inhalt = ((daten.api || {})[e.id] || {}).inhalt || "";
+        if (inhalt !== b.apiText && typeof qrcode === "function") {
+          b.apiText = inhalt;
+          const q = d.querySelector(".qr");
+          if (inhalt) {
+            qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+            const qr = qrcode(0, "M"); qr.addData(inhalt); qr.make();
+            q.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+          } else q.innerHTML = "";
+        }
+        sichtbar = sichtbar && !!inhalt;
+        break;
+      }
       case "meldung": {
         const s = wert(o.entity);
         const m = meldungen[o.entity];
@@ -258,11 +349,28 @@ function fuellen() {
     }
     d.classList.toggle("versteckt", !sichtbar);
     if (e.typ === "video" && player) player.aus = !sichtbar;
-    if (sichtbar && e.typ === "text" && e.optionen.laufband) laufband(d);
+    if (sichtbar && (e.typ === "text" || e.typ === "apiliste") && e.optionen.laufband) laufband(d);
     else if (sichtbar && e.typ === "text" && d.classList.contains("mehrzeilig")) einpassenMehrzeilig(d);
     else if (sichtbar && FAKTOR[e.typ] && e.typ !== "uhr" && e.typ !== "datum") einpassen(d, FAKTOR[e.typ]);
   }
   uhr();
+}
+
+// Countdown: Rest bis zum Ziel in Tagen/Stunden/Minuten/Sekunden nach der Vorlage, danach der Ende-Text
+function countdown(b) {
+  const o = b.e.optionen, d = b.d;
+  if (!b.ziel) { d.textContent = ""; return; }
+  const rest = Math.floor((new Date(b.ziel).getTime() - jetztMs()) / 1000);
+  let text;
+  if (isNaN(rest)) text = "";
+  else if (rest <= 0) text = o.ende || "";
+  else {
+    const w = { tage: Math.floor(rest / 86400), stunden: Math.floor(rest % 86400 / 3600), minuten: Math.floor(rest % 3600 / 60), sekunden: rest % 60 };
+    // ohne {tage} in der Vorlage zählen die Stunden alles mit
+    if (!/\{tage\}/.test(o.vorlage)) w.stunden += w.tage * 24;
+    text = (o.vorlage || "{tage}").replace(/\{(tage|stunden|minuten|sekunden)\}/g, (_, k) => (k === "tage" || k === "stunden" ? String(w[k]) : String(w[k]).padStart(2, "0")));
+  }
+  if (text !== d.textContent) { d.textContent = text; if (!d.classList.contains("versteckt")) einpassen(d, FAKTOR.countdown); }
 }
 
 function uhr() {
@@ -276,6 +384,8 @@ function uhr() {
       d.textContent = jetzt.toLocaleDateString(T.locale, { ...(e.optionen.wochentag ? { weekday: "long" } : {}), day: "numeric", month: "long",
                                                            ...(e.optionen.jahr ? { year: "numeric" } : {}), ...zone });
       if (!d.dataset.gepasst) { einpassen(d, FAKTOR.datum); d.dataset.gepasst = 1; }
+    } else if (e.typ === "countdown") {
+      countdown(bausteine.find((x) => x.e === e));
     } else if (e.typ === "meldung" && !d.classList.contains("versteckt")) {
       const m = meldungen[e.optionen.entity];
       if (m && Date.now() - m.seit > e.optionen.dauer * 1000) d.classList.add("versteckt");

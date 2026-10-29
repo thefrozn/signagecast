@@ -33,14 +33,28 @@ const LTEXTE = {
     ungespeichert: "Es gibt ungespeicherte Änderungen. Trotzdem wechseln?",
     typ: { uhr: "Uhr", datum: "Datum", temperatur: "Temperatur", wetterlage: "Wetterlage", feuchte: "Luftfeuchte", wind: "Wind",
            vorhersage: "Vorhersage", raeume: "Räume", kachel: "Kachel (HA-Wert)", video: "Live-Video", sender: "Radio-Sender",
-           text: "Freier Text", logo: "Logo / Bild", kamera: "Kamera (HA)", kalender: "Kalender / Müllabfuhr", meldung: "Meldung von HA", flaeche: "Fläche (Farbe)" },
+           text: "Freier Text", logo: "Logo / Bild", kamera: "Kamera (HA)", kalender: "Kalender / Müllabfuhr", meldung: "Meldung von HA", flaeche: "Fläche (Farbe)",
+           apiwert: "API-Wert", apiliste: "API-Liste / Feed", apibild: "API-Bild", anzeige: "Anzeige (Balken/Ampel)", countdown: "Countdown", qrcode: "QR-Code" },
     opt: { sekunden: "mit Sekunden", wochentag: "mit Wochentag", jahr: "mit Jahr", entity: "Entität (aus HA)", tage: "Tage",
            liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", text: "Text",
            bild: "Bild hochladen (PNG mit durchsichtigem Hintergrund oder JPG)", laufband: "als Laufband (läuft durch)",
-           intervall: "Bild erneuern alle (s)", anzahl: "Einträge", titel: "Überschrift", dauer: "anzeigen für (s)", farbe: "Farbe", deckkraft: "Deckkraft (%)" },
+           intervall: "Bild erneuern alle (s)", anzahl: "Einträge", titel: "Überschrift", dauer: "anzeigen für (s)", farbe: "Farbe", deckkraft: "Deckkraft (%)",
+           quelle: "Datenquelle", pfad: "Pfad in der Antwort", vorlage: "Vorlage (leer = nur der Wert)", einheit: "Einheit", nachkomma: "Nachkommastellen (-1 = wie geliefert)",
+           faktor: "Faktor (z. B. 0,01 für cm → m)", zeile: "Zeile (Platzhalter je Eintrag)", anpassung: "Bild", darstellung: "Darstellung", min: "Minimum", max: "Maximum",
+           gelb: "gelb ab", rot: "rot ab", umkehren: "umgekehrt (niedrige Werte schlecht)", ziel: "Ziel (Datum/Uhrzeit)", ende: "Text nach Ablauf",
+           inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung" },
     optHilfe: { temperatur: "leer = Wetter aus „Anzeige“; oder ein Temperatur-Sensor", kamera: "z. B. Türklingel – mit Bedingung nur bei Klingeln zeigen",
                 meldung: "Text-Entität in HA (z. B. input_text.tv_meldung). Ändert sich der Text, erscheint er als Banner.",
-                kalender: "Kalender-Entität, z. B. Müllabfuhr (Waste Collection Schedule) oder Familienkalender" },
+                kalender: "Kalender-Entität, z. B. Müllabfuhr (Waste Collection Schedule) oder Familienkalender",
+                apiwert: "Wert aus einer Datenquelle (Reiter „Datenquellen“). Vorlage mit Platzhaltern, z. B. „{value} cm“ oder „{a.b} · {c}“; {quelle:pfad} holt Werte aus anderen Quellen.",
+                apiliste: "Liste aus einer Datenquelle, z. B. RSS (Pfad „eintraege“, Zeile „{titel}“) oder eine JSON-Liste. In der Zeile beziehen sich Platzhalter auf den Eintrag, {.} = der Eintrag selbst.",
+                apibild: "Bild-Quelle oder eine JSON-Quelle mit Pfad zu einer Bild-Adresse.",
+                anzeige: "Zahl aus einer Datenquelle als Balken (Minimum–Maximum) oder Ampel (grün, gelb ab, rot ab).",
+                countdown: "Ziel fest eintragen oder aus einer Datenquelle. Platzhalter: {tage}, {stunden}, {minuten}, {sekunden}.",
+                qrcode: "Wird auf dem Fernseher erzeugt. WLAN: WIFI:T:WPA;S:Name;P:Passwort;; – Platzhalter {quelle:pfad} möglich.",
+                text: "Platzhalter wie {quelle:pfad} werden durch Werte aus Datenquellen ersetzt." },
+    wahl: { balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)" },
+    keineQuelle: "– Datenquelle wählen –", waehlen: "wählen …", bedQuelle: "Wert aus", bedHA: "Home Assistant", bedPfad: "Pfad",
     raumNeu: "Raum hinzufügen", op: { "=": "ist gleich", "!=": "ist nicht", ">": "größer als", "<": "kleiner als", an: "ist an/offen", aus: "ist aus/zu" },
   },
   en: {
@@ -72,20 +86,36 @@ const LTEXTE = {
     ungespeichert: "There are unsaved changes. Switch anyway?",
     typ: { uhr: "Clock", datum: "Date", temperatur: "Temperature", wetterlage: "Weather", feuchte: "Humidity", wind: "Wind",
            vorhersage: "Forecast", raeume: "Rooms", kachel: "Tile (HA value)", video: "Live video", sender: "Radio station",
-           text: "Free text", logo: "Logo / picture", kamera: "Camera (HA)", kalender: "Calendar / waste collection", meldung: "Message from HA", flaeche: "Area (colour)" },
+           text: "Free text", logo: "Logo / picture", kamera: "Camera (HA)", kalender: "Calendar / waste collection", meldung: "Message from HA", flaeche: "Area (colour)",
+           apiwert: "API value", apiliste: "API list / feed", apibild: "API picture", anzeige: "Gauge (bar/traffic light)", countdown: "Countdown", qrcode: "QR code" },
     opt: { sekunden: "with seconds", wochentag: "with weekday", jahr: "with year", entity: "Entity (from HA)", tage: "Days",
            liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", text: "Text",
            bild: "Upload picture (PNG with transparent background or JPG)", laufband: "as ticker (scrolling)",
-           intervall: "refresh picture every (s)", anzahl: "Entries", titel: "Heading", dauer: "show for (s)", farbe: "Colour", deckkraft: "Opacity (%)" },
+           intervall: "refresh picture every (s)", anzahl: "Entries", titel: "Heading", dauer: "show for (s)", farbe: "Colour", deckkraft: "Opacity (%)",
+           quelle: "Data source", pfad: "Path in the response", vorlage: "Template (empty = value only)", einheit: "Unit", nachkomma: "Decimals (-1 = as delivered)",
+           faktor: "Factor (e.g. 0.01 for cm → m)", zeile: "Row (placeholders per entry)", anpassung: "Picture", darstellung: "Display", min: "Minimum", max: "Maximum",
+           gelb: "yellow from", rot: "red from", umkehren: "reversed (low values are bad)", ziel: "Target (date/time)", ende: "Text when reached",
+           inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption" },
     optHilfe: { temperatur: "empty = weather from “Display”; or a temperature sensor", kamera: "e.g. doorbell – with a condition only when it rings",
                 meldung: "Text entity in HA (e.g. input_text.tv_message). When the text changes it appears as a banner.",
-                kalender: "Calendar entity, e.g. waste collection or family calendar" },
+                kalender: "Calendar entity, e.g. waste collection or family calendar",
+                apiwert: "Value from a data source (tab “Data sources”). Template with placeholders, e.g. “{value} cm” or “{a.b} · {c}”; {source:path} takes values from other sources.",
+                apiliste: "List from a data source, e.g. RSS (path “eintraege”, row “{titel}”) or a JSON list. In the row placeholders refer to the entry, {.} = the entry itself.",
+                apibild: "Picture source, or a JSON source with a path to a picture address.",
+                anzeige: "Number from a data source as a bar (minimum–maximum) or traffic light (green, yellow from, red from).",
+                countdown: "Enter the target or take it from a data source. Placeholders: {tage} (days), {stunden} (hours), {minuten}, {sekunden}.",
+                qrcode: "Generated on the TV. Wi-Fi: WIFI:T:WPA;S:name;P:password;; – placeholders {source:path} possible.",
+                text: "Placeholders like {source:path} are replaced with values from data sources." },
+    wahl: { balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)" },
+    keineQuelle: "– choose data source –", waehlen: "pick …", bedQuelle: "Value from", bedHA: "Home Assistant", bedPfad: "Path",
     raumNeu: "Add room", op: { "=": "equals", "!=": "is not", ">": "greater than", "<": "less than", an: "is on/open", aus: "is off/closed" },
   },
 };
 const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 2], wetterlage: [9, 1], feuchte: [9, 1], wind: [9, 1],
   vorhersage: [8, 5], raeume: [9, 5], kachel: [5, 5], video: [24, 14], sender: [9, 1], text: [12, 2], kamera: [12, 7],
-  kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4] };
+  kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4], apiwert: [8, 3], apiliste: [14, 6], apibild: [10, 8], anzeige: [8, 3],
+  countdown: [10, 2], qrcode: [5, 6] };
+const WAHL = { darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"] };
 const ENT_DOMAINS = { temperatur: ["weather", "sensor"], wetterlage: ["weather"], feuchte: ["weather", "sensor"], wind: ["weather", "sensor"],
   kamera: ["camera"], kalender: ["calendar"], meldung: ["input_text", "sensor", "text"] };
 
@@ -312,10 +342,16 @@ async function layoutSeite(inhalt) {
           <input type="text" name="rn" value="${esc(r.name)}" placeholder="Name" style="width:120px"><input type="text" name="re" list="ents" value="${esc(r.entity)}" placeholder="sensor.…">
           <button class="knopf gefahr" name="rw">✕</button></div>`).join("")}</div><button class="knopf" id="raumPlus">${esc(L.raumNeu)}</button>`;
       if (typeof w === "boolean") return `<div class="zeile"><label>${lab}</label>${schalter("o_" + k, w)}</div>`;
+      if (k === "quelle") return `<div class="zeile"><label>${lab}</label><select name="o_quelle"><option value="">${esc(L.keineQuelle)}</option>
+        ${(E.quellen || []).map((q) => `<option value="${esc(q.id)}" ${q.id === w ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>`;
+      if (k === "pfad") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_pfad" value="${esc(w ?? "")}" spellcheck="false">
+        <button class="knopf" type="button" name="pfadWahl">${esc(L.waehlen)}</button></div><div class="pfadBaum"></div>`;
+      if (WAHL[k]) return `<div class="zeile"><label>${lab}</label><select name="o_${k}">${WAHL[k].map((x) => `<option value="${x}" ${x === w ? "selected" : ""}>${esc(L.wahl[x] || x)}</option>`).join("")}</select></div>`;
+      if (k === "ziel") return `<div class="zeile"><label>${lab}</label><input type="datetime-local" name="o_ziel" value="${esc(w || "")}"></div>`;
       if (k === "bild") return `<div class="zeile"><label>${lab}</label><input type="file" name="o_bildDatei" accept="image/png,image/jpeg">
         <span class="leise">${esc(w || "")}</span></div>`;
       if (k === "farbe") return `<div class="zeile"><label>${lab}</label><input type="color" name="o_${k}" value="${esc(w || "#f0f0f0")}"></div>`;
-      if (typeof w === "number") return `<div class="zeile"><label>${lab}</label><input type="number" name="o_${k}" value="${w}"></div>`;
+      if (typeof w === "number") return `<div class="zeile"><label>${lab}</label><input type="number" step="any" name="o_${k}" value="${w}"></div>`;
       const liste = k === "entity" ? ' list="ents"' : "";
       return `<div class="zeile"><label>${lab}</label><input type="text" name="o_${k}" value="${esc(w ?? "")}"${liste}>${k === "icon" ? `<span class="icon mdi ${esc(w || "")}"></span>` : ""}</div>`;
     };
@@ -333,8 +369,12 @@ async function layoutSeite(inhalt) {
       <div class="zeile"><label>${esc(L.gewicht)}</label><select name="gewicht">${Object.keys(L.gewichtArt).map((k) => `<option value="${k}" ${k === (e.gewicht || "") ? "selected" : ""}>${esc(L.gewichtArt[k])}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(L.position)}</label></div>
       <div class="zeile pos">${["x", "y", "w", "h"].map((k) => `<label>${{ x: "←", y: "↓", w: "↔", h: "↕" }[k]}<input type="number" name="p_${k}" value="${e[k]}" aria-label="${k}"></label>`).join("")}</div>
-      <details ${b.entity ? "open" : ""}><summary>${esc(L.bedingung)}</summary>
-        <div class="zeile"><input type="text" name="b_entity" list="ents" value="${esc(b.entity || "")}" placeholder="${esc(L.bedingungEntity)}"></div>
+      <details ${b.entity || b.quelle ? "open" : ""}><summary>${esc(L.bedingung)}</summary>
+        <div class="zeile"><label>${esc(L.bedQuelle)}</label><select name="b_quelle"><option value="">${esc(L.bedHA)}</option>
+          ${(E.quellen || []).map((q) => `<option value="${esc(q.id)}" ${q.id === b.quelle ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>
+        <div class="zeile" data-bed="ha" ${b.quelle ? "hidden" : ""}><input type="text" name="b_entity" list="ents" value="${esc(b.entity || "")}" placeholder="${esc(L.bedingungEntity)}"></div>
+        <div class="zeile" data-bed="api" ${b.quelle ? "" : "hidden"}><input type="text" name="b_pfad" value="${esc(b.pfad || "")}" placeholder="${esc(L.bedPfad)}" spellcheck="false">
+          <button class="knopf" type="button" name="bPfadWahl">${esc(L.waehlen)}</button></div><div class="bPfadBaum"></div>
         <div class="zeile"><select name="b_op">${Object.keys(L.op).map((k) => `<option value="${esc(k)}" ${k === (b.op || "=") ? "selected" : ""}>${esc(L.op[k])}</option>`).join("")}</select>
           <input type="text" name="b_wert" value="${esc(b.wert || "")}" style="width:140px"></div></details>
       <div class="zeile"><button class="knopf" name="vorne">${esc(L.vorne)}</button><button class="knopf" name="hinten">${esc(L.hinten)}</button>
@@ -345,6 +385,7 @@ async function layoutSeite(inhalt) {
         if (k === "liste" || k === "bild") continue;
         const inp = ziel.querySelector(`[name=o_${k}]`); if (!inp) continue;
         o[k] = inp.type === "checkbox" ? inp.checked : inp.type === "number" ? Number(inp.value) : inp.value;
+        if (k === "pfad") o[k] = o[k].trim();
       }
       if (o.liste) o.liste = [...ziel.querySelectorAll("#raumListe .zeile")].map((z) => ({ name: z.querySelector("[name=rn]").value, entity: z.querySelector("[name=re]").value }));
       e.sichtbar = ziel.querySelector("[name=sichtbar]").checked;
@@ -355,8 +396,11 @@ async function layoutSeite(inhalt) {
       e.textfarbe = ziel.querySelector("[name=textfarbeStd]").checked ? "" : ziel.querySelector("[name=textfarbe]").value;
       for (const k of ["x", "y", "w", "h"]) e[k] = Number(ziel.querySelector(`[name=p_${k}]`).value) || 0;
       e.w = klemm(e.w, 1, 48); e.h = klemm(e.h, 1, 27); e.x = klemm(e.x, 0, 48 - e.w); e.y = klemm(e.y, 0, 27 - e.h);
-      const be = ziel.querySelector("[name=b_entity]").value.trim();
-      e.bedingung = be ? { entity: be, op: ziel.querySelector("[name=b_op]").value, wert: ziel.querySelector("[name=b_wert]").value } : null;
+      const be = ziel.querySelector("[name=b_entity]").value.trim(), bq = ziel.querySelector("[name=b_quelle]").value;
+      const bop = ziel.querySelector("[name=b_op]").value, bw = ziel.querySelector("[name=b_wert]").value;
+      e.bedingung = bq ? { quelle: bq, pfad: ziel.querySelector("[name=b_pfad]").value.trim(), op: bop, wert: bw }
+        : be ? { entity: be, op: bop, wert: bw } : null;
+      ziel.querySelector("[data-bed=ha]").hidden = !!bq; ziel.querySelector("[data-bed=api]").hidden = !bq;
       $("#lSpeichern").textContent = L.speichern + " *";
       if (handy()) listeZeichnen(); else leinwandZeichnen();
       const ic = ziel.querySelector(".icon"); if (ic) ic.className = "icon mdi " + (o.icon || "");
@@ -374,6 +418,12 @@ async function layoutSeite(inhalt) {
       merken(); o.bild = d.bild; $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen();
       if (handy()) listeZeichnen(); else leinwandZeichnen();
     });
+    // Pfad aus der letzten Antwort der Datenquelle wählen (Baum)
+    const pw = ziel.querySelector("[name=pfadWahl]");
+    if (pw) pw.onclick = (ev) => aktion(ev.target, () => pfadWaehlen(ziel.querySelector(".pfadBaum"), ziel.querySelector("[name=o_quelle]").value,
+      (p) => { ziel.querySelector("[name=o_pfad]").value = p; aendern(); }), null);
+    ziel.querySelector("[name=bPfadWahl]").onclick = (ev) => aktion(ev.target, () => pfadWaehlen(ziel.querySelector(".bPfadBaum"), ziel.querySelector("[name=b_quelle]").value,
+      (p) => { ziel.querySelector("[name=b_pfad]").value = p; aendern(); }), null);
     const tf = ziel.querySelector("[name=textfarbe]");
     if (tf) tf.oninput = () => { ziel.querySelector("[name=textfarbeStd]").checked = false; };
     const rp = ziel.querySelector("#raumPlus");
@@ -419,6 +469,12 @@ function vorschauText(e, L) {
     case "kalender": return "📅 " + (o.titel || o.entity || L.typ.kalender);
     case "meldung": return "💬 " + (o.entity || L.typ.meldung);
     case "video": return "▶ " + L.typ.video;
+    case "apiwert": return `${o.name ? o.name + ": " : ""}${o.vorlage || (o.pfad ? "{" + o.pfad + "}" : L.typ.apiwert)}${o.einheit ? " " + o.einheit : ""}`;
+    case "apiliste": return "☰ " + (o.titel || o.quelle || L.typ.apiliste);
+    case "apibild": return "🖼 " + (o.quelle || L.typ.apibild);
+    case "anzeige": return (o.darstellung === "ampel" ? "● " : "▬ ") + (o.name || o.pfad || L.typ.anzeige);
+    case "countdown": return "⏳ " + (o.vorlage || L.typ.countdown);
+    case "qrcode": return "▦ " + (o.beschriftung || L.typ.qrcode);
     default: return L.typ[e.typ] || e.typ;
   }
 }

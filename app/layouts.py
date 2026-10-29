@@ -1,6 +1,6 @@
 # Layouts von SignageCast: was ein Fernseher zeigt und wo. Fläche 1920x1080, Raster 48 x 27 Felder à 40 px.
 # Ein Layout = Hintergrund + Farbschema + Liste von Bausteinen (Position/Größe in Rasterfeldern, Optionen, Bedingung).
-# Alle Datenquellen sind HA-Entitäten (in der Verwaltung aus der Entitätenliste von HA gewählt).
+# Werte kommen aus HA-Entitäten oder (seit 0.9) aus eigenen Datenquellen (app/quellen.py: API, RSS, Bild).
 import copy, re
 
 SPALTEN, ZEILEN = 48, 27
@@ -51,6 +51,31 @@ def _bild(w):
     if w and not re.fullmatch(r"[0-9a-f]{16}\.(jpg|png)", w):
         raise ValueError("ungültiges Bild")
     return w
+def _fl(lo, hi):
+    def p(w):
+        w = float(str(w).replace(",", "."))
+        if not lo <= w <= hi:
+            raise ValueError(f"{w} nicht zwischen {lo} und {hi}")
+        return w
+    return p
+def _qid(w):
+    w = str(w or "").strip()
+    if w and not re.fullmatch(r"[a-z0-9_]{2,16}", w):
+        raise ValueError("ungültige Datenquelle")
+    return w
+def _pfad(w):
+    w = str(w or "").strip()
+    if len(w) > 160 or "\n" in w:
+        raise ValueError("Pfad zu lang")
+    return w
+def _icon_leer(w):
+    return _icon(w) if str(w or "").strip() else ""
+def _wahl(*werte):
+    def p(w):
+        if w not in werte:
+            raise ValueError(f"erlaubt: {', '.join(werte)}")
+        return w
+    return p
 def _raeume(w):
     return [{"name": str(r.get("name", ""))[:30], "entity": _ent()(r.get("entity"))} for r in (w or [])[:8] if r.get("entity")]
 
@@ -72,17 +97,32 @@ TYPEN = {
     "kalender":   {"entity": (_ent(["calendar"]), ""), "anzahl": (_zahl(1, 10), 4), "tage": (_zahl(1, 60), 14), "titel": (_t(40), "")},
     "meldung":    {"entity": (_ent(["input_text", "sensor", "text"]), ""), "dauer": (_zahl(3, 600), 20)},
     "flaeche":    {"farbe": (_farbe, "#f0f0f0"), "deckkraft": (_zahl(0, 100), 100)},
+    # eigene Datenquellen (seit 0.9); Platzhalter {pfad} bzw. {quelle:pfad}
+    "apiwert":    {"quelle": (_qid, ""), "pfad": (_pfad, ""), "vorlage": (_t(300), ""), "name": (_t(30), ""),
+                   "icon": (_icon_leer, "mdi-api"), "einheit": (_t(12), ""), "nachkomma": (_zahl(-1, 6), -1), "faktor": (_t(16), "1")},
+    "apiliste":   {"quelle": (_qid, ""), "pfad": (_pfad, "eintraege"), "zeile": (_t(300), "{titel}"), "anzahl": (_zahl(1, 20), 5),
+                   "titel": (_t(40), ""), "laufband": (_b, False), "nachkomma": (_zahl(-1, 6), -1), "faktor": (_t(16), "1")},
+    "apibild":    {"quelle": (_qid, ""), "pfad": (_pfad, ""), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen")},
+    "anzeige":    {"quelle": (_qid, ""), "pfad": (_pfad, ""), "name": (_t(30), ""), "darstellung": (_wahl("balken", "ampel"), "balken"),
+                   "min": (_fl(-1e9, 1e9), 0.0), "max": (_fl(-1e9, 1e9), 100.0), "gelb": (_fl(-1e9, 1e9), 60.0), "rot": (_fl(-1e9, 1e9), 80.0),
+                   "umkehren": (_b, False), "einheit": (_t(12), ""), "nachkomma": (_zahl(-1, 6), -1), "faktor": (_t(16), "1")},
+    "countdown":  {"ziel": (_t(40), ""), "quelle": (_qid, ""), "pfad": (_pfad, ""), "vorlage": (_t(120), "noch {tage} Tage"),
+                   "ende": (_t(60), "Heute!")},
+    "qrcode":     {"inhalt": (_t(900), ""), "beschriftung": (_t(60), "")},
 }
 # Mindestgröße je Typ (Felder)
-MINDEST = {"logo": (2, 1), "video": (8, 5), "kamera": (4, 3), "kalender": (6, 3), "raeume": (4, 2), "vorhersage": (4, 3)}
+MINDEST = {"logo": (2, 1), "video": (8, 5), "kamera": (4, 3), "kalender": (6, 3), "raeume": (4, 2), "vorhersage": (4, 3),
+           "apibild": (2, 2), "qrcode": (2, 2), "apiliste": (4, 1)}
 
 
 def _pruefe_bedingung(b):
-    if not b or not b.get("entity"):
+    if not b or not (b.get("entity") or b.get("quelle")):
         return None
     op = b.get("op", "=")
     if op not in OPERATOREN:
         raise ValueError("unbekannter Vergleich")
+    if b.get("quelle"):                       # Wert aus einer Datenquelle (seit 0.9)
+        return {"quelle": _qid(b["quelle"]), "pfad": _pfad(b.get("pfad", "")), "op": op, "wert": str(b.get("wert", ""))[:60]}
     return {"entity": _ent()(b["entity"]), "op": op, "wert": str(b.get("wert", ""))[:60]}
 
 
@@ -193,7 +233,7 @@ def entitaeten(layouts, wetter):
                 s.add(o["entity"])
             for r in o.get("liste", []):
                 s.add(r["entity"])
-            if e["bedingung"]:
+            if e["bedingung"] and e["bedingung"].get("entity"):
                 s.add(e["bedingung"]["entity"])
     return {x for x in s if x}
 

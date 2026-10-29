@@ -3,6 +3,7 @@
 # fehlende mit Standardwerten ergänzt – so übersteht die Datei auch Updates mit neuen Optionen.
 import copy, json, os, re
 import layouts as L
+import quellen as Q
 
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
@@ -32,6 +33,7 @@ STANDARD = {
         "kacheln": [],
     },
     "layouts": [],                        # leer = beim Laden aus „anzeige“ das Layout „Standard“ bauen
+    "quellen": [],                        # eigene Datenquellen (API/RSS/Bild), siehe app/quellen.py
     "video": {
         "aktiv": True,
         "takt_min": 3,                    # Minuten je Stream
@@ -305,6 +307,11 @@ def pruefen(e):
                           "bis": _text(x.get("bis", "23:59"), 5, r"([01]\d|2[0-3]):[0-5]\d"), "ton": bool(x.get("ton", True)),
                           "fernseher": [str(t)[:12] for t in (x.get("fernseher") or [])][:8], "aktiv": bool(x.get("aktiv", True))})
         s["einspieler"] = liste
+    if "quellen" in e:
+        try:
+            s["quellen"] = Q.pruefen(e["quellen"])
+        except Q.Fehler as ex:
+            raise Fehler(str(ex))
     sr = e.get("stream", {})
     if "abschalten_s" in sr: s["stream"]["abschalten_s"] = _zahl(sr["abschalten_s"], 10, 3600, int)
     return s

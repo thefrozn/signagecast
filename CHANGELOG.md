@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.0 (2026-10-29)
+- **Data sources** (new tab): your own JSON APIs, RSS/Atom feeds and pictures, fetched by the container at an interval
+  you choose (30 s – 24 h, longer waits after errors). Import from a `curl` command, test with a clickable response tree,
+  secret headers shown as ••••; backups leave secrets out unless “include secrets” is ticked. Examples: water level
+  (PEGELONLINE), news (tagesschau.de RSS), Bitcoin price (CoinGecko), pollen (DWD).
+- **New elements**: API value, API list / feed (list or ticker), API picture (picture source or picture URL from JSON),
+  gauge (bar or traffic light with thresholds), countdown (fixed or from an API), QR code (generated on the TV).
+- Placeholders `{source:path}` in free text and ticker; conditions (“only show when …”) on values from data sources.
+- Numbers with thousands separators when decimals are set.
+
 ## v0.8.0 (2026-10-29)
 - **Docker / Podman image** `ghcr.io/thefrozn/signagecast` (amd64), built automatically for every release. All data in
   the volume `/data`; `compose.yaml` included. In the container the admin page is served without Cockpit (port 9090)
