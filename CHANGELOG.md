@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.11.3 (2026-10-29)
+- Messages from data sources, cameras, weather, time and clips carry a code (`app/meldung.py`); the admin shows them in
+  its language (English texts added; German stays the service's original text). Errors returned when saving or testing
+  are translated as well.
+
 ## v0.11.2 (2026-10-29)
 - Chart history is saved when the service stops (update, restart) – no more gap of up to 5 minutes.
 - Admin overview fully in English when English is set: scheduled tasks, load/cores, RAM, Home Assistant errors (also

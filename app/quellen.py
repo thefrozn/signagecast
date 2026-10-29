@@ -4,6 +4,7 @@
 # Fehlern wird der Abstand bis zum nächsten Versuch verdoppelt (höchstens 1 h). Nur Python-Standardbibliothek.
 import base64, datetime, email.utils, json, os, re, shlex, threading, time, urllib.error, urllib.parse, urllib.request, zoneinfo
 import xml.etree.ElementTree as ET
+import meldung
 
 MASKE = "••••"                    # so erscheinen geheime Kopfzeilen in der Verwaltung
 ARTEN = ("json", "text", "rss", "bild", "ical", "video")
@@ -14,8 +15,11 @@ GEHEIM_KOPF = re.compile(r"authorization|api[-_]?key|token|secret|cookie|passw",
 PLATZHALTER = re.compile(r"\{([^{}]{1,160})\}")
 
 
-class Fehler(Exception):
-    pass
+from meldung import Meldung
+
+
+class Fehler(Meldung):
+    """Fehler einer Datenquelle – mit Kennung, damit die Verwaltung ihn übersetzen kann (siehe meldung.py)."""
 
 
 # ---------- Prüfen (Einstellungen) ----------
@@ -24,17 +28,17 @@ def pruefen(liste):
     for q in (liste or [])[:30]:
         qid = str(q.get("id", "")).strip().lower()
         if not re.fullmatch(r"[a-z0-9_]{2,16}", qid) or qid in ids:
-            raise Fehler(f"Datenquelle: ungültige oder doppelte Kennung {qid!r} (2–16 Zeichen a–z, 0–9, _)")
+            raise Fehler("q_kennung", id=repr(qid))
         ids.add(qid)
         art = q.get("art", "json")
         if art not in ARTEN:
-            raise Fehler("Datenquelle: Art json, text, rss, bild, ical oder video")
+            raise Fehler("q_art")
         url = str(q.get("url", "")).strip()
         if art == "video":
             if not re.fullmatch(r"(rtsps?|https?)://[^\s\"']{1,1000}", url):
-                raise Fehler(f"Datenquelle {qid}: Kamera-Adresse mit rtsp://, rtsps://, http:// oder https://")
+                raise Fehler("q_adresse_video", id=qid)
         elif not re.fullmatch(r"https?://\S{1,1000}", url):
-            raise Fehler(f"Datenquelle {qid}: Adresse muss mit http:// oder https:// beginnen")
+            raise Fehler("q_adresse", id=qid)
         methode = q.get("methode", "GET") if q.get("methode") in ("GET", "POST") else "GET"
         kopf = []
         for k in (q.get("kopf") or [])[:20]:
@@ -42,15 +46,15 @@ def pruefen(liste):
             if not name:
                 continue
             if not re.fullmatch(r"[A-Za-z0-9!#$%&'*+.^_`|~-]{1,80}", name):
-                raise Fehler(f"Datenquelle {qid}: ungültiger Kopfzeilen-Name {name!r}")
+                raise Fehler("q_kopfname", id=qid, name=repr(name))
             wert = str(k.get("wert", ""))
             if "\n" in wert or "\r" in wert or len(wert) > 4000:
-                raise Fehler(f"Datenquelle {qid}: ungültiger Wert für {name}")
+                raise Fehler("q_kopfwert", id=qid, name=name)
             kopf.append({"name": name, "wert": wert, "geheim": bool(k.get("geheim", False))})
         try:
             intervall = int(q.get("intervall_s", 300))
         except (TypeError, ValueError):
-            raise Fehler("Datenquelle: Intervall in Sekunden")
+            raise Fehler("q_intervall")
         aus.append({"id": qid, "name": str(q.get("name", "") or qid)[:40], "art": art, "url": url, "methode": methode,
                     "kopf": kopf, "inhalt": str(q.get("inhalt", ""))[:8000] if methode == "POST" else "",
                     "intervall_s": max(30, min(86400, intervall)), "aktiv": bool(q.get("aktiv", True)),
@@ -110,7 +114,7 @@ def aus_curl(befehl):
     try:
         teile = shlex.split(befehl)
     except ValueError as ex:
-        raise Fehler(f"curl-Befehl nicht lesbar: {ex}")
+        raise Fehler("curl_lesbar", d=ex)
     if teile and teile[0].lower().endswith("curl"):
         teile = teile[1:]
     url, methode, kopf, daten, get, hinweise = "", "", [], [], False, []
@@ -119,7 +123,7 @@ def aus_curl(befehl):
         nonlocal i
         i += 1
         if i >= len(teile):
-            raise Fehler(f"curl: Wert fehlt nach {teile[i - 1]}")
+            raise Fehler("curl_wert", opt=teile[i - 1])
         return teile[i]
     while i < len(teile):
         t = teile[i]
@@ -164,7 +168,7 @@ def aus_curl(befehl):
             url = t
         i += 1
     if not url:
-        raise Fehler("curl: keine Adresse gefunden")
+        raise Fehler("curl_adresse")
     if not re.match(r"https?://", url):
         url = "https://" + url
     inhalt = "&".join(daten)
@@ -203,7 +207,7 @@ def rss_zerlegen(roh):
     try:
         wurzel = ET.fromstring(roh)
     except ET.ParseError as ex:
-        raise Fehler(f"kein gültiger Feed: {ex}")
+        raise Fehler("kein_feed", d=ex)
     def kind(e, *namen):
         for n in namen:
             for c in e:
@@ -405,7 +409,7 @@ def holen(q, url=None, max_bytes=None):
     """Eine Abfrage ausführen: (Rohdaten, Content-Type)."""
     url = url or q["url"]
     if not re.match(r"https?://", url):
-        raise Fehler("nur http/https")
+        raise Fehler("nur_http")
     kopf = {"User-Agent": UA, "Accept": "*/*"}
     kopf.update({k["name"]: k["wert"] for k in q.get("kopf", [])})
     daten = q["inhalt"].encode() if q.get("methode") == "POST" else None
@@ -416,27 +420,27 @@ def holen(q, url=None, max_bytes=None):
             roh = r.read(grenze + 1)
             art = r.headers.get("Content-Type", "")
     except urllib.error.HTTPError as ex:
-        raise Fehler(f"HTTP {ex.code} {ex.reason}")
+        raise Fehler("http", code=ex.code, grund=ex.reason)
     except urllib.error.URLError as ex:
-        raise Fehler(f"nicht erreichbar: {ex.reason}")
+        raise Fehler("nicht_erreichbar", d=ex.reason)
     except (TimeoutError, OSError) as ex:
-        raise Fehler(f"nicht erreichbar: {ex}")
+        raise Fehler("nicht_erreichbar", d=ex)
     if len(roh) > grenze:
-        raise Fehler(f"Antwort größer als {grenze // 1_000_000} MB")
+        raise Fehler("zu_gross", mb=grenze // 1_000_000)
     return roh, art
 
 
 def zerlegen(q, roh, art):
     if q["art"] == "bild":
         if not art.startswith("image/"):
-            raise Fehler(f"kein Bild (Content-Type {art or 'fehlt'})")
+            raise Fehler("kein_bild", typ=art or "–")
         return {"bild": roh, "typ": art.split(";")[0], "groesse": len(roh)}
     text = roh.decode(_zeichensatz(art), errors="replace")
     if q["art"] == "json":
         try:
             return json.loads(text)
         except ValueError as ex:
-            raise Fehler(f"kein gültiges JSON: {ex}")
+            raise Fehler("kein_json", d=ex)
     if q["art"] == "rss":
         return rss_zerlegen(roh)
     if q["art"] == "ical":
@@ -639,7 +643,7 @@ class Quellen:
                     continue
                 try:
                     daten, ms = self.abrufen(q)
-                    s.update(daten=daten, abruf=time.time(), fehler=None, dauer_ms=ms, versuche=0,
+                    s.update(daten=daten, abruf=time.time(), fehler=None, fehler_m=None, dauer_ms=ms, versuche=0,
                              naechster=time.time() + q["intervall_s"])
                     if self.verlauf:
                         for vq, vp in self.verlauf_pfade():
@@ -647,7 +651,7 @@ class Quellen:
                                 self.verlauf.merken(qid, vp, wert_bei(daten, vp))
                 except Exception as ex:
                     s["versuche"] += 1
-                    s.update(fehler=str(ex)[:300], naechster=time.time() + min(max(q["intervall_s"], 3600),
+                    s.update(fehler=str(ex)[:300], fehler_m=meldung.als_dict(ex), naechster=time.time() + min(max(q["intervall_s"], 3600),
                                                                               q["intervall_s"] * 2 ** min(s["versuche"], 6)))
             if self.verlauf and time.time() - getattr(self, "_aufgeraeumt", 0) > 3600:
                 self._aufgeraeumt = time.time()
@@ -659,7 +663,7 @@ class Quellen:
         aus = {}
         for q in self.einst().get("quellen", []):
             s = self.stand.get(q["id"], {})
-            aus[q["id"]] = {"abruf": s.get("abruf"), "fehler": s.get("fehler"), "dauer_ms": s.get("dauer_ms"),
+            aus[q["id"]] = {"abruf": s.get("abruf"), "fehler": s.get("fehler"), "fehler_m": s.get("fehler_m"), "dauer_ms": s.get("dauer_ms"),
                             "naechster": s.get("naechster"), "versuche": s.get("versuche", 0), "hat_daten": s.get("daten") is not None}
         return aus
 

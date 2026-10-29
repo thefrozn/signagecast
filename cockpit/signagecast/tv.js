@@ -161,6 +161,28 @@ const TEXTE = {
     qualitaet: "Quality", codec: "Codec", verloren: "dropped frames", bandbreite: "Bandwidth", cpu: "CPU", ram: "RAM free",
     platte: "Disk free", laufzeit: "Uptime", last: "Load", kerne: "cores", von: "of",
     alleSek: (s) => (s % 60 ? `every ${s} s` : `every ${s / 60} min`), nurStream: "only while the stream runs",
+    vorabFehler: "Preload",
+    // Meldungen des Dienstes nach Kennung (app/meldung.py); auf Deutsch zeigt die Verwaltung den Text des Dienstes
+    meldung: {
+      q_kennung: "Data source: invalid or duplicate identifier {id} (2–16 characters a–z, 0–9, _)",
+      q_art: "Data source: type json, text, rss, bild, ical or video",
+      q_adresse_video: "Data source {id}: camera address with rtsp://, rtsps://, http:// or https://",
+      q_adresse: "Data source {id}: address must start with http:// or https://",
+      q_kopfname: "Data source {id}: invalid header name {name}", q_kopfwert: "Data source {id}: invalid value for {name}",
+      q_intervall: "Data source: interval in seconds",
+      curl_lesbar: "curl command not readable: {d}", curl_wert: "curl: value missing after {opt}", curl_adresse: "curl: no address found",
+      nur_http: "only http/https", http: "HTTP {code} {grund}", nicht_erreichbar: "not reachable: {d}",
+      zu_gross: "response larger than {mb} MB", kein_bild: "not a picture (Content-Type {typ})", kein_json: "not valid JSON: {d}",
+      kein_feed: "not a valid feed: {d}",
+      kam_http: "Camera: HTTP {code} {grund}", kam_nicht_erreichbar: "Camera not reachable: {d}", kein_mjpeg: "not MJPEG (Content-Type {typ})",
+      kam_zeit: "Camera does not answer (25 s)", kam_fehler: "Camera: {d}",
+      met_http: "MET Norway answers {code}", met_nicht_erreichbar: "MET Norway not reachable: {d}",
+      ntp_stumm: "{server} does not answer", ntp_ungueltig: "invalid NTP answer",
+      kein_youtube: "not a YouTube link", kein_video_kanal: "no video found in the channel",
+      ep_kein_range: "the server cannot deliver parts (no Range) – please choose “complete”", ep_zu_gross: "clip larger than 500 MB",
+      ep_keine_groesse: "the server gives no total size – only “complete” possible",
+      ep_nicht_bereit: "clip not ready yet – try again in a few seconds",
+    },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
     rotation: "In rotation", liste: "Stream list", zuletzt: "last", pause: "YouTube pause until", suche: "Stream search",
@@ -233,10 +255,15 @@ async function holen(pfad) {
   const t = await dienst.get(pfad, {}, KOPF);
   return JSON.parse(t);
 }
+// Meldung des Dienstes in der Sprache der Verwaltung (Kennung + Werte), sonst der Text des Dienstes
+function meldungText(m, rueckfall) {
+  const vorlage = m && m.code && T.meldung && T.meldung[m.code];
+  return vorlage ? vorlage.replace(/\{(\w+)\}/g, (_, k) => ((m.p || {})[k] ?? "")) : (rueckfall || (m && m.text) || "");
+}
 async function senden(pfad, daten) {
   const t = await dienst.post(pfad, JSON.stringify(daten || {}), KOPF);
   const d = JSON.parse(t);
-  if (!d.ok) throw new Error(d.fehler || T.fehler);
+  if (!d.ok) throw new Error(meldungText(d, d.fehler) || T.fehler);
   return d;
 }
 let meldungZeit;
@@ -353,7 +380,7 @@ async function uebersicht(inhalt) {
     const k = [
       [T.zuschauer, String(s.stream.zuschauer), ""],
       [T.wetterKarte, s.wetter.jetzt ? `${s.wetter.jetzt.temperatur} °C` : (s.wetter.quelle === "ha" ? "HA" : "–"),
-        esc(s.wetter.quelle === "met" ? `MET Norway · ${s.wetter.abruf || ""}${s.wetter.fehler ? " · " + s.wetter.fehler : ""}` : T.wetterQuelleArt.ha)],
+        esc(s.wetter.quelle === "met" ? `MET Norway · ${s.wetter.abruf || ""}${s.wetter.fehler ? " · " + meldungText(s.wetter.fehler_m, s.wetter.fehler) : ""}` : T.wetterQuelleArt.ha)],
       [T.zeitKarte, s.zeit_quelle && s.zeit_quelle.abweichung_s != null ? `${s.zeit_quelle.abweichung_s > 0 ? "+" : ""}${s.zeit_quelle.abweichung_s} s` : "–",
         esc((s.zeit_quelle || {}).korrektur === false && (s.zeit_quelle || {}).host_synchronisiert ? hostSync()
             : (s.zeit_quelle || {}).korrektur ? T.hostNichtSync : "") + "<br>" +
@@ -640,7 +667,7 @@ async function verbindung(inhalt) {
   const zeitStand = async () => {
     const s = await holen("/api/status"), z = s.zeit_quelle || {};
     $("#zeitStand").textContent = (z.host_synchronisiert && !z.korrektur ? hostSync() + " · " : z.korrektur ? T.hostNichtSync + " · " : "") +
-      (z.server ? `${z.server}: ${T.abweichung} ${z.abweichung_s ?? "?"} s · ${z.gemessen || ""}${z.fehler ? " · " + z.fehler : ""}` : "");
+      (z.server ? `${z.server}: ${T.abweichung} ${z.abweichung_s ?? "?"} s · ${z.gemessen || ""}${z.fehler ? " · " + meldungText(z.fehler_m, z.fehler) : ""}` : "");
   };
   zeitStand();
   $("#okZeit").onclick = (e) => aktion(e.target, async () => {
@@ -856,9 +883,9 @@ async function einspielerSeite(inhalt) {
             <input type="number" name="vorab_mb" min="1" max="2000" value="${x.vorab_mb || 20}" style="width:90px"></span>
           <span name="vorlaufTeil"><label>${esc(T.epVorlauf)}</label><input type="number" name="vorlauf_s" min="0" max="60" value="${x.vorlauf_s ?? 10}" style="width:80px"></span></div>
         <p class="leise" name="pufferText">${esc(T.epPufferText)}</p>
-        <div class="zeile"><span class="leise">${st.stand ? esc(T.epStand) + ": " + esc(st.stand.replace("T", " ")) : ""}${st.fehler ? ` <span class="schlecht">${esc(T.epFehler)}: ${esc(st.fehler)}</span>` : ""}
+        <div class="zeile"><span class="leise">${st.stand ? esc(T.epStand) + ": " + esc(st.stand.replace("T", " ")) : ""}${st.fehler ? ` <span class="schlecht">${esc(T.epFehler)}: ${esc(meldungText(st.fehler_m, st.fehler))}</span>` : ""}
           ${st.vorab ? " · " + esc(T.epVorab((st.vorab.groesse / 1048576).toFixed(1), st.vorab.komplett ? 0 : (st.vorab.gesamt / 1048576).toFixed(1), (st.vorab.stand || "").replace("T", " ").slice(0, 16))) : ""}
-          ${st.vorab_fehler ? ` <span class="schlecht">${esc(st.vorab_fehler)}</span>` : ""}</span>
+          ${st.vorab_fehler ? ` <span class="schlecht">${esc(T.vorabFehler ? T.vorabFehler + ": " + meldungText(st.vorab_fehler_m, st.vorab_fehler) : st.vorab_fehler)}</span>` : ""}</span>
           <button class="knopf" name="jetzt">${esc(T.epJetzt)}</button><button class="knopf gefahr" name="weg">${esc(T.entfernen)}</button></div></div>`);
       const urlSicht = () => {
         const q = k.querySelector("[name=quelle]").value, p = k.querySelector("[name=puffer]").value;

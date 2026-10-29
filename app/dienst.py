@@ -18,6 +18,7 @@ import layouts as L                           # noqa: E402
 import wetter as W                            # noqa: E402
 import zeit as Z                              # noqa: E402
 import hardware as HW                         # noqa: E402
+import meldung as M                           # noqa: E402
 import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -115,10 +116,10 @@ def zeit_schleife():
             # Uhr vom Host synchronisiert und genau genug -> nichts korrigieren (nur kontrollieren);
             # sonst die gemessene Abweichung auf Uhr, Takt und Einspieler anwenden
             zustand["zeit"] = {"server": server, "abweichung_s": round(abw, 4), "laufzeit_ms": round(laufzeit * 1000),
-                               "gemessen": time.strftime("%Y-%m-%d %H:%M"), "fehler": None, "host_synchronisiert": host,
+                               "gemessen": time.strftime("%Y-%m-%d %H:%M"), "fehler": None, "fehler_m": None, "host_synchronisiert": host,
                                "korrektur": not (host and abs(abw) < 1.0)}
         except Exception as ex:
-            zustand["zeit"] = dict(zustand.get("zeit") or {}, server=server, fehler=str(ex)[:200], host_synchronisiert=host,
+            zustand["zeit"] = dict(zustand.get("zeit") or {}, server=server, fehler=str(ex)[:200], fehler_m=M.als_dict(ex), host_synchronisiert=host,
                                    korrektur=False)
         zeit_neu.wait(1800)
         zeit_neu.clear()
@@ -177,14 +178,14 @@ def einspieler_aufloesen(x):
     from streams import aus_link
     art_id = aus_link(x["url"])
     if not art_id:
-        raise ValueError("kein YouTube-Link")
+        raise M.Meldung("kein_youtube")
     if art_id[0] == "video":
         return {"art": "youtube", "video_id": art_id[1], "stand": ""}
     # Kanal: neuestes Video aus dem öffentlichen Feed
     t = urllib.request.urlopen(urllib.request.Request(f"https://www.youtube.com/feeds/videos.xml?channel_id={art_id[1]}", headers=kopf), timeout=15).read().decode()
     m = re.search(r"<yt:videoId>([\w-]{11})</yt:videoId>.*?<published>([^<]+)</published>", t, re.S)
     if not m:
-        raise ValueError("kein Video im Kanal gefunden")
+        raise M.Meldung("kein_video_kanal")
     return {"art": "youtube", "video_id": m.group(1), "stand": m.group(2)[:16]}
 
 
@@ -214,7 +215,7 @@ def einspieler_vorladen(x, a):
                 kopf["Range"] = f"bytes=0-{grenze - 1}"
             with urllib.request.urlopen(urllib.request.Request(a["url"], headers=kopf), timeout=30) as r, open(tmp, "wb") as f:
                 if x["vorab_mb"] and r.status != 206:
-                    raise ValueError("Server kann keine Teile liefern (kein Range) – bitte „komplett“ wählen")
+                    raise M.Meldung("ep_kein_range")
                 m = re.search(r"/(\d+)$", r.headers.get("Content-Range", "") or "")
                 gesamt = int(m.group(1)) if m else (int(r.headers["Content-Length"]) if r.headers.get("Content-Length") and r.status == 200 else None)
                 while n < grenze:
@@ -225,10 +226,10 @@ def einspieler_vorladen(x, a):
                     n += len(teil)
                     f.write(teil)
             if not x["vorab_mb"] and not ende_erreicht:
-                raise ValueError("Einspieler größer als 500 MB")
+                raise M.Meldung("ep_zu_gross")
             komplett = ende_erreicht or (gesamt is not None and n >= gesamt)
             if not komplett and gesamt is None:
-                raise ValueError("Server nennt keine Gesamtgröße – nur „komplett“ möglich")
+                raise M.Meldung("ep_keine_groesse")
             os.replace(tmp, datei)
             meta = {"url": a["url"], "vorab_mb": x["vorab_mb"], "groesse": n, "gesamt": gesamt if gesamt else n, "komplett": komplett,
                     "zeit": time.strftime("%Y-%m-%d %H:%M"), "stand": a.get("stand", ""), "dauer_s": round(time.time() - t0, 1)}
@@ -239,7 +240,7 @@ def einspieler_vorladen(x, a):
                 os.remove(tmp)
             except OSError:
                 pass
-            a = dict(a, vorab_fehler=f"Vorab laden: {str(ex)[:150]}")
+            a = dict(a, vorab_fehler=f"Vorab laden: {str(ex)[:150]}", vorab_fehler_m=M.als_dict(ex))
     if os.path.exists(datei) and meta.get("url"):
         a = dict(a, lokal=f"/einspieler/{x['id']}.mp4?v={hashlib.sha1((meta['url'] + str(meta.get('vorab_mb'))).encode()).hexdigest()[:10]}",
                  vorab={k: meta.get(k) for k in ("groesse", "gesamt", "komplett", "zeit", "stand")} | {"aktuell": meta.get("url") == a["url"]})
@@ -314,7 +315,7 @@ def einspieler_schleife():
             try:
                 neu[x["id"]] = einspieler_aufloesen(x)
             except Exception as ex:
-                neu[x["id"]] = dict(zustand.get("einspieler", {}).get(x["id"], {}), fehler=str(ex)[:200])
+                neu[x["id"]] = dict(zustand.get("einspieler", {}).get(x["id"], {}), fehler=str(ex)[:200], fehler_m=M.als_dict(ex))
             if x["puffer"] == "vorab":
                 neu[x["id"]] = einspieler_vorladen(x, neu[x["id"]])
         einspieler_aufraeumen({x["id"] for x in einst()["einspieler"] if x["aktiv"] and x["puffer"] == "vorab"})
@@ -632,7 +633,7 @@ def status():
     return {
         "version": VERSION, "zeit": time.strftime("%Y-%m-%d %H:%M:%S"),
         "neue_version": zustand.get("neue_version"), "projekt": f"https://github.com/{PROJEKT}",
-        "wetter": {"quelle": e["anzeige"]["wetter_quelle"], "abruf": met.abruf, "fehler": met.fehler,
+        "wetter": {"quelle": e["anzeige"]["wetter_quelle"], "abruf": met.abruf, "fehler": met.fehler, "fehler_m": met.fehler_m,
                    "jetzt": met.aktuell() if e["anzeige"]["wetter_quelle"] == "met" else None},
         "zeit_quelle": dict(zustand.get("zeit") or {}, zeitzone=wirksame_zeitzone(), system_zeitzone=system_zeitzone()),
         "cpu_prozent": zustand["cpu"], "last": os.getloadavg(), "kerne": os.cpu_count(),
@@ -859,11 +860,11 @@ def video_pruefen(q):
             with urllib.request.urlopen(urllib.request.Request(url, headers=kopf), timeout=10) as r:
                 art, anfang = r.headers.get("Content-Type", ""), r.read(65536)
         except urllib.error.HTTPError as ex:
-            raise Q.Fehler(f"Kamera: HTTP {ex.code} {ex.reason}")
+            raise Q.Fehler("kam_http", code=ex.code, grund=ex.reason)
         except Exception as ex:
-            raise Q.Fehler(f"Kamera nicht erreichbar: {ex}")
+            raise Q.Fehler("kam_nicht_erreichbar", d=ex)
         if not (art.startswith("multipart/") or art.startswith("image/") or b"\xff\xd8\xff" in anfang):
-            raise Q.Fehler(f"kein MJPEG (Content-Type {art or 'fehlt'})")
+            raise Q.Fehler("kein_mjpeg", typ=art or "–")
         return {"format": f, "content_type": art, "erste_bytes": len(anfang)}
     arg = ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height", "-of", "json"]
     if f == "rtsp":
@@ -871,9 +872,9 @@ def video_pruefen(q):
     try:
         r = subprocess.run(arg + ["-i", q["url"]], capture_output=True, text=True, timeout=25)
     except subprocess.TimeoutExpired:
-        raise Q.Fehler("Kamera antwortet nicht (25 s)")
+        raise Q.Fehler("kam_zeit")
     if r.returncode:
-        raise Q.Fehler("Kamera: " + (r.stderr.strip().splitlines() or ["nicht erreichbar"])[-1].replace(q["url"], "…")[:200])
+        raise Q.Fehler("kam_fehler", d=(r.stderr.strip().splitlines() or ["–"])[-1].replace(q["url"], "…"))
     streams_ = json.loads(r.stdout or "{}").get("streams", [])
     d = {"format": f, "streams": streams_}
     if any(x.get("codec_name") in ("hevc", "h265") for x in streams_):
@@ -1031,7 +1032,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             d = qn.daten(qid)
             if isinstance(d, dict) and "bild" in d and isinstance(d.get("bild"), bytes):
                 d = {"bild": f"{d['typ']}, {d['groesse'] // 1024} KB"}
-            return self.antwort(200, {"ok": d is not None, "daten": Q.gekuerzt(d), "fehler": (qn.stand.get(qid) or {}).get("fehler")})
+            st_ = qn.stand.get(qid) or {}
+            return self.antwort(200, {"ok": d is not None, "daten": Q.gekuerzt(d), "fehler": st_.get("fehler"), "fehler_m": st_.get("fehler_m")})
         if pfad == "/api/wache":
             n = min(int((q.get("n") or ["60"])[0]), 2000)
             datei = os.path.join(wache.ORDNER, time.strftime("%Y-%m-%d") + ".jsonl")
@@ -1062,7 +1064,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, dict(self.api_post(p, d) or {}, ok=True))
         except (E.Fehler, ValueError, KeyError, HAFehler) as ex:
             # 200 mit ok=false: die Verwaltung zeigt den Text direkt an
-            return self.antwort(200, {"ok": False, "fehler": str(ex).strip("'")})
+            m = M.als_dict(ex)
+            return self.antwort(200, {"ok": False, "fehler": str(ex).strip("'"), "code": m["code"], "p": m["p"]})
 
     def api_post(self, p, d):
         if p == "/api/einstellungen" and isinstance(d.get("quellen"), list):
@@ -1070,8 +1073,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/quellen/curl":
             try:
                 return Q.aus_curl(d.get("befehl", ""))
-            except Q.Fehler as ex:
-                raise E.Fehler(str(ex))
+            except Q.Fehler:
+                raise                             # Meldung mit Kennung bleibt erhalten
         if p == "/api/quellen/test":
             try:
                 roh = [d.get("quelle") or {}]
@@ -1082,8 +1085,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                     v = video_pruefen(q)
                     return {"dauer_ms": round((time.time() - t0) * 1000), "daten": v}
                 daten, ms = qn.abrufen(q)
-            except Q.Fehler as ex:
-                raise E.Fehler(str(ex))
+            except Q.Fehler:
+                raise                             # Meldung mit Kennung bleibt erhalten
             if q["art"] == "bild":
                 return {"ok": True, "dauer_ms": ms, "daten": {"bild": f"{daten['typ']}, {daten['groesse'] // 1024} KB"},
                         "bild": f"data:{daten['typ']};base64,{base64.b64encode(daten['bild']).decode()}" if daten["groesse"] < 1_500_000 else None}
@@ -1152,7 +1155,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if m:                                     # zum Testen sofort zeigen (die TV-Seiten holen es mit den nächsten Daten)
             if m.group(1) not in zustand.get("einspieler", {}):
                 einspieler_neu.set()
-                raise ValueError("Einspieler noch nicht bereit – in ein paar Sekunden erneut versuchen")
+                raise M.Meldung("ep_nicht_bereit")
             zustand["einspieler_jetzt"] = {"id": m.group(1), "nr": int(time.time()), "bis": time.time() + 40}
             return {}
         if p == "/api/bilder":

@@ -315,8 +315,8 @@ def pruefen(e):
     if "quellen" in e:
         try:
             s["quellen"] = Q.pruefen(e["quellen"])
-        except Q.Fehler as ex:
-            raise Fehler(str(ex))
+        except Q.Fehler:
+            raise                                  # Meldung mit Kennung (Verwaltung übersetzt sie)
     sr = e.get("stream", {})
     if "abschalten_s" in sr: s["stream"]["abschalten_s"] = _zahl(sr["abschalten_s"], 10, 3600, int)
     return s

@@ -3,6 +3,7 @@
 # Uhrzeit, den Takt der Rotation und den Start der Einspieler um die gemessene Abweichung.
 # Standard-Server: Länder-Pool zum Standort (z. B. de.pool.ntp.org), sonst pool.ntp.org.
 import ctypes, ctypes.util, socket, statistics, struct, time
+from meldung import Meldung
 
 NTP_EPOCHE = 2208988800          # Sekunden zwischen 1900-01-01 (NTP) und 1970-01-01 (Unix)
 
@@ -22,7 +23,7 @@ def abfragen(server, timeout=4):
         daten, _ = s.recvfrom(48)
         t3 = time.time()
     if len(daten) < 48 or (daten[0] & 0x07) not in (4, 5) or daten[1] == 0:
-        raise ValueError("ungültige NTP-Antwort")
+        raise Meldung("ntp_ungueltig")
     t1, t2 = _zeitstempel(daten, 32), _zeitstempel(daten, 40)
     return ((t1 - t0) + (t2 - t3)) / 2, (t3 - t0) - (t2 - t1)
 
@@ -37,7 +38,7 @@ def messen(server, versuche=4):
             pass
         time.sleep(0.3)
     if not ergebnisse:
-        raise OSError(f"{server} antwortet nicht")
+        raise Meldung("ntp_stumm", server=server)
     ergebnisse.sort(key=lambda x: x[1])
     beste = ergebnisse[:max(1, len(ergebnisse) // 2)]
     return statistics.median(x[0] for x in beste), min(x[1] for x in ergebnisse)

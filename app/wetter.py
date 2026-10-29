@@ -3,6 +3,7 @@
 # User-Agent, Koordinaten mit höchstens 4 Nachkommastellen, „Expires“ beachten, nachfragen mit If-Modified-Since.
 # Liefert dieselbe Form wie das HA-Wetter (Zustände wie HA: sunny, partlycloudy, rainy …).
 import datetime, json, os, time, urllib.error, urllib.request
+from meldung import Meldung, als_dict
 
 try:
     _V = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSION")).read().strip()
@@ -44,6 +45,7 @@ class MetWetter:
         self.gueltig_bis = 0         # aus „Expires“
         self.geaendert = None        # „Last-Modified“ für If-Modified-Since
         self.fehler = None
+        self.fehler_m = None             # dieselbe Meldung mit Kennung (für die Übersetzung in der Verwaltung)
         self.abruf = None
 
     def holen(self, breite, laenge):
@@ -58,15 +60,17 @@ class MetWetter:
                 self.daten = json.load(r)
                 self.geaendert = r.headers.get("Last-Modified")
                 ablauf = r.headers.get("Expires")
-            self.ort, self.fehler = ort, None
+            self.ort, self.fehler, self.fehler_m = ort, None, None
         except urllib.error.HTTPError as e:
             if e.code != 304:                    # 304 = unverändert, alte Daten gelten weiter
-                self.fehler = f"MET Norway antwortet {e.code}"
+                m = Meldung("met_http", code=e.code)
+                self.fehler, self.fehler_m = str(m), als_dict(m)
                 self.gueltig_bis = time.time() + 600
                 return
             ablauf = e.headers.get("Expires")
         except Exception as e:
-            self.fehler = f"MET Norway nicht erreichbar: {e}"
+            m = Meldung("met_nicht_erreichbar", d=e)
+            self.fehler, self.fehler_m = str(m), als_dict(m)
             self.gueltig_bis = time.time() + 600
             return
         self.abruf = time.strftime("%Y-%m-%d %H:%M")

@@ -78,7 +78,7 @@ function baumZeigen(ziel, daten, beiWahl) {
 async function pfadWaehlen(ziel, quelleId, beiWahl) {
   if (!quelleId) { ziel.innerHTML = ""; return; }
   const d = await holen("/api/quellen/daten?id=" + encodeURIComponent(quelleId));
-  if (!d.ok) { ziel.innerHTML = `<p class="schlecht">${esc(d.fehler || QT().nie)}</p>`; return; }
+  if (!d.ok) { ziel.innerHTML = `<p class="schlecht">${esc(d.fehler ? meldungText(d.fehler_m, d.fehler) : QT().nie)}</p>`; return; }
   baumZeigen(ziel, d.daten, (p) => { ziel.innerHTML = ""; beiWahl(p); });
 }
 
@@ -107,7 +107,7 @@ async function quellenSeite(inhalt) {
       return `<div class="karte" data-id="${esc(q.id)}"><h2>${esc(q.name)} <span class="leise">· ${esc(q.id)} · ${esc(Q.artName[q.art])}${q.art === "video" ? "" : " · " + iv}${q.aktiv ? "" : " · –"}</span></h2>
         <div class="leise umbruch">${q.art === "video" ? "" : esc(q.methode) + " "}${esc(q.url)}</div>
         <div class="leise">${esc(Q.letzter)}: ${esc(zeitText(s.abruf))}${s.dauer_ms != null ? ` (${s.dauer_ms} ${Q.ms})` : ""} · ${esc(Q.naechster)}: ${esc(zeitText(s.naechster))}
-          ${s.fehler ? `<br><span class="schlecht">${esc(Q.fehler)}: ${esc(s.fehler)}${s.versuche ? ` (${s.versuche} ${esc(Q.versuche)})` : ""}</span>` : ""}</div>
+          ${s.fehler ? `<br><span class="schlecht">${esc(Q.fehler)}: ${esc(meldungText(s.fehler_m, s.fehler))}${s.versuche ? ` (${s.versuche} ${esc(Q.versuche)})` : ""}</span>` : ""}</div>
         <div class="zeile"><button class="knopf" data-a="bearbeiten">${esc(Q.bearbeiten)}</button><button class="knopf" data-a="daten">${esc(Q.daten)}</button>
           <button class="knopf" data-a="jetzt">${esc(Q.jetzt)}</button><button class="knopf gefahr" data-a="loeschen">${esc(Q.loeschen)}</button></div>
         <div class="qDaten"></div></div>`;
