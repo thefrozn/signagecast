@@ -5,7 +5,7 @@
 # Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
-import json, os, re, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import json, os, re, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -539,10 +539,12 @@ def ha_schleife():
         try:
             teil = holen()
             zustand["ha_fehler"] = None
+            zustand["ha_fehler_code"] = None
             with sperre:
                 zustand["ha_teil"] = teil
         except Exception as ex:
             zustand["ha_fehler"] = str(ex)[:300]
+            zustand["ha_fehler_code"] = (getattr(ex, "code", "") or "unbekannt", getattr(ex, "detail", "") or str(ex)[:200])
             if erster and alt_ohne_quelle and einst()["anzeige"]["wetter_quelle"] == "ha":
                 zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"anzeige": {"wetter_quelle": "met"}}))
                 wetter_neu.set()
@@ -640,12 +642,14 @@ def status():
         "betrieb": "container" if CONTAINER else "lxc", "kodierung": zustand.get("kodierung"),
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
-        "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"]},
+        "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"],
+               "code": (zustand.get("ha_fehler_code") or (None, None))[0], "detail": (zustand.get("ha_fehler_code") or (None, None))[1]},
         "liste": streams.status, "anzahl_in_rotation": len(streams.liste),
-        "aufgaben": [{"name": "streamliste", "wann": "alle 5 min"},
+        # Zeiten als Zahlen – den Text setzt die Verwaltung in ihrer Sprache
+        "aufgaben": [{"name": "streamliste", "alle_s": 300},
                      {"name": "suche", "wann": e["suche"]["uhrzeit"] if e["suche"]["aktiv"] else None,
                       "zuletzt": streams.status.get("suche")},
-                     {"name": "wache", "wann": "alle 10 s, nur bei laufendem Stream"}],
+                     {"name": "wache", "alle_s": 10, "nur_stream": True}],
     }
 
 
@@ -1213,6 +1217,14 @@ def main():
     os.makedirs(DATEN, exist_ok=True)
     render_schreiben(einst())
     zeitzone_setzen()
+
+    def beenden(*_):
+        # Verlauf (Diagramme) beim Stoppen/Update sichern – sonst fehlen bis zu 5 min Werte
+        if qn.verlauf:
+            qn.verlauf.speichern()
+        os._exit(0)
+    signal.signal(signal.SIGTERM, beenden)
+    signal.signal(signal.SIGINT, beenden)
 
     def kodierung():
         zustand["kodierung"] = HW.pruefen()

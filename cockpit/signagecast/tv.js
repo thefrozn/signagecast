@@ -54,7 +54,10 @@ const TEXTE = {
       "Konten → tvadmin → Passwort festlegen).", ausblenden: "Ausblenden",
     stream: "Videostream", laeuft: "läuft", aus: "aus (niemand schaut)", zuschauer: "Zuschauer", aktuell: "Gerade",
     qualitaet: "Qualität", codec: "Codec", verloren: "verlorene Bilder", bandbreite: "Bandbreite", cpu: "CPU", ram: "RAM frei",
-    platte: "Speicher frei", laufzeit: "Laufzeit", ha: "Home Assistant", verbunden: "verbunden", getrennt: "nicht verbunden",
+    platte: "Speicher frei", laufzeit: "Laufzeit", last: "Last", kerne: "Kerne", von: "von",
+    alleSek: (s) => (s % 60 ? `alle ${s} s` : `alle ${s / 60} min`), nurStream: "nur bei laufendem Stream",
+    haFehler: { nicht_erreichbar: "HA nicht erreichbar", kein_trusted: "HA bietet dieser Adresse keine Anmeldung über vertrauenswürdige Netzwerke an (trusted_networks fehlt oder die IP ist nicht eingetragen)",
+                kein_benutzer: "trusted_networks: kein Benutzer für diese IP zugeordnet", abgelehnt: "Anmeldung abgelehnt", http: "HA antwortet mit Fehler" }, ha: "Home Assistant", verbunden: "verbunden", getrennt: "nicht verbunden",
     rotation: "In Rotation", liste: "Streamliste", zuletzt: "zuletzt", pause: "YouTube-Pause bis", suche: "Stream-Suche",
     vorschau: "Bild am Fernseher", vorschauNeu: "Bild aktualisieren", keineVorschau: "Kein Bild – der Stream läuft gerade nicht.",
     seiteNeu: "TV-Seite neu laden", ketteNeu: "Stream neu starten", listeNeu: "Liste neu berechnen", erledigt: "Erledigt",
@@ -156,7 +159,10 @@ const TEXTE = {
       "tvadmin → Set password).", ausblenden: "Dismiss",
     stream: "Video stream", laeuft: "running", aus: "off (nobody watching)", zuschauer: "Viewers", aktuell: "Now",
     qualitaet: "Quality", codec: "Codec", verloren: "dropped frames", bandbreite: "Bandwidth", cpu: "CPU", ram: "RAM free",
-    platte: "Disk free", laufzeit: "Uptime", ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
+    platte: "Disk free", laufzeit: "Uptime", last: "Load", kerne: "cores", von: "of",
+    alleSek: (s) => (s % 60 ? `every ${s} s` : `every ${s / 60} min`), nurStream: "only while the stream runs",
+    haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
+                kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
     rotation: "In rotation", liste: "Stream list", zuletzt: "last", pause: "YouTube pause until", suche: "Stream search",
     vorschau: "Picture on the TV", vorschauNeu: "Refresh picture", keineVorschau: "No picture – the stream is not running.",
     seiteNeu: "Reload TV page", ketteNeu: "Restart stream", listeNeu: "Rebuild list", erledigt: "Done",
@@ -353,11 +359,12 @@ async function uebersicht(inhalt) {
             : (s.zeit_quelle || {}).korrektur ? T.hostNichtSync : "") + "<br>" +
         esc(`${(s.zeit_quelle || {}).server || ""} · ${(s.zeit_quelle || {}).zeitzone || ""}`) +
         (Math.abs((s.zeit_quelle || {}).abweichung_s || 0) > 2 ? `<br><span class="warn">${esc(T.zeitWarnung)}</span>` : "")],
-      [T.ha, s.ha.ok ? `<span class="gut">${esc(T.verbunden)}</span>` : `<span class="schlecht">${esc(T.getrennt)}</span>`, esc(s.ha.fehler || s.ha.url)],
+      [T.ha, s.ha.ok ? `<span class="gut">${esc(T.verbunden)}</span>` : `<span class="schlecht">${esc(T.getrennt)}</span>`,
+        esc(s.ha.ok ? s.ha.url : T.haFehler[s.ha.code] ? T.haFehler[s.ha.code] + (s.ha.detail ? ": " + s.ha.detail : "") : (s.ha.fehler || s.ha.url))],
       [T.rotation, String(s.anzahl_in_rotation), `${esc(T.liste)} ${esc(T.zuletzt)} ${esc(s.liste.zeit || "–")}` +
         (s.liste.pause_bis > Date.now() / 1000 ? ` · <span class="warn">${esc(T.pause)} ${uhrzeit(s.liste.pause_bis)}</span>` : "")],
-      [T.cpu, s.cpu_prozent != null ? s.cpu_prozent + " %" : "–", `Last ${s.last.map((x) => x.toFixed(2)).join(" / ")} · ${s.kerne} Kerne`],
-      [T.ram, `${s.ram_mb.frei} MB`, `von ${s.ram_mb.gesamt} MB · ${esc(T.platte)} ${s.platte_gb.frei} / ${s.platte_gb.gesamt} GB`],
+      [T.cpu, s.cpu_prozent != null ? s.cpu_prozent + " %" : "–", `${esc(T.last)} ${s.last.map((x) => x.toFixed(2)).join(" / ")} · ${s.kerne} ${esc(T.kerne)}`],
+      [T.ram, `${s.ram_mb.frei} MB`, `${esc(T.von)} ${s.ram_mb.gesamt} MB · ${esc(T.platte)} ${s.platte_gb.frei} / ${s.platte_gb.gesamt} GB`],
       [T.laufzeit, dauer(s.laufzeit_s), `Version ${esc(s.version)}`],
     ];
     if (s.kodierung) k.splice(3, 0, [T.kodierungKarte, esc(T.kodierungArt[s.kodierung.art] || s.kodierung.art),
@@ -370,7 +377,7 @@ async function uebersicht(inhalt) {
       <p class="leise"><a href="${esc(s.projekt)}/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></p></div>` : "";
     $("#kacheln").innerHTML = k.map(([t, w2, u]) => `<div class="karte"><div class="leise">${esc(t)}</div><div class="wert">${w2}</div><div class="leise">${u}</div></div>`).join("");
     $("#aufgaben").innerHTML = s.aufgaben.map((a) => `<div class="zeile"><b>${esc(T.aufgabe[a.name] || a.name)}</b>
-      <span class="leise">${esc(a.wann || T.deaktiviert)}${a.zuletzt ? " · " + esc(T.zuletzt) + " " + esc(a.zuletzt.zeit || "") : ""}</span></div>`).join("");
+      <span class="leise">${esc(a.alle_s ? T.alleSek(a.alle_s) + (a.nur_stream ? ", " + T.nurStream : "") : a.wann || T.deaktiviert)}${a.zuletzt ? " · " + esc(T.zuletzt) + " " + esc(a.zuletzt.zeit || "") : ""}</span></div>`).join("");
   };
   await zeichnen();
   vorschau();
@@ -617,7 +624,7 @@ async function verbindung(inhalt) {
   }, T.pwGeaendert);
   const test = async () => {
     const r = await holen("/api/ha/test");
-    $("#testErg").innerHTML = r.ok ? `<span class="gut">${esc(T.testOk(r.version))}</span> · ${esc(r.ort || "")}` : `<span class="schlecht">${esc(r.fehler)}</span>`;
+    $("#testErg").innerHTML = r.ok ? `<span class="gut">${esc(T.testOk(r.version))}</span> · ${esc(r.ort || "")}` : `<span class="schlecht">${esc(T.haFehler[r.code] ? T.haFehler[r.code] + (r.detail ? ": " + r.detail : "") : r.fehler)}</span>`;
     return r;
   };
   $("#ok").onclick = (e) => aktion(e.target, async () => { const d = await senden("/api/einstellungen", { ha: { url: $("#url").value } }); E = d.einstellungen; ENTITAETEN = null; await test(); });

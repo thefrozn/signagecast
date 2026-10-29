@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.11.2 (2026-10-29)
+- Chart history is saved when the service stops (update, restart) – no more gap of up to 5 minutes.
+- Admin overview fully in English when English is set: scheduled tasks, load/cores, RAM, Home Assistant errors (also
+  in the connection test) are now translated in the admin instead of coming as German text from the service.
+
 ## v0.11.1 (2026-10-29)
 - **Docker / Podman: admin now on port 19090** (was 9090) – many servers already run Cockpit on 9090, which collides
   with host networking. Changeable with `SC_VERWALTUNG_PORT`. Update: map `-p 19090:19090` (or set `SC_VERWALTUNG_PORT=9090`).

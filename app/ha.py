@@ -7,7 +7,10 @@ CLIENT = "http://127.0.0.1:8080/"
 
 
 class HAFehler(Exception):
-    pass
+    """Fehler mit Kennung (code), damit die Verwaltung ihn in ihrer Sprache zeigen kann; detail = technischer Grund."""
+    def __init__(self, text, code="", detail=""):
+        super().__init__(text)
+        self.code, self.detail = code, str(detail)[:200]
 
 
 class HA:
@@ -41,10 +44,10 @@ class HA:
         try:
             anbieter = self._anfrage("/auth/providers")
         except Exception as e:
-            raise HAFehler(f"HA nicht erreichbar: {e}")
+            raise HAFehler(f"HA nicht erreichbar: {e}", "nicht_erreichbar", e)
         if not any(a.get("type") == "trusted_networks" for a in (anbieter.get("providers", anbieter) if isinstance(anbieter, dict) else anbieter)):
             raise HAFehler("HA bietet dieser Adresse keine Anmeldung über vertrauenswürdige Netzwerke an "
-                           "(trusted_networks fehlt oder die IP des Containers ist nicht eingetragen)")
+                           "(trusted_networks fehlt oder die IP des Containers ist nicht eingetragen)", "kein_trusted")
         f = self._anfrage("/auth/login_flow", {"client_id": CLIENT, "handler": ["trusted_networks", None],
                                                "redirect_uri": CLIENT})
         if f.get("type") == "form":          # mehrere Benutzer für diese IP: den ersten nehmen
@@ -52,10 +55,11 @@ class HA:
             opt = schema.get("user", {}).get("options") or []
             wahl = list(opt.keys()) if isinstance(opt, dict) else [o[0] for o in opt]
             if not wahl:
-                raise HAFehler("Anmeldung über vertrauenswürdige Netzwerke: kein Benutzer für diese IP zugeordnet")
+                raise HAFehler("Anmeldung über vertrauenswürdige Netzwerke: kein Benutzer für diese IP zugeordnet", "kein_benutzer")
             f = self._anfrage(f"/auth/login_flow/{f['flow_id']}", {"client_id": CLIENT, "user": wahl[0]})
         if f.get("type") != "create_entry":
-            raise HAFehler(f"Anmeldung abgelehnt: {f.get('errors') or f.get('reason') or f.get('type')}")
+            grund = f.get('errors') or f.get('reason') or f.get('type')
+            raise HAFehler(f"Anmeldung abgelehnt: {grund}", "abgelehnt", grund)
         t = self._anfrage("/auth/token", {"grant_type": "authorization_code", "code": f["result"], "client_id": CLIENT}, form=True)
         self.token, self.refresh = t["access_token"], t.get("refresh_token")
         self.ablauf = time.time() + t["expires_in"] - 120
@@ -75,7 +79,7 @@ class HA:
         except urllib.error.HTTPError as e:
             if e.code == 401:
                 self.token = None
-            raise HAFehler(f"HA antwortet {e.code} auf {pfad}")
+            raise HAFehler(f"HA antwortet {e.code} auf {pfad}", "http", f"{e.code} {pfad}")
 
     def post(self, pfad, daten):
         try:
@@ -83,7 +87,7 @@ class HA:
         except urllib.error.HTTPError as e:
             if e.code == 401:
                 self.token = None
-            raise HAFehler(f"HA antwortet {e.code} auf {pfad}")
+            raise HAFehler(f"HA antwortet {e.code} auf {pfad}", "http", f"{e.code} {pfad}")
 
     def testen(self):
         """Für die Verwaltung: Erreichbarkeit, Anmeldung, Version, Standort."""
@@ -93,6 +97,6 @@ class HA:
             return {"ok": True, "version": k.get("version"), "ort": k.get("location_name"),
                     "breite": k.get("latitude"), "laenge": k.get("longitude"), "zeitzone": k.get("time_zone")}
         except HAFehler as e:
-            return {"ok": False, "fehler": str(e)}
+            return {"ok": False, "fehler": str(e), "code": e.code, "detail": e.detail}
         except Exception as e:
-            return {"ok": False, "fehler": f"HA nicht erreichbar: {e}"}
+            return {"ok": False, "fehler": f"HA nicht erreichbar: {e}", "code": "nicht_erreichbar", "detail": str(e)[:200]}
