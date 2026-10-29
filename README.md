@@ -43,11 +43,41 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 
 ## Requirements
 
-- A PC with **Intel graphics** (Quick Sync / VAAPI, e.g. a mini PC with an Intel CPU from the 7th generation on),
+- A PC with **Intel graphics** (Quick Sync / VAAPI, e.g. a mini PC with Intel N100 or an Intel CPU from the 7th generation on – see “Hardware”),
   running **Proxmox VE**, **Debian 13** or **Docker / Podman**. 2–4 cores, 10 GB disk and about 1 GB RAM per TV.
   Without usable graphics SignageCast falls back to H.264 in Full HD on the CPU (about 1–2 cores while someone watches).
 - Optional: **Home Assistant** in the same network (for your own values; weather comes from MET Norway).
 - A TV whose browser plays **H.265 / HEVC** (for 4K; most smart TVs from about 2018). Full HD output is also possible.
+
+## Hardware
+
+SignageCast renders the TV page in a browser, records it and encodes a video stream. The graphics unit does the
+encoding (H.265/HEVC in 4K via VAAPI); the CPU mainly runs the browser, which decodes the live video in software.
+
+| | Recommendation |
+|---|---|
+| **Minimum (recommended)** | Mini PC with **Intel N100 / N95** (Alder Lake-N): H.264 and H.265 encoding in hardware up to 4K, 6–10 W, inexpensive |
+| **Good** | Any Intel CPU with integrated graphics from the **7th generation** (Kaby Lake) on, e.g. Core i5-7500T |
+| **Works** | Intel 6th generation (Skylake): H.265 only 8 bit |
+| **Without usable graphics** | Software fallback: H.264 in Full HD on the CPU (about one more core while someone is watching) |
+| **AMD graphics** | VAAPI drivers are installed, but untested so far |
+| **Raspberry Pi** | Not suitable as a server: the Pi 5 has **no** hardware video encoder, the Pi 4 only H.264 up to 1080p and too little CPU for browser + video. A “player mode” (Pi at the TV showing the page directly via HDMI, no encoding) is an idea for later. |
+
+Per TV: about 1 GB RAM and one CPU core for the browser; disk 10 GB. The TV's browser must play **H.265** for 4K
+(most smart TVs from about 2018); Full HD output with H.264 is possible as well.
+
+**Our experience** (author's setup): Proxmox VE on a mini PC with **Intel Core i5-7500T / HD Graphics 630**, SignageCast
+in an LXC container with 4 cores and 3 GB RAM, one Samsung TV (4K H.265, 16 Mbit/s, 25 fps):
+
+| Measured (CPU package via RAPL) | Value |
+|---|---|
+| Idle, nobody watching (rendering stops automatically) | about 1.2 W |
+| Streaming 4K with a live video (1080p) and sound | about **10–11 W**; Chromium ~50 %, ffmpeg ~11 %, Xvfb ~6 % of one core |
+| Earlier prototype rendering the full Home Assistant dashboard in 4K | about 16–23 W – the light own TV page and Full HD rendering with GPU upscaling saved more than half |
+| Software fallback test (no GPU, 2 cores) | ffmpeg ~70 % of one core for H.264 1080p25 |
+
+YouTube in the container is decoded in software; the small extension `render/h264-fluessig` keeps YouTube at 720p/1080p
+instead of 144p (see “Good to know”).
 
 ## Installation
 
@@ -146,6 +176,13 @@ see [NOTICE.md](NOTICE.md).
   decode H.265). Rootless Podman with the default port forwarder may hide the client address – use host networking there.
 - **Web pages** are embedded only if the site allows it (X-Frame-Options / frame-ancestors); nothing is circumvented.
 
+## Thanks
+
+Special thanks to **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** by boschkundendienst – a
+Raspberry Pi based digital signage player and CMS. It was the inspiration for the idea behind SignageCast: a self-hosted
+screen that “normal” people can manage in the browser, without online services or subscriptions. SignageCast does not
+contain code from RaspiSignage (different approach: server-side rendering and streaming), but the thinking started there.
+
 ## Support
 
 Questions, bugs and ideas: [GitHub issues](https://github.com/thefrozn/signagecast/issues).
@@ -192,6 +229,16 @@ Eigene Daten: Reiter **Datenquellen** (JSON-API, RSS-Feed, Bild; curl-Befehl ein
 die Bausteine API-Wert, API-Liste, API-Bild, Anzeige (Balken/Ampel), Countdown, QR-Code sowie Platzhalter `{quelle:pfad}`.
 Dazu Kameras (RTSP/HLS/MJPEG), Verlauf-Diagramme, Kalender per iCal-Adresse und eingebettete Webseiten.
 Voraussetzungen: Intel-Grafik, ein Fernseher-Browser mit H.265; Home Assistant optional.
+
+**Hardware:** Empfohlenes Minimum ist ein Mini-PC mit **Intel N100/N95** (H.265 in 4K per Hardware, 6–10 W); jede
+Intel-CPU mit Grafik ab der 7. Generation läuft gut. Ohne nutzbare Grafik gibt es einen Notbetrieb (H.264 Full HD per CPU).
+**Raspberry Pi** eignet sich nicht als Server: Der Pi 5 hat keinen Video-Encoder, der Pi 4 nur H.264 bis 1080p und zu
+wenig CPU für Browser und Video. Erfahrung des Autors: Core i5-7500T mit HD 630 unter Proxmox, LXC mit 4 Kernen/3 GB,
+4K-Stream mit Live-Video und Ton bei etwa **10–11 W** CPU-Paket, im Leerlauf etwa 1,2 W (Details oben).
+
+**Danke** an **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** von boschkundendienst – das
+Raspberry-Pi-Signage-Projekt war die Inspiration für die Überlegungen hinter SignageCast (selbst betrieben, im Browser
+verwaltbar, ohne Online-Dienste). SignageCast enthält keinen Code daraus, der Ansatz ist ein anderer.
 
 ## License
 
