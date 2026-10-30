@@ -38,6 +38,8 @@ STANDARD = {
     "quellen": [],                        # eigene Datenquellen (API/RSS/Bild), siehe app/quellen.py
     # eigene Medien (seit 0.15): [{"id", "name", "art": bild|video, "datei", "dauer_s", "aktiv"}], Dateien in DATEN/medien
     "medien": [],
+    # Meldung per Webhook (seit 0.16): eigener Port (SC_WEBHOOK_PORT, Standard 8890), nur mit geheimem Schlüssel
+    "webhook": {"aktiv": False, "token": ""},
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
     # Updates (seit 0.13): melden = nur anzeigen; system auch „sicherheit“ (nur Sicherheitsupdates) oder „auto“ – automatisch
@@ -345,6 +347,9 @@ def pruefen(e):
             S.passwort_pruefen(ss_["passwort"])          # auch das Passwort der automatischen Sicherung muss stark sein
     if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
         raise Meldung("sich_geheim_ohne_pw")
+    wh = e.get("webhook", {})
+    if "aktiv" in wh: s["webhook"]["aktiv"] = bool(wh["aktiv"])
+    if "token" in wh: s["webhook"]["token"] = _text(wh.get("token") or "", 64, r"[A-Za-z0-9_-]*")
     if "medien" in e:
         aus_m, ids_m = [], set()
         for m in (e.get("medien") or [])[:300]:

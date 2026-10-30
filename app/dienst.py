@@ -6,7 +6,7 @@
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
 import json, os, re, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import einstellungen as E                     # noqa: E402
@@ -54,7 +54,8 @@ def einst_aussen():
     """Einstellungen für die Verwaltung: geheime Kopfzeilen der Datenquellen und das Sicherungs-Passwort nur als ••••."""
     e = einst()
     return dict(e, quellen=Q.maskieren(e["quellen"]),
-                sicherung=dict(e["sicherung"], passwort=Q.MASKE if e["sicherung"]["passwort"] else ""))
+                sicherung=dict(e["sicherung"], passwort=Q.MASKE if e["sicherung"]["passwort"] else ""),
+                webhook=dict(e["webhook"], token=Q.MASKE if e["webhook"]["token"] else ""))
 
 
 qn = Q.Quellen(lambda: einst(), os.path.join(DATEN, "verlauf.json"))
@@ -441,6 +442,70 @@ def kalender_schleife():
         time.sleep(600)
 
 
+# ---------- Meldung per Webhook (seit 0.16) ----------
+WEBHOOK_PORT = int(os.environ.get("SC_WEBHOOK_PORT", "8890"))
+webhook_versuche = {}                             # IP -> [Zeitpunkte] (höchstens 20 Anfragen je Minute)
+
+
+def meldung_fuer(tv_id):
+    m = zustand.get("meldung_extern")
+    if not m or m["bis"] < time.time() or (m.get("tv") and m["tv"] != tv_id):
+        return None
+    return {"text": m["text"], "stil": m["stil"], "bis": m["bis"]}
+
+
+class WebhookBearbeiter(BaseHTTPRequestHandler):
+    """Nur /meldung, nur mit Schlüssel (Authorization: Bearer … oder ?token=…). Alles andere: 404."""
+    def log_message(self, *a):
+        pass
+
+    def antwort(self, code, obj):
+        roh = json.dumps(obj).encode()
+        self.send_response(code); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(roh)))
+        self.end_headers(); self.wfile.write(roh)
+
+    def bearbeiten(self, daten):
+        import hmac
+        u = urllib.parse.urlparse(self.path)
+        if u.path != "/meldung":
+            return self.antwort(404, {"ok": False})
+        jetzt, ip = time.time(), self.client_address[0]
+        liste = [t for t in webhook_versuche.get(ip, []) if jetzt - t < 60]
+        webhook_versuche[ip] = liste + [jetzt]
+        if len(liste) >= 20:
+            return self.antwort(429, {"ok": False, "fehler": "zu viele Anfragen"})
+        wh = einst()["webhook"]
+        q = urllib.parse.parse_qs(u.query)
+        gegeben = (self.headers.get("Authorization") or "").removeprefix("Bearer ").strip() or (q.get("token") or [""])[0]
+        if not wh["aktiv"] or not wh["token"] or not hmac.compare_digest(gegeben.encode(), wh["token"].encode()):
+            time.sleep(1)
+            return self.antwort(403, {"ok": False})
+        text = str(daten.get("text", (q.get("text") or [""])[0]))[:300].strip()
+        if not text:
+            zustand["meldung_extern"] = None
+            return self.antwort(200, {"ok": True, "geloescht": True})
+        try:
+            dauer = max(5, min(86400, int(daten.get("dauer", (q.get("dauer") or ["60"])[0]))))
+        except (TypeError, ValueError):
+            dauer = 60
+        stil = daten.get("stil", (q.get("stil") or ["info"])[0])
+        zustand["meldung_extern"] = {"text": text, "bis": time.time() + dauer, "stil": stil if stil in ("info", "warnung") else "info",
+                                     "tv": str(daten.get("tv", (q.get("tv") or [""])[0]))[:12] or None}
+        return self.antwort(200, {"ok": True, "bis": int(zustand["meldung_extern"]["bis"])})
+
+    def do_GET(self):
+        self.bearbeiten({})
+
+    def do_POST(self):
+        n = int(self.headers.get("Content-Length") or 0)
+        roh = self.rfile.read(min(n, 4096)) if n else b""
+        try:
+            daten = json.loads(roh) if roh.strip().startswith(b"{") else {"text": roh.decode(errors="replace")}
+        except ValueError:
+            daten = {}
+        self.bearbeiten(daten if isinstance(daten, dict) else {})
+
+
 def unwetter_schleife():
     """DWD-Warnungen für den Standort alle 10 min – nur, wenn ein Layout den Baustein „Unwetterwarnung“ nutzt."""
     while True:
@@ -527,7 +592,8 @@ def tv_daten(tv_id):
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
                 tv=t["id"], layout=layout, kalender=kal, api=api,
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
-                unwetter=(zustand.get("unwetter") or {}).get("liste", []), streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                unwetter=(zustand.get("unwetter") or {}).get("liste", []),
+                meldung_extern=meldung_fuer(t["id"]), streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
                 radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
                        # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt
@@ -845,7 +911,8 @@ MEDIEN_SICHERUNG_MAX = 200 * 1024 * 1024        # Videos nur in die Sicherung, s
 def sicherung(mit_geheimnissen=False):
     e = einst()
     if not mit_geheimnissen:              # Standard: ohne API-Schlüssel/Passwörter (Datei kann weitergegeben werden)
-        e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""))
+        e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""),
+                 webhook=dict(e["webhook"], token=""))
     return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
             "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()}
 
@@ -943,6 +1010,8 @@ def einspielen(d, mit_strikes=True):
         raise E.Fehler("Keine SignageCast-Sicherung bzw. kein Profil")
     if "einstellungen" in d:
         neu = d["einstellungen"]
+        if isinstance(neu, dict) and isinstance(neu.get("webhook"), dict) and not neu["webhook"].get("token"):
+            neu["webhook"]["token"] = einst()["webhook"]["token"]
         if isinstance(neu, dict) and isinstance(neu.get("sicherung"), dict) and not neu["sicherung"].get("passwort"):
             neu["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]     # ohne Geheimnisse: vorhandenes behalten
         if isinstance(neu, dict) and isinstance(neu.get("quellen"), list):
@@ -1272,6 +1341,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
     def api_post(self, p, d):
         if p == "/api/einstellungen" and isinstance(d.get("quellen"), list):
             Q.demaskieren(d["quellen"], einst()["quellen"])
+        if p == "/api/einstellungen" and isinstance(d.get("webhook"), dict) and d["webhook"].get("token") == Q.MASKE:
+            d["webhook"]["token"] = einst()["webhook"]["token"]
+        if p == "/api/webhook/neu":                 # neuen Schlüssel erzeugen – nur in dieser Antwort im Klartext
+            import secrets
+            token = secrets.token_urlsafe(24)
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"webhook": {"token": token, "aktiv": True}}))
+            return {"token": token, "port": WEBHOOK_PORT, "einstellungen": einst_aussen()}
         if p == "/api/einstellungen" and isinstance(d.get("sicherung"), dict) and d["sicherung"].get("passwort") == Q.MASKE:
             d["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]
         if p == "/api/medien/teil":
@@ -1477,6 +1553,11 @@ def main():
         print(f"Kodierung: {k['art']} ({k['codec']}, bis {k['max_hoehe']}p)" + (f" – {k['grund']}" if k.get("grund") else ""), flush=True)
         render_schreiben(einst())
     threading.Thread(target=kodierung, daemon=True).start()
+    try:
+        webhook_server = ThreadingHTTPServer(("0.0.0.0", WEBHOOK_PORT), WebhookBearbeiter)
+        threading.Thread(target=webhook_server.serve_forever, daemon=True).start()
+    except OSError as f:
+        print(f"Webhook-Port {WEBHOOK_PORT} nicht verfügbar: {f}", flush=True)
     if os.environ.get("SC_VERWALTUNG_PORT"):
         import verwaltung
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()

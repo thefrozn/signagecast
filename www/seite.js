@@ -557,7 +557,17 @@ async function laden() {
     // Quellenhinweis für das eigene Wetter (Lizenz CC BY 4.0 von MET Norway)
     $("quelle").textContent = d.wetter && d.wetter.quelle === "MET Norway" && !d.layout.schwarz ? T.wetterQuelle : "";
     radioSetzen(d);
+    meldungExtern(d.meldung_extern);
   } catch (_) { /* nächster Versuch */ }
+}
+
+// Meldung per Webhook (seit 0.16): Banner über jedem Layout, auch bei „schwarz“
+function meldungExtern(m) {
+  const el = $("meldung-extern");
+  if (!m || m.bis * 1000 < Date.now()) { el.hidden = true; return; }
+  el.textContent = m.text;
+  el.className = m.stil === "warnung" ? "warnung" : "";
+  el.hidden = false;
 }
 
 const start = Date.now();

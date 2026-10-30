@@ -168,6 +168,13 @@ class EinstellungenUndLayouts(unittest.TestCase):
         with self.assertRaises(E.Fehler):
             E.pruefen({"medien": [{"id": "m1ab", "art": "bild", "datei": "../../etc/passwd"}]})
 
+    def test_webhook_schluessel(self):
+        self.assertEqual(E.pruefen({})["webhook"], {"aktiv": False, "token": ""})
+        e = E.pruefen({"webhook": {"aktiv": 1, "token": "Ab_9-xY"}})
+        self.assertEqual(e["webhook"], {"aktiv": True, "token": "Ab_9-xY"})
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"webhook": {"token": "mit leerzeichen"}})
+
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))

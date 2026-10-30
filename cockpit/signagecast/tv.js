@@ -42,6 +42,10 @@ const TEXTE = {
     epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.",
     wetterQuelle: "Wetterquelle", wetterQuelleArt: { met: "Eigenes Wetter (MET Norway, für den Standort)", ha: "Home Assistant (Wetter-Entität)" },
     metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort im Reiter „Verbindung“ – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
+    whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Fernseher legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
+    whAktiv: "Meldungen annehmen", whNeu: "Neuen Schlüssel erzeugen", whVorhanden: "Schlüssel gesetzt (••••)", whKeiner: "noch kein Schlüssel",
+    whEinmal: "Nur jetzt sichtbar – bitte sicher ablegen:", whBeispiel: "Beispiel (Text, Dauer in Sekunden, Stil info/warnung, optional tv=<Kennung>):",
+    whNeuFrage: "Neuen Schlüssel erzeugen? Der alte gilt danach nicht mehr.",
     zeitTitel: "Zeitquelle", ntpServer: "NTP-Server", ntpAuto: "automatisch", zeitzone: "Zeitzone", systemZone: "automatisch",
     zeitText: "Der Container nimmt die Uhrzeit des Hosts (z. B. Proxmox). SignageCast prüft alle 30 Minuten gegen die Zeitquelle: Ist die Uhr des Hosts synchronisiert, bleibt alles, wie es ist; sonst (oder bei mehr als 1 s Abweichung) korrigiert SignageCast Uhr, Takt und Einspieler. NTP-Server leer = Länder-Pool zum Standort (z. B. de.pool.ntp.org). Zeitzone automatisch = die des Systems, bei UTC die des Landes am Standort.",
     hostSync: "Zeit vom Host (Proxmox), synchronisiert – keine Korrektur nötig", hostNichtSync: "Uhr des Hosts nicht synchronisiert – SignageCast korrigiert per NTP",
@@ -176,6 +180,10 @@ const TEXTE = {
     epStand: "Version", epFehler: "Error", epKeine: "No clips yet.",
     wetterQuelle: "Weather source", wetterQuelleArt: { met: "Own weather (MET Norway, for the location)", ha: "Home Assistant (weather entity)" },
     metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location in the “Connection” tab – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
+    whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the TVs – above any layout. Only with a secret key; the key is shown only once after it is created.",
+    whAktiv: "Accept messages", whNeu: "Create new key", whVorhanden: "Key set (••••)", whKeiner: "no key yet",
+    whEinmal: "Visible only now – please store it safely:", whBeispiel: "Example (text, duration in seconds, style info/warnung, optional tv=<id>):",
+    whNeuFrage: "Create a new key? The old one stops working.",
     zeitTitel: "Time source", ntpServer: "NTP server", ntpAuto: "automatic", zeitzone: "Time zone", systemZone: "automatic",
     zeitText: "The container uses the host clock (e.g. Proxmox). Every 30 minutes SignageCast checks it against the time source: if the host clock is synchronised, nothing changes; otherwise (or if it is more than 1 s off) SignageCast corrects clock, rotation and clips. Empty NTP server = country pool for the location (e.g. de.pool.ntp.org). Automatic time zone = the system's, or the location's country if the system runs in UTC.",
     hostSync: "Time from the host (Proxmox), synchronised – no correction needed", hostNichtSync: "Host clock not synchronised – SignageCast corrects via NTP",
@@ -702,6 +710,10 @@ async function verbindung(inhalt) {
       <div class="zeile"><label>${esc(T.ntpServer)}</label><input type="text" id="ntp" value="${esc(E.zeit.ntp)}" placeholder="${esc(T.ntpAuto)}"></div>
       <div class="zeile"><label>${esc(T.zeitzone)}</label><select id="zone" class="breit"><option value="">${esc(T.systemZone)}</option></select></div>
       <div class="zeile"><button class="knopf haupt" id="okZeit">${esc(T.speichern)}</button><span class="leise" id="zeitStand"></span></div></div>
+    <div class="karte"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
+      <div class="zeile"><label><input type="checkbox" id="whAktiv" ${E.webhook.aktiv ? "checked" : ""}> ${esc(T.whAktiv)}</label>
+        <span class="leise">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
+      <div class="zeile"><button class="knopf" id="whNeu">${esc(T.whNeu)}</button></div><div id="whErg"></div></div>
     <div class="karte"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
       <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>
     ${CONTAINER ? `<div class="karte"><h2>${esc(T.verwaltungTitel)}</h2>
@@ -709,6 +721,17 @@ async function verbindung(inhalt) {
       <div class="zeile"><label>${esc(T.pwNeu)}</label><input type="password" id="pwNeu" autocomplete="new-password" minlength="8"></div>
       <div class="zeile"><button class="knopf haupt" id="pwOk">${esc(T.pwAendern)}</button>
         <form method="post" action="/abmelden"><button class="knopf" type="submit">${esc(T.abmelden)}</button></form></div></div>` : ""}`;
+  $("#whAktiv").onchange = (e) => speichernE({ webhook: { aktiv: e.target.checked } }, e.target);
+  $("#whNeu").onclick = (e) => {
+    if (E.webhook.token && !confirm(T.whNeuFrage)) return;
+    aktion(e.target, async () => {
+      const r = await senden("/api/webhook/neu", {});
+      E = r.einstellungen; $("#whAktiv").checked = true;
+      const host = info.eigene_ip || location.hostname;
+      const beispiel = `curl -X POST http://${host}:${r.port}/meldung \\\n  -H "Authorization: Bearer ${r.token}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"text": "Hallo", "dauer": 60, "stil": "info"}'`;
+      $("#whErg").innerHTML = `<p>${esc(T.whEinmal)}</p><pre>${esc(r.token)}</pre><p class="leise">${esc(T.whBeispiel)}</p><pre>${esc(beispiel)}</pre>`;
+    }, null);
+  };
   if (CONTAINER) $("#pwOk").onclick = (e) => aktion(e.target, async () => {
     const r = await fetch("/verwaltung/passwort", { method: "POST", credentials: "same-origin",
       headers: { "X-SignageCast": "1", "Content-Type": "application/json" },

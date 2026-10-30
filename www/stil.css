@@ -95,6 +95,13 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 #quelle { position: absolute; right: 8px; bottom: 4px; font: 400 11px sans-serif; color: rgba(255,255,255,.55);
   text-shadow: 0 1px 2px rgba(0,0,0,.8); z-index: 50; pointer-events: none; }
 
+/* Meldung per Webhook (seit 0.16) */
+#meldung-extern { position: absolute; left: 4%; right: 4%; top: 4%; z-index: 60; padding: 1.2vh 2vw; border-radius: 1vh;
+  background: rgba(20,60,120,.92); color: #fff; font: 600 3.4vh sans-serif; text-align: center;
+  box-shadow: 0 .6vh 2vh rgba(0,0,0,.6); }
+#meldung-extern.warnung { background: rgba(170,30,20,.94); }
+#meldung-extern[hidden] { display: none; }
+
 /* Eigene Datenquellen (seit 0.9) */
 .baustein.typ-apiwert { flex-direction: row; }
 .baustein.typ-apiwert.h-links { justify-content: flex-start; } .baustein.typ-apiwert.h-mitte { justify-content: center; } .baustein.typ-apiwert.h-rechts { justify-content: flex-end; }
