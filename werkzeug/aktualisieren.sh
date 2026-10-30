@@ -14,7 +14,6 @@ REPO=thefrozn/signagecast
 SCHLUESSEL=RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD
 DATEN=/var/lib/signagecast
 ANFRAGE=$DATEN/update-anfrage
-STATUS=$DATEN/aktualisierung.json
 VORHER=/opt/signagecast.vorher
 # Eigener Ordner nur für root: Dateien in $DATEN gehören dem Dienst-Benutzer – dort schreibt root nichts außer dem Status
 # (mktemp + mv ersetzt auch einen untergeschobenen Symlink, statt ihm zu folgen)

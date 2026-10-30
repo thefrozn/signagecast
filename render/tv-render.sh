@@ -35,7 +35,7 @@ rm -rf "$PROFIL/Default/VideoDecodeStats"     # Chromium soll alte Bildverluste 
 mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
 pactl info >/dev/null 2>&1 || pulseaudio --daemonize=yes --exit-idle-time=60 -n \
   -L "module-native-protocol-unix" -L "module-always-sink" >/dev/null 2>&1
-for i in 1 2 3 4 5; do pactl info >/dev/null 2>&1 && break; sleep 0.5; done
+for _ in 1 2 3 4 5; do pactl info >/dev/null 2>&1 && break; sleep 0.5; done
 pactl list short sinks 2>/dev/null | grep -q "	$SINK	" || \
   pactl load-module module-null-sink sink_name="$SINK" sink_properties=device.description="$SINK" >/dev/null 2>&1
 

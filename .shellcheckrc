@@ -1,0 +1,2 @@
+# shellcheck: deutsche Anführungszeichen in Texten sind gewollt (SC1111); tv-render.sh liest eine erzeugte Datei (SC1090)
+disable=SC1111,SC1090

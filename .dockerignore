@@ -1,5 +1,6 @@
 .git
 .github
 docs
+tests
 *.md
 !NOTICE.md

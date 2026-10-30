@@ -153,7 +153,7 @@ PY
 fi
 if [ -n "$PROFIL" ]; then
   echo "== Profil einspielen: $PROFIL"
-  for i in 1 2 3 4 5 6 7 8 9 10; do curl -s -o /dev/null http://127.0.0.1:8080/daten.json && break; sleep 1; done
+  for _ in 1 2 3 4 5 6 7 8 9 10; do curl -s -o /dev/null http://127.0.0.1:8080/daten.json && break; sleep 1; done
   curl -sSf -H "X-SignageCast: 1" -H "Content-Type: application/json" --data-binary "@$PROFIL" http://127.0.0.1:8080/api/sicherung
   echo
 fi

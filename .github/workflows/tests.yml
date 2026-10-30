@@ -1,0 +1,37 @@
+# Prüft jeden Push und Pull-Request: Python-Tests, Shell-Skripte und einen Probelauf des Container-Images
+# (ohne Grafik – SignageCast fällt dann auf den Software-Betrieb zurück).
+name: Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python-Tests
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq python3-pyzipper shellcheck
+          python3 -m unittest discover -s tests -v
+      - name: Python übersetzbar
+        run: python3 -m py_compile app/*.py
+      - name: Shell-Skripte (shellcheck)
+        run: shellcheck -S warning install.sh installieren.sh werkzeug/aktualisieren.sh render/tv-render.sh docker/start.sh proxmox/ct.sh
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image bauen
+        run: docker build -t signagecast:test .
+      - name: Probelauf (Dienst, Verwaltung, Startliste)
+        run: |
+          docker run -d --name sc -p 19090:19090 signagecast:test
+          for i in $(seq 60); do docker logs sc 2>&1 | grep -q "Startliste eingespielt" && break; sleep 2; done
+          docker logs sc
+          docker exec sc curl -fs -o /dev/null http://127.0.0.1:8080/daten.json
+          curl -fs http://127.0.0.1:19090/ | grep -q "Passwort / Password"
+          docker logs sc 2>&1 | grep -q "Kodierung: software"
+          ! docker logs sc 2>&1 | grep -q Traceback
