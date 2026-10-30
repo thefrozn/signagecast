@@ -10,6 +10,8 @@
 // - Einspieler (z. B. tagesschau in 100 Sekunden): zur eingestellten Minute unterbricht der Beitrag die Rotation und läuft
 //   ganz durch (MP4 als <video> oder YouTube-Video), danach geht es normal weiter. Mit Ton pausiert solange das Radio
 //   (Ereignisse "einspieler-start"/"einspieler-ende" an die Seite). Keine Strikes während eines Einspielers.
+// - Eigene Medien (seit 0.15): Bilder (für ihre Anzeigedauer) und Videos (ganz) laufen als Einschub wie Einspieler –
+//   Quelle je Fernseher „medien“ (nur eigene Medien im Kreis) oder „gemischt“ (bei jedem N-ten Stream-Wechsel ein Medium).
 // Zeit: Abweichung zur Zeitquelle (NTP, vom Datendienst gemessen) und optionale Zeitzone – für Uhr, Takt, Einspieler
 const ZEIT = { abweichung: 0, zone: null };
 function jetztMs() { return Date.now() + ZEIT.abweichung; }
@@ -36,6 +38,7 @@ class LivePlayer {
     this.vorrang = null;
     this.versatz = 0; this.ton = "aus"; this.lautstaerke = 70;
     this.einspielerListe = []; this.einspieler = null; this.gespielt = {}; this.video = null;
+    this.medien = []; this.medienModus = "youtube"; this.medienAlle = 3; this.medienPos = 0; this.slotZaehler = 0; this.zaehlSlot = null;
     this.regeln = { takt_s: 180, mindeststufe: "hd720", schlecht_s: 20, sperre_s: 7200 };
     this.gesperrt = {};
     this.fest = null; this.festSlot = null; this.id = null; this.frame = null; this.z = null;
@@ -51,6 +54,8 @@ class LivePlayer {
     if (d.regeln) this.regeln = d.regeln;
     this.versatz = d.versatz || 0;
     this.einspielerListe = Array.isArray(d.einspieler) ? d.einspieler : [];
+    this.medien = Array.isArray(d.medien) ? d.medien : [];
+    this.medienModus = d.medien_modus || "youtube"; this.medienAlle = d.medien_alle || 3;
     ZEIT.abweichung = d.zeit_abweichung_ms || 0;
     ZEIT.zone = d.zeitzone || null;
     const j = d.einspieler_jetzt;               // „Jetzt zeigen“ aus der Verwaltung
@@ -77,6 +82,11 @@ class LivePlayer {
   gut(stufe) { return STUFEN.indexOf(stufe) >= STUFEN.indexOf(this.regeln.mindeststufe); }
 
   // Fälliger Einspieler: Minute passt, in den ersten 50 s der Minute, im Zeitfenster, für diese Minute noch nicht gespielt
+  faelligPruefen() {                      // ohne „gespielt“ zu markieren
+    const merk = this.gespielt; this.gespielt = Object.assign({}, merk);
+    const e = this.faellig(); this.gespielt = merk; return !!e;
+  }
+
   faellig() {
     const o = ortszeit(), hhmm = String(o.h).padStart(2, "0") + ":" + String(o.m).padStart(2, "0");
     if (o.s >= 50) return null;
@@ -112,14 +122,23 @@ class LivePlayer {
     }
     if (!frei.length) { this.fest = null; return { aktuell: null, naechster: null, rest }; }
     const gesperrtJetzt = this.fest && this.gesperrt[this.fest.video_id] > jetzt;
+    const verfuegbar = (x) => x && frei.find((f) => f.video_id === x.video_id);
     if (!this.fest || this.festSlot !== slot || gesperrtJetzt) {
+      // Angekündigten Stream nehmen, wenn er noch verfügbar ist – sonst wie bisher nach der Position im Takt
+      // (die Liste kann sich bis zum Wechsel ändern: Strike, Sperre, Nacht am Ort, neue Streams)
+      const angekuendigt = this.naechsterSlot === slot - 1 && !gesperrtJetzt ? verfuegbar(this.naechsterFest) : null;
       let i = slot % frei.length;
       if (this.fest && frei.length > 1 && frei[i].video_id === this.fest.video_id) i = (i + 1) % frei.length;
-      this.fest = frei[i]; this.festSlot = slot;
+      this.fest = angekuendigt || frei[i]; this.festSlot = slot;
     }
-    const pos = frei.findIndex((s) => s.video_id === this.fest.video_id);
-    const n = frei.length > 1 ? frei[((pos >= 0 ? pos : slot) + 1) % frei.length] : null;
-    return { aktuell: this.fest, naechster: n && n.video_id !== this.fest.video_id ? n : null, rest };
+    // Nächsten einmal je Takt festlegen und so ankündigen; fällt er weg, neu wählen (Anzeige stimmt dann sofort)
+    if (this.naechsterSlot !== slot || !verfuegbar(this.naechsterFest) || (this.naechsterFest && this.naechsterFest.video_id === this.fest.video_id)) {
+      const pos = frei.findIndex((s) => s.video_id === this.fest.video_id);
+      const n = frei.length > 1 ? frei[((pos >= 0 ? pos : slot) + 1) % frei.length] : null;
+      this.naechsterFest = n && n.video_id !== this.fest.video_id ? n : null;
+      this.naechsterSlot = slot;
+    }
+    return { aktuell: this.fest, naechster: this.naechsterFest, rest };
   }
 
   stoppen() {                               // Layout wird neu gebaut
@@ -129,8 +148,17 @@ class LivePlayer {
     if (this.frame) { this.frame.remove(); this.frame = null; }
   }
 
+  medienStart() {                           // nächstes eigenes Medium als Einschub
+    const m = this.medien[this.medienPos++ % this.medien.length];
+    const ton = m.art === "video" && this.ton === "tiere";
+    this.einspieler = { id: "medium-" + m.id, name: m.name, art: m.art === "bild" ? "bild" : "video", url: m.url, ton,
+                        dauer_s: m.dauer_s, medium: true, start: Date.now() };
+    window.dispatchEvent(new CustomEvent("einspieler-start", { detail: { ton } }));
+  }
+
   tick() {
     const T = this.texte();
+    if (!this.einspieler && !this.aus && this.medienModus === "medien" && this.medien.length && !this.faelligPruefen()) this.medienStart();
     if (!this.einspieler && !this.aus) {
       const e = this.faellig();
       if (e) {
@@ -139,11 +167,13 @@ class LivePlayer {
       }
     }
     if (this.einspieler) {
-      if (Date.now() - this.einspieler.start > 10 * 60 * 1000) this.einspielerEnde();   // Sicherheitsgrenze
+      const e = this.einspieler, laeuft = Date.now() - e.start;
+      if (e.art === "bild" && laeuft > e.dauer_s * 1000) { this.einspielerEnde(); return; }   // Bild: Anzeigedauer vorbei
+      if (laeuft > (e.medium ? (e.dauer_s + 60) * 1000 : 10 * 60 * 1000)) this.einspielerEnde();   // Sicherheitsgrenze
       else {
         const kennung = "einspieler:" + this.einspieler.id;
         if (this.id !== kennung) this.ladeEinspieler(kennung);
-        this.live.style.display = "block";
+        this.live.style.display = this.einspieler.medium ? "none" : "block";       // eigene Medien ohne Leiste
         this.live.textContent = `● ${this.einspieler.name}`;
         this.naechstes.style.display = "none";
         this.skaliere();
@@ -152,6 +182,11 @@ class LivePlayer {
       }
     }
     const p = this.plan();
+    // gemischt: bei jedem N-ten Wechsel des Streams zuerst ein eigenes Medium
+    if (this.medienModus === "gemischt" && this.medien.length && p.aktuell && !this.aus && this.festSlot !== this.zaehlSlot) {
+      this.zaehlSlot = this.festSlot;
+      if (++this.slotZaehler % this.medienAlle === 0) { this.medienStart(); return; }
+    }
     this.aktuell = p.aktuell;
     const id = p.aktuell && !this.aus ? p.aktuell.video_id : "";
     if (id !== this.id) this.lade(id);
@@ -173,7 +208,13 @@ class LivePlayer {
     this.id = kennung;
     this.leer.style.display = "none";
     const e = this.einspieler;
-    if (e.art === "video") {
+    if (e.art === "bild") {
+      const b = document.createElement("img");
+      b.className = "einspieler"; b.src = e.url; b.alt = "";
+      b.addEventListener("error", () => this.einspielerEnde());
+      this.box.insertBefore(b, this.box.firstChild);
+      this.video = b;
+    } else if (e.art === "video") {
       // Puffer: „vorab“ kommt schon als lokale Datei aus dem Container; bei „vorlauf“ erst starten, wenn so viele Sekunden
       // im Browser gepuffert sind (höchstens 30 s warten). Steht das Bild danach 20 s still, Einspieler abbrechen.
       const vorlauf = e.vorlauf_s || 0;

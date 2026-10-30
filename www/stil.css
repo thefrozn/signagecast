@@ -70,7 +70,7 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-video { padding: 0 !important; background: #000 !important; border: 2px solid rgba(255,255,255,.7);
   border-radius: 14px; box-shadow: 0 8px 26px rgba(0,0,0,.6); margin: 0 !important; }
 .typ-video:not(.karte) { border: 0; border-radius: 0; box-shadow: none; }
-.typ-video video.einspieler { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.typ-video video.einspieler, .typ-video img.einspieler { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
 .typ-video iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; }
 .typ-video .leiste { position: absolute; bottom: 0; width: 50%; box-sizing: border-box; padding: 27px 17px 12px;
   color: #fff; font: 500 19px sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.9); white-space: nowrap;
