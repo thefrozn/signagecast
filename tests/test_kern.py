@@ -7,6 +7,7 @@ os.environ.setdefault("SC_EINSTELLUNGEN", os.path.join(tempfile.mkdtemp(), "eins
 import einstellungen as E   # noqa: E402
 import layouts as L         # noqa: E402
 import meldung as M         # noqa: E402
+import medien as MED        # noqa: E402
 import quellen as Q         # noqa: E402
 import sicherung as S       # noqa: E402
 
@@ -110,6 +111,26 @@ class Sicherung(unittest.TestCase):
             with self.assertRaises(M.Meldung) as f:
                 S.lesen(roh, pw)
             self.assertEqual(f.exception.code, code)
+
+
+class Medien(unittest.TestCase):
+    def test_art_am_inhalt(self):
+        self.assertEqual(MED.art_erkennen(b"\xff\xd8\xff\xe0" + b"0" * 12), ("bild", "jpg"))
+        self.assertEqual(MED.art_erkennen(b"\x00\x00\x00\x20ftypisom" + b"0" * 4), ("video", "mp4"))
+        with self.assertRaises(M.Meldung):
+            MED.art_erkennen(b"#!/bin/sh\nrm -rf /")
+
+    def test_hochladen_in_stuecken(self):
+        h = MED.Hochladen(tempfile.mkdtemp())
+        png = b"\x89PNG\r\n\x1a\n" + b"x" * 5000
+        h.teil("abcd1234", 0, png[:2000])
+        with self.assertRaises(M.Meldung):                    # Stück übersprungen
+            h.teil("abcd1234", 2, png[2000:])
+        h.teil("abcd1234", 0, png[:2000]); h.teil("abcd1234", 1, png[2000:])
+        art, name, _ = h.fertig("abcd1234")
+        self.assertEqual(art, "bild")
+        self.assertRegex(name, r"^[0-9a-f]{16}\.png$")
+        self.assertEqual(open(os.path.join(h.ordner, name), "rb").read(), png)
 
 
 class EinstellungenUndLayouts(unittest.TestCase):

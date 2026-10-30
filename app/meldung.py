@@ -51,6 +51,13 @@ DE = {
     "sich_kein_aes": "Verschlüsselung nicht verfügbar (Paket python3-pyzipper fehlt)",
     "sich_geheim_ohne_pw": "Mit Zugangsdaten und Passwörtern nur mit Passwort (AES-256)",
     "sich_name": "Unbekannte Sicherung",
+    # Eigene Medien
+    "med_art": "Nur Bilder (JPG, PNG) und Videos (MP4, WebM)",
+    "med_kaputt": "Video nicht lesbar",
+    "med_hevc": "Video ist H.265 – das kann der Browser im Container nicht abspielen; bitte als H.264 (MP4) speichern",
+    "med_upload": "Hochladen unterbrochen – bitte erneut versuchen",
+    "med_gross": "Datei größer als 1 GB",
+    "med_unbekannt": "Unbekanntes Medium",
     # Updates
     "upd_laeuft": "Es läuft bereits ein Update – bitte warten",
     "upd_aktion": "Unbekannte Update-Aktion",

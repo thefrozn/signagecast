@@ -20,6 +20,7 @@ import zeit as Z                              # noqa: E402
 import hardware as HW                         # noqa: E402
 import meldung as M                           # noqa: E402
 import sicherung as S                         # noqa: E402
+import medien as MED                          # noqa: E402
 import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -483,7 +484,9 @@ def tv_daten(tv_id):
         and streams.vorrang.get("tv") in (None, t["id"]) else None
     sender = next((x for x in e["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
     liste = [x for x in streams.liste if x["kategorie"] not in t["kategorien_aus"]] \
-        if v["aktiv"] and t["video"] and hat_video else []
+        if v["aktiv"] and t["video"] and hat_video and t["video_quelle"] != "medien" else []
+    medien = [{"id": m["id"], "name": m["name"], "art": m["art"], "url": f"/medien/{m['datei']}", "dauer_s": m["dauer_s"]}
+              for m in e["medien"] if m["aktiv"]] if t["video"] and hat_video and t["video_quelle"] != "youtube" else []
     with sperre:
         teil = dict(zustand["ha_teil"])
     kal = {k: w for k, w in zustand["kalender"].items()
@@ -509,7 +512,8 @@ def tv_daten(tv_id):
                 zeit_abweichung_ms=round((zt.get("abweichung_s") or 0) * 1000) if zt.get("korrektur") else 0,
                 zeitzone=wirksame_zeitzone(),
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
-                tv=t["id"], layout=layout, kalender=kal, api=api, streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                tv=t["id"], layout=layout, kalender=kal, api=api,
+                medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"], streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
                 radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
                        # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt
@@ -819,6 +823,9 @@ def devport(tv_id):
 
 # ---------- Sicherung / Profil ----------
 SICHERUNGEN = os.path.join(DATEN, "sicherungen")
+MEDIEN = os.path.join(DATEN, "medien")
+hochladen = MED.Hochladen(MEDIEN)
+MEDIEN_SICHERUNG_MAX = 200 * 1024 * 1024        # Videos nur in die Sicherung, solange alle Medien zusammen darunter bleiben
 
 
 def sicherung(mit_geheimnissen=False):
@@ -846,11 +853,24 @@ def sicherung_zip(mit_geheimnissen, passwort=None):
     if qn.verlauf:
         with qn.verlauf.sperre:
             dateien["verlauf.json"] = json.dumps(qn.verlauf.reihen).encode()
+    # eigene Medien: Bilder immer, Videos nur bis MEDIEN_SICHERUNG_MAX insgesamt (sonst wird die ZIP unhandlich)
+    ausgelassen, summe = [], 0
+    for m in sorted(einst()["medien"], key=lambda x: x["art"] != "bild"):
+        p = os.path.join(MEDIEN, m["datei"])
+        if not os.path.exists(p) or f"medien/{m['datei']}" in dateien:
+            continue
+        g = os.path.getsize(p)
+        if m["art"] == "video" and summe + g > MEDIEN_SICHERUNG_MAX:
+            ausgelassen.append(m["name"])
+            continue
+        summe += g
+        dateien[f"medien/{m['datei']}"] = open(p, "rb").read()
     vw = os.path.join(os.path.dirname(E.PFAD), "verwaltung.json")
     if mit_geheimnissen and CONTAINER and os.path.exists(vw):
         dateien["verwaltung.json"] = open(vw, "rb").read()
     dateien["manifest.json"] = json.dumps({"art": S.ART, "version": VERSION, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
                                            "mit_geheimnissen": bool(mit_geheimnissen), "verschluesselt": bool(passwort),
+                                           "medien_ausgelassen": ausgelassen,
                                            "dateien": sorted(dateien)}, indent=1).encode()
     return S.erstellen(dateien, passwort)
 
@@ -863,6 +883,11 @@ def sicherung_zip_einspielen(roh, passwort=None, mit_strikes=True):
     for name, inhalt in dateien.items():
         if name.startswith("bilder/") and S.BILD.fullmatch(name[7:]):
             with open(os.path.join(BILDER, name[7:]), "wb") as f:
+                f.write(inhalt)
+    os.makedirs(MEDIEN, exist_ok=True)
+    for name, inhalt in dateien.items():
+        if name.startswith("medien/") and re.fullmatch(r"[0-9a-f]{16}\.(jpg|png|mp4|webm)", name[7:]):
+            with open(os.path.join(MEDIEN, name[7:]), "wb") as f:
                 f.write(inhalt)
     if "verlauf.json" in dateien and qn.verlauf:
         reihen = json.loads(dateien["verlauf.json"])
@@ -1093,6 +1118,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/radio/([a-z][a-z0-9]{0,11})/([a-z0-9]{4,12})", p.path)
         if m:                                     # Radio mit Puffer (für die TV-Seite)
             return radio_weiterleiten(self, m.group(1), m.group(2))
+        m = re.fullmatch(r"/medien/([0-9a-f]{16})\.(jpg|png|mp4|webm)", p.path)
+        if m:                                     # eigene Medien für die TV-Seite (mit Range für Videos)
+            typ = {"jpg": "image/jpeg", "png": "image/png", "mp4": "video/mp4", "webm": "video/webm"}[m.group(2)]
+            return datei_mit_range(self, os.path.join(MEDIEN, f"{m.group(1)}.{m.group(2)}"), typ)
         m = re.fullmatch(r"/einspieler/([a-z0-9]{4,12})\.mp4", p.path)
         if m:                                     # vorab geladener Einspieler (mit Range, damit der Browser springen kann)
             return einspieler_ausliefern(self, m.group(1))
@@ -1231,6 +1260,28 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             Q.demaskieren(d["quellen"], einst()["quellen"])
         if p == "/api/einstellungen" and isinstance(d.get("sicherung"), dict) and d["sicherung"].get("passwort") == Q.MASKE:
             d["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]
+        if p == "/api/medien/teil":
+            hochladen.teil(str(d.get("kennung", "")), int(d.get("nr", -1)), base64.b64decode(str(d.get("daten", "")), validate=False))
+            if not d.get("fertig"):
+                return {}
+            art, datei, dauer = hochladen.fertig(str(d["kennung"]))
+            medium = {"id": MED.neue_kennung(), "name": str(d.get("name") or datei)[:60], "art": art, "datei": datei,
+                      "dauer_s": dauer, "aktiv": True}
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"medien": einst()["medien"] + [medium]}))
+            return {"medium": medium, "einstellungen": einst_aussen()}
+        if p == "/api/medien/loeschen":
+            alle = einst()["medien"]
+            weg = next((m for m in alle if m["id"] == d.get("id")), None)
+            if not weg:
+                raise M.Meldung("med_unbekannt")
+            rest = [m for m in alle if m["id"] != weg["id"]]
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"medien": rest}))
+            if not any(m["datei"] == weg["datei"] for m in rest):
+                try:
+                    os.remove(os.path.join(MEDIEN, weg["datei"]))
+                except OSError:
+                    pass
+            return {"einstellungen": einst_aussen()}
         if p == "/api/updates/anfrage":
             update_anfragen(str(d.get("aktion", "")))
             return {}
