@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.14.0 (2026-10-30)
+- **Automatic tests** (`tests/`, Python standard library): curl import, paths and templates, number format, iCal
+  recurrences, masking of secrets, backup password rules and AES-256 ZIP, settings and all layout elements.
+- **CI on GitHub** for every push: tests and shellcheck in Debian 13, plus a test run of the container image
+  (starts, admin page reachable, software encoding detected, no errors).
+- **Release script** `release.sh vX.Y.Z` (for maintainers): checks version, changelog, tests and the signing key,
+  then tags, builds, signs, uploads and verifies the uploaded files; `--trocken` for a dry run.
+- **Issue templates** for bug reports and feature requests (with a reminder not to post passwords or private data).
+
 ## v0.13.1 (2026-10-30)
 - **Layouts as portable templates:** “Export” in the layout editor now includes all pictures the layout uses (logo,
   background picture, pictures per time of day). “Import” uploads them on the other installation and links them –
