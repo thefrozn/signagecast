@@ -233,6 +233,12 @@ def aktuelles_layout(tv, layouts, jetzt_hhmm):
             l = next((x for x in layouts if x["id"] == r["layout"]), None)
             if l:
                 return l
+    k = tv.get("karussell") or {}
+    reihe = [x for x in (next((l for l in layouts if l["id"] == i), None) for i in k.get("layouts", [])) if x]
+    if k.get("aktiv") and len(reihe) >= 2:
+        # Karussell: alle N Minuten das nächste Layout (nach Uhrzeit, damit alle Fernseher/Neustarts im Takt bleiben)
+        h, m = (int(x) for x in jetzt_hhmm.split(":"))
+        return reihe[((h * 60 + m) // k.get("minuten", 5)) % len(reihe)]
     return next((x for x in layouts if x["id"] == tv.get("layout")), layouts[0])
 
 

@@ -128,6 +128,25 @@ class EinstellungenUndLayouts(unittest.TestCase):
         l = L.pruefe_layout({"id": "test", "elemente": [{"id": "a", "typ": "text", "bedingung": {"quelle": "pegel", "pfad": "value", "op": ">", "wert": "1"}}]})
         self.assertEqual(l["elemente"][0]["bedingung"]["quelle"], "pegel")
 
+    def test_karussell_und_zeitplan(self):
+        ls = [{"id": i, "elemente": []} for i in ("aa", "bb", "cc")]
+        tv = {"layout": "aa", "zeitplan": [{"von": "22:00", "bis": "06:00", "layout": "schwarz"}],
+              "karussell": {"aktiv": True, "layouts": ["aa", "bb"], "minuten": 10}}
+        self.assertEqual(L.aktuelles_layout(tv, ls, "12:05")["id"], "aa")
+        self.assertEqual(L.aktuelles_layout(tv, ls, "12:15")["id"], "bb")
+        self.assertEqual(L.aktuelles_layout(tv, ls, "12:25")["id"], "aa")
+        self.assertTrue(L.aktuelles_layout(tv, ls, "23:00").get("schwarz"))         # Zeitplan hat Vorrang
+        tv["karussell"]["aktiv"] = False
+        self.assertEqual(L.aktuelles_layout(tv, ls, "12:15")["id"], "aa")
+
+    def test_medien_und_fernseher_standard(self):
+        e = E.pruefen({"medien": [{"id": "m1ab", "name": "Bild", "art": "bild", "datei": "0123456789abcdef.jpg", "dauer_s": 10}]})
+        self.assertEqual(e["medien"][0]["dauer_s"], 10)
+        t = e["fernseher"][0]
+        self.assertEqual((t["video_quelle"], t["medien_alle"], t["karussell"]["aktiv"]), ("youtube", 3, False))
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"medien": [{"id": "m1ab", "art": "bild", "datei": "../../etc/passwd"}]})
+
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))

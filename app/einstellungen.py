@@ -36,6 +36,8 @@ STANDARD = {
     },
     "layouts": [],                        # leer = beim Laden aus „anzeige“ das Layout „Standard“ bauen
     "quellen": [],                        # eigene Datenquellen (API/RSS/Bild), siehe app/quellen.py
+    # eigene Medien (seit 0.15): [{"id", "name", "art": bild|video, "datei", "dauer_s", "aktiv"}], Dateien in DATEN/medien
+    "medien": [],
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
     # Updates (seit 0.13): melden = nur anzeigen; system auch „sicherheit“ (nur Sicherheitsupdates) oder „auto“ – automatisch
@@ -205,7 +207,13 @@ def pruefen(e):
                           "aufloesung": aufl, "bitrate_mbit": _zahl(t.get("bitrate_mbit", alt.get("bitrate_mbit", 16)), 2, 40, int),
                           "nr": t.get("nr") if isinstance(t.get("nr"), int) and 0 <= t.get("nr") < 8 else None,
                           "layout": t.get("layout") if t.get("layout") in layout_ids else s["layouts"][0]["id"],
-                          "zeitplan": _zeitplan(t.get("zeitplan"), layout_ids)})
+                          "zeitplan": _zeitplan(t.get("zeitplan"), layout_ids),
+                          # seit 0.15: Quelle des Videofensters und Layout-Karussell
+                          "video_quelle": t.get("video_quelle") if t.get("video_quelle") in ("youtube", "medien", "gemischt") else "youtube",
+                          "medien_alle": _zahl(t.get("medien_alle", 3), 1, 20, int),
+                          "karussell": {"aktiv": bool((t.get("karussell") or {}).get("aktiv", False)),
+                                        "layouts": [x for x in (t.get("karussell") or {}).get("layouts", []) if x in layout_ids][:10],
+                                        "minuten": _zahl((t.get("karussell") or {}).get("minuten", 5), 1, 1440, int)}})
         # feste Nummer je Fernseher (virtueller Bildschirm :99+nr, DevTools-Port 9222+nr) – bleibt beim Umsortieren gleich
         belegt = set()
         for t in liste:
@@ -337,6 +345,19 @@ def pruefen(e):
             S.passwort_pruefen(ss_["passwort"])          # auch das Passwort der automatischen Sicherung muss stark sein
     if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
         raise Meldung("sich_geheim_ohne_pw")
+    if "medien" in e:
+        aus_m, ids_m = [], set()
+        for m in (e.get("medien") or [])[:300]:
+            mid = _text(m.get("id", ""), 12, r"[a-z0-9]{4,12}")
+            if mid in ids_m:
+                continue
+            ids_m.add(mid)
+            if m.get("art") not in ("bild", "video"):
+                raise Fehler("Medium: Art bild oder video")
+            aus_m.append({"id": mid, "name": _text(m.get("name", "") or mid, 60), "art": m["art"],
+                          "datei": _text(m.get("datei", ""), 40, r"[0-9a-f]{16}\.(jpg|png|mp4|webm)"),
+                          "dauer_s": _zahl(m.get("dauer_s", 15), 1, 7200), "aktiv": bool(m.get("aktiv", True))})
+        s["medien"] = aus_m
     if "quellen" in e:
         try:
             s["quellen"] = Q.pruefen(e["quellen"])
