@@ -22,6 +22,7 @@ import meldung as M                           # noqa: E402
 import sicherung as S                         # noqa: E402
 import medien as MED                          # noqa: E402
 import unwetter as UW                         # noqa: E402
+import benachrichtigung as BN                 # noqa: E402
 import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -55,7 +56,27 @@ def einst_aussen():
     e = einst()
     return dict(e, quellen=Q.maskieren(e["quellen"]),
                 sicherung=dict(e["sicherung"], passwort=Q.MASKE if e["sicherung"]["passwort"] else ""),
-                webhook=dict(e["webhook"], token=Q.MASKE if e["webhook"]["token"] else ""))
+                webhook=dict(e["webhook"], token=Q.MASKE if e["webhook"]["token"] else ""),
+                benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: Q.MASKE if w else ""))
+
+
+def bn_geheim(b, ersatz):
+    """Kopie der Benachrichtigungs-Einstellungen mit ersetzten Geheimnissen (Bot-Token, SMTP-Passwort)."""
+    b = json.loads(json.dumps(b))
+    for kanal, feld in BN.GEHEIM:
+        if isinstance(b.get(kanal), dict) and feld in b[kanal]:
+            b[kanal][feld] = ersatz(b[kanal][feld])
+    return b
+
+
+def bn_behalten(neu):
+    """Leere oder maskierte Geheimnisse in neuen Einstellungen durch die vorhandenen ersetzen."""
+    if isinstance(neu, dict) and isinstance(neu.get("benachrichtigung"), dict):
+        alt = einst()["benachrichtigung"]
+        for kanal, feld in BN.GEHEIM:
+            k = neu["benachrichtigung"].get(kanal)
+            if isinstance(k, dict) and feld in k and k[feld] in ("", None, Q.MASKE):
+                k[feld] = alt[kanal][feld]
 
 
 qn = Q.Quellen(lambda: einst(), os.path.join(DATEN, "verlauf.json"))
@@ -506,6 +527,51 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         self.bearbeiten(daten if isinstance(daten, dict) else {})
 
 
+# ---------- Benachrichtigungen (seit 0.16) ----------
+melder = BN.Melder(lambda: einst(), lambda pfad, daten: ha.post(pfad, daten))
+
+
+def benachrichtigung_schleife():
+    """Jede Minute: Fernseher-Ausfall (2 Prüfungen in Folge), neue Update-/Sicherungsfehler, HA länger als 5 min getrennt."""
+    gesehen_update = (update_status() or {}).get("ts")
+    gesehen_sicherung = None
+    kaputt, ha_weg = {}, None
+    while True:
+        time.sleep(60)
+        try:
+            for t in einst()["fernseher"]:
+                if kette_pids(t["id"]) and not kette_laeuft(t["id"]):
+                    kaputt[t["id"]] = kaputt.get(t["id"], 0) + 1
+                    if kaputt[t["id"]] == 2:
+                        melder.melden("ausfall-" + t["id"], "ausfall", f"SignageCast: Ausfall „{t['name']}“",
+                                      f"Die Wiedergabe für den Fernseher „{t['name']}“ ist ausgefallen (Render-Kette unvollständig).")
+                else:
+                    kaputt.pop(t["id"], None)
+                    melder.vorbei("ausfall-" + t["id"], f"SignageCast: „{t['name']}“ läuft wieder",
+                                  f"Die Wiedergabe für den Fernseher „{t['name']}“ läuft wieder.")
+            u = update_status() or {}
+            if u.get("ts") != gesehen_update:
+                gesehen_update = u.get("ts")
+                if u.get("phase") == "fehler" or (u.get("phase") == "zurueck" and u.get("aktion") != "zurueck"):
+                    melder.melden(f"update-{u.get('ts')}", "update", "SignageCast: Update fehlgeschlagen",
+                                  f"{u.get('aktion')}: {u.get('meldung')} ({u.get('zeit')})")
+            sa = zustand.get("sicherung_auto") or {}
+            if sa.get("fehler") and sa.get("zeit") != gesehen_sicherung:
+                gesehen_sicherung = sa["zeit"]
+                melder.melden(f"sicherung-{sa['zeit']}", "sicherung", "SignageCast: Sicherung fehlgeschlagen",
+                              f"Die automatische Sicherung um {sa['zeit']} ist fehlgeschlagen: {sa['fehler']}")
+            if einst()["ha"]["url"] and zustand["ha_fehler"]:
+                ha_weg = ha_weg or time.time()
+                if time.time() - ha_weg > 300:
+                    melder.melden("ha", "ha", "SignageCast: Home Assistant nicht erreichbar",
+                                  f"Seit {time.strftime('%H:%M', time.localtime(ha_weg))}: {zustand['ha_fehler']}")
+            else:
+                ha_weg = None
+                melder.vorbei("ha", "SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder.")
+        except Exception as ex:
+            print("Benachrichtigung:", ex, flush=True)
+
+
 def unwetter_schleife():
     """DWD-Warnungen für den Standort alle 10 min – nur, wenn ein Layout den Baustein „Unwetterwarnung“ nutzt."""
     while True:
@@ -801,6 +867,7 @@ def status():
         "laufzeit_s": int(time.time() - START) if CONTAINER else int(float(open("/proc/uptime").read().split()[0])),
         "betrieb": "container" if CONTAINER else "lxc", "kodierung": zustand.get("kodierung"),
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
+        "benachrichtigung": melder.letzte,
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
         "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"],
                "code": (zustand.get("ha_fehler_code") or (None, None))[0], "detail": (zustand.get("ha_fehler_code") or (None, None))[1]},
@@ -912,7 +979,7 @@ def sicherung(mit_geheimnissen=False):
     e = einst()
     if not mit_geheimnissen:              # Standard: ohne API-Schlüssel/Passwörter (Datei kann weitergegeben werden)
         e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""),
-                 webhook=dict(e["webhook"], token=""))
+                 webhook=dict(e["webhook"], token=""), benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: ""))
     return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
             "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()}
 
@@ -1012,6 +1079,7 @@ def einspielen(d, mit_strikes=True):
         neu = d["einstellungen"]
         if isinstance(neu, dict) and isinstance(neu.get("webhook"), dict) and not neu["webhook"].get("token"):
             neu["webhook"]["token"] = einst()["webhook"]["token"]
+        bn_behalten(neu)
         if isinstance(neu, dict) and isinstance(neu.get("sicherung"), dict) and not neu["sicherung"].get("passwort"):
             neu["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]     # ohne Geheimnisse: vorhandenes behalten
         if isinstance(neu, dict) and isinstance(neu.get("quellen"), list):
@@ -1343,6 +1411,17 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             Q.demaskieren(d["quellen"], einst()["quellen"])
         if p == "/api/einstellungen" and isinstance(d.get("webhook"), dict) and d["webhook"].get("token") == Q.MASKE:
             d["webhook"]["token"] = einst()["webhook"]["token"]
+        if p == "/api/einstellungen":
+            bn_behalten(d)
+        if p == "/api/benachrichtigung/test":        # Testnachricht über einen Kanal (gespeicherte Einstellungen)
+            kanal = d.get("kanal")
+            if kanal not in ("telegram", "email", "ha"):
+                raise ValueError("unbekannter Kanal")
+            f = BN.senden(einst()["benachrichtigung"], ha.post, "SignageCast: Test",
+                          f"Testnachricht von SignageCast {VERSION} ({socket.gethostname()}).", nur=kanal)[kanal]
+            if f:
+                raise ValueError(f)
+            return {}
         if p == "/api/webhook/neu":                 # neuen Schlüssel erzeugen – nur in dieser Antwort im Klartext
             import secrets
             token = secrets.token_urlsafe(24)
@@ -1563,7 +1642,7 @@ def main():
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
-                 update_auto_schleife, unwetter_schleife):
+                 update_auto_schleife, unwetter_schleife, benachrichtigung_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

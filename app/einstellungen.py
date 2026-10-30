@@ -40,6 +40,14 @@ STANDARD = {
     "medien": [],
     # Meldung per Webhook (seit 0.16): eigener Port (SC_WEBHOOK_PORT, Standard 8890), nur mit geheimem Schlüssel
     "webhook": {"aktiv": False, "token": ""},
+    # Benachrichtigungen (seit 0.16): Kanäle Telegram, E-Mail (SMTP), Home Assistant; Geheimnisse: Bot-Token, SMTP-Passwort
+    "benachrichtigung": {
+        "telegram": {"aktiv": False, "token": "", "chat_id": ""},
+        "email": {"aktiv": False, "server": "", "port": 587, "sicherheit": "starttls", "benutzer": "", "passwort": "",
+                  "absender": "", "empfaenger": ""},
+        "ha": {"aktiv": False, "dienst": "notify.notify"},
+        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True},
+    },
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
     # Updates (seit 0.13): melden = nur anzeigen; system auch „sicherheit“ (nur Sicherheitsupdates) oder „auto“ – automatisch
@@ -350,6 +358,26 @@ def pruefen(e):
     wh = e.get("webhook", {})
     if "aktiv" in wh: s["webhook"]["aktiv"] = bool(wh["aktiv"])
     if "token" in wh: s["webhook"]["token"] = _text(wh.get("token") or "", 64, r"[A-Za-z0-9_-]*")
+    be, sb = e.get("benachrichtigung", {}), s["benachrichtigung"]
+    if isinstance(be, dict):
+        tg = be.get("telegram", {})
+        if "aktiv" in tg: sb["telegram"]["aktiv"] = bool(tg["aktiv"])
+        if "token" in tg: sb["telegram"]["token"] = _text(tg["token"] or "", 100, r"(\d{5,15}:[A-Za-z0-9_-]{20,80})?")
+        if "chat_id" in tg: sb["telegram"]["chat_id"] = _text(tg["chat_id"] or "", 40, r"(-?\d{1,20}|@[A-Za-z0-9_]{4,32})?")
+        em = be.get("email", {})
+        if "aktiv" in em: sb["email"]["aktiv"] = bool(em["aktiv"])
+        if "server" in em: sb["email"]["server"] = _text(em["server"] or "", 200, r"[\w.\-]*")
+        if "port" in em: sb["email"]["port"] = _zahl(em["port"], 1, 65535, int)
+        if "sicherheit" in em: sb["email"]["sicherheit"] = em["sicherheit"] if em["sicherheit"] in ("starttls", "ssl", "keine") else "starttls"
+        if "benutzer" in em: sb["email"]["benutzer"] = _text(em["benutzer"] or "", 200)
+        if "passwort" in em: sb["email"]["passwort"] = _text(em["passwort"] or "", 200)
+        for k in ("absender", "empfaenger"):
+            if k in em: sb["email"][k] = _text(em[k] or "", 300, r"([^@\s,]+@[^@\s,]+)?(\s*,\s*[^@\s,]+@[^@\s,]+)*")
+        hb = be.get("ha", {})
+        if "aktiv" in hb: sb["ha"]["aktiv"] = bool(hb["aktiv"])
+        if "dienst" in hb: sb["ha"]["dienst"] = _text(hb["dienst"] or "notify.notify", 100, r"notify\.[a-z0-9_]+")
+        for k, w in (be.get("ereignisse") or {}).items():
+            if k in sb["ereignisse"]: sb["ereignisse"][k] = bool(w)
     if "medien" in e:
         aus_m, ids_m = [], set()
         for m in (e.get("medien") or [])[:300]:

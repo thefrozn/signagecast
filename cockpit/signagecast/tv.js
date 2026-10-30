@@ -42,6 +42,12 @@ const TEXTE = {
     epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.",
     wetterQuelle: "Wetterquelle", wetterQuelleArt: { met: "Eigenes Wetter (MET Norway, für den Standort)", ha: "Home Assistant (Wetter-Entität)" },
     metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort im Reiter „Verbindung“ – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
+    bnTitel: "Benachrichtigungen", bnText: "SignageCast meldet sich bei Ausfall eines Fernsehers, fehlgeschlagenem Update oder Sicherung und wenn Home Assistant länger als 5 Minuten nicht erreichbar ist – jeweils einmal, mit Entwarnung.",
+    bnTelegram: "Telegram", bnBotToken: "Bot-Token", bnChatId: "Chat-ID", bnEmail: "E-Mail (SMTP)", bnServer: "SMTP-Server", bnPort: "Port",
+    bnSicherheit: "Verschlüsselung", bnBenutzer: "Benutzer", bnPasswort: "Passwort", bnAbsender: "Absender", bnEmpfaenger: "Empfänger (mit Komma trennen)",
+    bnHA: "Home Assistant", bnDienst: "Benachrichtigungsdienst", bnAktiv: "aktiv", bnTest: "Testnachricht", bnTestOk: "Testnachricht gesendet",
+    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt" },
+    bnLetzte: "Zuletzt gesendet",
     whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Fernseher legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
     whAktiv: "Meldungen annehmen", whNeu: "Neuen Schlüssel erzeugen", whVorhanden: "Schlüssel gesetzt (••••)", whKeiner: "noch kein Schlüssel",
     whEinmal: "Nur jetzt sichtbar – bitte sicher ablegen:", whBeispiel: "Beispiel (Text, Dauer in Sekunden, Stil info/warnung, optional tv=<Kennung>):",
@@ -180,6 +186,12 @@ const TEXTE = {
     epStand: "Version", epFehler: "Error", epKeine: "No clips yet.",
     wetterQuelle: "Weather source", wetterQuelleArt: { met: "Own weather (MET Norway, for the location)", ha: "Home Assistant (weather entity)" },
     metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location in the “Connection” tab – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
+    bnTitel: "Notifications", bnText: "SignageCast reports when a TV fails, an update or backup fails, and when Home Assistant is unreachable for more than 5 minutes – once each, with an all-clear.",
+    bnTelegram: "Telegram", bnBotToken: "Bot token", bnChatId: "Chat ID", bnEmail: "E-mail (SMTP)", bnServer: "SMTP server", bnPort: "Port",
+    bnSicherheit: "Encryption", bnBenutzer: "User", bnPasswort: "Password", bnAbsender: "Sender", bnEmpfaenger: "Recipients (comma separated)",
+    bnHA: "Home Assistant", bnDienst: "Notify service", bnAktiv: "active", bnTest: "Test message", bnTestOk: "Test message sent",
+    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected" },
+    bnLetzte: "Last sent",
     whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the TVs – above any layout. Only with a secret key; the key is shown only once after it is created.",
     whAktiv: "Accept messages", whNeu: "Create new key", whVorhanden: "Key set (••••)", whKeiner: "no key yet",
     whEinmal: "Visible only now – please store it safely:", whBeispiel: "Example (text, duration in seconds, style info/warnung, optional tv=<id>):",
@@ -695,6 +707,7 @@ async function verbindung(inhalt) {
         ${info.eigene_ip || "IP-DES-CONTAINERS"}/32: ${E.sprache === "en" ? "USER-ID" : "BENUTZER-ID"}
       allow_bypass_login: true
     - type: homeassistant`;
+  const B = E.benachrichtigung;
   inhalt.innerHTML = `<div class="karte">
       <div class="zeile"><label>${esc(T.haUrl)}</label><input type="url" id="url" value="${esc(E.ha.url)}"></div>
       <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button><button class="knopf" id="test">${esc(T.testen)}</button></div>
@@ -710,6 +723,30 @@ async function verbindung(inhalt) {
       <div class="zeile"><label>${esc(T.ntpServer)}</label><input type="text" id="ntp" value="${esc(E.zeit.ntp)}" placeholder="${esc(T.ntpAuto)}"></div>
       <div class="zeile"><label>${esc(T.zeitzone)}</label><select id="zone" class="breit"><option value="">${esc(T.systemZone)}</option></select></div>
       <div class="zeile"><button class="knopf haupt" id="okZeit">${esc(T.speichern)}</button><span class="leise" id="zeitStand"></span></div></div>
+    <div class="karte"><h2>${esc(T.bnTitel)}</h2><p class="leise">${esc(T.bnText)}</p>
+      <h3>${esc(T.bnTelegram)}</h3>
+      <div class="zeile"><label><input type="checkbox" id="bnTgAktiv" ${B.telegram.aktiv ? "checked" : ""}> ${esc(T.bnAktiv)}</label></div>
+      <div class="zeile"><label>${esc(T.bnBotToken)}</label><input type="password" id="bnTgToken" value="${esc(B.telegram.token)}" autocomplete="off"></div>
+      <div class="zeile"><label>${esc(T.bnChatId)}</label><input type="text" id="bnTgChat" value="${esc(B.telegram.chat_id)}"></div>
+      <div class="zeile"><button class="knopf" data-test="telegram">${esc(T.bnTest)}</button></div>
+      <h3>${esc(T.bnEmail)}</h3>
+      <div class="zeile"><label><input type="checkbox" id="bnEmAktiv" ${B.email.aktiv ? "checked" : ""}> ${esc(T.bnAktiv)}</label></div>
+      <div class="zeile"><label>${esc(T.bnServer)}</label><input type="text" id="bnEmServer" value="${esc(B.email.server)}">
+        <input type="number" id="bnEmPort" min="1" max="65535" value="${B.email.port}" aria-label="${esc(T.bnPort)}"></div>
+      <div class="zeile"><label>${esc(T.bnSicherheit)}</label><select id="bnEmSich">${["starttls", "ssl", "keine"].map((v) =>
+        `<option value="${v}" ${B.email.sicherheit === v ? "selected" : ""}>${v === "keine" ? "–" : v.toUpperCase()}</option>`).join("")}</select></div>
+      <div class="zeile"><label>${esc(T.bnBenutzer)}</label><input type="text" id="bnEmBenutzer" value="${esc(B.email.benutzer)}" autocomplete="off"></div>
+      <div class="zeile"><label>${esc(T.bnPasswort)}</label><input type="password" id="bnEmPw" value="${esc(B.email.passwort)}" autocomplete="new-password"></div>
+      <div class="zeile"><label>${esc(T.bnAbsender)}</label><input type="email" id="bnEmVon" value="${esc(B.email.absender)}"></div>
+      <div class="zeile"><label>${esc(T.bnEmpfaenger)}</label><input type="text" id="bnEmAn" value="${esc(B.email.empfaenger)}"></div>
+      <div class="zeile"><button class="knopf" data-test="email">${esc(T.bnTest)}</button></div>
+      <h3>${esc(T.bnHA)}</h3>
+      <div class="zeile"><label><input type="checkbox" id="bnHaAktiv" ${B.ha.aktiv ? "checked" : ""}> ${esc(T.bnAktiv)}</label></div>
+      <div class="zeile"><label>${esc(T.bnDienst)}</label><input type="text" id="bnHaDienst" value="${esc(B.ha.dienst)}" placeholder="notify.notify"></div>
+      <div class="zeile"><button class="knopf" data-test="ha">${esc(T.bnTest)}</button></div>
+      <h3>${esc(T.bnEreignisse)}</h3>
+      ${Object.keys(T.bnEr).map((k) => `<div class="zeile"><label><input type="checkbox" data-er="${k}" ${B.ereignisse[k] ? "checked" : ""}> ${esc(T.bnEr[k])}</label></div>`).join("")}
+      <div class="zeile"><button class="knopf haupt" id="bnOk">${esc(T.speichern)}</button></div><div id="bnLetzte" class="leise"></div></div>
     <div class="karte"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
       <div class="zeile"><label><input type="checkbox" id="whAktiv" ${E.webhook.aktiv ? "checked" : ""}> ${esc(T.whAktiv)}</label>
         <span class="leise">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
@@ -721,6 +758,25 @@ async function verbindung(inhalt) {
       <div class="zeile"><label>${esc(T.pwNeu)}</label><input type="password" id="pwNeu" autocomplete="new-password" minlength="8"></div>
       <div class="zeile"><button class="knopf haupt" id="pwOk">${esc(T.pwAendern)}</button>
         <form method="post" action="/abmelden"><button class="knopf" type="submit">${esc(T.abmelden)}</button></form></div></div>` : ""}`;
+  const bnDaten = () => ({ benachrichtigung: {
+    telegram: { aktiv: $("#bnTgAktiv").checked, token: $("#bnTgToken").value.trim(), chat_id: $("#bnTgChat").value.trim() },
+    email: { aktiv: $("#bnEmAktiv").checked, server: $("#bnEmServer").value.trim(), port: Number($("#bnEmPort").value),
+      sicherheit: $("#bnEmSich").value, benutzer: $("#bnEmBenutzer").value.trim(), passwort: $("#bnEmPw").value,
+      absender: $("#bnEmVon").value.trim(), empfaenger: $("#bnEmAn").value.trim() },
+    ha: { aktiv: $("#bnHaAktiv").checked, dienst: $("#bnHaDienst").value.trim() || "notify.notify" },
+    ereignisse: Object.fromEntries([...inhalt.querySelectorAll("[data-er]")].map((x) => [x.dataset.er, x.checked])) } });
+  $("#bnOk").onclick = (e) => speichernE(bnDaten(), e.target);
+  for (const k of inhalt.querySelectorAll("[data-test]")) {
+    k.onclick = (e) => aktion(e.target, async () => {          // erst speichern, dann mit den gespeicherten Daten testen
+      E = (await senden("/api/einstellungen", bnDaten())).einstellungen;
+      await senden("/api/benachrichtigung/test", { kanal: k.dataset.test });
+    }, T.bnTestOk);
+  }
+  holen("/api/status").then((s) => {
+    const l = s.benachrichtigung || [];
+    if (l.length) $("#bnLetzte").textContent = T.bnLetzte + ": " + l.slice(0, 3).map((x) => `${x.zeit} ${x.betreff}` +
+      Object.entries(x.ergebnis).map(([k, f]) => ` · ${k} ${f ? "✗ " + f : "✓"}`).join("")).join(" | ");
+  }).catch(() => {});
   $("#whAktiv").onchange = (e) => speichernE({ webhook: { aktiv: e.target.checked } }, e.target);
   $("#whNeu").onclick = (e) => {
     if (E.webhook.token && !confirm(T.whNeuFrage)) return;

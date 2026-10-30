@@ -175,6 +175,17 @@ class EinstellungenUndLayouts(unittest.TestCase):
         with self.assertRaises(E.Fehler):
             E.pruefen({"webhook": {"token": "mit leerzeichen"}})
 
+    def test_benachrichtigung(self):
+        b = E.pruefen({})["benachrichtigung"]
+        self.assertFalse(b["telegram"]["aktiv"] or b["email"]["aktiv"] or b["ha"]["aktiv"])
+        e = E.pruefen({"benachrichtigung": {"telegram": {"aktiv": True, "token": "123456:" + "A" * 35, "chat_id": "-100123"},
+                                            "email": {"port": "465", "sicherheit": "ssl", "empfaenger": "a@b.de, c@d.de"},
+                                            "ha": {"dienst": "notify.mobile_app_handy"}, "ereignisse": {"ha": False, "x": True}}})["benachrichtigung"]
+        self.assertEqual((e["email"]["port"], e["ereignisse"]["ha"], "x" in e["ereignisse"]), (465, False, False))
+        for falsch in ({"telegram": {"token": "kein token"}}, {"ha": {"dienst": "light.turn_on"}}, {"email": {"empfaenger": "x"}}):
+            with self.assertRaises(E.Fehler):
+                E.pruefen({"benachrichtigung": falsch})
+
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))
