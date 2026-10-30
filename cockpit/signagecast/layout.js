@@ -219,17 +219,35 @@ async function layoutSeite(inhalt) {
       if (!confirm(L.wirklichLoeschen)) return;
       merken(); LS.splice(LI, 1); LI = 0; GEWAEHLT = null; zeichnen();
     };
-    $("#lExport").onclick = () => {
+    // Export (seit 0.13.1) mit allen verwendeten Bildern (Logo, Hintergrund, Bilder je Tageszeit) – so lässt sich ein
+    // Layout als Vorlage auf eine andere Installation mitnehmen
+    const bildNamen = (l) => [...new Set([l.hintergrund.bild, ...Object.values(l.hintergrund.bilder_tageszeit || {}),
+      ...l.elemente.map((x) => x.optionen && x.optionen.bild)].filter((n) => /^[0-9a-f]{16}\.(jpg|png)$/.test(n || "")))];
+    $("#lExport").onclick = () => aktion(null, async () => {
+      const bilder = {};
+      for (const n of bildNamen(lay())) {
+        const roh = await dienstBinaer.get(`/bild/${n}`, {}, {});
+        let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
+        bilder[n] = `data:image/${n.endsWith(".png") ? "png" : "jpeg"};base64,` + btoa(bin);
+      }
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 1, layout: lay() }, null, 1)], { type: "application/json" }));
+      a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 2, layout: lay(), bilder }, null, 1)], { type: "application/json" }));
       a.download = `signagecast-layout-${lay().name.replace(/[^\w-]+/g, "_")}.json`;
       document.body.appendChild(a); a.click(); a.remove();
-    };
+    }, null);
     $("#lImport").onchange = async (e) => {
       try {
         const d = JSON.parse(await e.target.files[0].text());
         const l2 = ["signagecast-layout", "tv-stream-layout"].includes(d.art) ? d.layout : d;
         if (!l2 || !Array.isArray(l2.elemente)) throw new Error("kein Layout");
+        // mitgelieferte Bilder hochladen und Namen im Layout anpassen (der Name ergibt sich aus dem Inhalt)
+        const neu = {};
+        for (const [n, daten] of Object.entries(d.bilder || {})) neu[n] = (await senden("/api/bilder", { daten })).bild;
+        const um = (n) => neu[n] || n;
+        l2.hintergrund = l2.hintergrund || {};
+        if (l2.hintergrund.bild) l2.hintergrund.bild = um(l2.hintergrund.bild);
+        for (const k of Object.keys(l2.hintergrund.bilder_tageszeit || {})) l2.hintergrund.bilder_tageszeit[k] = um(l2.hintergrund.bilder_tageszeit[k]);
+        for (const x of l2.elemente) if (x.optionen && x.optionen.bild) x.optionen.bild = um(x.optionen.bild);
         merken(); l2.id = neueId(); LS.push(l2); LI = LS.length - 1; zeichnen(); melden(L.importOk);
       } catch (ex) { melden(ex.message, true); }
     };

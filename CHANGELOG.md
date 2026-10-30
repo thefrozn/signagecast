@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.13.1 (2026-10-30)
+- **Layouts as portable templates:** “Export” in the layout editor now includes all pictures the layout uses (logo,
+  background picture, pictures per time of day). “Import” uploads them on the other installation and links them –
+  a layout can be taken to another SignageCast as a complete template. Old exports without pictures still import.
+
 ## v0.13.0 (2026-10-29)
 - **Updates tab** (LXC/native): check for Debian and SignageCast updates, install all or security updates only,
   update SignageCast, return to the previous version. **Automatic** per type (system: notify / security only / all;
