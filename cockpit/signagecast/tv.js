@@ -14,7 +14,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Video & Regeln", suche: "Stream-Suche", verbindung: "Verbindung", updates: "Updates", sicherung: "Sicherung" },
+              video: "Video & Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
@@ -120,6 +120,13 @@ const TEXTE = {
     wochentage: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"], sichBehalten: "Aufheben (Anzahl)",
     sichAutoText: "Die automatischen Sicherungen liegen im Container; lade ab und zu eine herunter, damit sie auch einen Ausfall des Containers überstehen.",
     pwEinspielen: "Passwort (falls verschlüsselt)",
+    karussell: "Layout-Karussell", karussellText: "Wechselt alle paar Minuten zwischen den gewählten Layouts (mindestens zwei). Ein Zeitplan hat Vorrang.",
+    karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt",
+    videoQuelleArt: { youtube: "Live-Streams (YouTube)", medien: "nur eigene Medien", gemischt: "gemischt" }, medienAlle: "jedes N-te Mal ein eigenes Medium",
+    medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Fernseher unter „Fernseher“ einstellen: nur eigene Medien oder gemischt mit den Live-Streams. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
+    medHoch: "Dateien hochladen", medLaedt: (n, p) => `Lade ${n} … ${p} %`, medKeine: "Noch keine eigenen Medien.", medDauer: "Anzeigedauer (s)",
+    medSicherung: "In die Sicherung kommen Bilder immer, Videos nur bis zusammen 200 MB – große Videos bitte zusätzlich selbst aufbewahren.",
+    medWeg: "Dieses Medium löschen?",
     upSc: "SignageCast", upInstalliert: "installiert", upNeueste: "neueste", upAktuell: "aktuell", upJetzt: "Jetzt aktualisieren",
     upZurueck: (v) => `Zurück zu ${v}`, upZurueckFrage: "Zur vorigen Version zurückkehren? Einstellungen von vor dem letzten Update werden wiederhergestellt.",
     upScText: "Vor dem Update werden Einstellungen und Daten gesichert. Installiert wird nur ein Release mit gültiger Signatur. Läuft SignageCast danach nicht innerhalb einer Minute, geht es automatisch zurück. Der Fernseher kann dabei kurz neu verbinden.",
@@ -141,7 +148,7 @@ const TEXTE = {
   },
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Video & rules", suche: "Stream search", verbindung: "Connection", updates: "Updates", sicherung: "Backup" },
+              video: "Video & rules", suche: "Stream search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
@@ -209,6 +216,9 @@ const TEXTE = {
       sich_pw_fehlt: "The backup is encrypted – please enter the password", sich_pw_falsch: "Wrong password for the backup",
       sich_ungueltig: "Not a SignageCast backup", sich_zu_gross: "Backup too large", sich_kein_aes: "Encryption not available (package python3-pyzipper missing)",
       sich_geheim_ohne_pw: "With credentials and passwords only with a password (AES-256)", sich_name: "Unknown backup",
+      med_art: "Only pictures (JPG, PNG) and videos (MP4, WebM)", med_kaputt: "Video not readable",
+      med_hevc: "The video is H.265 – the browser in the container cannot play it; please save it as H.264 (MP4)",
+      med_upload: "Upload interrupted – please try again", med_gross: "File larger than 1 GB", med_unbekannt: "Unknown medium",
       upd_laeuft: "An update is already running – please wait", upd_aktion: "Unknown update action",
       upd_container: "With Docker/Podman update via the image (docker pull)",
     },
@@ -275,6 +285,13 @@ const TEXTE = {
     wochentage: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], sichBehalten: "Keep (number)",
     sichAutoText: "Automatic backups are stored in the container; download one now and then so it survives a loss of the container.",
     pwEinspielen: "Password (if encrypted)",
+    karussell: "Layout carousel", karussellText: "Switches between the chosen layouts every few minutes (at least two). A schedule takes priority.",
+    karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows",
+    videoQuelleArt: { youtube: "live streams (YouTube)", medien: "own media only", gemischt: "mixed" }, medienAlle: "every N-th time own media",
+    medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per TV under “TVs”: own media only or mixed with the live streams. Pictures stay for their duration, videos play completely.",
+    medHoch: "Upload files", medLaedt: (n, p) => `Uploading ${n} … ${p} %`, medKeine: "No own media yet.", medDauer: "Duration (s)",
+    medSicherung: "Backups always contain pictures, videos only up to 200 MB in total – please keep large videos yourself as well.",
+    medWeg: "Delete this medium?",
     upSc: "SignageCast", upInstalliert: "installed", upNeueste: "latest", upAktuell: "up to date", upJetzt: "Update now",
     upZurueck: (v) => `Back to ${v}`, upZurueckFrage: "Return to the previous version? Settings from before the last update are restored.",
     upScText: "Settings and data are backed up before the update. Only a release with a valid signature is installed. If SignageCast does not run within a minute afterwards, it returns to the previous version automatically. The TV may reconnect briefly.",
@@ -338,7 +355,7 @@ const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 
 let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
 
 // ---------- Reiter ----------
-const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, streams: streamsSeite, radio: radioSeite, einspieler: einspielerSeite, anzeige, video,
+const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, streams: streamsSeite, radio: radioSeite, einspieler: einspielerSeite, anzeige, video,
                  suche: sucheSeite, verbindung, updates: updatesSeite, sicherung: sicherungSeite };
 let aktiv = "uebersicht", timer = null;
 function reiterZeichnen() {
@@ -770,7 +787,14 @@ async function fernseherSeite(inhalt) {
         <details ${(t.zeitplan || []).length ? "open" : ""}><summary>${esc(T.zeitplan)} (${(t.zeitplan || []).length})</summary>
           <p class="leise">${esc(T.zeitplanText)}</p><div name="zeiten">${(t.zeitplan || []).map((z) => zeitZeile(z)).join("")}</div>
           <button class="knopf" name="zeitPlus">${esc(T.zeitNeu)}</button></details>
+        <details ${(t.karussell || {}).aktiv ? "open" : ""}><summary>${esc(T.karussell)}${(t.karussell || {}).aktiv ? " ✓" : ""}</summary>
+          <p class="leise">${esc(T.karussellText)}</p>
+          <div class="zeile"><label>${esc(T.karussellAn)}</label>${schalter("k_aktiv", (t.karussell || {}).aktiv)}
+            <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" style="width:80px"></div>
+          ${E.layouts.map((l) => `<label style="margin-right:12px"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
+        <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
+          <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" style="width:70px"></span></div>
         <div class="zeile"><label>${esc(T.ton)}</label><select name="ton">${Object.keys(T.tonArt).map((x) => `<option value="${x}" ${x === t.ton ? "selected" : ""}>${esc(T.tonArt[x])}</option>`).join("")}</select></div>
         <div class="zeile" name="senderZeile"><label>${esc(T.sender)}</label><select name="radio_sender" class="breit"><option value="">${esc(T.keinSender)}</option>
           ${E.radio.sender.map((x) => `<option value="${esc(x.id)}" ${x.id === t.radio_sender ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
@@ -787,6 +811,8 @@ async function fernseherSeite(inhalt) {
       k.querySelector("[name=zeitPlus]").onclick = () => { k.querySelector("[name=zeiten]").insertAdjacentHTML("beforeend", zeitZeile({ von: "23:00", bis: "06:00", layout: "schwarz" })); zeitenAnbinden(); };
       const senderSichtbar = () => { k.querySelector("[name=senderZeile]").style.display = k.querySelector("[name=ton]").value === "radio" ? "" : "none"; };
       k.querySelector("[name=ton]").onchange = senderSichtbar; senderSichtbar();
+      const alleSichtbar = () => { k.querySelector("[name=alleTeil]").style.display = k.querySelector("[name=video_quelle]").value === "gemischt" ? "" : "none"; };
+      k.querySelector("[name=video_quelle]").onchange = alleSichtbar; alleSichtbar();
       k.querySelector("[name=lautstaerke]").oninput = (e) => { k.querySelector("[name=lw]").textContent = e.target.value + " %"; };
       const weg = k.querySelector("[name=weg]");
       if (weg) weg.onclick = () => { if (confirm(T.wirklichTvWeg)) { E.fernseher = lesen().filter((_, j) => j !== i); zeichnen(); } };
@@ -799,6 +825,9 @@ async function fernseherSeite(inhalt) {
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
                kategorien_aus: KATEGORIEN.filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
                bitrate_mbit: Number(w("bitrate_mbit").value), layout: w("layout").value,
+               video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3,
+               karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
+                            layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
                zeitplan: [...k.querySelectorAll("[name=zeiten] .zeile")].map((z) => ({ von: z.querySelector("[name=zvon]").value,
                  bis: z.querySelector("[name=zbis]").value, layout: z.querySelector("[name=zlayout]").value })) };
     });
@@ -1070,6 +1099,54 @@ async function sicherungSeite(inhalt) {
     }, T.eingespielt);
   };
   await zeichnen();
+}
+
+// ---------- Eigene Medien (seit 0.15): hochladen in Stücken, Liste mit Name, Dauer, an/aus ----------
+async function medienSeite(inhalt) {
+  const STUECK = 3 * 1024 * 1024;               // 3 MB je Stück (als Base64 unter der Grenze des Dienstes)
+  const zeichnen = () => {
+    inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(T.medText)}</p>
+        <div class="zeile"><input type="file" id="medDatei" multiple accept="image/jpeg,image/png,video/mp4,video/webm"><button class="knopf haupt" id="medHoch">${esc(T.medHoch)}</button></div>
+        <p class="leise" id="medStand"></p><p class="leise">${esc(T.medSicherung)}</p></div>
+      <div class="karte"><div id="medListe">${E.medien.length ? "" : `<p class="leise">${esc(T.medKeine)}</p>`}</div>
+        ${E.medien.length ? `<div class="zeile"><button class="knopf haupt" id="medOk">${esc(T.speichern)}</button></div>` : ""}</div>`;
+    const liste = $("#medListe");
+    E.medien.forEach((m) => {
+      const z = el(`<div class="zeile eintrag" data-id="${esc(m.id)}"><span class="medvorschau">${m.art === "bild" ? "🖼" : "🎬"}</span>
+        <input type="text" name="name" value="${esc(m.name)}" style="flex:1">
+        ${m.art === "bild" ? `<label>${esc(T.medDauer)}</label><input type="number" name="dauer" min="1" max="3600" value="${m.dauer_s}" style="width:80px">`
+                           : `<span class="leise">${Math.floor(m.dauer_s / 60)}:${String(Math.round(m.dauer_s % 60)).padStart(2, "0")}</span>`}
+        ${schalter("aktiv", m.aktiv)}<button class="knopf gefahr" name="weg">✕</button></div>`);
+      if (m.art === "bild") dienstBinaer.get(`/medien/${m.datei}`, {}, {}).then((d) => {
+        const b = document.createElement("img"); b.src = URL.createObjectURL(new Blob([d])); b.style.cssText = "height:40px;border-radius:4px";
+        z.querySelector(".medvorschau").replaceChildren(b);
+      }).catch(() => {});
+      z.querySelector("[name=weg]").onclick = (e) => { if (confirm(T.medWeg)) aktion(e.target, async () => { const d = await senden("/api/medien/loeschen", { id: m.id }); E = d.einstellungen; zeichnen(); }); };
+      liste.appendChild(z);
+    });
+    const ok = $("#medOk");
+    if (ok) ok.onclick = (e) => speichernE({ medien: E.medien.map((m) => {
+      const z = liste.querySelector(`[data-id="${m.id}"]`);
+      return { ...m, name: z.querySelector("[name=name]").value, aktiv: z.querySelector("[name=aktiv]").checked,
+               dauer_s: m.art === "bild" ? Number(z.querySelector("[name=dauer]").value) || 15 : m.dauer_s };
+    }) }, e.target);
+    $("#medHoch").onclick = (e) => aktion(e.target, async () => {
+      for (const f of $("#medDatei").files) {
+        const kennung = Math.random().toString(36).slice(2, 12).replace(/[^a-z0-9]/g, "a").padEnd(10, "x");
+        const teile = Math.max(1, Math.ceil(f.size / STUECK));
+        let d = null;
+        for (let nr = 0; nr < teile; nr++) {
+          const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
+          let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
+          d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, name: f.name.replace(/\.[^.]+$/, "") });
+          $("#medStand").textContent = T.medLaedt(f.name, Math.round((nr + 1) / teile * 100));
+        }
+        if (d && d.einstellungen) E = d.einstellungen;
+      }
+      zeichnen();
+    });
+  };
+  zeichnen();
 }
 
 // ---------- Updates (seit 0.13): Anfrage an das root-Skript, Stand aus dessen Statusdateien ----------
