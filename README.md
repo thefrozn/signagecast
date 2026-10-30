@@ -37,6 +37,9 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 - **Internet radio** – own streams or suggestions for your location; or the original sound of the cams.
 - **Clips at fixed times** – e.g. the German news *tagesschau in 100 Sekunden* on the hour and half hour.
 - **Several TVs** – each with its own address, layout, schedule, sound and categories.
+- **Messages and notifications** – official severe weather warnings of the DWD (Germany) as a layout element; short
+  messages from other systems (e.g. Home Assistant) as a banner on the TVs via a webhook with a secret key; notifications
+  via Telegram, e-mail or Home Assistant when a TV fails, an update or backup fails or Home Assistant is disconnected.
 - **Energy saving** – rendering runs only while someone watches; schedules can switch a TV to night mode or black.
 - **Admin in Cockpit** – overview with preview picture, system pages, backup/restore, German and English.
 
@@ -136,6 +139,8 @@ or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same
   rootless Podman) both would collide. Change it with `SC_VERWALTUNG_PORT`, the stream port with `SC_STREAM_PORT`.
 - **Why a random password on native installations?** `tvadmin` is a Linux account that can log in to Cockpit; on a real
   computer a known default password would be a risk. In a container it only affects the container.
+- **Webhook messages** (optional, from v0.16): port **8890** (`SC_WEBHOOK_PORT`; Docker: add `-p 8890:8890`), only
+  answers with a secret key created in the admin – see the [manual](docs/MANUAL.md).
 - The installer checks whether the stream port is free and stops with a hint if another program uses it.
 
 ## First steps
@@ -149,6 +154,9 @@ or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same
 3. **Display**: weather comes from MET Norway (or choose a Home Assistant weather entity). **Layout**: adapt the standard layout or start from a template.
 4. On the TV open **http://&lt;container-IP&gt;:8888/tv** in the browser and set it as start page.
 5. Optional: **Radio**, **Clips**, more **TVs**, schedules.
+
+More: **[manual and FAQ](docs/MANUAL.md)** – schedules, carousel, own media, severe weather warnings, webhook messages,
+notifications (Telegram, e-mail, Home Assistant).
 
 ## How it works
 
@@ -222,7 +230,9 @@ SignageCast macht aus einem Fernseher einen ruhigen Infobildschirm: Uhr, Wetter 
 dazu ein großes Fenster mit **Live-Kameras von Tieren und Natur** aus aller Welt – nur dort, wo gerade Tag ist.
 Gezeichnet wird in einem kleinen Linux-Container, der Fernseher öffnet nur eine Adresse im Browser. Das Bild gestaltest
 du im **Layout-Editor** (Bausteine ziehen, Größe ändern, Vorlagen für Wohnzimmer, Wartezimmer und Firma),
-dazu Hintergründe nach Tageszeit, Internetradio, Einspieler wie „tagesschau in 100 Sekunden“, mehrere Fernseher.
+dazu Hintergründe nach Tageszeit, Internetradio, Einspieler wie „tagesschau in 100 Sekunden“, mehrere Fernseher,
+Unwetterwarnungen des DWD, Meldungen per Webhook und Benachrichtigungen über Telegram, E-Mail oder Home Assistant
+(siehe [Handbuch](docs/MANUAL.md)).
 
 **Installation auf Proxmox** (in der Shell des Proxmox-Hosts):
 

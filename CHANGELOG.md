@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.16.0 (2026-10-30)
+- **Severe weather warnings (DWD):** new layout element with the official warnings of the Deutscher Wetterdienst for
+  the location (Germany only), coloured by level; hidden without a warning or “show also without warning”. Fetched
+  every 10 minutes, only while a layout uses it.
+- **Message via webhook:** other systems (e.g. Home Assistant) can put a short banner on all or one TV –
+  `POST http://<IP>:8890/meldung` with a secret key created in Connection (shown only once). Text, duration, style
+  info/warning; wrong keys get 403 after a delay, rate limit 20 per minute and address. Port `SC_WEBHOOK_PORT`.
+- **Notifications** via Telegram, e-mail (SMTP) and Home Assistant (notify service) when a TV fails, an update fails
+  or is rolled back, the automatic backup fails, or Home Assistant is unreachable for more than 5 minutes – once per
+  event with an all-clear. Test button per channel; bot token and SMTP password are masked and kept out of backups
+  without secrets.
+- **Manual and FAQ:** [docs/MANUAL.md](docs/MANUAL.md).
+
 ## v0.15.0 (2026-10-30)
 - **Own media** (new tab “Media”): upload pictures (JPG, PNG) and videos (MP4/H.264, WebM), also large files (in
   pieces, up to 1 GB). Type is detected from the content; H.265 videos are refused with a hint (the browser in the

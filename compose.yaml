@@ -10,6 +10,7 @@ services:
     ports:
       - "8888:8888"                  # Stream für die Fernseher
       - "19090:19090"                # Verwaltung (19090, weil auf vielen Servern Cockpit 9090 belegt)
+      # - "8890:8890"                # optional: Meldung per Webhook (Schlüssel in der Verwaltung erzeugen)
     volumes:
       - signagecast:/data
     environment:
