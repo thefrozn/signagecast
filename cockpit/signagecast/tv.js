@@ -737,7 +737,7 @@ async function verbindung(inhalt) {
         `<option value="${v}" ${B.email.sicherheit === v ? "selected" : ""}>${v === "keine" ? "–" : v.toUpperCase()}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(T.bnBenutzer)}</label><input type="text" id="bnEmBenutzer" value="${esc(B.email.benutzer)}" autocomplete="off"></div>
       <div class="zeile"><label>${esc(T.bnPasswort)}</label><input type="password" id="bnEmPw" value="${esc(B.email.passwort)}" autocomplete="new-password"></div>
-      <div class="zeile"><label>${esc(T.bnAbsender)}</label><input type="email" id="bnEmVon" value="${esc(B.email.absender)}"></div>
+      <div class="zeile"><label>${esc(T.bnAbsender)}</label><input type="text" id="bnEmVon" value="${esc(B.email.absender)}"></div>
       <div class="zeile"><label>${esc(T.bnEmpfaenger)}</label><input type="text" id="bnEmAn" value="${esc(B.email.empfaenger)}"></div>
       <div class="zeile"><button class="knopf" data-test="email">${esc(T.bnTest)}</button></div>
       <h3>${esc(T.bnHA)}</h3>
@@ -749,7 +749,7 @@ async function verbindung(inhalt) {
       <div class="zeile"><button class="knopf haupt" id="bnOk">${esc(T.speichern)}</button></div><div id="bnLetzte" class="leise"></div></div>
     <div class="karte"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
       <div class="zeile"><label><input type="checkbox" id="whAktiv" ${E.webhook.aktiv ? "checked" : ""}> ${esc(T.whAktiv)}</label>
-        <span class="leise">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
+        <span class="leise" id="whStand">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
       <div class="zeile"><button class="knopf" id="whNeu">${esc(T.whNeu)}</button></div><div id="whErg"></div></div>
     <div class="karte"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
       <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>
@@ -782,7 +782,7 @@ async function verbindung(inhalt) {
     if (E.webhook.token && !confirm(T.whNeuFrage)) return;
     aktion(e.target, async () => {
       const r = await senden("/api/webhook/neu", {});
-      E = r.einstellungen; $("#whAktiv").checked = true;
+      E = r.einstellungen; $("#whAktiv").checked = true; $("#whStand").textContent = T.whVorhanden;
       const host = info.eigene_ip || location.hostname;
       const beispiel = `curl -X POST http://${host}:${r.port}/meldung \\\n  -H "Authorization: Bearer ${r.token}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"text": "Hallo", "dauer": 60, "stil": "info"}'`;
       $("#whErg").innerHTML = `<p>${esc(T.whEinmal)}</p><pre>${esc(r.token)}</pre><p class="leise">${esc(T.whBeispiel)}</p><pre>${esc(beispiel)}</pre>`;

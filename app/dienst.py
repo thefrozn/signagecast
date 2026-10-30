@@ -69,13 +69,13 @@ def bn_geheim(b, ersatz):
     return b
 
 
-def bn_behalten(neu):
-    """Leere oder maskierte Geheimnisse in neuen Einstellungen durch die vorhandenen ersetzen."""
+def bn_behalten(neu, auch_leer=False):
+    """Maskierte (beim Einspielen ohne Geheimnisse auch leere) Geheimnisse durch die vorhandenen ersetzen."""
     if isinstance(neu, dict) and isinstance(neu.get("benachrichtigung"), dict):
         alt = einst()["benachrichtigung"]
         for kanal, feld in BN.GEHEIM:
             k = neu["benachrichtigung"].get(kanal)
-            if isinstance(k, dict) and feld in k and k[feld] in ("", None, Q.MASKE):
+            if isinstance(k, dict) and feld in k and (k[feld] == Q.MASKE or auch_leer and not k[feld]):
                 k[feld] = alt[kanal][feld]
 
 
@@ -1079,7 +1079,7 @@ def einspielen(d, mit_strikes=True):
         neu = d["einstellungen"]
         if isinstance(neu, dict) and isinstance(neu.get("webhook"), dict) and not neu["webhook"].get("token"):
             neu["webhook"]["token"] = einst()["webhook"]["token"]
-        bn_behalten(neu)
+        bn_behalten(neu, auch_leer=True)
         if isinstance(neu, dict) and isinstance(neu.get("sicherung"), dict) and not neu["sicherung"].get("passwort"):
             neu["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]     # ohne Geheimnisse: vorhandenes behalten
         if isinstance(neu, dict) and isinstance(neu.get("quellen"), list):
