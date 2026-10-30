@@ -1,0 +1,20 @@
+name: Feature request / Wunsch
+description: An idea or improvement / Eine Idee oder Verbesserung
+labels: [enhancement]
+body:
+  - type: textarea
+    id: wozu
+    attributes:
+      label: What would you like to do? / Was möchtest du erreichen?
+      description: Describe the situation (e.g. waiting room, reception, living room) and what is missing.
+    validations:
+      required: true
+  - type: textarea
+    id: vorschlag
+    attributes:
+      label: Idea for a solution / Lösungsidee
+  - type: textarea
+    id: sonst
+    attributes:
+      label: Anything else / Sonstiges
+      description: Screenshots, links to APIs or data sources …

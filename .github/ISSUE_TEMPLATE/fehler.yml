@@ -1,0 +1,50 @@
+name: Bug report / Fehler melden
+description: Something does not work as expected / Etwas funktioniert nicht wie erwartet
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please do **not** post passwords, API keys, camera addresses with credentials or your home network details.
+        Danke für die Meldung! Bitte **keine** Passwörter, API-Schlüssel, Kamera-Adressen mit Zugangsdaten oder Details deines Heimnetzes posten.
+  - type: input
+    id: version
+    attributes:
+      label: SignageCast version
+      description: Admin → Overview → Uptime card (e.g. 0.14.0)
+    validations:
+      required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation
+      options:
+        - Proxmox LXC (ct.sh)
+        - Debian container / LXC (install.sh)
+        - Debian VM / real computer (native)
+        - Docker
+        - Podman
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware / graphics
+      description: e.g. Intel N100, Core i5-7500T; Overview → Video encoding (Graphics unit or Software)
+  - type: textarea
+    id: was
+    attributes:
+      label: What happened? What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. …\n2. …"
+  - type: textarea
+    id: protokoll
+    attributes:
+      label: Log
+      description: "journalctl -u signagecast -n 100 (LXC/native) or docker logs signagecast – please remove private data"
+      render: text
