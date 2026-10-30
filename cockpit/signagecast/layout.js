@@ -35,7 +35,7 @@ const LTEXTE = {
            vorhersage: "Vorhersage", raeume: "Räume", kachel: "Kachel (HA-Wert)", video: "Live-Video", sender: "Radio-Sender",
            text: "Freier Text", logo: "Logo / Bild", kamera: "Kamera (HA)", kalender: "Kalender / Müllabfuhr", meldung: "Meldung von HA", flaeche: "Fläche (Farbe)",
            apiwert: "API-Wert", apiliste: "API-Liste / Feed", apibild: "API-Bild", anzeige: "Anzeige (Balken/Ampel)", countdown: "Countdown", qrcode: "QR-Code",
-           webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite" },
+           webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite", unwetter: "Unwetterwarnung (DWD)" },
     opt: { sekunden: "mit Sekunden", wochentag: "mit Wochentag", jahr: "mit Jahr", entity: "Entität (aus HA)", tage: "Tage",
            liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", text: "Text",
            bild: "Bild hochladen (PNG mit durchsichtigem Hintergrund oder JPG)", laufband: "als Laufband (läuft durch)",
@@ -44,7 +44,7 @@ const LTEXTE = {
            faktor: "Faktor (z. B. 0,01 für cm → m)", zeile: "Zeile (Platzhalter je Eintrag)", anpassung: "Bild", darstellung: "Darstellung", min: "Minimum", max: "Maximum",
            gelb: "gelb ab", rot: "rot ab", umkehren: "umgekehrt (niedrige Werte schlecht)", ziel: "Ziel (Datum/Uhrzeit)", ende: "Text nach Ablauf",
            inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung",
-           ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie)", zoom: "Zoom (%)",
+           immer: "auch ohne Warnung zeigen", ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie)", zoom: "Zoom (%)",
            versatz_x: "Ausschnitt: von links (px)", versatz_y: "Ausschnitt: von oben (px)" },
     optHilfe: { temperatur: "leer = Wetter aus „Anzeige“; oder ein Temperatur-Sensor", kamera: "z. B. Türklingel – mit Bedingung nur bei Klingeln zeigen",
                 meldung: "Text-Entität in HA (z. B. input_text.tv_meldung). Ändert sich der Text, erscheint er als Banner.",
@@ -58,7 +58,8 @@ const LTEXTE = {
                 text: "Platzhalter wie {quelle:pfad} werden durch Werte aus Datenquellen ersetzt.",
                 webcam: "Kamera aus „Datenquellen“ (Art Kamera). Läuft nur, solange der Baustein sichtbar ist – z. B. mit Bedingung nur beim Klingeln.",
                 diagramm: "Entweder eine HA-Entität (Verlauf aus der HA-Historie) oder Datenquelle + Pfad – deren Werte merkt sich SignageCast ab jetzt (bis 7 Tage).",
-                webseite: "Nur Seiten, die das Einbetten erlauben („Prüfen“). Zoom und Ausschnitt wählen den sichtbaren Teil." },
+                webseite: "Nur Seiten, die das Einbetten erlauben („Prüfen“). Zoom und Ausschnitt wählen den sichtbaren Teil.",
+                unwetter: "Amtliche Warnungen des Deutschen Wetterdienstes für den Standort (nur Deutschland). Ohne Warnung unsichtbar – oder „auch ohne Warnung zeigen“." },
     wahl: { balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)" },
     keineQuelle: "– Datenquelle wählen –", waehlen: "wählen …", bedQuelle: "Wert aus", bedHA: "Home Assistant", bedPfad: "Pfad",
     pruefen: "Prüfen", einbettbarJa: "Seite erlaubt das Einbetten", einbettbarNein: "Seite verbietet das Einbetten", einbettbarUnklar: "nicht prüfbar",
@@ -95,7 +96,7 @@ const LTEXTE = {
            vorhersage: "Forecast", raeume: "Rooms", kachel: "Tile (HA value)", video: "Live video", sender: "Radio station",
            text: "Free text", logo: "Logo / picture", kamera: "Camera (HA)", kalender: "Calendar / waste collection", meldung: "Message from HA", flaeche: "Area (colour)",
            apiwert: "API value", apiliste: "API list / feed", apibild: "API picture", anzeige: "Gauge (bar/traffic light)", countdown: "Countdown", qrcode: "QR code",
-           webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page" },
+           webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page", unwetter: "Weather warning (DWD)" },
     opt: { sekunden: "with seconds", wochentag: "with weekday", jahr: "with year", entity: "Entity (from HA)", tage: "Days",
            liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", text: "Text",
            bild: "Upload picture (PNG with transparent background or JPG)", laufband: "as ticker (scrolling)",
@@ -104,7 +105,7 @@ const LTEXTE = {
            faktor: "Factor (e.g. 0.01 for cm → m)", zeile: "Row (placeholders per entry)", anpassung: "Picture", darstellung: "Display", min: "Minimum", max: "Maximum",
            gelb: "yellow from", rot: "red from", umkehren: "reversed (low values are bad)", ziel: "Target (date/time)", ende: "Text when reached",
            inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption",
-           ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never)", zoom: "Zoom (%)",
+           immer: "show also without warning", ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never)", zoom: "Zoom (%)",
            versatz_x: "Crop: from left (px)", versatz_y: "Crop: from top (px)" },
     optHilfe: { temperatur: "empty = weather from “Display”; or a temperature sensor", kamera: "e.g. doorbell – with a condition only when it rings",
                 meldung: "Text entity in HA (e.g. input_text.tv_message). When the text changes it appears as a banner.",
@@ -118,7 +119,8 @@ const LTEXTE = {
                 text: "Placeholders like {source:path} are replaced with values from data sources.",
                 webcam: "Camera from “Data sources” (type camera). Only runs while the element is visible – e.g. with a condition only when the doorbell rings.",
                 diagramm: "Either an HA entity (history from HA) or data source + path – SignageCast records its values from now on (up to 7 days).",
-                webseite: "Only pages that allow embedding (“Check”). Zoom and crop choose the visible part." },
+                webseite: "Only pages that allow embedding (“Check”). Zoom and crop choose the visible part.",
+                unwetter: "Official warnings of the German Weather Service for the location (Germany only). Hidden without a warning – or “show also without warning”." },
     wahl: { balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)" },
     keineQuelle: "– choose data source –", waehlen: "pick …", bedQuelle: "Value from", bedHA: "Home Assistant", bedPfad: "Path",
     pruefen: "Check", einbettbarJa: "page allows embedding", einbettbarNein: "page forbids embedding", einbettbarUnklar: "could not check",
@@ -128,7 +130,7 @@ const LTEXTE = {
 const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 2], wetterlage: [9, 1], feuchte: [9, 1], wind: [9, 1],
   vorhersage: [8, 5], raeume: [9, 5], kachel: [5, 5], video: [24, 14], sender: [9, 1], text: [12, 2], kamera: [12, 7],
   kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4], apiwert: [8, 3], apiliste: [14, 6], apibild: [10, 8], anzeige: [8, 3],
-  countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12] };
+  countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12], unwetter: [20, 3] };
 // welche Arten von Datenquellen ein Baustein anbietet
 const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical"], apibild: ["bild", "json"], apiliste: ["json", "rss", "ical", "text"],
   diagramm: ["json", "text"], apiwert: ["json", "text", "rss", "ical"], anzeige: ["json", "text"], countdown: ["json", "text", "ical"] };
@@ -520,6 +522,7 @@ function vorschauText(e, L) {
     case "countdown": return "⏳ " + (o.vorlage || L.typ.countdown);
     case "qrcode": return "▦ " + (o.beschriftung || L.typ.qrcode);
     case "webcam": return "🎥 " + (o.quelle || L.typ.webcam);
+    case "unwetter": return "⚠ " + L.typ.unwetter;
     case "diagramm": return "📈 " + (o.name || o.entity || o.pfad || L.typ.diagramm);
     case "webseite": return "🌐 " + (o.url.replace(/^https?:\/\//, "").slice(0, 30) || L.typ.webseite);
     default: return L.typ[e.typ] || e.typ;

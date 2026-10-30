@@ -16,13 +16,15 @@ const TEXTE = {
           "pouring": "Starkregen", "rainy": "Regnerisch", "snowy": "Schnee", "snowy-rainy": "Schneeregen", "sunny": "Sonnig",
           "windy": "Windig", "windy-variant": "Windig, bewölkt" },
         feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes", wetterQuelle: "Wetterdaten: MET Norway",
-        heute: "Heute", morgen: "Morgen", keineTermine: "Keine Termine", locale: "de-DE" },
+        heute: "Heute", morgen: "Morgen", keineTermine: "Keine Termine", locale: "de-DE",
+        bis: "bis", keineWarnung: "Keine Unwetterwarnung", dwd: "Quelle: Deutscher Wetterdienst" },
   en: { lage: { "clear-night": "Clear night", "cloudy": "Cloudy", "exceptional": "Exceptional", "fog": "Fog", "hail": "Hail",
           "lightning": "Thunderstorm", "lightning-rainy": "Thunderstorm, rain", "partlycloudy": "Partly cloudy",
           "pouring": "Pouring", "rainy": "Rainy", "snowy": "Snowy", "snowy-rainy": "Sleet", "sunny": "Sunny",
           "windy": "Windy", "windy-variant": "Windy, cloudy" },
         feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway",
-        heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB" },
+        heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB",
+        bis: "until", keineWarnung: "No weather warning", dwd: "Source: Deutscher Wetterdienst" },
 };
 const FAKTOR = { uhr: 0.82, temperatur: 0.72, datum: 0.5, wetterlage: 0.6, feuchte: 0.5, wind: 0.5, sender: 0.5, text: 0.55, meldung: 0.42, countdown: 0.55 };
 let T = TEXTE.de;
@@ -337,6 +339,16 @@ function fuellen() {
           } else q.innerHTML = "";
         }
         sichtbar = sichtbar && !!inhalt;
+        break;
+      }
+      case "unwetter": {
+        const ws = (daten.unwetter || []).slice(0, o.anzahl);
+        sichtbar = sichtbar && (ws.length > 0 || o.immer);
+        const bis = (x) => x ? new Date(x).toLocaleString(T.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
+        d.dataset.stufe = ws.length ? ws[0].stufe : 0;
+        d.innerHTML = (ws.length ? ws.map((w) => `<div class="warnung"><b>⚠ ${esc(w.titel)}</b><span class="leise"> · ${esc(T.bis)} ${esc(bis(w.bis))}</span></div>`).join("")
+          : `<div class="warnung">${esc(T.keineWarnung)}</div>`) + `<div class="dwd">${esc(T.dwd)}</div>`;
+        d.style.fontSize = Math.min(d.clientHeight / (Math.max(1, ws.length) + 0.8) * 0.55, 40) + "px";
         break;
       }
       case "webcam": {

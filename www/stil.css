@@ -138,3 +138,9 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-diagramm .achse { font-size: 13px; fill: currentColor; opacity: .7; }
 .typ-webseite { padding: 0 !important; background: #fff; }
 .typ-webseite iframe { position: absolute; border: 0; transform-origin: 0 0; background: #fff; }
+
+/* Unwetterwarnung (DWD, seit 0.16): Farbe nach Warnstufe */
+.typ-unwetter { justify-content: center; padding: 6px 14px !important; border-radius: 12px; text-shadow: none; white-space: normal; }
+.typ-unwetter[data-stufe="1"] { background: #ffeb3b; color: #222; } .typ-unwetter[data-stufe="2"] { background: #fb8c00; color: #111; }
+.typ-unwetter[data-stufe="3"] { background: #e53935; color: #fff; } .typ-unwetter[data-stufe="4"] { background: #880e4f; color: #fff; }
+.typ-unwetter .warnung { overflow: hidden; text-overflow: ellipsis; } .typ-unwetter .dwd { font-size: 12px; opacity: .75; margin-top: .2em; }

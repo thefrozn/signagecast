@@ -120,6 +120,7 @@ TYPEN = {
     "diagramm":   {"quelle": (_qid, ""), "pfad": (_pfad, ""), "entity": (_ent(["sensor", "input_number", "number", "counter"]), ""),
                    "stunden": (_zahl(1, 168), 24), "name": (_t(30), ""), "einheit": (_t(12), ""), "nachkomma": (_zahl(-1, 6), 1),
                    "faktor": (_t(16), "1")},
+    "unwetter":   {"anzahl": (_zahl(1, 3), 1), "immer": (_b, False)},                  # DWD-Warnungen (seit 0.16)
     "webseite":   {"url": (_url, ""), "neu_laden_min": (_zahl(0, 1440), 15), "zoom": (_zahl(25, 300), 100),
                    "versatz_x": (_zahl(0, 10000), 0), "versatz_y": (_zahl(0, 10000), 0)},
 }

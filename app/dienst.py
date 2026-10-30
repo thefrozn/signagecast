@@ -21,6 +21,7 @@ import hardware as HW                         # noqa: E402
 import meldung as M                           # noqa: E402
 import sicherung as S                         # noqa: E402
 import medien as MED                          # noqa: E402
+import unwetter as UW                         # noqa: E402
 import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -440,6 +441,18 @@ def kalender_schleife():
         time.sleep(600)
 
 
+def unwetter_schleife():
+    """DWD-Warnungen für den Standort alle 10 min – nur, wenn ein Layout den Baustein „Unwetterwarnung“ nutzt."""
+    while True:
+        e = einst()
+        if any(x["typ"] == "unwetter" for l in e["layouts"] for x in l["elemente"]):
+            try:
+                zustand["unwetter"] = {"liste": UW.holen(e["standort"]["breite"], e["standort"]["laenge"]), "zeit": time.time(), "fehler": None}
+            except Exception as ex:
+                zustand["unwetter"] = dict(zustand.get("unwetter") or {"liste": []}, fehler=str(ex)[:200])
+        time.sleep(600)
+
+
 def verlauf_ha_schleife():
     """Verlauf der HA-Entitäten in Diagramm-Bausteinen alle 5 min aus der HA-Historie holen (nur Zahlen)."""
     while True:
@@ -513,7 +526,8 @@ def tv_daten(tv_id):
                 zeitzone=wirksame_zeitzone(),
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
                 tv=t["id"], layout=layout, kalender=kal, api=api,
-                medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"], streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
+                unwetter=(zustand.get("unwetter") or {}).get("liste", []), streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
                 radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
                        # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt
@@ -1468,7 +1482,7 @@ def main():
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
-                 update_auto_schleife):
+                 update_auto_schleife, unwetter_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]
