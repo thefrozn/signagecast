@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.15.0 (2026-10-30)
+- **Own media** (new tab “Media”): upload pictures (JPG, PNG) and videos (MP4/H.264, WebM), also large files (in
+  pieces, up to 1 GB). Type is detected from the content; H.265 videos are refused with a hint (the browser in the
+  container cannot play them). Pictures stay for their duration, videos play completely.
+- **Per TV:** the video window shows live streams (YouTube), only own media, or mixed (every N-th time own media).
+- **Layout carousel** per TV: switch between chosen layouts every N minutes; a schedule (e.g. black at night) still
+  has priority.
+- Backups contain pictures always and videos up to 200 MB in total.
+- Fix: the stream announced as “Up next” is now really shown next (unless it became unavailable meanwhile – then
+  the announcement changes immediately). Before, a changed stream list (strike, night at the location, new streams)
+  could lead to a different stream.
+
 ## v0.14.0 (2026-10-30)
 - **Automatic tests** (`tests/`, Python standard library): curl import, paths and templates, number format, iCal
   recurrences, masking of secrets, backup password rules and AES-256 ZIP, settings and all layout elements.
