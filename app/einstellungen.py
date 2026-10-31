@@ -40,6 +40,10 @@ STANDARD = {
     "medien": [],
     # Meldung per Webhook (seit 0.16): eigener Port (SC_WEBHOOK_PORT, Standard 8890), nur mit geheimem Schlüssel
     "webhook": {"aktiv": False, "token": ""},
+    # Durchsage-Pult (seit 0.19): Zugänge nur für Meldungen; Passwort nur als Hash; fernseher leer = alle
+    "pult": {"zugaenge": [], "vorlagen": ["Frau …, bitte in Behandlungsraum …", "Herr …, bitte in Behandlungsraum …",
+                                          "Bitte haben Sie noch etwas Geduld."],
+             "stimme": "kerstin", "vorlesen": True, "gong": True, "dauer_s": 60},
     # Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation; vorhandene Einstellungen ohne den Schlüssel gelten als eingerichtet
     "assistent_fertig": False,
     # Benachrichtigungen (seit 0.16): Kanäle Telegram, E-Mail (SMTP), Home Assistant; Geheimnisse: Bot-Token, SMTP-Passwort
@@ -360,6 +364,22 @@ def pruefen(e):
     if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
         raise Meldung("sich_geheim_ohne_pw")
     if "assistent_fertig" in e: s["assistent_fertig"] = bool(e["assistent_fertig"])
+    pu = e.get("pult", {})
+    if isinstance(pu, dict):
+        sp = s["pult"]
+        if "zugaenge" in pu:
+            tv_ids = {t["id"] for t in s["fernseher"]} if "fernseher" in e else None
+            sp["zugaenge"] = []
+            for z in (pu["zugaenge"] or [])[:20]:
+                sp["zugaenge"].append({"id": _text(z.get("id", ""), 12, r"[a-z0-9]{4,12}"), "name": _text(z.get("name", ""), 40) or "Pult",
+                                       "passwort": _text(z.get("passwort", ""), 200, r"(pbkdf2\$\d+\$[0-9a-f]+\$[0-9a-f]+)?"),
+                                       "fernseher": [x for x in (z.get("fernseher") or []) if isinstance(x, str) and re.fullmatch(r"[a-z][a-z0-9]{0,11}", x)
+                                                     and (tv_ids is None or x in tv_ids)]})
+        if "vorlagen" in pu: sp["vorlagen"] = [_text(v, 120) for v in (pu["vorlagen"] or [])[:20] if str(v).strip()]
+        if "stimme" in pu: sp["stimme"] = pu["stimme"] if pu["stimme"] in ("kerstin", "thorsten") else "kerstin"
+        for k in ("vorlesen", "gong"):
+            if k in pu: sp[k] = bool(pu[k])
+        if "dauer_s" in pu: sp["dauer_s"] = _zahl(pu["dauer_s"], 10, 3600, int)
     wh = e.get("webhook", {})
     if "aktiv" in wh: s["webhook"]["aktiv"] = bool(wh["aktiv"])
     if "token" in wh: s["webhook"]["token"] = _text(wh.get("token") or "", 64, r"[A-Za-z0-9_-]*")

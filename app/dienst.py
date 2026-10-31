@@ -5,7 +5,7 @@
 # Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
-import glob, json, os, re, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import glob, json, os, re, secrets, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,6 +23,7 @@ import sicherung as S                         # noqa: E402
 import medien as MED                          # noqa: E402
 import unwetter as UW                         # noqa: E402
 import benachrichtigung as BN                 # noqa: E402
+import durchsage as DS                        # noqa: E402
 import quellen as Q                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -57,7 +58,8 @@ def einst_aussen():
     return dict(e, quellen=Q.maskieren(e["quellen"]),
                 sicherung=dict(e["sicherung"], passwort=Q.MASKE if e["sicherung"]["passwort"] else ""),
                 webhook=dict(e["webhook"], token=Q.MASKE if e["webhook"]["token"] else ""),
-                benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: Q.MASKE if w else ""))
+                benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: Q.MASKE if w else ""),
+                pult=dict(e["pult"], zugaenge=[dict(z, passwort=Q.MASKE if z["passwort"] else "") for z in e["pult"]["zugaenge"]]))
 
 
 def bn_geheim(b, ersatz):
@@ -67,6 +69,23 @@ def bn_geheim(b, ersatz):
         if isinstance(b.get(kanal), dict) and feld in b[kanal]:
             b[kanal][feld] = ersatz(b[kanal][feld])
     return b
+
+
+def pult_behalten(neu):
+    """Pult-Zugänge: neues Passwort (passwort_neu) hashen, sonst den vorhandenen Hash (gleiche id) behalten."""
+    if not (isinstance(neu, dict) and isinstance(neu.get("pult"), dict) and isinstance(neu["pult"].get("zugaenge"), list)):
+        return
+    alt = {z["id"]: z["passwort"] for z in einst()["pult"]["zugaenge"]}
+    for z in neu["pult"]["zugaenge"]:
+        if not isinstance(z, dict):
+            continue
+        pw = str(z.pop("passwort_neu", "") or "")
+        if pw:
+            if len(pw) < 6:
+                raise E.Fehler("Pult-Passwort: mindestens 6 Zeichen")
+            z["passwort"] = DS.passwort_hash(pw)
+        elif z.get("passwort") in (None, "", Q.MASKE):
+            z["passwort"] = alt.get(z.get("id"), "")
 
 
 def bn_behalten(neu, auch_leer=False):
@@ -475,6 +494,55 @@ def meldung_fuer(tv_id):
     return {"text": m["text"], "stil": m["stil"], "bis": m["bis"]}
 
 
+# ---------- Durchsagen (seit 0.19) ----------
+# Nur im Arbeitsspeicher: laufende Durchsagen und „Zuletzt“ (höchstens 10, 2 Stunden) – Namen werden nirgends gespeichert.
+durchsagen = []                                   # [{id, text, tvs, bis, audio, zeit, von, t}]
+pult_sitzungen = {}                               # token -> {zugang, bis}
+
+
+def durchsagen_aktiv():
+    jetzt = time.time()
+    durchsagen[:] = [x for x in durchsagen if jetzt - x["t"] < 7200][:10]
+    DS.aufraeumen({x["id"] for x in durchsagen if x["bis"] > jetzt})
+    return [x for x in durchsagen if x["bis"] > jetzt]
+
+
+def durchsage_senden(text, tvs, vorlesen, gong, dauer, von):
+    text = " ".join(str(text).split())[:200]
+    if not text or not tvs:
+        raise ValueError("Text und mindestens ein Fernseher nötig")
+    p, did = einst()["pult"], secrets.token_hex(6)
+    audio = []
+    if vorlesen:
+        if not DS.bereit(p["stimme"]):
+            raise ValueError("Stimme noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult)")
+        if gong:
+            DS.gong(); audio.append("/durchsage/gong.wav")
+        DS.sprechen(text, p["stimme"], did); audio.append(f"/durchsage/{did}.wav")
+    durchsagen.insert(0, {"id": did, "text": text, "tvs": list(tvs), "bis": time.time() + dauer, "audio": audio,
+                          "zeit": time.strftime("%H:%M"), "von": von, "t": time.time()})
+    durchsagen_aktiv()
+    return did
+
+
+def durchsage_fuer(tv_id):
+    x = next((x for x in durchsagen if tv_id in x["tvs"] and x["bis"] > time.time()), None)
+    return {"id": x["id"], "text": x["text"], "bis": x["bis"], "audio": x["audio"]} if x else None
+
+
+def pult_zugang(handler):
+    """Angemeldeter Pult-Zugang aus dem Sitzungs-Cookie (oder None)."""
+    for teil in (handler.headers.get("Cookie") or "").split(";"):
+        k, _, v = teil.strip().partition("=")
+        if k == "sc_pult" and v in pult_sitzungen and pult_sitzungen[v]["bis"] > time.time():
+            return next((z for z in einst()["pult"]["zugaenge"] if z["id"] == pult_sitzungen[v]["zugang"]), None)
+    return None
+
+
+def pult_fernseher(z):
+    return [t for t in einst()["fernseher"] if not z["fernseher"] or t["id"] in z["fernseher"]]
+
+
 class WebhookBearbeiter(BaseHTTPRequestHandler):
     """Nur /meldung, nur mit Schlüssel (Authorization: Bearer … oder ?token=…). Alles andere: 404."""
     def log_message(self, *a):
@@ -513,6 +581,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             erg.update(zeit=time.strftime("%Y-%m-%d %H:%M:%S"), geraet=str(self.headers.get("User-Agent", ""))[:160], ip=ip)
             zustand["leistung_geraete"] = ([erg] + zustand.get("leistung_geraete", []))[:5]
             return self.antwort(200, {"ok": True})
+        if u.path.startswith("/pult"):
+            return self.pult(u.path, daten)
         if u.path != "/meldung":
             return self.antwort(404, {"ok": False})
         wh = einst()["webhook"]
@@ -533,6 +603,59 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         zustand["meldung_extern"] = {"text": text, "bis": time.time() + dauer, "stil": stil if stil in ("info", "warnung") else "info",
                                      "tv": str(daten.get("tv", (q.get("tv") or [""])[0]))[:12] or None}
         return self.antwort(200, {"ok": True, "bis": int(zustand["meldung_extern"]["bis"])})
+
+    def pult(self, pfad, daten):
+        """Durchsage-Pult: nur Meldungen senden/beenden – keine Einstellungen."""
+        if pfad == "/pult" and self.command == "GET":
+            return self.datei(os.path.join(WWW, "pult.html"), "text/html; charset=utf-8")
+        if self.command == "POST" and self.headers.get("X-Pult") != "1":     # gegen fremde Formulare (CSRF)
+            return self.antwort(403, {"ok": False})
+        if pfad == "/pult/anmelden" and self.command == "POST":
+            pw = str(daten.get("passwort", ""))
+            z = next((z for z in einst()["pult"]["zugaenge"] if z["passwort"] and DS.passwort_ok(pw, z["passwort"])), None)
+            if not z:
+                time.sleep(1)
+                return self.antwort(403, {"ok": False, "fehler": "falsches Passwort"})
+            token = secrets.token_urlsafe(24)
+            pult_sitzungen[token] = {"zugang": z["id"], "bis": time.time() + 12 * 3600}
+            roh = json.dumps({"ok": True}).encode()
+            self.send_response(200); self.send_header("Content-Type", "application/json")
+            self.send_header("Set-Cookie", f"sc_pult={token}; HttpOnly; SameSite=Strict; Path=/pult; Max-Age=43200")
+            self.send_header("Content-Length", str(len(roh))); self.end_headers(); self.wfile.write(roh)
+            return
+        z = pult_zugang(self)
+        if not z:
+            return self.antwort(401, {"ok": False})
+        p = einst()["pult"]
+        if pfad == "/pult/info":
+            return self.antwort(200, {"ok": True, "zugang": z["name"], "sprache": einst()["sprache"] or "de",
+                                      "fernseher": [{"id": t["id"], "name": t["name"]} for t in pult_fernseher(z)],
+                                      "vorlagen": p["vorlagen"], "vorlesen": p["vorlesen"] and DS.bereit(p["stimme"]),
+                                      "gong": p["gong"], "dauer_s": p["dauer_s"]})
+        erlaubt = {t["id"] for t in pult_fernseher(z)}
+        if pfad == "/pult/liste":
+            return self.antwort(200, {"ok": True, "liste": [{k: x[k] for k in ("id", "text", "zeit", "von")} | {
+                "tvs": [t["name"] for t in einst()["fernseher"] if t["id"] in x["tvs"]], "laeuft": x["bis"] > time.time()}
+                for x in (durchsagen_aktiv(), durchsagen)[1] if set(x["tvs"]) & erlaubt]})
+        if pfad == "/pult/senden" and self.command == "POST":
+            tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
+            try:
+                dauer = max(10, min(3600, int(daten.get("dauer_s") or p["dauer_s"])))
+                did = durchsage_senden(daten.get("text", ""), tvs, bool(daten.get("vorlesen")) and p["vorlesen"],
+                                       bool(daten.get("gong", p["gong"])), dauer, z["name"])
+            except (ValueError, RuntimeError, subprocess.TimeoutExpired) as f:
+                return self.antwort(200, {"ok": False, "fehler": str(f)[:200]})
+            return self.antwort(200, {"ok": True, "id": did})
+        if pfad == "/pult/beenden" and self.command == "POST":
+            for x in durchsagen:
+                if x["id"] == daten.get("id") and set(x["tvs"]) & erlaubt:
+                    x["bis"] = 0
+            return self.antwort(200, {"ok": True})
+        if pfad == "/pult/abmelden" and self.command == "POST":
+            for k in [k for k, v in pult_sitzungen.items() if v["zugang"] == z["id"] and k in (self.headers.get("Cookie") or "")]:
+                pult_sitzungen.pop(k, None)
+            return self.antwort(200, {"ok": True})
+        return self.antwort(404, {"ok": False})
 
     def do_GET(self):
         self.bearbeiten({})
@@ -724,7 +847,8 @@ def tv_daten(tv_id):
                 tv=t["id"], layout=layout, kalender=kal, api=api,
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
                 unwetter=(zustand.get("unwetter") or {}).get("liste", []),
-                meldung_extern=meldung_fuer(t["id"]), streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                meldung_extern=meldung_fuer(t["id"]),
+                durchsage=durchsage_fuer(t["id"]), streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
                 radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
                        # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt
@@ -1002,6 +1126,9 @@ def braucht_ton(t, e):
     bis zu 85 % der Bilder doppeln (gemessen 2026-10-31), der Stream ruckelt."""
     if t["ton"] != "aus":
         return True
+    p = e.get("pult") or {}
+    if p.get("vorlesen") and any(not z["fernseher"] or t["id"] in z["fernseher"] for z in p.get("zugaenge", [])):
+        return True
     if any(x["aktiv"] and x["ton"] and (not x.get("fernseher") or t["id"] in x["fernseher"]) for x in e.get("einspieler", [])):
         return True
     ids = {t["layout"]} | {z.get("layout") for z in t.get("zeitplan", [])} | set((t.get("karussell") or {}).get("layouts", []))
@@ -1184,7 +1311,8 @@ def sicherung(mit_geheimnissen=False):
     e = einst()
     if not mit_geheimnissen:              # Standard: ohne API-Schlüssel/Passwörter (Datei kann weitergegeben werden)
         e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""),
-                 webhook=dict(e["webhook"], token=""), benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: ""))
+                 webhook=dict(e["webhook"], token=""), benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: ""),
+                 pult=dict(e["pult"], zugaenge=[dict(z, passwort="") for z in e["pult"]["zugaenge"]]))
     return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
             "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()}
 
@@ -1285,6 +1413,7 @@ def einspielen(d, mit_strikes=True):
         if isinstance(neu, dict) and isinstance(neu.get("webhook"), dict) and not neu["webhook"].get("token"):
             neu["webhook"]["token"] = einst()["webhook"]["token"]
         bn_behalten(neu, auch_leer=True)
+        pult_behalten(neu)
         if isinstance(neu, dict) and isinstance(neu.get("sicherung"), dict) and not neu["sicherung"].get("passwort"):
             neu["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]     # ohne Geheimnisse: vorhandenes behalten
         if isinstance(neu, dict) and isinstance(neu.get("quellen"), list):
@@ -1494,6 +1623,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             elif q and pfad and qn.daten(q["id"]) is not None:
                 b = qn.bild_aus_url(q, Q.wert_bei(qn.daten(q["id"]), pfad))
             return self.antwort(200, b["bild"], b["typ"]) if b else self.antwort(404, {"ok": False})
+        m = re.fullmatch(r"/durchsage/([0-9a-f]{12}|gong)\.wav", p.path)     # Ton der Durchsagen für die TV-Seite
+        if m:
+            try:
+                return self.antwort(200, open(os.path.join(DS.AUDIO, m.group(1) + ".wav"), "rb").read(), "audio/wav")
+            except OSError:
+                return self.antwort(404, {"ok": False})
         m = re.fullmatch(r"/bild/([0-9a-f]{16}\.(jpg|png))", p.path)
         if m:
             try:
@@ -1515,6 +1650,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
                                       "wechsel": L.WECHSEL})
+        if pfad == "/api/pult":
+            return self.antwort(200, {"ok": True, "stimmen": {k: dict(v, bereit=DS.bereit(k)) for k, v in DS.STIMMEN.items()},
+                                      "laden": DS.stand, "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
+                                      "aktiv": [dict(x, text="…") for x in durchsagen_aktiv()]})
         if pfad == "/api/leistung":
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
@@ -1621,6 +1760,14 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             d["webhook"]["token"] = einst()["webhook"]["token"]
         if p == "/api/einstellungen":
             bn_behalten(d)
+            pult_behalten(d)
+        if p == "/api/pult/stimme-laden":
+            st = d.get("stimme") or einst()["pult"]["stimme"]
+            threading.Thread(target=lambda: DS.laden(st), daemon=True).start()
+            return {}
+        if p == "/api/pult/probe":
+            ziel = [t["id"] for t in einst()["fernseher"] if not d.get("tv") or t["id"] == d.get("tv")]
+            return {"id": durchsage_senden("Dies ist eine Probedurchsage.", ziel, True, einst()["pult"]["gong"], 20, "Verwaltung")}
         if p == "/api/aktion/ton-neu":
             return {"erledigt": ton_neu_starten()}
         if p == "/api/leistung/test":                # ca. 10 s messen (läuft im eigenen Anfrage-Thread)

@@ -205,6 +205,18 @@ class EinstellungenUndLayouts(unittest.TestCase):
         self.assertEqual(t["codec"], "h264")
         self.assertEqual(E.pruefen({"fernseher": [{"id": "tv", "codec": "vp9"}]})["fernseher"][0]["codec"], "auto")
 
+    def test_pult_zugaenge_und_passwort(self):
+        import durchsage as DS
+        h = DS.passwort_hash("geheim123")
+        self.assertTrue(DS.passwort_ok("geheim123", h)); self.assertFalse(DS.passwort_ok("falsch", h))
+        p = E.pruefen({"pult": {"zugaenge": [{"id": "rezep1", "name": "Rezeption", "passwort": h, "fernseher": ["tv", "../x"]}],
+                                "stimme": "ramona", "dauer_s": 120}})["pult"]
+        self.assertEqual((p["zugaenge"][0]["fernseher"], p["stimme"]), (["tv"], "kerstin"))
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"pult": {"dauer_s": 5000}})
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"pult": {"zugaenge": [{"id": "rezep1", "passwort": "klartext"}]}})
+
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))
