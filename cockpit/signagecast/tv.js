@@ -14,7 +14,9 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Video & Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung" },
+              video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang" },
+    bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
@@ -158,7 +160,9 @@ const TEXTE = {
   },
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Video & rules", suche: "Stream search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup" },
+              video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access" },
+    bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
@@ -375,20 +379,45 @@ const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 
 let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
 
 // ---------- Reiter ----------
-const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, streams: streamsSeite, radio: radioSeite, einspieler: einspielerSeite, anzeige, video,
-                 suche: sucheSeite, verbindung, updates: updatesSeite, sicherung: sicherungSeite };
+const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
+                 streams: streamsSeite, video, suche: sucheSeite, radio: radioSeite,
+                 allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
+                 updates: updatesSeite, sicherung: sicherungSeite, zugang: (i) => verbindung(i, "zugang") };
+// Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
+const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher"]], ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
+                  ["videoton", ["streams", "video", "suche", "radio"]], ["einstellungen", ["allgemein", "ha", "benachrichtigung"]],
+                  ["system", CONTAINER ? ["updates", "sicherung", "zugang"] : ["updates", "sicherung"]]];
+const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
+const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || BEREICHE[0];
 function reiterZeichnen() {
-  const nav = $("#reiter");
-  nav.innerHTML = "";
-  for (const k of Object.keys(SEITEN)) {
-    const b = el(`<button class="${k === aktiv ? "an" : ""}">${esc(T.reiter[k])}</button>`);
-    b.onclick = () => zeigeSeite(k);
-    nav.appendChild(b);
+  const [bereich, unter] = bereichVon(aktiv);
+  const nav = $("#reiter"), sub = $("#unter"), menue = $("#menue");
+  nav.innerHTML = ""; sub.innerHTML = "";
+  for (const [b, seiten] of BEREICHE) {
+    const k = el(`<button class="${b === bereich ? "an" : ""}">${esc(T.bereiche[b])}</button>`);
+    k.onclick = () => zeigeSeite(b === bereich ? aktiv : merk[b] || seiten[0]);
+    nav.appendChild(k);
   }
+  sub.hidden = unter.length < 2;
+  for (const s of unter) {
+    const k = el(`<button class="${s === aktiv ? "an" : ""}">${esc(T.reiter[s])}</button>`);
+    k.onclick = () => zeigeSeite(s);
+    sub.appendChild(k);
+  }
+  menue.innerHTML = BEREICHE.map(([b, seiten]) => seiten.length < 2
+    ? `<option value="${seiten[0]}">${esc(T.bereiche[b])}</option>`
+    : `<optgroup label="${esc(T.bereiche[b])}">${seiten.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("")}</optgroup>`).join("");
+  menue.value = aktiv;
+  menue.onchange = () => zeigeSeite(menue.value);
 }
+const merk = {};                                                       // zuletzt offene Unterseite je Bereich
 function zeigeSeite(k) {
+  k = ALT[k] || k;
+  if (!SEITEN[k]) k = "uebersicht";
   aktiv = k;
+  merk[bereichVon(k)[0]] = k;
+  if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k);
   clearInterval(timer); timer = null;
   reiterZeichnen();
   const inhalt = $("#inhalt");
@@ -622,17 +651,17 @@ async function anzeige(inhalt) {
   inhalt.innerHTML = `<datalist id="ents">${ents.filter((x) => x.id.startsWith("weather.")).map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</datalist>
     <div class="karte">
       <div class="zeile"><label>${esc(T.sprache)}</label><select id="sprache"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-      <div class="zeile"><label>${esc(T.wetterQuelle)}</label><select id="quelle" class="breit">${Object.keys(T.wetterQuelleArt).map((k) =>
+      <div class="zeile"><label>${esc(T.wetterQuelle)}</label><select id="wetterQ" class="breit">${Object.keys(T.wetterQuelleArt).map((k) =>
         `<option value="${k}" ${k === E.anzeige.wetter_quelle ? "selected" : ""}>${esc(T.wetterQuelleArt[k])}</option>`).join("")}</select></div>
       <p class="leise" id="metText">${esc(T.metText)}</p>
       <div class="zeile" id="haZeile"><label>${esc(T.wetter)}</label><input type="text" id="wetter" list="ents" value="${esc(E.anzeige.wetter)}"></div>
       <p class="leise">${esc(T.wetterText)}</p></div>
-    <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
+    <div class="zeile"><button class="knopf haupt" id="okAnz">${esc(T.speichern)}</button></div>`;
   $("#sprache").value = E.sprache || "de";
-  const sicht = () => { const ha = $("#quelle").value === "ha"; $("#haZeile").style.display = ha ? "" : "none"; $("#metText").style.display = ha ? "none" : ""; };
-  $("#quelle").onchange = sicht; sicht();
-  $("#ok").onclick = async (e) => {
-    await speichernE({ sprache: $("#sprache").value, anzeige: { wetter_quelle: $("#quelle").value, wetter: $("#wetter").value } }, e.target);
+  const sicht = () => { const ha = $("#wetterQ").value === "ha"; $("#haZeile").style.display = ha ? "" : "none"; $("#metText").style.display = ha ? "none" : ""; };
+  $("#wetterQ").onchange = sicht; sicht();
+  $("#okAnz").onclick = async (e) => {
+    await speichernE({ sprache: $("#sprache").value, anzeige: { wetter_quelle: $("#wetterQ").value, wetter: $("#wetter").value } }, e.target);
     T = TEXTE[E.sprache] || TEXTE.de; reiterZeichnen(); hinweiseZeichnen();
   };
 }
@@ -695,7 +724,7 @@ async function sucheSeite(inhalt) {
 }
 
 // ---------- Verbindung ----------
-async function verbindung(inhalt) {
+async function verbindung(inhalt, teil = "ha") {
   const info = await holen("/api/ha/einrichtung");
   if (CONTAINER && !info.eigene_ip) info.eigene_ip = location.hostname;   // Docker: HA sieht die IP des Hosts
   const yaml = `homeassistant:
@@ -708,22 +737,22 @@ async function verbindung(inhalt) {
       allow_bypass_login: true
     - type: homeassistant`;
   const B = E.benachrichtigung;
-  inhalt.innerHTML = `<div class="karte">
+  inhalt.innerHTML = `<div class="karte" data-teil="ha">
       <div class="zeile"><label>${esc(T.haUrl)}</label><input type="url" id="url" value="${esc(E.ha.url)}"></div>
       <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button><button class="knopf" id="test">${esc(T.testen)}</button></div>
       <p id="testErg"></p></div>
-    <div class="karte"><h2>${esc(T.standort)}</h2>
+    <div class="karte" data-teil="allgemein"><h2>${esc(T.standort)}</h2>
       <div class="zeile"><input type="text" id="ortText" placeholder="${esc(T.ortSuche)}" value="${esc(E.standort.name || "")}">
         <button class="knopf" id="ortSuchen">${esc(T.suchen)}</button></div>
       <div id="orte"></div>
       <div class="zeile"><input type="number" step="0.0001" id="breite" value="${E.standort.breite}" aria-label="${esc(T.breite)}">
         <input type="number" step="0.0001" id="laenge" value="${E.standort.laenge}" aria-label="${esc(T.laenge)}">
         <button class="knopf" id="ausHA">${esc(T.standortAusHA)}</button><button class="knopf haupt" id="okOrt">${esc(T.speichern)}</button></div></div>
-    <div class="karte"><h2>${esc(T.zeitTitel)}</h2><p class="leise">${esc(T.zeitText)}</p>
+    <div class="karte" data-teil="allgemein"><h2>${esc(T.zeitTitel)}</h2><p class="leise">${esc(T.zeitText)}</p>
       <div class="zeile"><label>${esc(T.ntpServer)}</label><input type="text" id="ntp" value="${esc(E.zeit.ntp)}" placeholder="${esc(T.ntpAuto)}"></div>
       <div class="zeile"><label>${esc(T.zeitzone)}</label><select id="zone" class="breit"><option value="">${esc(T.systemZone)}</option></select></div>
       <div class="zeile"><button class="knopf haupt" id="okZeit">${esc(T.speichern)}</button><span class="leise" id="zeitStand"></span></div></div>
-    <div class="karte"><h2>${esc(T.bnTitel)}</h2><p class="leise">${esc(T.bnText)}</p>
+    <div class="karte" data-teil="benachrichtigung"><h2>${esc(T.bnTitel)}</h2><p class="leise">${esc(T.bnText)}</p>
       <h3>${esc(T.bnTelegram)}</h3>
       <div class="zeile"><label><input type="checkbox" id="bnTgAktiv" ${B.telegram.aktiv ? "checked" : ""}> ${esc(T.bnAktiv)}</label></div>
       <div class="zeile"><label>${esc(T.bnBotToken)}</label><input type="password" id="bnTgToken" value="${esc(B.telegram.token)}" autocomplete="off"></div>
@@ -747,13 +776,13 @@ async function verbindung(inhalt) {
       <h3>${esc(T.bnEreignisse)}</h3>
       ${Object.keys(T.bnEr).map((k) => `<div class="zeile"><label><input type="checkbox" data-er="${k}" ${B.ereignisse[k] ? "checked" : ""}> ${esc(T.bnEr[k])}</label></div>`).join("")}
       <div class="zeile"><button class="knopf haupt" id="bnOk">${esc(T.speichern)}</button></div><div id="bnLetzte" class="leise"></div></div>
-    <div class="karte"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
+    <div class="karte" data-teil="benachrichtigung"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
       <div class="zeile"><label><input type="checkbox" id="whAktiv" ${E.webhook.aktiv ? "checked" : ""}> ${esc(T.whAktiv)}</label>
         <span class="leise" id="whStand">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
       <div class="zeile"><button class="knopf" id="whNeu">${esc(T.whNeu)}</button></div><div id="whErg"></div></div>
-    <div class="karte"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
+    <div class="karte" data-teil="ha"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
       <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>
-    ${CONTAINER ? `<div class="karte"><h2>${esc(T.verwaltungTitel)}</h2>
+    ${CONTAINER ? `<div class="karte" data-teil="zugang"><h2>${esc(T.verwaltungTitel)}</h2>
       <div class="zeile"><label>${esc(T.pwAlt)}</label><input type="password" id="pwAlt" autocomplete="current-password"></div>
       <div class="zeile"><label>${esc(T.pwNeu)}</label><input type="password" id="pwNeu" autocomplete="new-password" minlength="8"></div>
       <div class="zeile"><button class="knopf haupt" id="pwOk">${esc(T.pwAendern)}</button>
@@ -839,6 +868,13 @@ async function verbindung(inhalt) {
   }, null);
   $("#ortSuchen").onclick = ortSuchen;
   $("#ortText").onkeydown = (e) => { if (e.key === "Enter") ortSuchen({ target: $("#ortSuchen") }); };
+  // Eine Seite je Teil: die übrigen Karten bleiben unsichtbar im DOM (ihre Knöpfe sind schon verbunden)
+  for (const k of inhalt.querySelectorAll("[data-teil]")) k.hidden = k.dataset.teil !== teil;
+}
+async function allgemeinSeite(inhalt) {
+  inhalt.innerHTML = `<div id="tAnz"></div><div id="tVerb"></div>`;
+  await anzeige($("#tAnz"));
+  await verbindung($("#tVerb"), "allgemein");
 }
 
 // ---------- Fernseher ----------
@@ -1285,7 +1321,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   hinweiseZeichnen();
-  let start = "uebersicht";
-  try { start = localStorage.getItem("signagecast-reiter") || start; } catch (_) { /* egal */ }
-  zeigeSeite(SEITEN[start] ? start : "uebersicht");
+  let start = location.hash.slice(1);
+  try { start = start || localStorage.getItem("signagecast-reiter") || "uebersicht"; } catch (_) { /* egal */ }
+  zeigeSeite(start);
+  window.addEventListener("hashchange", () => { if (location.hash.slice(1) !== aktiv) zeigeSeite(location.hash.slice(1)); });
 });
