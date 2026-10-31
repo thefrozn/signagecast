@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.17.2 (2026-10-31)
+- **Layouts overview:** Content → Layouts now starts with tiles of all layouts – mini preview, name and on which TV
+  each one is shown; Edit, and Copy / Export / Delete in the “⋯” menu (actions there are saved immediately).
+- **“New layout”** asks for a name and the starting point (empty, a template or a copy of an existing layout) and then
+  opens the new layout – an existing layout is never overwritten. Import is on the same tile.
+- **Editor header:** “← All layouts”, the name editable directly, a hint when the layout is shown on a TV (changes are
+  visible right after saving), Undo and Save; background and colours in their own section. Leaving with unsaved
+  changes asks first.
+
 ## v0.17.1 (2026-10-31)
 - **Layout editor:** the selected element no longer jumps above everything – before, a selected large live video
   covered smaller elements on top of it, and they could not be clicked any more. Only the selection frame (with resize

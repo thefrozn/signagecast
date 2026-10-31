@@ -124,7 +124,7 @@ details.mehr > summary::-webkit-details-marker { display: none; }
 .layoutkachel.neu { justify-content: center; align-items: stretch; border-style: dashed; min-height: 200px; }
 .neu-knopf { flex: 1; border: 0; background: none; font: inherit; font-weight: 600; color: var(--akzent); cursor: pointer; display: flex;
   flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
-.neu-knopf span { font-size: 2.2em; line-height: 1; }
+.neu-knopf .mdi { font-size: 2.4em; line-height: 1; }
 .importlink { text-align: center; cursor: pointer; text-decoration: underline; }
 .layoutkopf .layoutname { font-size: 1.15em; font-weight: 600; min-width: 0; flex: 1 1 220px; }
 .layoutkopf .leer { flex: 0 1 0; }

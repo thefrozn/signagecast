@@ -261,10 +261,15 @@ async function layoutSeite(inhalt) {
   // ---------- Übersicht aller Layouts (seit 0.17.2) – Aktionen hier speichern sofort ----------
   const sofortSpeichern = async () => { await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; };
   const oeffnen = (i) => { LI = i; GEWAEHLT = null; ANSICHT = "editor"; zeichnen(); window.scrollTo(0, 0); };
-  const miniVorschau = (l) => {
-    const hg = l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
-    return `<div class="mini" style="background:${esc(hg)}">${l.elemente.filter((x) => x.sichtbar).map((x) =>
-      `<span class="mini-el ${x.typ === "video" ? "video" : x.karte || x.typ === "flaeche" ? "karte" : ""}" style="left:${x.x / 48 * 100}%;top:${x.y / 27 * 100}%;width:${x.w / 48 * 100}%;height:${x.h / 27 * 100}%"></span>`).join("")}</div>`;
+  // Mini-Vorschau: Stile per JavaScript setzen – Cockpits CSP verbietet style-Attribute im HTML-Text
+  const miniVorschau = (ziel, l) => {
+    ziel.style.background = l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
+    for (const x of l.elemente.filter((y) => y.sichtbar)) {
+      const sp = document.createElement("span");
+      sp.className = "mini-el " + (x.typ === "video" ? "video" : x.karte || x.typ === "flaeche" ? "karte" : "");
+      Object.assign(sp.style, { left: x.x / 48 * 100 + "%", top: x.y / 27 * 100 + "%", width: x.w / 48 * 100 + "%", height: x.h / 27 * 100 + "%" });
+      ziel.appendChild(sp);
+    }
   };
   const bildNamen = (l) => [...new Set([l.hintergrund.bild, ...Object.values(l.hintergrund.bilder_tageszeit || {}),
     ...l.elemente.map((x) => x.optionen && x.optionen.bild)].filter((n) => /^[0-9a-f]{16}\.(jpg|png)$/.test(n || "")))];
@@ -298,7 +303,7 @@ async function layoutSeite(inhalt) {
   const listeAlle = () => {
     inhalt.innerHTML = `<div class="layoutkacheln">${LS.map((l, i) => {
       const n = nutzer(l.id);
-      return `<div class="karte layoutkachel" data-i="${i}">${miniVorschau(l)}
+      return `<div class="karte layoutkachel" data-i="${i}"><div class="mini"></div>
         <b class="lk-name">${esc(l.name)}</b>
         <span class="${n.length ? "laeuft" : "leise"}">${n.length ? "● " + esc(L.laeuftAuf(n.join(", "))) : esc(L.nichtVerwendet)}</span>
         <div class="zeile"><button class="knopf haupt" data-a="b">${esc(L.bearbeitenL)}</button>
@@ -306,10 +311,11 @@ async function layoutSeite(inhalt) {
             <button class="knopf" data-a="k">${esc(L.duplizieren)}</button><button class="knopf" data-a="x">${esc(L.exportieren)}</button>
             <button class="knopf gefahr" data-a="l">${esc(L.loeschen)}</button></div></details></div></div>`;
     }).join("")}
-      <div class="karte layoutkachel neu" id="lNeuKachel"><button class="neu-knopf" id="lNeu"><span>＋</span>${esc(L.neu)}</button>
+      <div class="karte layoutkachel neu" id="lNeuKachel"><button class="neu-knopf" id="lNeu"><i class="mdi mdi-plus-circle-outline"></i>${esc(L.neu)}</button>
         <label class="leise importlink">${esc(L.importieren)} …<input type="file" id="lImport" accept=".json" hidden></label></div></div>`;
     inhalt.querySelectorAll(".layoutkachel[data-i]").forEach((k) => {
       const i = Number(k.dataset.i), l = LS[i];
+      miniVorschau(k.querySelector(".mini"), l);
       k.querySelector(".mini").onclick = () => oeffnen(i);
       k.querySelectorAll("[data-a]").forEach((b) => { b.onclick = (ev) => {
         const a = b.dataset.a;
