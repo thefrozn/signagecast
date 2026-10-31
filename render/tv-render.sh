@@ -10,7 +10,7 @@ set -u
 TV=${MTX_PATH:-tv}
 case "$TV" in *[!a-z0-9]*|"") echo "ungültige Kennung"; exit 1;; esac
 DATEN=/var/lib/signagecast
-DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265
+DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265; TON=live
 [ -r "$DATEN/render-$TV.env" ] && . "$DATEN/render-$TV.env"
 OW=${AUSGABE% *}; OH=${AUSGABE#* }
 W=1920; H=1080                                   # Chromium zeichnet in Full HD (in 4K wäre er überlastet)
@@ -75,6 +75,9 @@ else
   if [ "$CODEC" = h264 ]; then ENC="h264_vaapi -profile:v high"; else ENC="hevc_vaapi -profile:v main"; fi
   VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v $ENC"
 fi
+# Ton: nur wenn auf diesem Fernseher Ton laufen kann (TON=live) aus PulseAudio – ein Echtzeit-Toneingang lässt ffmpeg
+# bei x11grab viele Bilder doppeln (Ruckeln); ohne Ton daher eine stille Spur (HLS-Player erwarten eine Tonspur).
+if [ "$TON" = stille ]; then TONEINGANG="-f lavfi -i anullsrc=r=48000:cl=stereo"; else TONEINGANG="-f pulse -i $SINK.monitor"; fi
 # Fortschritt von ffmpeg (Bildrate, Tempo, doppelte/verworfene Bilder) für den Leistungstest: alle 2 s ein Block über
 # eine benannte Pipe; nur der letzte Block bleibt im Arbeitsspeicher (/dev/shm) – nichts wächst, nichts auf die Platte.
 FORTSCHRITT=/dev/shm/signagecast-ff-$TV; FIFO=$FORTSCHRITT.fifo
@@ -83,7 +86,7 @@ rm -f "$FIFO"; mkfifo -m 600 "$FIFO"
 "; case $z in progress=*) printf '%s' "$blk" > "$FORTSCHRITT.neu" && mv -f "$FORTSCHRITT.neu" "$FORTSCHRITT"; blk="";; esac
   done ) < "$FIFO" & LESER=$!
 setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
-  -video_size ${W}x${H} -i $DISP -thread_queue_size 512 -f pulse -i "$SINK.monitor" \
+  -video_size ${W}x${H} -i $DISP -thread_queue_size 512 $TONEINGANG \
   $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
   -c:a aac -b:a 128k -ac 2 \
   -f rtsp -rtsp_transport tcp "rtsp://127.0.0.1:${RTSP_PORT:-8554}/$TV" & FF=$!

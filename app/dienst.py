@@ -961,6 +961,18 @@ def schreib_wenn_anders(pfad, inhalt):
         f.write(inhalt)
 
 
+def braucht_ton(t, e):
+    """Kann auf diesem Fernseher überhaupt Ton laufen? (Fernseher-Ton, Einspieler mit Ton, Kamera mit Ton)
+    Wenn nicht, nimmt die Kette Stille statt Echtzeit-Ton auf – ein Echtzeit-Toneingang lässt ffmpeg 7.1 bei x11grab
+    bis zu 85 % der Bilder doppeln (gemessen 2026-10-31), der Stream ruckelt."""
+    if t["ton"] != "aus":
+        return True
+    if any(x["aktiv"] and x["ton"] and (not x.get("fernseher") or t["id"] in x["fernseher"]) for x in e.get("einspieler", [])):
+        return True
+    ids = {t["layout"]} | {z.get("layout") for z in t.get("zeitplan", [])} | set((t.get("karussell") or {}).get("layouts", []))
+    return any(el["typ"] == "webcam" and el["optionen"].get("ton") for l in e["layouts"] if l["id"] in ids for el in l["elemente"])
+
+
 def codec_fuer(t):
     """Tatsächlicher Codec eines Fernsehers: ohne Grafik immer H.264; „auto“ = H.265 bei 4K, H.264 bei Full HD."""
     software = (zustand.get("kodierung") or {}).get("art") == "software"
@@ -1028,7 +1040,7 @@ def leistung_test(dauer=10):
            "fernseher": []}
     for t in e["fernseher"]:
         z = {"id": t["id"], "name": t["name"], "laeuft": t in laufend, "aufloesung": t["aufloesung"],
-             "bitrate_mbit": t["bitrate_mbit"], "codec": codec_fuer(t)}
+             "bitrate_mbit": t["bitrate_mbit"], "codec": codec_fuer(t), "ton": braucht_ton(t, e)}
         if z["laeuft"]:
             br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 60]
             if br:
@@ -1063,7 +1075,10 @@ def empfehlen(erg):
         if t.get("tempo") and t["tempo"] < 0.97:
             l.append({"code": "kodierung_langsam", "stufe": "schlecht", "p": dict(p, tempo=t["tempo"])})
         if t.get("verworfen", 0) + t.get("doppelt", 0) > erg["dauer_s"] * 2:
-            l.append({"code": "bilder_verloren", "stufe": "warn", "p": dict(p, n=t.get("verworfen", 0) + t.get("doppelt", 0))})
+            n = t.get("verworfen", 0) + t.get("doppelt", 0)
+            seite_ok = (t.get("fps_seite") or 0) >= 22
+            # Seite flüssig, aber viele Kopien und Ton live: bekannte Ursache (Echtzeit-Toneingang, siehe braucht_ton)
+            l.append({"code": "ton_doppelt" if seite_ok and t["ton"] else "bilder_verloren", "stufe": "warn", "p": dict(p, n=n)})
     if s["cpu"] is not None and s["cpu"] > 85:
         l.append({"code": "cpu_hoch", "stufe": "schlecht", "p": {"cpu": s["cpu"], "kerne": s["kerne"], "ketten": len(laufend)}})
     elif s["cpu"] is not None and s["cpu"] > 70:
@@ -1090,7 +1105,8 @@ def render_schreiben(e):
         codec = codec_fuer(t)
         schreib_wenn_anders(os.path.join(DATEN, f"render-{t['id']}.env"),
                             f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n"
-                            f"KODIERUNG={'software' if software else 'vaapi'}\nCODEC={codec}\n")
+                            f"KODIERUNG={'software' if software else 'vaapi'}\nCODEC={codec}\n"
+                            f"TON={'live' if braucht_ton(t, e) else 'stille'}\n")
         pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
                   f"    runOnDemandStartTimeout: 40s\n    runOnDemandCloseAfter: {e['stream']['abschalten_s']}s\n")
     # Kameras (Datenquellen der Art „video“, RTSP/HLS): MediaMTX holt sie nur, solange jemand schaut; lesen darf sie
