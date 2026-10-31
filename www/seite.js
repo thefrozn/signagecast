@@ -165,6 +165,8 @@ function laufband(d) {
   d.style.fontSize = d.clientHeight * 0.5 + "px";
   const sp = d.querySelector("span");
   const weg = sp.offsetWidth + d.clientWidth;
+  sp.style.setProperty("--start", d.clientWidth + "px");
+  sp.style.setProperty("--ende", -sp.offsetWidth + "px");
   sp.style.animationDuration = Math.max(8, weg / 120) + "s";
 }
 

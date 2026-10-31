@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.18.1 (2026-10-31)
+- **Ticker much cheaper:** the scrolling text (text and API list as ticker) now moves a finished layer (`transform`)
+  instead of recalculating layout and text 60 times per second (`left`). Measured with a full-screen video plus ticker
+  in Full HD: the TV's render chain needs 0.76 instead of 1.21 CPU cores (−37 %), the TV page runs at 60 instead of
+  51 frames/s; on a 2-core container the total CPU load dropped from 94 % to 41 %.
+- Checked and not changed: Chromium with `--disable-gpu` (no difference).
+
 ## v0.18.0 (2026-10-31)
 - **Performance test** (System → Performance): measures for 10 s how smoothly each running TV is rendered (frames/s of
   the TV page) and encoded (frames/s, speed, duplicated/dropped frames), CPU per TV, memory and graphics unit – with
