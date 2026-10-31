@@ -40,6 +40,8 @@ STANDARD = {
     "medien": [],
     # Meldung per Webhook (seit 0.16): eigener Port (SC_WEBHOOK_PORT, Standard 8890), nur mit geheimem Schlüssel
     "webhook": {"aktiv": False, "token": ""},
+    # Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation; vorhandene Einstellungen ohne den Schlüssel gelten als eingerichtet
+    "assistent_fertig": False,
     # Benachrichtigungen (seit 0.16): Kanäle Telegram, E-Mail (SMTP), Home Assistant; Geheimnisse: Bot-Token, SMTP-Passwort
     "benachrichtigung": {
         "telegram": {"aktiv": False, "token": "", "chat_id": ""},
@@ -355,6 +357,7 @@ def pruefen(e):
             S.passwort_pruefen(ss_["passwort"])          # auch das Passwort der automatischen Sicherung muss stark sein
     if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
         raise Meldung("sich_geheim_ohne_pw")
+    if "assistent_fertig" in e: s["assistent_fertig"] = bool(e["assistent_fertig"])
     wh = e.get("webhook", {})
     if "aktiv" in wh: s["webhook"]["aktiv"] = bool(wh["aktiv"])
     if "token" in wh: s["webhook"]["token"] = _text(wh.get("token") or "", 64, r"[A-Za-z0-9_-]*")
@@ -415,7 +418,10 @@ def zusammenfuehren(alt, neu):
 def laden():
     try:
         with open(PFAD) as f:
-            return pruefen(json.load(f))
+            d = json.load(f)
+        if isinstance(d, dict):
+            d.setdefault("assistent_fertig", True)
+        return pruefen(d)
     except (FileNotFoundError, Fehler):
         return pruefen(copy.deepcopy(STANDARD))       # baut u. a. das Layout „Standard“ – sonst fehlt der TV-Seite ein Layout
 

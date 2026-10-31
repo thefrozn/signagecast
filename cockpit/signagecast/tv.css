@@ -21,6 +21,8 @@ nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px
 .karte.geaendert { border-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); position: relative; }
 .karte.geaendert::after { content: attr(data-ungespeichert); position: absolute; top: -9px; right: 12px; background: var(--akzent);
   color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 9px; }
+.karte.assistent { max-width: 640px; margin: 24px auto; padding: 22px; }
+.karte.assistent pre { font-size: 1.15em; }
 ul.todo { list-style: none; margin: 0; padding: 0; }
 ul.todo li { padding: 6px 0 6px 22px; position: relative; border-bottom: 1px solid var(--linie); }
 ul.todo li:last-child { border-bottom: 0; }

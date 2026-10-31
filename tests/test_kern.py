@@ -186,6 +186,19 @@ class EinstellungenUndLayouts(unittest.TestCase):
             with self.assertRaises(E.Fehler):
                 E.pruefen({"benachrichtigung": falsch})
 
+    def test_assistent_nur_bei_neuinstallation(self):
+        self.assertFalse(E.pruefen({})["assistent_fertig"])
+        import tempfile
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump({"sprache": "de"}, f)
+        alt, E.PFAD = E.PFAD, f.name
+        try:
+            self.assertTrue(E.laden()["assistent_fertig"])           # vorhandene Einrichtung ohne Schlüssel
+            E.PFAD = f.name + ".fehlt"
+            self.assertFalse(E.laden()["assistent_fertig"])          # Neuinstallation
+        finally:
+            E.PFAD = alt; os.remove(f.name)
+
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))

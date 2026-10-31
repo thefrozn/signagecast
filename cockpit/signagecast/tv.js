@@ -16,6 +16,10 @@ const TEXTE = {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang" },
+    as: { titel: "Willkommen bei SignageCast", schritt: (n) => `Schritt ${n} von 4`, sprache: "Sprache der Verwaltung und der Fernseher",
+          ort: "Wo steht der Fernseher? Der Ort bestimmt Wetter, Sonnenzeiten und Warnungen.", ha: "Home Assistant verbinden (optional) – für Werte aus dem Haus. Die Anleitung steht danach unter Einstellungen → Home Assistant.",
+          fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
+          weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
     todo: { update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
@@ -168,6 +172,10 @@ const TEXTE = {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access" },
+    as: { titel: "Welcome to SignageCast", schritt: (n) => `Step ${n} of 4`, sprache: "Language of the admin and the TVs",
+          ort: "Where is the TV? The place sets weather, sun times and warnings.", ha: "Connect Home Assistant (optional) – for values from your home. The guide is under Settings → Home Assistant afterwards.",
+          fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
+          weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
     todoTitel: "To do", todoOk: "All good.",
     todo: { update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
@@ -495,6 +503,68 @@ async function entitaeten() {
 }
 
 // ---------- Übersicht ----------
+// Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation (assistent_fertig = false); jeder Schritt speichert sofort
+async function assistent(inhalt, n = 1) {
+  const fertig = async () => { E = (await senden("/api/einstellungen", { assistent_fertig: true })).einstellungen; zeigeSeite("uebersicht"); };
+  const kopf = `<h2>${esc(T.as.titel)}</h2><p class="leise">${esc(T.as.schritt(n))}</p>`;
+  const fuss = (weiter = true, ueber = false) => `<div class="zeile">${n > 1 ? `<button class="knopf" id="asZur">${esc(T.as.zurueck)}</button>` : ""}
+    ${ueber ? `<button class="knopf" id="asUeber">${esc(T.as.ueberspringen)}</button>` : ""}
+    ${weiter ? `<button class="knopf haupt" id="asWeiter">${esc(T.as.weiter)}</button>` : ""}</div>
+    ${n < 4 ? `<p class="leise"><a href="#" id="asSpaeter">${esc(T.as.spaeter)}</a></p>` : ""}`;
+  const geh = (m) => assistent(inhalt, m);
+  if (n === 1) {
+    inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.sprache)}</p>
+      <div class="zeile"><select id="asSprache"><option value="de">Deutsch</option><option value="en">English</option></select></div>${fuss()}</div>`;
+    $("#asSprache").value = E.sprache || "de";
+    $("#asSprache").onchange = async () => { E = (await senden("/api/einstellungen", { sprache: $("#asSprache").value })).einstellungen;
+      T = TEXTE[E.sprache] || TEXTE.de; reiterZeichnen(); hinweiseZeichnen(); geh(1); };
+    $("#asWeiter").onclick = () => geh(2);
+  } else if (n === 2) {
+    inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.ort)}</p>
+      <div class="zeile"><input type="text" id="asOrt" data-frei placeholder="${esc(T.ortSuche)}" value="${esc(E.standort.name || "")}">
+        <button class="knopf" id="asSuchen">${esc(T.suchen)}</button></div><div id="asOrte"></div>
+      <p class="leise" id="asStand">${E.standort.name ? esc(E.standort.name) + " · " : ""}${E.standort.breite} / ${E.standort.laenge}</p>${fuss(true, true)}</div>`;
+    const suchen = (e) => aktion(e.target, async () => {
+      const r = await holen("/api/ort/suche?q=" + encodeURIComponent($("#asOrt").value));
+      if (!r.ok) throw new Error(r.fehler);
+      const ziel = $("#asOrte"); ziel.innerHTML = "";
+      for (const o of r.orte.slice(0, 6)) {
+        const z = el(`<div class="zeile eintrag"><span>${esc(o.name)}</span><button class="knopf haupt">${esc(T.uebernehmen)}</button></div>`);
+        z.querySelector("button").onclick = (ev) => aktion(ev.target, async () => {
+          E = (await senden("/api/einstellungen", { standort: { breite: o.breite, laenge: o.laenge, name: o.name.split(",")[0] } })).einstellungen;
+          geh(3);
+        }, T.ortGesetzt);
+        ziel.appendChild(z);
+      }
+    }, null);
+    $("#asSuchen").onclick = suchen;
+    $("#asOrt").onkeydown = (e) => { if (e.key === "Enter") suchen({ target: $("#asSuchen") }); };
+    $("#asWeiter").onclick = () => geh(3);
+  } else if (n === 3) {
+    inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.ha)}</p>
+      <div class="zeile"><label>${esc(T.haUrl)}</label><input type="url" id="asHa" data-frei placeholder="http://homeassistant.local:8123" value="${esc(E.ha.url)}"></div>
+      <p id="asHaErg"></p>${fuss(true, true)}</div>`;
+    $("#asWeiter").onclick = (e) => aktion(e.target, async () => {
+      const url = $("#asHa").value.trim();
+      if (!url) return geh(4);
+      E = (await senden("/api/einstellungen", { ha: { url } })).einstellungen; ENTITAETEN = null;
+      const r = await holen("/api/ha/test");
+      if (r.ok) return geh(4);
+      $("#asHaErg").innerHTML = `<span class="schlecht">${esc(T.haFehler[r.code] ? T.haFehler[r.code] : r.fehler)}</span> – ${esc(T.as.ueberspringen)}?`;
+    }, null);
+  } else {
+    const st = await holen("/api/ha/einrichtung");
+    const t = E.fernseher[0];
+    const adr = `http://${st.eigene_ip || location.hostname}:${st.stream_port || 8888}/${t.id}`;
+    inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.fertig)}</p><pre>${esc(adr)}</pre>
+      <p class="leise">${esc(T.as.fertigText)}</p>${fuss(false)}<div class="zeile"><button class="knopf haupt" id="asLos">${esc(T.as.los)}</button></div></div>`;
+    $("#asLos").onclick = (e) => aktion(e.target, fertig, null);
+  }
+  if ($("#asZur")) $("#asZur").onclick = () => geh(n - 1);
+  if ($("#asUeber")) $("#asUeber").onclick = () => geh(n + 1);
+  if ($("#asSpaeter")) $("#asSpaeter").onclick = (e) => { e.preventDefault(); aktion(null, fertig, null); };
+}
+
 // „Zu erledigen“ (seit 0.17): wichtig (warn) zuerst, Tipps danach; jeder Eintrag führt zur passenden Seite
 async function todoZeichnen(s) {
   const l = [];
@@ -1388,6 +1458,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#inhalt").addEventListener("change", aenderungMerken);
   let start = location.hash.slice(1);
   try { start = start || localStorage.getItem("signagecast-reiter") || "uebersicht"; } catch (_) { /* egal */ }
-  zeigeSeite(start);
+  if (E.assistent_fertig === false) { reiterZeichnen(); assistent($("#inhalt")); } else zeigeSeite(start);
   window.addEventListener("hashchange", () => { if (location.hash.slice(1) !== aktiv) zeigeSeite(location.hash.slice(1)); });
 });
