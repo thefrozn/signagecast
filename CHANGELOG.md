@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.19.1 (2026-10-31)
+- Announcements: spoken audio files are now removed every minute after an announcement has ended and when the service
+  starts – before, only when the panel or the admin asked for data.
+
 ## v0.19.0 (2026-10-31)
 - **Announcement panel** `http://<IP>:8890/pult` – e.g. for the reception: send short messages to chosen TVs, shown as
   a large call window in the middle of the screen, optionally **read aloud** with a chime first (radio and animal sound
