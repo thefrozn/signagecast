@@ -22,7 +22,7 @@ const TEXTE = {
           gong: "Gong vor der Durchsage", dauer: "Standard-Anzeigedauer (s)", zugaenge: "Zugänge", zugangText: "Jeder Zugang hat ein eigenes Passwort und darf nur die angehakten Fernseher erreichen (keiner angehakt = alle).",
           name: "Name", pwNeu: "neues Passwort", pwGesetzt: "Passwort gesetzt", pwFehlt: "noch kein Passwort", zugangNeu: "Zugang hinzufügen",
           entfernen: "Entfernen", vorlagen: "Vorlagen", vorlagenText: "Eine Vorlage je Zeile; „…“ markiert die Lücke für den Namen.",
-          probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen)." },
+          art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen)." },
     lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Fernseher läuft.",
           start: "Test starten (10 s)", laeuftTest: "Test läuft …", system: "System", cpu: "CPU", kerne: "Kerne", ram: "Speicher frei", gpu: "Grafikeinheit",
           seite: "Bilder/s TV-Seite", kodierung: "Bilder/s Kodierung", tempo: "Tempo", verloren: "verworfen/doppelt", cpuKette: "CPU (Kerne)", aus: "läuft nicht",
@@ -207,7 +207,7 @@ const TEXTE = {
           gong: "Chime before the announcement", dauer: "Default display time (s)", zugaenge: "Accounts", zugangText: "Each account has its own password and may only reach the ticked TVs (none ticked = all).",
           name: "Name", pwNeu: "new password", pwGesetzt: "password set", pwFehlt: "no password yet", zugangNeu: "Add account",
           entfernen: "Remove", vorlagen: "Templates", vorlagenText: "One template per line; “…” marks the gap for the name.",
-          probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud)." },
+          art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud)." },
     lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering TV is running.",
           start: "Start test (10 s)", laeuftTest: "Test running …", system: "System", cpu: "CPU", kerne: "cores", ram: "Memory free", gpu: "Graphics unit",
           seite: "Frames/s TV page", kodierung: "Frames/s encoding", tempo: "Speed", verloren: "dropped/duplicated", cpuKette: "CPU (cores)", aus: "not running",
@@ -637,7 +637,7 @@ async function pultSeite(inhalt) {
         <p class="leise">${esc(T.pu.tonHinweis)}</p></div>
       <div class="karte"><h2>${esc(T.pu.stimme)}</h2><p class="leise">${esc(T.pu.stimmeText)}</p>
         ${Object.entries(info.stimmen).map(([k, v]) => `<div class="zeile"><label><input type="radio" name="stimme" value="${k}" ${P.stimme === k ? "checked" : ""}>
-          ${esc(v.name)} (${esc(v.art)})</label><span class="${v.bereit ? "gut" : "leise"}">${esc(v.bereit ? T.pu.geladen : T.pu.nichtGeladen)}</span>
+          ${esc(v.name)} (${esc(T.pu.art[v.art] || v.art)})</label><span class="${v.bereit ? "gut" : "leise"}">${esc(v.bereit ? T.pu.geladen : T.pu.nichtGeladen)}</span>
           ${v.bereit ? "" : `<button class="knopf" data-laden="${k}" ${info.laden.laeuft ? "disabled" : ""}>${esc(info.laden.laeuft ? T.pu.laedtGerade : T.pu.laden)}</button>`}</div>`).join("")}
         ${info.laden.fehler ? `<p class="schlecht">${esc(info.laden.fehler)}</p>` : ""}
         <div class="zeile"><label><input type="checkbox" id="puVorlesen" ${P.vorlesen ? "checked" : ""}> ${esc(T.pu.vorlesen)}</label></div>

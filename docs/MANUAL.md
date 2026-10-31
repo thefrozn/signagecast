@@ -84,6 +84,13 @@ rest_command:
 with `signagecast_webhook: "Bearer <key>"` in `secrets.yaml`, and in an automation:
 `action: rest_command.signagecast_meldung` with `data: {text: "Doorbell", stil: warnung}`.
 
+### Announcements from the reception
+Settings → Announcements: download a voice (Kerstin or Thorsten, once), add an account with a password and tick the
+TVs it may reach. At the reception open `http://<IP>:8890/pult`, log in, choose TVs, click a template (the first “…”
+is selected – type the name), tick “read aloud” and send. The call appears in the middle of the screen and is read
+after a chime; because of the stream it takes about 6–10 seconds. Names are not stored (memory only, 2 hours).
+TVs reachable by a panel account record real sound so that announcements can be heard.
+
 ### Get notified when something breaks
 Settings → Notifications. Channels (any combination):
 

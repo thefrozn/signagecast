@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.19.0 (2026-10-31)
+- **Announcement panel** `http://<IP>:8890/pult` – e.g. for the reception: send short messages to chosen TVs, shown as
+  a large call window in the middle of the screen, optionally **read aloud** with a chime first (radio and animal sound
+  get quieter meanwhile). Templates with gaps (“Mrs …, please go to room …”), display time, end early, recent list.
+  The panel cannot change any setting.
+- **Accounts** in Settings → Announcements: each with its own password (stored only as PBKDF2 hash) and the TVs it may
+  reach. Login cookie (HttpOnly, SameSite=Strict), wrong passwords delayed, rate limit.
+- **Speech offline with Piper**, voices selectable: Kerstin (female, default) and Thorsten (male), both CC0. Program
+  and voice are downloaded once on demand (approx. 90 MB) and only used with a matching checksum.
+- **Privacy:** announcement texts (names) are kept only in memory – at most 10, for 2 hours – and never written to
+  logs or backups; spoken audio files are deleted when the announcement ends.
+- The TV page fetches announcements every 2 s, so they appear after the usual stream delay (about 6–10 s).
+
 ## v0.18.1 (2026-10-31)
 - **Ticker much cheaper:** the scrolling text (text and API list as ticker) now moves a finished layer (`transform`)
   instead of recalculating layout and text 60 times per second (`left`). Measured with a full-screen video plus ticker

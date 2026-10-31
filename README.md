@@ -40,6 +40,8 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 - **Messages and notifications** – official severe weather warnings of the DWD (Germany) as a layout element; short
   messages from other systems (e.g. Home Assistant) as a banner on the TVs via a webhook with a secret key; notifications
   via Telegram, e-mail or Home Assistant when a TV fails, an update or backup fails or Home Assistant is disconnected.
+- **Announcement panel** – a separate page for the reception: send a call like “Mrs Baker, please go to room 2” to
+  chosen TVs, read aloud offline (Piper, female or male voice), without access to any settings.
 - **Energy saving** – rendering runs only while someone watches; schedules can switch a TV to night mode or black.
 - **Clear admin** – six areas with a to-do list on the overview, setup assistant on a new installation, marked unsaved
   changes, own address per page, one menu on the phone.
