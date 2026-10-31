@@ -25,7 +25,8 @@ const LTEXTE = {
     gewichtArt: { "": "automatisch", duenn: "dünn", normal: "normal", fett: "fett" }, schriftPos: "Position der Schrift",
     bedingung: "Nur zeigen, wenn …", bedingungEntity: "Entität (leer = immer zeigen)", vorne: "nach vorne", hinten: "nach hinten",
     entfernen: "Entfernen", groesser: "größer", kleiner: "kleiner", einstellen: "Einstellen",
-    hinweisZiehen: "Ziehen = verschieben, Ecke unten rechts = Größe. Pfeiltasten verschieben den gewählten Baustein.",
+    hinweisZiehen: "Ziehen = verschieben, Ecke unten rechts = Größe. Pfeiltasten verschieben den gewählten Baustein. Mehrmals auf dieselbe Stelle klicken wählt übereinanderliegende Bausteine nacheinander, Tab den nächsten.",
+    ebenen: "Ebenen", ebenenText: "Oben = vorne (wie am Fernseher). Klick wählt aus.", nachVorne: "Nach vorne", nachHinten: "Nach hinten", einAus: "Ein-/ausblenden", verschieben: "Verschieben",
     hinweisHandy: "Auf dem Handy: Bausteine ein-/ausschalten und Größe ändern. Zum Verschieben PC oder Tablet nehmen.",
     gespeichert: "Gespeichert – die Fernseher übernehmen es in bis zu 15 s", wirklichLoeschen: "Layout löschen?",
     benutzt: "wird benutzt von", nichtLoeschbar: "Das Layout wird noch von einem Fernseher benutzt (auch im Zeitplan).",
@@ -86,7 +87,8 @@ const LTEXTE = {
     gewichtArt: { "": "automatic", duenn: "thin", normal: "normal", fett: "bold" }, schriftPos: "Text position",
     bedingung: "Only show when …", bedingungEntity: "Entity (empty = always show)", vorne: "to front", hinten: "to back",
     entfernen: "Remove", groesser: "bigger", kleiner: "smaller", einstellen: "Configure",
-    hinweisZiehen: "Drag = move, bottom-right corner = resize. Arrow keys move the selected element.",
+    hinweisZiehen: "Drag = move, bottom-right corner = resize. Arrow keys move the selected element. Click the same spot repeatedly to cycle through stacked elements, Tab selects the next one.",
+    ebenen: "Layers", ebenenText: "Top = front (as on the TV). Click to select.", nachVorne: "Bring forward", nachHinten: "Send backward", einAus: "Show/hide", verschieben: "Move",
     hinweisHandy: "On a phone: switch elements on/off and change their size. Use a PC or tablet to move them.",
     gespeichert: "Saved – the TVs pick it up within 15 s", wirklichLoeschen: "Delete layout?",
     benutzt: "used by", nichtLoeschbar: "This layout is still used by a TV (also in a schedule).",
@@ -141,6 +143,7 @@ const ENT_DOMAINS = { temperatur: ["weather", "sensor"], wetterlage: ["weather"]
 let LS = null;            // Arbeitskopie aller Layouts
 let LI = 0;               // gewähltes Layout
 let GEWAEHLT = null;      // gewählter Baustein (id)
+let letzterKlick = null;  // Stelle des letzten Klicks auf die Leinwand (Durchschalten übereinanderliegender Bausteine)
 let VERLAUF = [];         // Rückgängig
 let GEAENDERT = false;
 let VORSCHAU = null;      // Werte für die Vorschau
@@ -198,7 +201,7 @@ async function layoutSeite(inhalt) {
           <button class="knopf" id="bNeu">${esc(L.bausteinNeu)}</button></div>
         <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}</p>
       </div>
-      <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="karte" id="eigenschaften"></div></div>`;
+      <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="lw-seite">${handy() ? "" : `<div class="karte" id="ebenen"></div>`}<div class="karte" id="eigenschaften"></div></div></div>`;
     if (handy()) listeZeichnen(); else leinwandZeichnen();
     eigenschaftenZeichnen();
     // Kopf
@@ -305,18 +308,42 @@ async function layoutSeite(inhalt) {
                     (l.thema.schema === "hell" ? " hell" : "") + " lwtyp-" + e.typ;
       b.style.zIndex = idx + 1;
       if (e.typ === "flaeche") b.style.background = e.optionen.farbe || "#f0f0f0";
-      b.innerHTML = `<span class="lw-text">${esc(vorschauText(e, L))}</span><span class="lw-griff"></span>`;
+      b.dataset.id = e.id;
+      b.innerHTML = `<span class="lw-text">${esc(vorschauText(e, L))}</span>`;
       const [v, h] = (e.ausrichtung || "links").includes("-") ? e.ausrichtung.split("-") : ["mitte", e.ausrichtung || "links"];
       const ach = { links: "flex-start", oben: "flex-start", mitte: "center", rechts: "flex-end", unten: "flex-end" };
       Object.assign(b.style, { justifyContent: ach[v], alignItems: ach[h], textAlign: { links: "left", mitte: "center", rechts: "right" }[h],
                                fontFamily: e.schrift ? `'${e.schrift}', sans-serif` : "", fontWeight: { duenn: 200, normal: 400, fett: 700 }[e.gewicht] || "" });
       setzen(b, e);
-      b.onpointerdown = (ev) => ziehen(ev, e, b, ev.target.classList.contains("lw-griff"));
+      b.onpointerdown = (ev) => klicken(ev, b);
       lw.appendChild(b);
     });
+    // Auswahlrahmen über allem (seit 0.17.1): der gewählte Baustein bleibt auf seiner Ebene, Rahmen, Griff und
+    // Verschiebe-Knopf liegen obenauf – so bleiben kleinere Bausteine davor anklickbar.
+    const gew = l.elemente.find((x) => x.id === GEWAEHLT);
+    if (gew) {
+      const rahmen = document.createElement("div");
+      rahmen.className = "lw-auswahl"; rahmen.id = "lwAuswahl";
+      rahmen.innerHTML = `<span class="lw-schieber" title="${esc(L.verschieben)}">✥</span><span class="lw-griff"></span>`;
+      setzen(rahmen, gew);
+      const b = lw.querySelector(`[data-id="${gew.id}"]`);
+      rahmen.querySelector(".lw-griff").onpointerdown = (ev) => ziehen(ev, gew, b, true);
+      rahmen.querySelector(".lw-schieber").onpointerdown = (ev) => ziehen(ev, gew, b, false);
+      lw.appendChild(rahmen);
+    }
+    ebenenZeichnen();
     lw.onkeydown = (ev) => {
       const e = lay().elemente.find((x) => x.id === GEWAEHLT);
       const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+      if (ev.key === "Tab") {                       // Tab / Umschalt+Tab: nächster / voriger Baustein
+        const els = lay().elemente;
+        if (!els.length) return;
+        ev.preventDefault();
+        const i = els.findIndex((x) => x.id === GEWAEHLT);
+        GEWAEHLT = els[(i + (ev.shiftKey ? -1 : 1) + els.length) % els.length].id;
+        leinwandZeichnen(); eigenschaftenZeichnen(); $("#leinwand").focus();
+        return;
+      }
       if (!e || !d) return;
       ev.preventDefault(); merken();
       if (ev.shiftKey) { e.w = klemm(e.w + d[0], 1, 48 - e.x); e.h = klemm(e.h + d[1], 1, 27 - e.y); }
@@ -327,21 +354,60 @@ async function layoutSeite(inhalt) {
       const m = 100 / 48, n = 100 / 27;
       Object.assign(b.style, { left: e.x * m + "%", top: e.y * n + "%", width: e.w * m + "%", height: e.h * n + "%" });
     }
+    // Klick auf die Leinwand: oberster Baustein an der Stelle; erneuter Klick auf dieselbe Stelle wählt den darunter
+    function klicken(ev, b) {
+      const stapel = document.elementsFromPoint(ev.clientX, ev.clientY).filter((x) => x.classList.contains("lw-baustein"));
+      const nah = letzterKlick && Math.abs(letzterKlick[0] - ev.clientX) < 5 && Math.abs(letzterKlick[1] - ev.clientY) < 5;
+      const vorher = stapel.findIndex((x) => x.dataset.id === GEWAEHLT);
+      const ziel = nah && vorher >= 0 && stapel.length > 1 ? stapel[(vorher + 1) % stapel.length] : stapel[0] || b;
+      letzterKlick = [ev.clientX, ev.clientY];
+      ziehen(ev, lay().elemente.find((x) => x.id === ziel.dataset.id), ziel, false);
+    }
     function ziehen(ev, e, b, groesse) {
       ev.preventDefault();
-      if (GEWAEHLT !== e.id) { GEWAEHLT = e.id; lw.querySelectorAll(".gewaehlt").forEach((x) => x.classList.remove("gewaehlt")); b.classList.add("gewaehlt"); eigenschaftenZeichnen(); }
+      if (GEWAEHLT !== e.id) { GEWAEHLT = e.id; leinwandZeichnen(); eigenschaftenZeichnen(); b = $("#leinwand").querySelector(`[data-id="${e.id}"]`); }
+      const rahmen = $("#lwAuswahl");
       const feld = 40 * massstab(), sx = ev.clientX, sy = ev.clientY, start = { ...e };
       let bewegt = false;
-      b.setPointerCapture(ev.pointerId);
-      b.onpointermove = (mv) => {
+      const fang = ev.target.isConnected ? ev.target : rahmen;
+      fang.setPointerCapture(ev.pointerId);
+      fang.onpointermove = (mv) => {
         const dx = Math.round((mv.clientX - sx) / feld), dy = Math.round((mv.clientY - sy) / feld);
         if (!bewegt && (dx || dy)) { merken(); bewegt = true; }
         if (groesse) { e.w = klemm(start.w + dx, 1, 48 - e.x); e.h = klemm(start.h + dy, 1, 27 - e.y); }
         else { e.x = klemm(start.x + dx, 0, 48 - e.w); e.y = klemm(start.y + dy, 0, 27 - e.h); }
-        setzen(b, e);
+        setzen(b, e); if (rahmen) setzen(rahmen, e);
       };
-      b.onpointerup = () => { b.onpointermove = null; b.onpointerup = null; if (bewegt) { $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen(); } lw.focus(); };
+      fang.onpointerup = () => { fang.onpointermove = null; fang.onpointerup = null; if (bewegt) { $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen(); } $("#leinwand").focus(); };
     }
+  };
+
+  // ---------- Ebenen (seit 0.17.1): oben = vorne; Reihenfolge der Elemente = Reihenfolge am Fernseher ----------
+  const ebenenZeichnen = () => {
+    const ziel = $("#ebenen");
+    if (!ziel) return;
+    const els = lay().elemente;
+    ziel.innerHTML = `<h3>${esc(L.ebenen)}</h3><p class="leise">${esc(L.ebenenText)}</p><div class="ebenen"></div>`;
+    const liste = ziel.querySelector(".ebenen");
+    [...els].reverse().forEach((e) => {
+      const i = els.indexOf(e);
+      const z = el(`<div class="ebene ${e.id === GEWAEHLT ? "gewaehlt" : ""} ${e.sichtbar ? "" : "aus"}">
+        <span class="ebene-name"><b>${esc(L.typ[e.typ] || e.typ)}</b> <span class="leise">${esc(vorschauText(e, L)).slice(0, 28)}</span></span>
+        <button class="knopf klein" data-a="s" title="${esc(L.einAus)}"><i class="mdi ${e.sichtbar ? "mdi-eye" : "mdi-eye-off"}"></i></button>
+        <button class="knopf klein" data-a="v" title="${esc(L.nachVorne)}" ${i === els.length - 1 ? "disabled" : ""}><i class="mdi mdi-arrow-up"></i></button>
+        <button class="knopf klein" data-a="h" title="${esc(L.nachHinten)}" ${i === 0 ? "disabled" : ""}><i class="mdi mdi-arrow-down"></i></button></div>`);
+      z.onclick = (ev) => {
+        const a = ev.target.closest("[data-a]")?.dataset.a;
+        if (a) {
+          merken(); GEAENDERT = true; $("#lSpeichern").textContent = L.speichern + " *";
+          if (a === "s") e.sichtbar = !e.sichtbar;
+          else { const j = a === "v" ? i + 1 : i - 1; [els[i], els[j]] = [els[j], els[i]]; }
+        }
+        GEWAEHLT = e.id;
+        leinwandZeichnen(); eigenschaftenZeichnen();
+      };
+      liste.appendChild(z);
+    });
   };
 
   // ---------- Liste (Handy) ----------

@@ -104,7 +104,19 @@ details { margin: 10px 0; } summary { cursor: pointer; font-weight: 600; padding
   text-shadow: 0 1px 2px #000; background: rgba(0,0,0,.18); }
 .lw-baustein.karte { background: rgba(255,255,255,.85); color: #222; text-shadow: none; border-style: solid; border-color: #bbb; }
 .lw-baustein.aus { opacity: .35; }
-.lw-baustein.gewaehlt { border: 2px solid var(--akzent); box-shadow: 0 0 0 2px rgba(0,102,204,.35); z-index: 999 !important; }
+.lw-baustein.gewaehlt { border-color: var(--akzent); }
+.lw-auswahl { position: absolute; box-sizing: border-box; border: 2px solid var(--akzent); box-shadow: 0 0 0 2px rgba(0,102,204,.35);
+  z-index: 999; pointer-events: none; }
+.lw-auswahl .lw-griff, .lw-auswahl .lw-schieber { pointer-events: auto; }
+.lw-schieber { position: absolute; left: 0; top: 0; height: 20px; padding: 0 6px; background: var(--akzent); color: #fff;
+  font-size: 13px; line-height: 20px; border-radius: 0 0 4px 0; cursor: move; user-select: none; }
+.lw-seite { display: flex; flex-direction: column; gap: 12px; }
+.ebenen { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
+.ebene { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.ebene:hover { background: var(--linie); } .ebene.gewaehlt { background: rgba(0,102,204,.15); outline: 1px solid var(--akzent); }
+.ebene.aus .ebene-name { opacity: .45; }
+.ebene-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92em; }
+.knopf.klein { padding: 2px 6px; min-width: 0; }
 .lw-text { pointer-events: none; overflow: hidden; text-overflow: ellipsis; }
 .lw-griff { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; background: var(--akzent); cursor: nwse-resize; border-radius: 3px 0 0 0; }
 .eintrag.gewaehlt { border-color: var(--akzent); }
