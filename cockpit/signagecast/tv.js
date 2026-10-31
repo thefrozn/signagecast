@@ -16,6 +16,7 @@ const TEXTE = {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang" },
+    erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
     bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
@@ -162,6 +163,7 @@ const TEXTE = {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access" },
+    erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
     bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
@@ -368,7 +370,7 @@ function melden(text, fehler) {
 }
 async function aktion(knopf, fn, okText) {
   if (knopf) knopf.disabled = true;
-  try { const r = await fn(); if (okText !== null) melden(okText || T.gespeichert); return r; }
+  try { const r = await fn(); if (okText !== null) melden(okText || T.gespeichert); if (knopf) gespeichert(knopf); return r; }
   catch (e) { melden(e.message || String(e), true); }
   finally { if (knopf) knopf.disabled = false; }
 }
@@ -377,6 +379,26 @@ const dauer = (s) => { const t = Math.floor(s / 86400), h = Math.floor(s % 86400
 const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "–";
 
 let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
+
+// ---------- Nicht gespeicherte Änderungen (seit 0.17) ----------
+// Eine Eingabe markiert ihre Karte; ein erfolgreicher Speichern-Knopf hebt die Markierung seiner Karte auf
+// (liegt der Knopf außerhalb einer Karte: aller Karten daneben). Datei-Auswahl und reine Suchfelder zählen nicht.
+const istSpeichern = (b) => b.tagName === "BUTTON" && b.textContent.trim() === T.speichern;
+function aenderungMerken(ev) {
+  const z = ev.target;
+  if (!z.matches("input, select, textarea") || z.type === "file" || z.dataset.frei !== undefined) return;
+  const karte = z.closest(".karte");
+  if (!karte) return;
+  const mitKnopf = [...karte.querySelectorAll("button")].some(istSpeichern) ||
+                   [...karte.parentElement.querySelectorAll(":scope > .zeile button")].some(istSpeichern);
+  if (mitKnopf) { karte.classList.add("geaendert"); karte.dataset.ungespeichert = T.ungespeichert; }
+}
+function gespeichert(knopf) {
+  const karte = knopf.closest(".karte");
+  for (const k of karte ? [karte] : knopf.closest(".zeile")?.parentElement?.querySelectorAll(".karte.geaendert") || []) k.classList.remove("geaendert");
+}
+const ungespeichert = () => !!document.querySelector("#inhalt .karte.geaendert");
+window.addEventListener("beforeunload", (e) => { if (ungespeichert()) { e.preventDefault(); e.returnValue = ""; } });
 
 // ---------- Reiter ----------
 const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
@@ -415,6 +437,7 @@ const merk = {};                                                       // zuletz
 function zeigeSeite(k) {
   k = ALT[k] || k;
   if (!SEITEN[k]) k = "uebersicht";
+  if (k !== aktiv && ungespeichert() && !confirm(T.ungespeichertFrage)) { history.replaceState(null, "", "#" + aktiv); reiterZeichnen(); return; }
   aktiv = k;
   merk[bereichVon(k)[0]] = k;
   if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k);
@@ -675,10 +698,11 @@ async function video(inhalt) {
       <div class="zeile"><label>${esc(T.takt)}</label>${zahlFeld("takt", v.takt_min, 1, 30)}</div>
       <div class="zeile"><label>${esc(T.nurTag)}</label>${schalter("nurTag", v.nur_tag)}</div>
       <div class="zeile"><label>${esc(T.sonne)}</label>${zahlFeld("sonne", v.min_sonnenhoehe, -18, 30, 0.5)}</div>
+      <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
       <div class="zeile"><label>${esc(T.mindeststufe)}</label><select id="stufe">${STUFEN.map((x) => `<option ${x === v.mindeststufe ? "selected" : ""}>${x}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(T.schlecht)}</label>${zahlFeld("schlecht", v.schlecht_s, 5, 170)}</div>
       <div class="zeile"><label>${esc(T.grenze)}</label>${zahlFeld("grenze", v.strike_grenze, 1, 20)}</div>
-      <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div>
+      <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div></details>
       <h3>${esc(T.kategorien)}</h3>
       ${KATEGORIEN.map((k) => `<div class="zeile"><label>${esc(T.kat[k] || k)}</label>${schalter("kat_" + k, !v.kategorien_aus.includes(k))}</div>`).join("")}</div>
     <div class="karte"><h2>${esc(T.streamTechnik)}</h2>
@@ -762,11 +786,12 @@ async function verbindung(inhalt, teil = "ha") {
       <div class="zeile"><label><input type="checkbox" id="bnEmAktiv" ${B.email.aktiv ? "checked" : ""}> ${esc(T.bnAktiv)}</label></div>
       <div class="zeile"><label>${esc(T.bnServer)}</label><input type="text" id="bnEmServer" value="${esc(B.email.server)}">
         <input type="number" id="bnEmPort" min="1" max="65535" value="${B.email.port}" aria-label="${esc(T.bnPort)}"></div>
-      <div class="zeile"><label>${esc(T.bnSicherheit)}</label><select id="bnEmSich">${["starttls", "ssl", "keine"].map((v) =>
-        `<option value="${v}" ${B.email.sicherheit === v ? "selected" : ""}>${v === "keine" ? "–" : v.toUpperCase()}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(T.bnBenutzer)}</label><input type="text" id="bnEmBenutzer" value="${esc(B.email.benutzer)}" autocomplete="off"></div>
       <div class="zeile"><label>${esc(T.bnPasswort)}</label><input type="password" id="bnEmPw" value="${esc(B.email.passwort)}" autocomplete="new-password"></div>
-      <div class="zeile"><label>${esc(T.bnAbsender)}</label><input type="text" id="bnEmVon" value="${esc(B.email.absender)}"></div>
+      <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
+      <div class="zeile"><label>${esc(T.bnSicherheit)}</label><select id="bnEmSich">${["starttls", "ssl", "keine"].map((v) =>
+        `<option value="${v}" ${B.email.sicherheit === v ? "selected" : ""}>${v === "keine" ? "–" : v.toUpperCase()}</option>`).join("")}</select></div>
+      <div class="zeile"><label>${esc(T.bnAbsender)}</label><input type="text" id="bnEmVon" value="${esc(B.email.absender)}"></div></details>
       <div class="zeile"><label>${esc(T.bnEmpfaenger)}</label><input type="text" id="bnEmAn" value="${esc(B.email.empfaenger)}"></div>
       <div class="zeile"><button class="knopf" data-test="email">${esc(T.bnTest)}</button></div>
       <h3>${esc(T.bnHA)}</h3>
@@ -962,8 +987,9 @@ async function fernseherSeite(inhalt) {
 async function radioSeite(inhalt) {
   inhalt.innerHTML = `<div class="karte"><h2>${esc(T.meineSender)}</h2><p class="leise">${esc(T.senderNutzung)}</p><div id="meine"></div>
       <div class="zeile"><label>${esc(T.senderAnzeigen)}</label>${schalter("anzeigen", E.radio.anzeigen)}</div>
+      <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
       <div class="zeile"><label>${esc(T.puffer)}</label><input type="number" id="puffer" min="0" max="120" value="${E.radio.puffer_s}"><span class="leise">s</span>
-        <button class="knopf" id="pufferOk">${esc(T.speichern)}</button></div><p class="leise">${esc(T.pufferText)}</p></div>
+        <button class="knopf" id="pufferOk">${esc(T.speichern)}</button></div><p class="leise">${esc(T.pufferText)}</p></details></div>
     <div class="karte"><h2>${esc(T.eigenerSender)}</h2>
       <div class="zeile"><input type="url" id="sUrl" placeholder="${esc(T.senderAdresse)}"></div>
       <div class="zeile"><input type="text" id="sName" placeholder="${esc(T.senderName)}"><button class="knopf haupt" id="sOk">${esc(T.hinzu)}</button></div>
@@ -976,7 +1002,7 @@ async function radioSeite(inhalt) {
         <button class="knopf" id="vLaden">${esc(T.vorschlaegeLaden)}</button></div>
       <p class="leise" id="vInfo">${esc(T.quelle)}</p><div id="vorschlaege"></div></div>
     <div class="karte"><h2>${esc(T.senderSuche)}</h2>
-      <div class="zeile"><input type="text" id="nameSuche" placeholder="Antenne Bayern"><button class="knopf" id="nOk">${esc(T.suchen)}</button></div>
+      <div class="zeile"><input type="text" id="nameSuche" data-frei placeholder="Antenne Bayern"><button class="knopf" id="nOk">${esc(T.suchen)}</button></div>
       <div id="suchErg"></div></div>`;
   const meineZeichnen = () => {
     const m = $("#meine"); m.innerHTML = E.radio.sender.length ? "" : `<p class="leise">${esc(T.keineSender)}</p>`;
@@ -1321,6 +1347,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   hinweiseZeichnen();
+  $("#inhalt").addEventListener("input", aenderungMerken);
+  $("#inhalt").addEventListener("change", aenderungMerken);
   let start = location.hash.slice(1);
   try { start = start || localStorage.getItem("signagecast-reiter") || "uebersicht"; } catch (_) { /* egal */ }
   zeigeSeite(start);

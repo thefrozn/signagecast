@@ -18,6 +18,11 @@ nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px
 #unter button { padding: 6px 12px 8px; font-size: .92em; }
 #menue { display: none; width: 100%; margin: 4px 0 10px; padding: 8px; font: inherit; }
 [hidden] { display: none !important; }
+.karte.geaendert { border-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); position: relative; }
+.karte.geaendert::after { content: attr(data-ungespeichert); position: absolute; top: -9px; right: 12px; background: var(--akzent);
+  color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 9px; }
+details.erweitert { border-top: 1px dashed var(--linie); margin-top: 12px; }
+details.erweitert > summary { color: var(--leise); font-weight: 500; }
 @media (max-width: 640px) { #reiter, #unter { display: none; } #menue { display: block; } }
 nav button.an { color: var(--text); border-bottom-color: var(--akzent); font-weight: 600; }
 main { padding: 16px; max-width: 1200px; margin: 0 auto; }
