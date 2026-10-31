@@ -439,6 +439,10 @@ function reiterZeichnen() {
     k.onclick = () => zeigeSeite(b === bereich ? aktiv : merk[b] || seiten[0]);
     nav.appendChild(k);
   }
+  const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
+                  fernseher: "#show-something-different-at-night" }[aktiv] || "";
+  nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener"
+    href="https://github.com/thefrozn/signagecast/blob/main/docs/MANUAL.md${anker}">?</a>`));
   sub.hidden = unter.length < 2;
   for (const s of unter) {
     const k = el(`<button class="${s === aktiv ? "an" : ""}">${esc(T.reiter[s])}</button>`);
