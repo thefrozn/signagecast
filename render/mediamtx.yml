@@ -39,4 +39,6 @@ authInternalUsers:
         path: ~^[a-z][a-z0-9]{0,11}$
 
 paths:
+  ~^x_(bild|ton)_[a-z0-9]+$:        # intern: Bild und Ton getrennt (siehe tv-render.sh), nur von 127.0.0.1
+    source: publisher
 {PFADE}

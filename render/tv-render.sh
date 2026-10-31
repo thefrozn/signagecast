@@ -42,9 +42,9 @@ pactl list short sinks 2>/dev/null | grep -q "	$SINK	" || \
 # Aufräumen: ganze Sitzungen beenden. Wichtig: /usr/bin/kill bzw. pkill – das kill von dash kennt weder "--" noch
 # negative PIDs (Prozessgruppen); sonst bleiben ffmpeg/Xvfb übrig (schwarzes Bild).
 aufraeumen() {
-  for p in ${FF:-} ${CR:-} ${XV:-}; do /usr/bin/kill -TERM -- "-$p" 2>/dev/null; done
+  for p in ${MUX:-} ${FF:-} ${CR:-} ${XV:-}; do /usr/bin/kill -TERM -- "-$p" 2>/dev/null; done
   sleep 2
-  for p in ${FF:-} ${CR:-} ${XV:-}; do pkill -KILL -s "$p" 2>/dev/null; done
+  for p in ${MUX:-} ${FF:-} ${CR:-} ${XV:-}; do pkill -KILL -s "$p" 2>/dev/null; done
   [ -n "${LESER:-}" ] && kill "$LESER" 2>/dev/null
   rm -f "$PIDS" "$DATEN/kette-$TV.skript" "$FIFO" "$FORTSCHRITT"
 }
@@ -85,17 +85,33 @@ rm -f "$FIFO"; mkfifo -m 600 "$FIFO"
 ( blk=""; while IFS= read -r z; do blk="$blk$z
 "; case $z in progress=*) printf '%s' "$blk" > "$FORTSCHRITT.neu" && mv -f "$FORTSCHRITT.neu" "$FORTSCHRITT"; blk="";; esac
   done ) < "$FIFO" & LESER=$!
-setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
-  -video_size ${W}x${H} -i $DISP -thread_queue_size 512 $TONEINGANG \
-  $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
-  -c:a aac -b:a 128k -ac 2 \
-  -f rtsp -rtsp_transport tcp "rtsp://127.0.0.1:${RTSP_PORT:-8554}/$TV" & FF=$!
+R="rtsp://127.0.0.1:${RTSP_PORT:-8554}"
+if [ "$TON" = stille ]; then
+  # Ohne Ton: ein Prozess mit stiller Spur (anullsrc bremst die Bildaufnahme nicht)
+  setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
+    -video_size ${W}x${H} -i $DISP -thread_queue_size 512 $TONEINGANG \
+    $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
+    -c:a aac -b:a 128k -ac 2 \
+    -f rtsp -rtsp_transport tcp "$R/$TV" & FF=$!
+else
+  # Mit Ton: Bild und Ton in getrennten Prozessen – nimmt ffmpeg beides in einem Prozess auf, bremst es die
+  # Bildaufnahme aus (gemessen: bis 90 % doppelte Bilder). A: nur Bild, B: Bild von A + Ton.
+  setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
+    -video_size ${W}x${H} -i $DISP -an \
+    $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
+    -f rtsp -rtsp_transport tcp "$R/x_bild_$TV" & FF=$!
+  sleep 3
+  # B: fertiges Bild von A (über MediaMTX) + Ton aus PulseAudio -> Stream. Bremst ffmpeg hier den Bildeingang,
+  # puffert MediaMTX – die Bildschirmaufnahme in A bleibt unberührt. (Zwei RTSP-Eingänge + RTSP-Ausgabe hängen in ffmpeg 7.1.)
+  setsid ffmpeg -hide_banner -loglevel error -nostats -rtsp_transport tcp -i "$R/x_bild_$TV" -thread_queue_size 512 $TONEINGANG \
+    -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k -ac 2 -max_interleave_delta 0 -f rtsp -rtsp_transport tcp "$R/$TV" & MUX=$!
+fi
 echo "$FF" >> "$PIDS"
 
 # Wache: endet ffmpeg oder fehlt der Browser 15 s lang, ganze Kette beenden (MediaMTX startet neu, solange jemand
 # schaut) – sonst würde ein leerer Bildschirm gestreamt. "sleep & wait", damit Signale sofort wirken.
 fehlt=0
-while kill -0 "$FF" 2>/dev/null && [ $fehlt -lt 3 ]; do
+while kill -0 "$FF" 2>/dev/null && { [ -z "${MUX:-}" ] || kill -0 "$MUX" 2>/dev/null; } && [ $fehlt -lt 3 ]; do
   if kill -0 "$CR" 2>/dev/null; then fehlt=0; else fehlt=$((fehlt + 1)); fi
   sleep 5 & wait $!
 done
