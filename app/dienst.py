@@ -551,6 +551,20 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
 melder = BN.Melder(lambda: einst(), lambda pfad, daten: ha.post(pfad, daten))
 
 
+dup_stand, dup_hoch = {}, {}              # je Fernseher: (Bilder, doppelte) der letzten Prüfung, Minuten mit vielen doppelten
+
+
+def ton_neu_starten():
+    """PulseAudio (läuft als signagecast) beenden und alle Ketten neu starten – tv-render.sh startet PulseAudio neu."""
+    for pid in os.listdir("/proc"):
+        try:
+            if pid.isdigit() and open(f"/proc/{pid}/comm").read().strip() == "pulseaudio":
+                os.kill(int(pid), signal.SIGTERM)
+        except OSError:
+            pass
+    return any([kette_neu_starten(t["id"]) for t in einst()["fernseher"]])
+
+
 def benachrichtigung_schleife():
     """Jede Minute: Fernseher-Ausfall (2 Prüfungen in Folge), neue Update-/Sicherungsfehler, HA länger als 5 min getrennt."""
     gesehen_update = (update_status() or {}).get("ts")
@@ -580,6 +594,26 @@ def benachrichtigung_schleife():
                 gesehen_sicherung = sa["zeit"]
                 melder.melden(f"sicherung-{sa['zeit']}", "sicherung", "SignageCast: Sicherung fehlgeschlagen",
                               f"Die automatische Sicherung um {sa['zeit']} ist fehlgeschlagen: {sa['fehler']}")
+            # Doppelte Bilder der Aufnahme (seit 0.18): mehr als 3 je Sekunde, 3 Minuten in Folge -> melden. Beobachtet am
+            # 2026-10-31 mit Echtzeit-Ton; behoben durch Neustart von PulseAudio (Knopf im Leistungstest)
+            for t in einst()["fernseher"]:
+                f = ff_fortschritt(t["id"]) if kette_laeuft(t["id"]) else {}
+                alt = dup_stand.get(t["id"])
+                try:
+                    neu = (int(f["frame"]), int(f["dup_frames"]))
+                except (KeyError, ValueError):
+                    dup_stand.pop(t["id"], None); dup_hoch.pop(t["id"], None)
+                    continue
+                dup_stand[t["id"]] = neu
+                if alt and neu[0] > alt[0]:
+                    dup_hoch[t["id"]] = dup_hoch.get(t["id"], 0) + 1 if (neu[1] - alt[1]) / 60 > 3 else 0
+                    if dup_hoch[t["id"]] == 3:
+                        melder.melden("doppelt-" + t["id"], "leistung", f"SignageCast: „{t['name']}“ ruckelt",
+                                      f"Die Aufnahme für „{t['name']}“ verdoppelt seit 3 Minuten viele Bilder. "
+                                      "Abhilfe: System → Leistungstest → „Ton und Stream neu starten“.")
+                    elif dup_hoch[t["id"]] == 0:
+                        melder.vorbei("doppelt-" + t["id"], f"SignageCast: „{t['name']}“ läuft wieder flüssig",
+                                      f"Die Aufnahme für „{t['name']}“ läuft wieder ohne doppelte Bilder.")
             # Bildrate der TV-Seite: 5 Minuten im Schnitt unter 20 Bildern/s -> melden (seit 0.18)
             for t in einst()["fernseher"]:
                 br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 330]
@@ -900,6 +934,7 @@ def status():
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
         "benachrichtigung": melder.letzte,
         "sicherung_auto": zustand.get("sicherung_auto"),
+        "doppelt_hoch": [t["name"] for t in e["fernseher"] if dup_hoch.get(t["id"], 0) >= 3],
         "bildrate_niedrig": [t["name"] for t in e["fernseher"] if kette_laeuft(t["id"]) and (lambda br: len(br) >= 6 and
                              sum(x["fps"] for x in br) / len(br) < 20)([x for x in (zustand.get("bildrate") or {}).get(t["id"], [])
                                                                        if time.time() - x["t"] < 90])],
@@ -1586,6 +1621,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             d["webhook"]["token"] = einst()["webhook"]["token"]
         if p == "/api/einstellungen":
             bn_behalten(d)
+        if p == "/api/aktion/ton-neu":
+            return {"erledigt": ton_neu_starten()}
         if p == "/api/leistung/test":                # ca. 10 s messen (läuft im eigenen Anfrage-Thread)
             return {"ergebnis": leistung_test()}
         if p == "/api/benachrichtigung/test":        # Testnachricht über einen Kanal (gespeicherte Einstellungen)

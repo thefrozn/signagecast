@@ -19,7 +19,7 @@ const TEXTE = {
     lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Fernseher läuft.",
           start: "Test starten (10 s)", laeuftTest: "Test läuft …", system: "System", cpu: "CPU", kerne: "Kerne", ram: "Speicher frei", gpu: "Grafikeinheit",
           seite: "Bilder/s TV-Seite", kodierung: "Bilder/s Kodierung", tempo: "Tempo", verloren: "verworfen/doppelt", cpuKette: "CPU (Kerne)", aus: "läuft nicht",
-          ziel: "Ziel: 25 Bilder/s, Tempo 1,0×", geraet: "Auf dem Abspielgerät testen", geraetText: "Übertragung und Wiedergabe lassen sich nur auf dem Gerät messen, auf dem es ruckelt. Öffne diese Adresse dort im Browser (gleiches Netz):",
+          ziel: "Ziel: 25 Bilder/s, Tempo 1,0×", tonNeu: "Ton und Stream neu starten", tonNeuText: "Hilft, wenn die Aufnahme viele Bilder doppelt (Ruckeln trotz flüssiger Seite). Die Fernseher sind dabei kurz schwarz.", tonNeuOk: "Ton und Stream werden neu gestartet", geraet: "Auf dem Abspielgerät testen", geraetText: "Übertragung und Wiedergabe lassen sich nur auf dem Gerät messen, auf dem es ruckelt. Öffne diese Adresse dort im Browser (gleiches Netz):",
           letzteGeraete: "Ergebnisse von Geräten", keine: "noch keine", empfehlungen: "Empfehlungen",
           empf: {
             keine_kette: () => "Gerade läuft kein Fernseher. Erst den Stream auf dem Fernseher (oder im Browser) öffnen, dann testen.",
@@ -43,7 +43,8 @@ const TEXTE = {
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
             software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
-            bildrate: (n) => `„${n}“ ruckelt: zu wenige Bilder/s – Leistungstest starten` },
+            bildrate: (n) => `„${n}“ ruckelt: zu wenige Bilder/s – Leistungstest starten`,
+            doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
     bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
@@ -196,7 +197,7 @@ const TEXTE = {
     lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering TV is running.",
           start: "Start test (10 s)", laeuftTest: "Test running …", system: "System", cpu: "CPU", kerne: "cores", ram: "Memory free", gpu: "Graphics unit",
           seite: "Frames/s TV page", kodierung: "Frames/s encoding", tempo: "Speed", verloren: "dropped/duplicated", cpuKette: "CPU (cores)", aus: "not running",
-          ziel: "Target: 25 frames/s, speed 1.0×", geraet: "Test on the playback device", geraetText: "Transfer and playback can only be measured on the device that stutters. Open this address there in the browser (same network):",
+          ziel: "Target: 25 frames/s, speed 1.0×", tonNeu: "Restart sound and stream", tonNeuText: "Helps when the capture duplicates many frames (stutter although the page renders smoothly). The TVs go black briefly.", tonNeuOk: "Sound and stream are restarting", geraet: "Test on the playback device", geraetText: "Transfer and playback can only be measured on the device that stutters. Open this address there in the browser (same network):",
           letzteGeraete: "Results from devices", keine: "none yet", empfehlungen: "Recommendations",
           empf: {
             keine_kette: () => "No TV is running right now. Open the stream on the TV (or in a browser) first, then test.",
@@ -220,7 +221,8 @@ const TEXTE = {
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
             software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
-            bildrate: (n) => `“${n}” stutters: too few frames/s – run the performance test` },
+            bildrate: (n) => `“${n}” stutters: too few frames/s – run the performance test`,
+            doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
     bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
@@ -617,7 +619,8 @@ async function leistungSeite(inhalt) {
   const host = info.eigene_ip || location.hostname;
   inhalt.innerHTML = `<div class="karte"><h2>${esc(T.lt.server)}</h2><p class="leise">${esc(T.lt.serverText)}</p>
       <div class="zeile"><button class="knopf haupt" id="ltStart">${esc(T.lt.start)}</button><span class="leise">${esc(T.lt.ziel)}</span></div>
-      <div id="ltErg"></div></div>
+      <div id="ltErg"></div>
+      <div class="zeile"><button class="knopf" id="ltTon">${esc(T.lt.tonNeu)}</button><span class="leise">${esc(T.lt.tonNeuText)}</span></div></div>
     <div class="karte"><h2>${esc(T.lt.geraet)}</h2><p class="leise">${esc(T.lt.geraetText)}</p>
       ${E.fernseher.map((t) => `<div class="zeile"><b>${esc(t.name)}</b><code>http://${esc(host)}:${info.port}/test?tv=${esc(t.id)}</code></div>`).join("")}
       <h3>${esc(T.lt.letzteGeraete)}</h3><div id="ltGeraete"></div></div>`;
@@ -643,6 +646,7 @@ async function leistungSeite(inhalt) {
         <span class="leise">${esc(g.geraet)}</span></li>`; }).join("")}</ul>` : `<p class="leise">${esc(T.lt.keine)}</p>`;
   };
   zeigen(info.letzte); geraete(info.geraete);
+  $("#ltTon").onclick = (e) => aktion(e.target, () => senden("/api/aktion/ton-neu", {}), T.lt.tonNeuOk);
   $("#ltStart").onclick = (e) => aktion(e.target, async () => {
     e.target.textContent = T.lt.laeuftTest;
     try { zeigen((await senden("/api/leistung/test", {})).ergebnis); } finally { e.target.textContent = T.lt.start; }
@@ -657,6 +661,7 @@ async function todoZeichnen(s) {
   const neu = (stufe, text, seite) => l.push({ stufe, text, seite });
   if (s.ha.url && !s.ha.ok) neu("warn", T.todo.ha, "ha");
   for (const n of s.bildrate_niedrig || []) neu("warn", T.todo.bildrate(n), "leistung");
+  for (const n of s.doppelt_hoch || []) neu("warn", T.todo.doppelt(n), "leistung");
   const sa = s.sicherung_auto || {};
   if (sa.fehler) neu("warn", T.todo.sicherungFehler, "sicherung");
   if ((s.benachrichtigung || []).some((x) => Object.values(x.ergebnis).some(Boolean))) neu("warn", T.todo.bnFehler, "benachrichtigung");
