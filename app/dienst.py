@@ -1221,9 +1221,20 @@ def leistung_test(dauer=10):
             sids = kette_pids(t["id"])
             z["cpu_kerne"] = round(sum(b_s.get(s, 0) - a_s.get(s, 0) for s in sids) / ticks / dt, 2)
         erg["fernseher"].append(z)
+    erg["system"]["mediamtx_verworfen"] = mediamtx_verworfen()
     erg["empfehlungen"] = empfehlen(erg)
     zustand["leistung"] = erg
     return erg
+
+
+def mediamtx_verworfen(seit_s=600):
+    """Wie oft hat MediaMTX zuletzt Bilder weggeworfen („reader is too slow“)? – sichtbar als Sprung um ~1 s."""
+    try:
+        r = subprocess.run(["journalctl", "-u", "signagecast-mediamtx", "--since", f"-{seit_s}s", "--no-pager", "-q", "-o", "cat"],
+                           capture_output=True, text=True, timeout=10)
+        return r.stdout.count("too slow") if r.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
 
 
 def empfehlen(erg):
@@ -1251,6 +1262,8 @@ def empfehlen(erg):
         l.append({"code": "ram_knapp", "stufe": "schlecht", "p": {"frei": s["ram_frei_mb"]}})
     if s["gpu_last"] is not None and s["gpu_last"] > 90:
         l.append({"code": "gpu_hoch", "stufe": "warn", "p": {"gpu": s["gpu_last"]}})
+    if s.get("mediamtx_verworfen"):
+        l.append({"code": "mediamtx_langsam", "stufe": "schlecht", "p": {"n": s["mediamtx_verworfen"]}})
     if s["kodierung"] == "software":
         l.append({"code": "software", "stufe": "warn"})
     if laufend and not any(x["stufe"] in ("schlecht", "warn") for x in l):

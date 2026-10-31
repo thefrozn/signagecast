@@ -1,6 +1,7 @@
 # SignageCast – MediaMTX. Vorlage: den Abschnitt paths (je Fernseher ein Pfad http://<IP>:8888/<id>) setzt der Datendienst aus den
 # Einstellungen; MediaMTX lädt Änderungen selbst.
 logLevel: info
+writeQueueSize: 8192               # 4K-Schlüsselbilder brauchen viele Pakete; 512 (Standard) läuft über -> MediaMTX wirft ~1 s Bild weg
 api: no
 metrics: no
 pprof: no
