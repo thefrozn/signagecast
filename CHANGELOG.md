@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.18.0 (unreleased)
+- **Performance test** (System → Performance): measures for 10 s how smoothly each running TV is rendered (frames/s of
+  the TV page) and encoded (frames/s, speed, duplicated/dropped frames), CPU per TV, memory and graphics unit – with
+  traffic lights and concrete recommendations (simplify layout, more cores, Full HD, lower bitrate, …).
+- **Test on the playback device:** open `http://<IP>:8890/test` on the device that stutters – it loads the stream like
+  a TV (data rate, load time per segment) and plays it (dropped frames, stalls); the result also appears in the admin.
+- **Monitoring:** if a TV page stays below 20 frames/s for 5 minutes, a to-do entry and optionally a notification.
+- **Codec per TV:** “Automatic” (H.265 for 4K, H.264 for Full HD – plays on practically every device), or H.265 / H.264
+  fixed, with an explanation in the TV settings.
+- TVs that cannot play any sound (sound off, no clip or camera with sound) now record a silent track instead of the
+  live sound – this saves CPU and avoids duplicated frames seen with the live sound capture.
+
 ## v0.17.2 (2026-10-31)
 - **Layouts overview:** Content → Layouts now starts with tiles of all layouts – mini preview, name and on which TV
   each one is shown; Edit, and Copy / Export / Delete in the “⋯” menu (actions there are saved immediately).
