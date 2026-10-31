@@ -935,9 +935,10 @@ def render_schreiben(e):
         k = zustand.get("kodierung") or {}
         software = k.get("art") == "software"           # ohne nutzbare Grafik: H.264 in Full HD per CPU
         aus = "3840 2160" if t["aufloesung"] == 2160 and not software else "1920 1080"
+        codec = "h264" if software else t["codec"] if t["codec"] != "auto" else ("h265" if aus.startswith("3840") else "h264")
         schreib_wenn_anders(os.path.join(DATEN, f"render-{t['id']}.env"),
                             f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n"
-                            f"KODIERUNG={'software' if software else 'vaapi'}\n")
+                            f"KODIERUNG={'software' if software else 'vaapi'}\nCODEC={codec}\n")
         pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
                   f"    runOnDemandStartTimeout: 40s\n    runOnDemandCloseAfter: {e['stream']['abschalten_s']}s\n")
     # Kameras (Datenquellen der Art „video“, RTSP/HLS): MediaMTX holt sie nur, solange jemand schaut; lesen darf sie

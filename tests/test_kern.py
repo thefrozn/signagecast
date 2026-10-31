@@ -199,6 +199,12 @@ class EinstellungenUndLayouts(unittest.TestCase):
         finally:
             E.PFAD = alt; os.remove(f.name)
 
+    def test_codec_je_fernseher(self):
+        self.assertEqual(E.pruefen({})["fernseher"][0]["codec"], "auto")
+        t = E.pruefen({"fernseher": [{"id": "tv", "codec": "h264"}]})["fernseher"][0]
+        self.assertEqual(t["codec"], "h264")
+        self.assertEqual(E.pruefen({"fernseher": [{"id": "tv", "codec": "vp9"}]})["fernseher"][0]["codec"], "auto")
+
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))

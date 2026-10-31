@@ -19,7 +19,7 @@ STANDARD = {
     # Jeder Fernseher ist eine eigene Ausgabe mit eigener Adresse http://<IP>:8888/<id> und eigener Render-Kette
     "fernseher": [
         {"id": "tv", "nr": 0, "name": "TV", "layout": "standard", "zeitplan": [], "video": True, "ton": "aus", "radio_sender": "", "lautstaerke": 70,
-         "kategorien_aus": [], "aufloesung": 2160, "bitrate_mbit": 16},
+         "kategorien_aus": [], "aufloesung": 2160, "bitrate_mbit": 16, "codec": "auto"},
     ],
     "radio": {
         "sender": [],                     # [{"id": "s1a2b3", "name": "…", "url": "https://…"}] – für alle Fernseher
@@ -217,6 +217,8 @@ def pruefen(e):
                           "lautstaerke": _zahl(t.get("lautstaerke", 70), 0, 100, int),
                           "kategorien_aus": [k for k in t.get("kategorien_aus", []) if k in KATEGORIEN],
                           "aufloesung": aufl, "bitrate_mbit": _zahl(t.get("bitrate_mbit", alt.get("bitrate_mbit", 16)), 2, 40, int),
+                          # seit 0.18: auto = H.265 bei 4K, H.264 bei Full HD (läuft auf praktisch jedem Gerät)
+                          "codec": t.get("codec", alt.get("codec")) if t.get("codec", alt.get("codec")) in ("auto", "h264", "h265") else "auto",
                           "nr": t.get("nr") if isinstance(t.get("nr"), int) and 0 <= t.get("nr") < 8 else None,
                           "layout": t.get("layout") if t.get("layout") in layout_ids else s["layouts"][0]["id"],
                           "zeitplan": _zeitplan(t.get("zeitplan"), layout_ids),

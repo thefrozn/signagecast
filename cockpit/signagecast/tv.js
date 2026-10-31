@@ -114,6 +114,8 @@ const TEXTE = {
     videoAktiv: "Live-Videos zeigen", takt: "Minuten je Stream", nurTag: "nur Streams, wo vor Ort Tag ist",
     sonne: "Mindest-Sonnenhöhe (Grad)", mindeststufe: "Mindestqualität", schlecht: "so lange darunter, dann weiter (s)",
     grenze: "Strikes bis ein Stream nicht mehr läuft", sperre: "nach Strike überspringen für (Stunden)",
+    codec: "Codec", codecArt: { auto: "Automatisch (empfohlen)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
+    codecText: "Automatisch: 4K als H.265 (halbe Datenmenge, können fast alle 4K-Fernseher), Full HD als H.264 (läuft auf praktisch jedem Fernseher, Browser und Player). H.264 wählen, wenn ein Gerät ruckelt oder kein Bild zeigt – z. B. ältere Fernseher, Firefox; H.265 braucht bei gleicher Qualität etwa 30–40 % weniger Bitrate.",
     kategorien: "Kategorien", streamTechnik: "Videostream", aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
     abschalten: "Abschalten ohne Zuschauer nach (s)", technikHinweis: "Ausgabe und Bitrate wirken beim nächsten Start des Streams.",
     sucheAktiv: "täglich nach neuen Streams suchen", uhrzeit: "Uhrzeit", max: "höchstens gefundene Streams",
@@ -301,6 +303,8 @@ const TEXTE = {
     videoAktiv: "Show live videos", takt: "Minutes per stream", nurTag: "only streams where it is daytime",
     sonne: "Minimum sun elevation (degrees)", mindeststufe: "Minimum quality", schlecht: "below it for this long, then skip (s)",
     grenze: "Strikes until a stream stops playing", sperre: "after a strike skip for (hours)",
+    codec: "Codec", codecArt: { auto: "Automatic (recommended)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
+    codecText: "Automatic: 4K as H.265 (half the data, supported by almost all 4K TVs), Full HD as H.264 (plays on practically every TV, browser and player). Choose H.264 if a device stutters or shows no picture – e.g. older TVs, Firefox; H.265 needs about 30–40 % less bitrate for the same quality.",
     kategorien: "Categories", streamTechnik: "Video stream", aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
     abschalten: "Switch off without viewers after (s)", technikHinweis: "Output and bitrate apply at the next stream start.",
     sucheAktiv: "search for new streams daily", uhrzeit: "Time", max: "maximum found streams",
@@ -1052,10 +1056,14 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.lautstaerke)}</label><input type="range" name="lautstaerke" min="0" max="100" value="${t.lautstaerke}"><span class="leise" name="lw">${t.lautstaerke} %</span></div>
         <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
         ${KATEGORIEN.map((x) => `<div class="zeile"><label>${esc(T.kat[x] || x)}</label>${schalter("kat_" + x, !t.kategorien_aus.includes(x))}</div>`).join("")}</details>
-        <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}, ${t.bitrate_mbit} Mbit/s</summary>
+        <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}, ${t.bitrate_mbit} Mbit/s, ${
+          (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}</summary>
         <div class="zeile"><label>${esc(T.aufloesung)}</label><select name="aufloesung"><option value="2160" ${t.aufloesung === 2160 ? "selected" : ""}>4K (3840×2160)</option>
           <option value="1080" ${t.aufloesung === 1080 ? "selected" : ""}>Full HD (1920×1080)</option></select></div>
-        <div class="zeile"><label>${esc(T.bitrate)}</label><input type="number" name="bitrate_mbit" min="2" max="40" value="${t.bitrate_mbit}"></div></details>
+        <div class="zeile"><label>${esc(T.bitrate)}</label><input type="number" name="bitrate_mbit" min="2" max="40" value="${t.bitrate_mbit}"></div>
+        <div class="zeile"><label>${esc(T.codec)}</label><select name="codec">${Object.keys(T.codecArt).map((k) =>
+          `<option value="${k}" ${k === (t.codec || "auto") ? "selected" : ""}>${esc(T.codecArt[k])}</option>`).join("")}</select></div>
+        <p class="leise">${esc(T.codecText)}</p></details>
         ${E.fernseher.length > 1 ? `<div class="zeile"><button class="knopf gefahr" name="weg">${esc(T.fernseherWeg)}</button></div>` : ""}</div>`);
       const zeitenAnbinden = () => k.querySelectorAll("[name=zweg]").forEach((b) => { b.onclick = () => b.closest(".zeile").remove(); });
       zeitenAnbinden();
@@ -1075,7 +1083,7 @@ async function fernseherSeite(inhalt) {
       return { ...t, name: w("name").value, id: w("id").value.trim().toLowerCase(), video: w("video").checked, ton: w("ton").value,
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
                kategorien_aus: KATEGORIEN.filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
-               bitrate_mbit: Number(w("bitrate_mbit").value), layout: w("layout").value,
+               bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3,
                karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
                             layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
@@ -1086,7 +1094,7 @@ async function fernseherSeite(inhalt) {
       const alt = lesen();
       let n = 2; while (alt.some((t) => t.id === "tv" + n)) n++;
       E.fernseher = [...alt, { id: "tv" + n, name: T.weitererTv + " " + n, video: true, ton: "aus", radio_sender: "", lautstaerke: 70,
-                                kategorien_aus: [], aufloesung: 2160, bitrate_mbit: 16 }];
+                                kategorien_aus: [], aufloesung: 2160, bitrate_mbit: 16, codec: "auto" }];
       zeichnen();
     };
     $("#ok").onclick = async (e) => { await speichernE({ fernseher: lesen() }, e.target); zeichnen(); };

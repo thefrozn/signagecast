@@ -10,7 +10,7 @@ set -u
 TV=${MTX_PATH:-tv}
 case "$TV" in *[!a-z0-9]*|"") echo "ungültige Kennung"; exit 1;; esac
 DATEN=/var/lib/signagecast
-DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi
+DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265
 [ -r "$DATEN/render-$TV.env" ] && . "$DATEN/render-$TV.env"
 OW=${AUSGABE% *}; OH=${AUSGABE#* }
 W=1920; H=1080                                   # Chromium zeichnet in Full HD (in 4K wäre er überlastet)
@@ -70,7 +70,9 @@ if [ "$KODIERUNG" = software ]; then
   [ "$BITRATE" -gt 8 ] && BITRATE=8
   VIDEO="-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p"
 else
-  VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v hevc_vaapi -profile:v main"
+  # H.265 (4K, kleiner) oder H.264 (läuft auf praktisch jedem Fernseher/Browser) – beides über die Grafikeinheit
+  if [ "$CODEC" = h264 ]; then ENC="h264_vaapi -profile:v high"; else ENC="hevc_vaapi -profile:v main"; fi
+  VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v $ENC"
 fi
 setsid ffmpeg -hide_banner -loglevel error -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
   -video_size ${W}x${H} -i $DISP -thread_queue_size 512 -f pulse -i "$SINK.monitor" \
