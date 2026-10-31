@@ -690,6 +690,7 @@ def ton_neu_starten():
 
 def benachrichtigung_schleife():
     """Jede Minute: Fernseher-Ausfall (2 Prüfungen in Folge), neue Update-/Sicherungsfehler, HA länger als 5 min getrennt."""
+    DS.aufraeumen(set())                         # nach einem Neustart: keine alten Sprachdateien liegen lassen
     gesehen_update = (update_status() or {}).get("ts")
     gesehen_sicherung = None
     kaputt, ha_weg = {}, None
@@ -717,6 +718,7 @@ def benachrichtigung_schleife():
                 gesehen_sicherung = sa["zeit"]
                 melder.melden(f"sicherung-{sa['zeit']}", "sicherung", "SignageCast: Sicherung fehlgeschlagen",
                               f"Die automatische Sicherung um {sa['zeit']} ist fehlgeschlagen: {sa['fehler']}")
+            durchsagen_aktiv()                     # abgelaufene Durchsagen und ihre Sprachdateien entfernen (Datenschutz)
             # Doppelte Bilder der Aufnahme (seit 0.18): mehr als 3 je Sekunde, 3 Minuten in Folge -> melden. Beobachtet am
             # 2026-10-31 mit Echtzeit-Ton; behoben durch Neustart von PulseAudio (Knopf im Leistungstest)
             for t in einst()["fernseher"]:
