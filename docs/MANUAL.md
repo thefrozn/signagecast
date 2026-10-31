@@ -15,16 +15,18 @@ that video, so the TV needs no app, no login and no updates.
 
 ## 2. Admin tabs at a glance
 
-| Tab | What you do there |
-|---|---|
-| **Overview** | State of every TV, viewers, CPU/RAM, time check, Home Assistant connection |
-| **TVs** | Address, layout, schedule, carousel, sound, video source (YouTube / own media / mixed), quality |
-| **Layout** | Drag elements on a 48 × 27 grid, templates, export/import with pictures |
-| **Data sources** | JSON APIs, feeds, pictures, iCal calendars, cameras; import from `curl` |
-| **Media** | Upload own pictures and videos for the video window |
-| **Streams / Radio / Clips** | Live cams, radio stations, scheduled clips (e.g. news) |
-| **Connection** | Home Assistant, location, time source, **notifications**, **message via webhook** |
-| **Updates / Backup** | Signed updates, maintenance window, encrypted backups |
+| Area | Pages | What you do there |
+|---|---|---|
+| **Overview** | – | To-do list (problems first, then tips), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
+| **TVs** | – | Address, layout, schedule, carousel, sound, video source (YouTube / own media / mixed), quality |
+| **Content** | Layouts · Data sources · Media · Clips | Layout editor and templates, JSON APIs/feeds/iCal/cameras, own pictures and videos, scheduled clips |
+| **Video & sound** | Streams · Rules · Search · Radio | Live cams, rotation and quality rules, nightly search, radio stations |
+| **Settings** | General · Home Assistant · Notifications | Language, weather, location, time source; HA address and guide; Telegram/e-mail/HA and webhook |
+| **System** | Updates · Backup (· Access in Docker) | Signed updates, maintenance window, encrypted backups, admin password |
+
+Every page has its own address (e.g. `…/index.html#benachrichtigung`). Unsaved changes are marked on their card;
+rarely needed options are folded under “Advanced”. On a new installation a short assistant asks for language,
+location and (optionally) Home Assistant and shows the TV address.
 
 ## 3. Typical tasks
 
@@ -40,12 +42,12 @@ H.265 videos are refused – convert them first, e.g. `ffmpeg -i in.mp4 -c:v lib
 
 ### Severe weather warnings (Germany)
 Layout → add the element **“Weather warning (DWD)”**. It shows the official warnings of the Deutscher Wetterdienst for
-the configured location (Connection → Location), coloured by level (1 yellow, 2 orange, 3 red, 4 dark purple). Without a warning the element is hidden – or tick
+the configured location (Settings → General → Location), coloured by level (1 yellow, 2 orange, 3 red, 4 dark purple). Without a warning the element is hidden – or tick
 “show also without warning”. The data are fetched every
 10 minutes and only while a layout uses the element. Outside Germany there are no data.
 
 ### Put a short message on all TVs (webhook)
-Connection → *Message via webhook* → **Create new key**. The key is shown **only once** – store it, e.g. in a password
+Settings → Notifications → *Message via webhook* → **Create new key**. The key is shown **only once** – store it, e.g. in a password
 manager. Then any system in your network can send:
 
 ```sh
@@ -83,7 +85,7 @@ with `signagecast_webhook: "Bearer <key>"` in `secrets.yaml`, and in an automati
 `action: rest_command.signagecast_meldung` with `data: {text: "Doorbell", stil: warnung}`.
 
 ### Get notified when something breaks
-Connection → *Notifications*. Channels (any combination):
+Settings → Notifications. Channels (any combination):
 
 - **Telegram:** create a bot with @BotFather, copy the bot token; send the bot a message and read your chat id, e.g.
   from `https://api.telegram.org/bot<token>/getUpdates`. Group chats have negative ids.
@@ -137,7 +139,7 @@ It is never shown again. Create a new one and update the senders.
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
 **Unwetterwarnungen des DWD** als Layout-Baustein (Stufenfarben, nur Deutschland, Abruf alle 10 min nur bei Nutzung),
-**Meldung per Webhook** (Schlüssel in „Verbindung“ erzeugen – wird nur einmal angezeigt –, dann
+**Meldung per Webhook** (Schlüssel unter Einstellungen → Benachrichtigungen erzeugen – wird nur einmal angezeigt –, dann
 `POST http://<IP>:8890/meldung` mit `Authorization: Bearer <Schlüssel>` und JSON `text`, `dauer`, `stil`, optional `tv`;
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,

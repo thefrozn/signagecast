@@ -1,7 +1,9 @@
 # SignageCast – screenshot tour
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
-installation (location Berlin, public example data, no Home Assistant connected) running version 0.13.
+installation (location Berlin, public example data, no Home Assistant connected). The admin pages overview, TVs,
+settings, notifications, backup and phone show version 0.17 with its six areas (Overview, TVs, Content, Video & sound,
+Settings, System); the content pages are from version 0.13 and look the same apart from the navigation bar.
 
 [← back to the README](../README.md)
 
@@ -33,7 +35,8 @@ next to Cockpit's own pages. If your server already runs Cockpit, SignageCast in
 ![SignageCast as a menu entry in Cockpit](tour/03-cockpit.jpg)
 
 ### 4. Overview
-Every TV with its state and sound, viewers, weather source, time check against NTP (“time from the host,
+At the top a **to-do list**: problems first (e.g. Home Assistant not reachable), then tips (automatic backup off, no
+notification set up) – each entry links to the page where you fix it. Below, every TV with its state and sound, viewers, weather source, time check against NTP (“time from the host,
 synchronised”), video encoding (graphics unit or software fallback), Home Assistant connection, CPU, RAM, uptime.
 
 ![Overview](tour/04-overview.jpg)
@@ -82,11 +85,12 @@ container preloads each new edition (complete or only the first MB), so the clip
 
 ![Clip settings with buffer](tour/11-clips.jpg)
 
-### 12. Connection
-Home Assistant address (optional), location by place search, time source: NTP server (default: the country pool) and
-time zone – if the host keeps its clock synchronised, nothing is corrected.
+### 12. Settings → General
+Language and weather source, location by place search, time source: NTP server (default: the country pool) and time
+zone – if the host keeps its clock synchronised, nothing is corrected. Home Assistant has its own page next to it.
+Unsaved changes are marked on their card, and you are asked before leaving the page.
 
-![Connection and time source](tour/12-connection.jpg)
+![Settings: display, location and time source](tour/12-settings.jpg)
 
 ### 13. Updates
 System (Debian) and SignageCast updates with one click or automatically within a maintenance window, only while
@@ -109,17 +113,24 @@ initial password is printed in the container log.
 ![Login page of the container image](tour/15-docker-login.jpg)
 
 ### 16. On the phone
-The admin works on a phone as well – switch elements on and off, change sizes, sound, sources.
+The admin works on a phone as well – the areas become one menu; switch elements on and off, change sizes, sound, sources.
 
 <img src="tour/16-mobile.jpg" width="320" alt="Admin on a phone">
+
+### 17. Notifications and webhook
+Telegram, e-mail (SMTP) and Home Assistant, each with a test button; rarely needed options under “Advanced”. Below,
+the webhook for short messages on the TVs (key shown only once).
+
+![Notifications and webhook](tour/17-notifications.jpg)
 
 ---
 
 ## Deutsch (kurz)
 
-Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
+Die Verwaltung ist seit 0.17 in sechs Bereiche gegliedert (Übersicht mit „Zu erledigen“, Fernseher, Inhalte,
+Video & Ton, Einstellungen, System). Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
 sowie ein reines Daten-Layout (Diagramm mit echten Pegelwerten, Feiertage per iCal, Feed, QR-Code). Danach die
-Verwaltung: SignageCast als Menüpunkt in Cockpit, Übersicht, Fernseher, Layout-Editor mit Pfad-Auswahl, Datenquellen
+Verwaltung: SignageCast als Menüpunkt in Cockpit, Übersicht mit „Zu erledigen“, Fernseher, Layout-Editor mit Pfad-Auswahl, Datenquellen
 mit Antwort-Baum und curl-Import, Streams, Radio, Einspieler mit Puffer, Verbindung mit Zeitquelle, Updates
 (signiert, mit Rückkehr bei Fehlern), Sicherung (AES-256 mit Zugangsdaten), die Anmeldeseite im Docker-Betrieb und
-die Ansicht auf dem Handy. Alle Bilder stammen aus einer Demo-Installation ohne private Daten.
+die Ansicht auf dem Handy sowie Benachrichtigungen und Webhook. Alle Bilder stammen aus einer Demo-Installation ohne private Daten.

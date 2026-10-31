@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.17.0 (2026-10-31)
+- **Admin reorganised:** six areas instead of 14 tabs – Overview, TVs, Content (layouts, data sources, media, clips),
+  Video & sound (streams, rules, search, radio), Settings (general, Home Assistant, notifications), System (updates,
+  backup; Docker: access). Every page has its own address (e.g. `…#benachrichtigung`) for reload and bookmarks; on a
+  phone the areas become one menu. Old remembered tabs are redirected.
+- **To-do list** on the overview: problems first, then tips – each entry links to the right page.
+- **Unsaved changes** are marked on their card; you are asked before leaving the page.
+- Rarely needed options are folded under **“Advanced”** (stream rules, radio buffer, e-mail encryption and sender).
+- **Setup assistant** on a new installation: language, location, Home Assistant (optional), address for the TV.
+  Existing installations are not affected.
+- “?” in the navigation opens the manual.
+
 ## v0.16.0 (2026-10-30)
 - **Severe weather warnings (DWD):** new layout element with the official warnings of the Deutscher Wetterdienst for
   the location (Germany only), coloured by level; hidden without a warning or “show also without warning”. Fetched

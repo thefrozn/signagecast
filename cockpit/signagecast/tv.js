@@ -53,7 +53,7 @@ const TEXTE = {
     epFernseher: "Fernseher (keiner gewählt = alle)", epAktiv: "aktiv", epJetzt: "Jetzt zeigen", epJetztOk: "Läuft in bis zu 15 s am Fernseher",
     epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.",
     wetterQuelle: "Wetterquelle", wetterQuelleArt: { met: "Eigenes Wetter (MET Norway, für den Standort)", ha: "Home Assistant (Wetter-Entität)" },
-    metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort im Reiter „Verbindung“ – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
+    metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort (unten auf dieser Seite) – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
     bnTitel: "Benachrichtigungen", bnText: "SignageCast meldet sich bei Ausfall eines Fernsehers, fehlgeschlagenem Update oder Sicherung und wenn Home Assistant länger als 5 Minuten nicht erreichbar ist – jeweils einmal, mit Entwarnung.",
     bnTelegram: "Telegram", bnBotToken: "Bot-Token", bnChatId: "Chat-ID", bnEmail: "E-Mail (SMTP)", bnServer: "SMTP-Server", bnPort: "Port",
     bnSicherheit: "Verschlüsselung", bnBenutzer: "Benutzer", bnPasswort: "Passwort", bnAbsender: "Absender", bnEmpfaenger: "Empfänger (mit Komma trennen)",
@@ -86,7 +86,7 @@ const TEXTE = {
     neueVersion: (v) => `Neue Version ${v} verfügbar`, updateText: "Zum Aktualisieren den Befehl als root im Container ausführen (Einstellungen und Daten bleiben).",
     updateTextContainer: "Zum Aktualisieren das neue Image holen und den Container neu erstellen (Einstellungen und Daten im Volume bleiben):",
     systemSeitenContainer: "Protokolle: docker logs signagecast (bzw. podman logs). Neustart und Update über Docker/Podman.",
-    passwortHinweisContainer: "Hinweis: Du meldest dich noch mit dem Startpasswort aus dem Protokoll an – bitte unter „Verbindung“ ein eigenes festlegen.",
+    passwortHinweisContainer: "Hinweis: Du meldest dich noch mit dem Startpasswort aus dem Protokoll an – bitte unter System → Zugang ein eigenes festlegen.",
     verwaltungTitel: "Anmeldung an der Verwaltung", pwAlt: "Bisheriges Passwort", pwNeu: "Neues Passwort (mind. 8 Zeichen)",
     pwAendern: "Passwort ändern", pwGeaendert: "Passwort geändert", abmelden: "Abmelden",
     kodierungKarte: "Videokodierung", kodierungArt: { vaapi: "Grafikeinheit (VAAPI)", software: "Software (CPU)" },
@@ -209,7 +209,7 @@ const TEXTE = {
     epFernseher: "TVs (none selected = all)", epAktiv: "active", epJetzt: "Show now", epJetztOk: "Plays on the TV within 15 s",
     epStand: "Version", epFehler: "Error", epKeine: "No clips yet.",
     wetterQuelle: "Weather source", wetterQuelleArt: { met: "Own weather (MET Norway, for the location)", ha: "Home Assistant (weather entity)" },
-    metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location in the “Connection” tab – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
+    metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location (further down on this page) – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
     bnTitel: "Notifications", bnText: "SignageCast reports when a TV fails, an update or backup fails, and when Home Assistant is unreachable for more than 5 minutes – once each, with an all-clear.",
     bnTelegram: "Telegram", bnBotToken: "Bot token", bnChatId: "Chat ID", bnEmail: "E-mail (SMTP)", bnServer: "SMTP server", bnPort: "Port",
     bnSicherheit: "Encryption", bnBenutzer: "User", bnPasswort: "Password", bnAbsender: "Sender", bnEmpfaenger: "Recipients (comma separated)",
@@ -274,7 +274,7 @@ const TEXTE = {
     neueVersion: (v) => `New version ${v} available`, updateText: "To update, run this command as root inside the container (settings and data are kept).",
     updateTextContainer: "To update, pull the new image and recreate the container (settings and data in the volume are kept):",
     systemSeitenContainer: "Logs: docker logs signagecast (or podman logs). Restart and update via Docker/Podman.",
-    passwortHinweisContainer: "Note: you are still using the initial password from the log – please set your own under “Connection”.",
+    passwortHinweisContainer: "Note: you are still using the initial password from the log – please set your own under System → Access.",
     verwaltungTitel: "Admin login", pwAlt: "Current password", pwNeu: "New password (min. 8 characters)",
     pwAendern: "Change password", pwGeaendert: "Password changed", abmelden: "Log out",
     kodierungKarte: "Video encoding", kodierungArt: { vaapi: "Graphics unit (VAAPI)", software: "Software (CPU)" },
@@ -527,7 +527,7 @@ async function assistent(inhalt, n = 1) {
     inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.ort)}</p>
       <div class="zeile"><input type="text" id="asOrt" data-frei placeholder="${esc(T.ortSuche)}" value="${esc(E.standort.name || "")}">
         <button class="knopf" id="asSuchen">${esc(T.suchen)}</button></div><div id="asOrte"></div>
-      <p class="leise" id="asStand">${E.standort.name ? esc(E.standort.name) + " · " : ""}${E.standort.breite} / ${E.standort.laenge}</p>${fuss(true, true)}</div>`;
+      <p class="leise" id="asStand">${E.standort.name ? esc(E.standort.name) + " · " : ""}${E.standort.breite} / ${E.standort.laenge}</p>${fuss()}</div>`;
     const suchen = (e) => aktion(e.target, async () => {
       const r = await holen("/api/ort/suche?q=" + encodeURIComponent($("#asOrt").value));
       if (!r.ok) throw new Error(r.fehler);
@@ -783,16 +783,16 @@ function streamKarte(s) {
 async function anzeige(inhalt) {
   const ents = await entitaeten();
   inhalt.innerHTML = `<datalist id="ents">${ents.filter((x) => x.id.startsWith("weather.")).map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</datalist>
-    <div class="karte">
+    <div class="karte"><h2>${esc(T.reiter.anzeige)}</h2>
       <div class="zeile"><label>${esc(T.sprache)}</label><select id="sprache"><option value="de">Deutsch</option><option value="en">English</option></select></div>
       <div class="zeile"><label>${esc(T.wetterQuelle)}</label><select id="wetterQ" class="breit">${Object.keys(T.wetterQuelleArt).map((k) =>
         `<option value="${k}" ${k === E.anzeige.wetter_quelle ? "selected" : ""}>${esc(T.wetterQuelleArt[k])}</option>`).join("")}</select></div>
       <p class="leise" id="metText">${esc(T.metText)}</p>
       <div class="zeile" id="haZeile"><label>${esc(T.wetter)}</label><input type="text" id="wetter" list="ents" value="${esc(E.anzeige.wetter)}"></div>
-      <p class="leise">${esc(T.wetterText)}</p></div>
-    <div class="zeile"><button class="knopf haupt" id="okAnz">${esc(T.speichern)}</button></div>`;
+      <p class="leise" id="haText">${esc(T.wetterText)}</p>
+      <div class="zeile"><button class="knopf haupt" id="okAnz">${esc(T.speichern)}</button></div></div>`;
   $("#sprache").value = E.sprache || "de";
-  const sicht = () => { const ha = $("#wetterQ").value === "ha"; $("#haZeile").style.display = ha ? "" : "none"; $("#metText").style.display = ha ? "none" : ""; };
+  const sicht = () => { const ha = $("#wetterQ").value === "ha"; $("#haZeile").style.display = ha ? "" : "none"; $("#haText").style.display = ha ? "" : "none"; $("#metText").style.display = ha ? "none" : ""; };
   $("#wetterQ").onchange = sicht; sicht();
   $("#okAnz").onclick = async (e) => {
     await speichernE({ sprache: $("#sprache").value, anzeige: { wetter_quelle: $("#wetterQ").value, wetter: $("#wetter").value } }, e.target);
@@ -899,11 +899,11 @@ async function verbindung(inhalt, teil = "ha") {
         <input type="number" id="bnEmPort" min="1" max="65535" value="${B.email.port}" aria-label="${esc(T.bnPort)}"></div>
       <div class="zeile"><label>${esc(T.bnBenutzer)}</label><input type="text" id="bnEmBenutzer" value="${esc(B.email.benutzer)}" autocomplete="off"></div>
       <div class="zeile"><label>${esc(T.bnPasswort)}</label><input type="password" id="bnEmPw" value="${esc(B.email.passwort)}" autocomplete="new-password"></div>
+      <div class="zeile"><label>${esc(T.bnEmpfaenger)}</label><input type="text" id="bnEmAn" value="${esc(B.email.empfaenger)}"></div>
       <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
       <div class="zeile"><label>${esc(T.bnSicherheit)}</label><select id="bnEmSich">${["starttls", "ssl", "keine"].map((v) =>
         `<option value="${v}" ${B.email.sicherheit === v ? "selected" : ""}>${v === "keine" ? "–" : v.toUpperCase()}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(T.bnAbsender)}</label><input type="text" id="bnEmVon" value="${esc(B.email.absender)}"></div></details>
-      <div class="zeile"><label>${esc(T.bnEmpfaenger)}</label><input type="text" id="bnEmAn" value="${esc(B.email.empfaenger)}"></div>
       <div class="zeile"><button class="knopf" data-test="email">${esc(T.bnTest)}</button></div>
       <h3>${esc(T.bnHA)}</h3>
       <div class="zeile"><label><input type="checkbox" id="bnHaAktiv" ${B.ha.aktiv ? "checked" : ""}> ${esc(T.bnAktiv)}</label></div>

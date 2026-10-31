@@ -41,6 +41,8 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
   messages from other systems (e.g. Home Assistant) as a banner on the TVs via a webhook with a secret key; notifications
   via Telegram, e-mail or Home Assistant when a TV fails, an update or backup fails or Home Assistant is disconnected.
 - **Energy saving** – rendering runs only while someone watches; schedules can switch a TV to night mode or black.
+- **Clear admin** – six areas with a to-do list on the overview, setup assistant on a new installation, marked unsaved
+  changes, own address per page, one menu on the phone.
 - **Admin in Cockpit** – overview with preview picture, system pages, backup/restore, German and English.
 
 <p align="center"><img src="docs/firma.jpg" width="49%" alt="Company template"> <img src="docs/fenster.jpg" width="49%" alt="Window to the world template"></p>
@@ -116,7 +118,7 @@ or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same
 - `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
   Rootless Podman additionally needs `--group-add keep-groups`.
 - **Admin:** http://&lt;host&gt;:**19090** – the initial password is printed in the log: `docker logs signagecast`
-  (or set your own with `-e SC_PASSWORT=…`). Change it under **Connection**. No Cockpit inside the container.
+  (or set your own with `-e SC_PASSWORT=…`). Change it under **System → Access**. No Cockpit inside the container.
 - `SC_HOST_IP` = the IP of the Docker host; the Home Assistant guide in the admin shows it (HA sees the host's IP).
 - All settings and data are in the volume `/data`. **Update:** `docker pull ghcr.io/thefrozn/signagecast:latest`, then
   recreate the container (`docker compose up -d`, or `docker rm -f signagecast` and the `docker run` line again).
@@ -149,9 +151,11 @@ or with [`compose.yaml`](compose.yaml): `docker compose up -d`. Podman: the same
    password **tvadmin** – then please change it (top right → Accounts → tvadmin → Set password).
    (Native installation: the random password shown at the end of the installation, or your own Cockpit user.
    Docker / Podman: **http://&lt;host&gt;:19090**, password from the log – see above.)
-2. Menu **SignageCast → Connection**: enter the Home Assistant address and follow the guide shown there. Home Assistant
-   trusts the container via `trusted_networks` – no password or token is stored. Take the location from Home Assistant.
-3. **Display**: weather comes from MET Norway (or choose a Home Assistant weather entity). **Layout**: adapt the standard layout or start from a template.
+2. On a new installation a short **assistant** asks for language, location and (optionally) Home Assistant and shows
+   the TV address. Later: **Settings → Home Assistant** – enter the address and follow the guide shown there. Home
+   Assistant trusts the container via `trusted_networks` – no password or token is stored.
+3. **Settings → General**: weather comes from MET Norway (or choose a Home Assistant weather entity).
+   **Content → Layouts**: adapt the standard layout or start from a template.
 4. On the TV open **http://&lt;container-IP&gt;:8888/tv** in the browser and set it as start page.
 5. Optional: **Radio**, **Clips**, more **TVs**, schedules.
 
@@ -261,7 +265,7 @@ SignageCast einstellen. Docker/Podman nutzt 19090, weil auf vielen Servern Cockp
 Ohne Intel-Grafik läuft ein Notbetrieb mit H.264 in Full HD per CPU.
 
 Danach die Verwaltung öffnen (siehe Tabelle) und
-unter **Verbindung** Home Assistant einrichten (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.
+unter **Einstellungen → Home Assistant** Home Assistant einrichten (bei Neuinstallation führt ein Assistent durch die ersten Schritte) (Anleitung steht dort), am Fernseher **http://&lt;IP&gt;:8888/tv** öffnen.
 Eigene Daten: Reiter **Datenquellen** (JSON-API, RSS-Feed, Bild; curl-Befehl einfügen, Wert im Antwort-Baum anklicken) und
 die Bausteine API-Wert, API-Liste, API-Bild, Anzeige (Balken/Ampel), Countdown, QR-Code sowie Platzhalter `{quelle:pfad}`.
 Dazu Kameras (RTSP/HLS/MJPEG), Verlauf-Diagramme, Kalender per iCal-Adresse und eingebettete Webseiten.
