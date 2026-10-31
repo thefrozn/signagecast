@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.17.1 (2026-10-31)
+- **Layout editor:** the selected element no longer jumps above everything – before, a selected large live video
+  covered smaller elements on top of it, and they could not be clicked any more. Only the selection frame (with resize
+  corner and a move handle ✥) lies on top now.
+- **Layers list** next to the editor: all elements in their stacking order (top = front, as on the TV); click to
+  select, eye to show/hide, arrows to bring forward / send backward.
+- **Click again on the same spot** to cycle through stacked elements; **Tab / Shift+Tab** selects the next / previous one.
+
 ## v0.17.0 (2026-10-31)
 - **Admin reorganised:** six areas instead of 14 tabs – Overview, TVs, Content (layouts, data sources, media, clips),
   Video & sound (streams, rules, search, radio), Settings (general, Home Assistant, notifications), System (updates,
