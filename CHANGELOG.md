@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.19.2 (2026-10-31)
+- **Stutter fixed for TVs with sound:** if ffmpeg captured the screen and the live sound in one process, it slowed the
+  screen capture down – up to 90 % of the frames were duplicates (stutter, sound dropouts). Now one process captures
+  only the picture and a second one adds the sound (copying the picture, no second encoding). Measured on a real
+  installation for 10 minutes: 0 duplicated frames, 25 frames/s in the stream, sound continuous.
+- **No more jumps of about one second:** MediaMTX's queue was too small for 4K and discarded frames
+  (“reader is too slow”); `writeQueueSize` is now 8192. The performance test counts these discards.
+- **Clearer announcements:** chime, a short silence and the speech are one audio file (the start of the speech is no
+  longer cut off), spoken 15 % slower.
+
 ## v0.19.1 (2026-10-31)
 - Announcements: spoken audio files are now removed every minute after an announcement has ended and when the service
   starts – before, only when the panel or the admin asked for data.

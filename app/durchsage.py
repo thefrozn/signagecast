@@ -70,33 +70,48 @@ def laden(stimme):
             stand["laeuft"] = False
 
 
-def sprechen(text, stimme, name):
-    """Text als WAV nach AUDIO/<name>.wav – dauert etwa 1 s je Satz."""
-    os.makedirs(AUDIO, exist_ok=True)
-    ziel = os.path.join(AUDIO, name + ".wav")
-    r = subprocess.run([piper_pfad(), "--model", os.path.join(ORDNER, stimme + ".onnx"), "--output_file", ziel, "--quiet"],
-                       input=text.encode(), capture_output=True, timeout=60,
-                       env={"LD_LIBRARY_PATH": os.path.dirname(piper_pfad())})
-    if r.returncode or not os.path.exists(ziel):
-        raise RuntimeError("Sprachausgabe fehlgeschlagen: " + r.stderr.decode(errors="replace")[-200:])
-    return ziel
-
-
-def gong():
-    """Zweiklang (Ding-Dong) einmal selbst erzeugen – keine fremde Tondatei nötig."""
-    ziel = os.path.join(AUDIO, "gong.wav")
-    if os.path.exists(ziel):
-        return ziel
-    os.makedirs(AUDIO, exist_ok=True)
-    rate, puffer = 22050, io.BytesIO()
+def _gong_daten(rate):
+    """Zweiklang (Ding-Dong) als 16-bit-Mono-Abtastwerte in der gewünschten Rate."""
+    puffer = io.BytesIO()
     for frequenz, dauer in ((784, 0.55), (587, 0.9)):        # g'' – d''
         for i in range(int(rate * dauer)):
             t = i / rate
             huelle = math.exp(-3.2 * t) * min(1, t * 200)
             wert = huelle * (0.6 * math.sin(2 * math.pi * frequenz * t) + 0.2 * math.sin(4 * math.pi * frequenz * t))
             puffer.write(struct.pack("<h", int(wert * 16000)))
-    with wave.open(ziel, "wb") as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(puffer.getvalue())
+    return puffer.getvalue()
+
+
+def sprechen(text, stimme, name, mit_gong=False):
+    """Text als EINE WAV-Datei nach AUDIO/<name>.wav: [Gong] + Stille + Sprache (15 % langsamer) + Stille.
+    Eine Datei statt zwei, damit beim Start der Sprache nichts verschluckt wird. Dauert etwa 1 s je Satz."""
+    os.makedirs(AUDIO, exist_ok=True)
+    roh, ziel = os.path.join(AUDIO, name + ".roh.wav"), os.path.join(AUDIO, name + ".wav")
+    r = subprocess.run([piper_pfad(), "--model", os.path.join(ORDNER, stimme + ".onnx"), "--output_file", roh, "--quiet",
+                        "--length_scale", "1.15", "--sentence_silence", "0.3"],
+                       input=text.encode(), capture_output=True, timeout=60,
+                       env={"LD_LIBRARY_PATH": os.path.dirname(piper_pfad())})
+    if r.returncode or not os.path.exists(roh):
+        raise RuntimeError("Sprachausgabe fehlgeschlagen: " + r.stderr.decode(errors="replace")[-200:])
+    try:
+        with wave.open(roh, "rb") as w:
+            rate, kanaele, breite, sprache = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.readframes(w.getnframes())
+        stille = lambda s: b"\x00" * (int(rate * s) * kanaele * breite)
+        teile = ([_gong_daten(rate), stille(0.3)] if mit_gong and kanaele == 1 and breite == 2 else []) + [stille(0.35), sprache, stille(0.4)]
+        with wave.open(ziel, "wb") as w:
+            w.setnchannels(kanaele); w.setsampwidth(breite); w.setframerate(rate); w.writeframes(b"".join(teile))
+    finally:
+        os.remove(roh)
+    return ziel
+
+
+def gong():
+    """Gong einzeln (Probe in der Verwaltung, ältere Seiten) – sonst steckt er in der Durchsage-Datei."""
+    ziel = os.path.join(AUDIO, "gong.wav")
+    if not os.path.exists(ziel):
+        os.makedirs(AUDIO, exist_ok=True)
+        with wave.open(ziel, "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(22050); w.writeframes(_gong_daten(22050))
     return ziel
 
 

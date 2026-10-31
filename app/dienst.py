@@ -516,9 +516,7 @@ def durchsage_senden(text, tvs, vorlesen, gong, dauer, von):
     if vorlesen:
         if not DS.bereit(p["stimme"]):
             raise ValueError("Stimme noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult)")
-        if gong:
-            DS.gong(); audio.append("/durchsage/gong.wav")
-        DS.sprechen(text, p["stimme"], did); audio.append(f"/durchsage/{did}.wav")
+        DS.sprechen(text, p["stimme"], did, mit_gong=gong); audio.append(f"/durchsage/{did}.wav")
     durchsagen.insert(0, {"id": did, "text": text, "tvs": list(tvs), "bis": time.time() + dauer, "audio": audio,
                           "zeit": time.strftime("%H:%M"), "von": von, "t": time.time()})
     durchsagen_aktiv()
