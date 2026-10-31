@@ -1,9 +1,9 @@
 # SignageCast – screenshot tour
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
-installation (location Berlin, public example data, no Home Assistant connected). The admin pages overview, TVs,
-settings, notifications, backup and phone show version 0.17 with its six areas (Overview, TVs, Content, Video & sound,
-Settings, System); the content pages are from version 0.13 and look the same apart from the navigation bar.
+installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show versions
+0.17–0.19 with the six areas Overview, TVs, Content, Video & sound, Settings and System; only the updates page is from
+version 0.13.
 
 [← back to the README](../README.md)
 
@@ -47,11 +47,18 @@ original sound of the cams), volume, categories and video settings (4K/Full HD, 
 
 ![TV settings](tour/05-tvs.jpg)
 
-### 6. Layout editor
-Drag and resize elements on a 48 × 27 grid; templates for living room, waiting room and company reception. On the
-right the selected element – here a chart: pick the value by clicking it in the data source's response.
+### 6. Layouts and editor
+Content → Layouts starts with all layouts as tiles – mini preview, on which TV each one is shown, edit, and copy /
+export / delete in the “⋯” menu. “New layout” asks for a name and a starting point (empty, template or copy), so an
+existing layout is never overwritten.
 
-![Layout editor with path picker](tour/06-layout-editor.jpg)
+![Layouts overview](tour/06a-layouts.jpg)
+
+In the editor, drag and resize elements on a 48 × 27 grid. Next to it the **layers** (top = front, as on the TV; show
+or hide, bring forward / send backward) and the selected element – here a chart: pick the value by clicking it in the
+data source's response. Click the same spot again to reach stacked elements, Tab selects the next one.
+
+![Layout editor with layers and path picker](tour/06-layout-editor.jpg)
 
 ### 7. Data sources
 Your own JSON APIs, RSS/Atom feeds, pictures, iCal calendars and cameras, fetched by the container at the interval you
@@ -123,12 +130,28 @@ the webhook for short messages on the TVs (key shown only once).
 
 ![Notifications and webhook](tour/17-notifications.jpg)
 
+### 18. Performance test
+System → Performance measures for 10 seconds how smoothly every running TV is rendered and encoded – frames/s of the
+TV page and of the encoder, speed, duplicated frames, CPU per TV, memory, graphics unit – and gives concrete
+recommendations. Here a deliberately overloaded 2-core test container. A second page, opened on the playback device,
+measures transfer and playback there.
+
+![Performance test with recommendations](tour/18-performance.jpg)
+
+### 19. Announcement panel
+Settings → Announcements: accounts with their own password and the TVs they may reach, the voice (offline with Piper:
+Kerstin or Thorsten), chime and templates. The reception opens `http://<IP>:8890/pult` – it can only send and end
+announcements, nothing else.
+
+![Announcement panel settings](tour/19-announcements.jpg)
+
 ---
 
 ## Deutsch (kurz)
 
 Die Verwaltung ist seit 0.17 in sechs Bereiche gegliedert (Übersicht mit „Zu erledigen“, Fernseher, Inhalte,
-Video & Ton, Einstellungen, System). Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
+Video & Ton, Einstellungen, System). Neu seit 0.17–0.19: Layouts-Übersicht mit Kacheln, Ebenen im Editor,
+Leistungstest mit Empfehlungen und das Durchsage-Pult. Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
 sowie ein reines Daten-Layout (Diagramm mit echten Pegelwerten, Feiertage per iCal, Feed, QR-Code). Danach die
 Verwaltung: SignageCast als Menüpunkt in Cockpit, Übersicht mit „Zu erledigen“, Fernseher, Layout-Editor mit Pfad-Auswahl, Datenquellen
 mit Antwort-Baum und curl-Import, Streams, Radio, Einspieler mit Puffer, Verbindung mit Zeitquelle, Updates
