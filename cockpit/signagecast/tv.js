@@ -16,6 +16,11 @@ const TEXTE = {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang" },
+    todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
+    todo: { update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
+            sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
+            benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
+            software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern" },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
     bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
@@ -163,6 +168,11 @@ const TEXTE = {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access" },
+    todoTitel: "To do", todoOk: "All good.",
+    todo: { update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
+            sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
+            benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
+            software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password" },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
     bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
@@ -485,8 +495,34 @@ async function entitaeten() {
 }
 
 // ---------- Übersicht ----------
+// „Zu erledigen“ (seit 0.17): wichtig (warn) zuerst, Tipps danach; jeder Eintrag führt zur passenden Seite
+async function todoZeichnen(s) {
+  const l = [];
+  const neu = (stufe, text, seite) => l.push({ stufe, text, seite });
+  if (s.ha.url && !s.ha.ok) neu("warn", T.todo.ha, "ha");
+  const sa = s.sicherung_auto || {};
+  if (sa.fehler) neu("warn", T.todo.sicherungFehler, "sicherung");
+  if ((s.benachrichtigung || []).some((x) => Object.values(x.ergebnis).some(Boolean))) neu("warn", T.todo.bnFehler, "benachrichtigung");
+  if (s.wetter.quelle === "met" && s.wetter.fehler) neu("warn", T.todo.wetter, "allgemein");
+  if (s.neue_version) neu("info", T.todo.update(s.neue_version), CONTAINER ? "uebersicht" : "updates");
+  if (s.kodierung && s.kodierung.art === "software") neu("info", T.todo.software, "uebersicht");
+  if (E.sicherung.plan === "aus") neu("tipp", T.todo.sicherung, "sicherung");
+  const B = E.benachrichtigung;
+  if (!B.telegram.aktiv && !B.email.aktiv && !B.ha.aktiv) neu("tipp", T.todo.benachrichtigung, "benachrichtigung");
+  if (CONTAINER) {
+    try { if ((await (await fetch("/verwaltung/info", { credentials: "same-origin" })).json()).startpasswort) neu("warn", T.todo.passwort, "zugang"); } catch (_) { /* egal */ }
+  }
+  const ziel = $("#todo");
+  if (!ziel) return;
+  const rang = { warn: 0, info: 1, tipp: 2 };
+  l.sort((a, b) => rang[a.stufe] - rang[b.stufe]);
+  ziel.innerHTML = l.length ? l.map((x) => `<li class="${x.stufe}">${x.seite === "uebersicht" ? esc(x.text)
+    : `<a href="#${x.seite}">${esc(x.text)}</a>`}</li>`).join("") : `<li class="gut">${esc(T.todoOk)}</li>`;
+}
+
 async function uebersicht(inhalt) {
   inhalt.innerHTML = `
+    <div class="karte" id="todoKarte"><h2>${esc(T.todoTitel)}</h2><ul class="todo" id="todo"></ul></div>
     <div id="updateHinweis"></div>
     <div class="raster" id="tvs"></div>
     <div class="raster" id="kacheln"></div>
@@ -542,6 +578,7 @@ async function uebersicht(inhalt) {
       ${CONTAINER ? `<p class="leise">${esc(T.updateTextContainer)}</p><pre>docker pull ${IMAGE}\ndocker compose up -d   # oder: docker rm -f signagecast &amp;&amp; docker run …</pre>`
         : `<pre>curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh</pre><p class="leise">${esc(T.updateText)}</p>`}
       <p class="leise"><a href="${esc(s.projekt)}/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></p></div>` : "";
+    todoZeichnen(s);
     $("#kacheln").innerHTML = k.map(([t, w2, u]) => `<div class="karte"><div class="leise">${esc(t)}</div><div class="wert">${w2}</div><div class="leise">${u}</div></div>`).join("");
     $("#aufgaben").innerHTML = s.aufgaben.map((a) => `<div class="zeile"><b>${esc(T.aufgabe[a.name] || a.name)}</b>
       <span class="leise">${esc(a.alle_s ? T.alleSek(a.alle_s) + (a.nur_stream ? ", " + T.nurStream : "") : a.wann || T.deaktiviert)}${a.zuletzt ? " · " + esc(T.zuletzt) + " " + esc(a.zuletzt.zeit || "") : ""}</span></div>`).join("");

@@ -21,6 +21,12 @@ nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px
 .karte.geaendert { border-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); position: relative; }
 .karte.geaendert::after { content: attr(data-ungespeichert); position: absolute; top: -9px; right: 12px; background: var(--akzent);
   color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 9px; }
+ul.todo { list-style: none; margin: 0; padding: 0; }
+ul.todo li { padding: 6px 0 6px 22px; position: relative; border-bottom: 1px solid var(--linie); }
+ul.todo li:last-child { border-bottom: 0; }
+ul.todo li::before { position: absolute; left: 2px; content: "•"; font-weight: 700; }
+ul.todo li.warn::before { content: "!"; color: #c62828; } ul.todo li.info::before { content: "i"; color: var(--akzent); }
+ul.todo li.tipp { color: var(--leise); } ul.todo li.gut::before { content: "✓"; color: #2e7d32; }
 details.erweitert { border-top: 1px dashed var(--linie); margin-top: 12px; }
 details.erweitert > summary { color: var(--leise); font-weight: 500; }
 @media (max-width: 640px) { #reiter, #unter { display: none; } #menue { display: block; } }

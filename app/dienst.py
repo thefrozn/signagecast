@@ -868,6 +868,7 @@ def status():
         "betrieb": "container" if CONTAINER else "lxc", "kodierung": zustand.get("kodierung"),
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
         "benachrichtigung": melder.letzte,
+        "sicherung_auto": zustand.get("sicherung_auto"),
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
         "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"],
                "code": (zustand.get("ha_fehler_code") or (None, None))[0], "detail": (zustand.get("ha_fehler_code") or (None, None))[1]},
