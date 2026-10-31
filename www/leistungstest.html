@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignageCast – Test</title>
+<style>
+  :root { --text: #1d1d1f; --leise: #6e6e73; --karte: #fff; --hg: #f2f2f5; --linie: #d8d8dc; --akzent: #0066cc; }
+  @media (prefers-color-scheme: dark) { :root { --text: #f2f2f2; --leise: #a1a1a6; --karte: #1c1c1e; --hg: #000; --linie: #38383a; --akzent: #4da3ff; } }
+  body { margin: 0; padding: 16px; font: 15px/1.45 system-ui, sans-serif; background: var(--hg); color: var(--text); }
+  main { max-width: 760px; margin: 0 auto; }
+  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  h1 { font-size: 1.3em; margin: 0 0 4px; } .leise { color: var(--leise); font-size: .92em; }
+  select, button { font: inherit; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); }
+  button.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+  video { width: 100%; background: #000; border-radius: 8px; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; } td { padding: 6px 4px; border-bottom: 1px solid var(--linie); }
+  .gut { color: #2e7d32; } .warn { color: #b26a00; } .schlecht { color: #c62828; }
+  li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="karte">
+    <h1 id="titel"></h1>
+    <p class="leise" id="intro"></p>
+    <p><select id="tv"></select> <button class="haupt" id="los"></button></p>
+    <p id="stand" class="leise"></p>
+    <video id="video" muted playsinline hidden></video>
+  </div>
+  <div class="karte" id="ergebnis" hidden><table id="tabelle"></table><ul id="empf"></ul></div>
+</main>
+<script>
+"use strict";
+// Leistungstest auf dem Abspielgerät: 1) Übertragung – Segmente des Streams laden wie ein Fernseher (Datenrate, Wartezeit),
+// 2) Wiedergabe – den Stream abspielen und verlorene Bilder/Stocken zählen. Ergebnis geht an SignageCast (Verwaltung).
+const TX = {
+  de: { titel: "SignageCast – Test auf diesem Gerät", los: "Test starten (ca. 35 s)",
+        intro: "Öffne diese Seite auf dem Gerät, auf dem es ruckelt (oder im selben Netz). Der Test lädt den Stream wie ein Fernseher und spielt ihn dann ab.",
+        startet: "Stream wird gestartet …", uebertragung: (s) => `Übertragung wird gemessen … ${s} s`, wiedergabe: (s) => `Wiedergabe wird gemessen … ${s} s`,
+        fertig: "Fertig – das Ergebnis steht auch in der Verwaltung unter System → Leistungstest.", fehler: "Fehler: ",
+        rate: "Datenrate", noetig: (b) => `nötig: ca. ${b} Mbit/s`, seg: "Ladezeit je Segment", segText: (d, m) => `Ø ${d} s, max. ${m} s (Segment = 2 s)`,
+        bilder: "Wiedergabe", bilderText: (v, d) => `${v} von ${d} Bildern verloren`, stocken: "Stocken", mal: (n) => `${n}×`,
+        e_netz: (m, b) => `Das Netz liefert nur ${m} Mbit/s, der Stream braucht ${b} Mbit/s (+ Reserve). Bitrate des Fernsehers senken oder LAN statt WLAN verwenden.`,
+        e_seg: "Einzelne Segmente brauchen länger als ihre Spielzeit – das Netz schwankt (WLAN?). Bitrate senken oder näher an den Router.",
+        e_h265: "Die Übertragung reicht, aber dieses Gerät verliert beim Abspielen Bilder. Es dekodiert H.265 offenbar nicht flüssig → in der Verwaltung beim Fernseher Codec „H.264“ wählen.",
+        e_geraet: "Die Übertragung reicht, aber dieses Gerät verliert beim Abspielen Bilder – es ist zu langsam oder ausgelastet. Anderen Browser/Player testen oder Bitrate senken.",
+        e_ok: "Übertragung und Wiedergabe auf diesem Gerät sind in Ordnung. Ruckelt das Bild trotzdem, liegt es am Server – dafür den Leistungstest in der Verwaltung (System → Leistungstest) starten, während der Fernseher läuft." },
+  en: { titel: "SignageCast – test on this device", los: "Start test (approx. 35 s)",
+        intro: "Open this page on the device that stutters (or in the same network). The test loads the stream like a TV and then plays it.",
+        startet: "Starting the stream …", uebertragung: (s) => `Measuring transfer … ${s} s`, wiedergabe: (s) => `Measuring playback … ${s} s`,
+        fertig: "Done – the result is also shown in the admin under System → Performance.", fehler: "Error: ",
+        rate: "Data rate", noetig: (b) => `needed: approx. ${b} Mbit/s`, seg: "Load time per segment", segText: (d, m) => `avg ${d} s, max ${m} s (segment = 2 s)`,
+        bilder: "Playback", bilderText: (v, d) => `${v} of ${d} frames dropped`, stocken: "Stalls", mal: (n) => `${n}×`,
+        e_netz: (m, b) => `The network delivers only ${m} Mbit/s, the stream needs ${b} Mbit/s (+ margin). Lower the TV's bitrate or use LAN instead of Wi-Fi.`,
+        e_seg: "Some segments take longer to load than they play – the network fluctuates (Wi-Fi?). Lower the bitrate or move closer to the router.",
+        e_h265: "The transfer is fine, but this device drops frames while playing. It apparently cannot decode H.265 smoothly → choose codec “H.264” for this TV in the admin.",
+        e_geraet: "The transfer is fine, but this device drops frames while playing – it is too slow or busy. Try another browser/player or lower the bitrate.",
+        e_ok: "Transfer and playback on this device are fine. If the picture still stutters, the server is the cause – start the performance test in the admin (System → Performance) while the TV is running." },
+};
+let T = TX.en, INFO = null;
+const $ = (s) => document.querySelector(s);
+const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+const abs = (basis, u) => new URL(u, basis).href;
+
+async function playlist(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.text();
+}
+
+async function start() {
+  const tv = INFO.fernseher.find((t) => t.id === $("#tv").value);
+  const basis = `http://${location.hostname}:${INFO.port}/${tv.id}/`;
+  $("#los").disabled = true; $("#ergebnis").hidden = true;
+  try {
+    // Stream starten lassen (MediaMTX startet die Kette bei der ersten Anfrage, ca. 15 s)
+    $("#stand").textContent = T.startet;
+    let haupt = null;
+    for (let i = 0; i < 45 && !haupt; i++) {
+      try { haupt = await playlist(basis + "index.m3u8"); } catch (_) { await warte(1000); }
+    }
+    if (!haupt) throw new Error("Stream nicht erreichbar / not reachable");
+    const zeile = haupt.split("\n").find((z, i, a) => a[i - 1] && a[i - 1].startsWith("#EXT-X-STREAM-INF"));
+    const medien = zeile ? abs(basis + "index.m3u8", zeile.trim()) : basis + "index.m3u8";
+    // 1) Übertragung: 12 s lang jedes neue Segment laden
+    const gesehen = new Set(), dauern = [];
+    let bytes = 0, zeit = 0;
+    const ende1 = Date.now() + 12000;
+    while (Date.now() < ende1) {
+      $("#stand").textContent = T.uebertragung(Math.ceil((ende1 - Date.now()) / 1000));
+      const pl = await playlist(medien);
+      for (const z of pl.split("\n").map((x) => x.trim()).filter((x) => x && !x.startsWith("#"))) {
+        if (gesehen.has(z)) continue;
+        gesehen.add(z);
+        if (gesehen.size <= 3) continue;                     // alte Segmente der Liste überspringen
+        const t0 = performance.now();
+        const b = await (await fetch(abs(medien, z), { cache: "no-store" })).arrayBuffer();
+        const d = (performance.now() - t0) / 1000;
+        bytes += b.byteLength; zeit += d; dauern.push(d);
+      }
+      await warte(500);
+    }
+    // 2) Wiedergabe: 18 s abspielen, verlorene Bilder und Stocken zählen
+    const v = $("#video"); v.hidden = false;
+    let stocken = 0, hls = null;
+    v.onwaiting = () => { stocken++; };
+    if (v.canPlayType("application/vnd.apple.mpegurl")) v.src = basis + "index.m3u8";
+    else {
+      await new Promise((ok, f) => { const s = document.createElement("script"); s.src = "/test/hls.js"; s.onload = ok; s.onerror = f; document.head.appendChild(s); });
+      hls = new Hls(); hls.loadSource(basis + "index.m3u8"); hls.attachMedia(v);
+    }
+    await v.play().catch(() => {});
+    await warte(3000); stocken = 0;
+    const q0 = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : { totalVideoFrames: 0, droppedVideoFrames: 0 };
+    for (let s = 15; s > 0; s--) { $("#stand").textContent = T.wiedergabe(s); await warte(1000); }
+    const q1 = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : { totalVideoFrames: 0, droppedVideoFrames: 0 };
+    v.pause(); if (hls) hls.destroy(); v.removeAttribute("src"); v.load(); v.hidden = true;
+    const erg = { tv: tv.id, mbit: zeit ? Math.round(bytes * 8 / zeit / 1e5) / 10 : null,
+                  segment_s: dauern.length ? Math.round(dauern.reduce((a, b) => a + b, 0) / dauern.length * 100) / 100 : null,
+                  segment_max_s: dauern.length ? Math.round(Math.max(...dauern) * 100) / 100 : null,
+                  dekodiert: q1.totalVideoFrames - q0.totalVideoFrames, verloren: q1.droppedVideoFrames - q0.droppedVideoFrames,
+                  stocken, dauer_s: 15 };
+    zeigen(tv, erg);
+    fetch("/test/ergebnis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(erg) }).catch(() => {});
+    $("#stand").textContent = T.fertig;
+  } catch (e) {
+    $("#stand").textContent = T.fehler + (e.message || e);
+  } finally { $("#los").disabled = false; }
+}
+
+function zeigen(tv, e) {
+  const noetig = tv.bitrate_mbit * 1.25, l = [];
+  const netzOk = e.mbit == null || e.mbit >= noetig * 1.3, segOk = e.segment_max_s == null || e.segment_max_s < 1.6;
+  const anteil = e.dekodiert ? e.verloren / e.dekodiert : 0, wiedOk = anteil < 0.02 && e.stocken === 0;
+  if (!netzOk) l.push(["schlecht", T.e_netz(e.mbit, Math.round(noetig))]);
+  else if (!segOk) l.push(["warn", T.e_seg]);
+  if (netzOk && segOk && !wiedOk) l.push(["schlecht", tv.codec === "h265" ? T.e_h265 : T.e_geraet]);
+  if (!l.length) l.push(["gut", T.e_ok]);
+  const k = (ok) => ok ? "gut" : "schlecht";
+  $("#tabelle").innerHTML = `
+    <tr><td>${T.rate}</td><td class="${k(netzOk)}">${e.mbit ?? "–"} Mbit/s</td><td class="leise">${T.noetig(Math.round(noetig))}</td></tr>
+    <tr><td>${T.seg}</td><td class="${segOk ? "gut" : "warn"}" colspan="2">${T.segText(e.segment_s ?? "–", e.segment_max_s ?? "–")}</td></tr>
+    <tr><td>${T.bilder} (${tv.codec === "h265" ? "H.265" : "H.264"})</td><td class="${k(anteil < 0.02)}" colspan="2">${T.bilderText(e.verloren, e.dekodiert)}</td></tr>
+    <tr><td>${T.stocken}</td><td class="${k(e.stocken === 0)}" colspan="2">${T.mal(e.stocken)}</td></tr>`;
+  $("#empf").innerHTML = l.map(([s, t]) => `<li class="${s}">${t}</li>`).join("");
+  $("#ergebnis").hidden = false;
+}
+
+(async () => {
+  INFO = await (await fetch("/test/info", { cache: "no-store" })).json();
+  T = TX[INFO.sprache] || TX.en;
+  $("#titel").textContent = T.titel; $("#intro").textContent = T.intro; $("#los").textContent = T.los;
+  const wunsch = new URLSearchParams(location.search).get("tv");
+  for (const t of INFO.fernseher) $("#tv").add(new Option(t.name, t.id, false, t.id === wunsch));
+  $("#los").onclick = start;
+})();
+</script>
+</body>
+</html>

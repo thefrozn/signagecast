@@ -5,7 +5,7 @@
 # Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
-import json, os, re, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import glob, json, os, re, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -485,16 +485,36 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         self.send_response(code); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(roh)))
         self.end_headers(); self.wfile.write(roh)
 
+    def datei(self, pfad, art):
+        roh = open(pfad, "rb").read()
+        self.send_response(200); self.send_header("Content-Type", art); self.send_header("Content-Length", str(len(roh)))
+        self.send_header("Cache-Control", "no-store"); self.end_headers(); self.wfile.write(roh)
+
     def bearbeiten(self, daten):
         import hmac
         u = urllib.parse.urlparse(self.path)
-        if u.path != "/meldung":
-            return self.antwort(404, {"ok": False})
         jetzt, ip = time.time(), self.client_address[0]
         liste = [t for t in webhook_versuche.get(ip, []) if jetzt - t < 60]
         webhook_versuche[ip] = liste + [jetzt]
         if len(liste) >= 20:
             return self.antwort(429, {"ok": False, "fehler": "zu viele Anfragen"})
+        # Leistungstest auf dem Abspielgerät (seit 0.18): http wie der Stream – aus der https-Verwaltung blockiert der Browser
+        if u.path == "/test" and self.command == "GET":
+            return self.datei(os.path.join(WWW, "leistungstest.html"), "text/html; charset=utf-8")
+        if u.path == "/test/hls.js" and self.command == "GET":
+            return self.datei(os.path.join(WWW, "hls", "hls.light.min.js"), "application/javascript")
+        if u.path == "/test/info" and self.command == "GET":
+            return self.antwort(200, {"ok": True, "port": HLS_PORT, "sprache": einst()["sprache"] or "en",
+                                      "fernseher": [{"id": t["id"], "name": t["name"], "bitrate_mbit": t["bitrate_mbit"],
+                                                     "codec": codec_fuer(t), "aufloesung": t["aufloesung"]} for t in einst()["fernseher"]]})
+        if u.path == "/test/ergebnis" and self.command == "POST":
+            erg = {k: daten.get(k) for k in ("tv", "mbit", "segment_s", "segment_max_s", "dekodiert", "verloren", "stocken", "dauer_s")
+                   if isinstance(daten.get(k), (int, float, str)) and len(str(daten.get(k))) < 40}
+            erg.update(zeit=time.strftime("%Y-%m-%d %H:%M:%S"), geraet=str(self.headers.get("User-Agent", ""))[:160], ip=ip)
+            zustand["leistung_geraete"] = ([erg] + zustand.get("leistung_geraete", []))[:5]
+            return self.antwort(200, {"ok": True})
+        if u.path != "/meldung":
+            return self.antwort(404, {"ok": False})
         wh = einst()["webhook"]
         q = urllib.parse.parse_qs(u.query)
         gegeben = (self.headers.get("Authorization") or "").removeprefix("Bearer ").strip() or (q.get("token") or [""])[0]
@@ -560,6 +580,17 @@ def benachrichtigung_schleife():
                 gesehen_sicherung = sa["zeit"]
                 melder.melden(f"sicherung-{sa['zeit']}", "sicherung", "SignageCast: Sicherung fehlgeschlagen",
                               f"Die automatische Sicherung um {sa['zeit']} ist fehlgeschlagen: {sa['fehler']}")
+            # Bildrate der TV-Seite: 5 Minuten im Schnitt unter 20 Bildern/s -> melden (seit 0.18)
+            for t in einst()["fernseher"]:
+                br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 330]
+                schnitt = sum(x["fps"] for x in br) / len(br) if len(br) >= 25 else None
+                if schnitt is not None and schnitt < 20:
+                    melder.melden("leistung-" + t["id"], "leistung", f"SignageCast: „{t['name']}“ ruckelt",
+                                  f"Die TV-Seite für „{t['name']}“ erreicht seit 5 Minuten nur {schnitt:.0f} Bilder/s (Ziel 25). "
+                                  "Leistungstest in der Verwaltung: System → Leistungstest.")
+                elif schnitt is not None and schnitt >= 22 or not kette_laeuft(t["id"]):
+                    melder.vorbei("leistung-" + t["id"], f"SignageCast: „{t['name']}“ läuft wieder flüssig",
+                                  f"Die TV-Seite für „{t['name']}“ erreicht wieder genug Bilder/s.")
             if einst()["ha"]["url"] and zustand["ha_fehler"]:
                 ha_weg = ha_weg or time.time()
                 if time.time() - ha_weg > 300:
@@ -869,6 +900,9 @@ def status():
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
         "benachrichtigung": melder.letzte,
         "sicherung_auto": zustand.get("sicherung_auto"),
+        "bildrate_niedrig": [t["name"] for t in e["fernseher"] if kette_laeuft(t["id"]) and (lambda br: len(br) >= 6 and
+                             sum(x["fps"] for x in br) / len(br) < 20)([x for x in (zustand.get("bildrate") or {}).get(t["id"], [])
+                                                                       if time.time() - x["t"] < 90])],
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
         "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"],
                "code": (zustand.get("ha_fehler_code") or (None, None))[0], "detail": (zustand.get("ha_fehler_code") or (None, None))[1]},
@@ -927,6 +961,124 @@ def schreib_wenn_anders(pfad, inhalt):
         f.write(inhalt)
 
 
+def codec_fuer(t):
+    """Tatsächlicher Codec eines Fernsehers: ohne Grafik immer H.264; „auto“ = H.265 bei 4K, H.264 bei Full HD."""
+    software = (zustand.get("kodierung") or {}).get("art") == "software"
+    if software:
+        return "h264"
+    return t["codec"] if t["codec"] != "auto" else ("h265" if t["aufloesung"] == 2160 else "h264")
+
+
+# ---------- Leistungstest (seit 0.18) ----------
+def ff_fortschritt(tv_id):
+    """Letzter Fortschritts-Block von ffmpeg (tv-render.sh schreibt ihn alle 2 s nach /dev/shm)."""
+    try:
+        return dict(z.split("=", 1) for z in open(f"/dev/shm/signagecast-ff-{tv_id}").read().split("\n") if "=" in z)
+    except OSError:
+        return {}
+
+
+def sitzungs_cpu():
+    """CPU-Zeit (Ticks) je Sitzung – die Render-Kette startet Xvfb, Chromium und ffmpeg je in einer eigenen Sitzung."""
+    je = {}
+    for pid in os.listdir("/proc"):
+        if pid.isdigit():
+            try:
+                f = open(f"/proc/{pid}/stat").read().rsplit(")", 1)[1].split()
+                je[int(f[3])] = je.get(int(f[3]), 0) + int(f[11]) + int(f[12])
+            except (OSError, IndexError, ValueError):
+                pass
+    return je
+
+
+def gpu_takt():
+    for k in sorted(glob.glob("/sys/class/drm/card*/gt_act_freq_mhz")):
+        try:
+            d = os.path.dirname(k)
+            return int(open(k).read()), int(open(os.path.join(d, "gt_RP0_freq_mhz")).read())
+        except (OSError, ValueError):
+            pass
+    return None
+
+
+def leistung_test(dauer=10):
+    """Misst dauer Sekunden lang Erzeugung (Chromium), Kodierung (ffmpeg) und System und gibt Empfehlungen."""
+    e = einst()
+    laufend = [t for t in e["fernseher"] if kette_laeuft(t["id"])]
+    def cpu_ges():
+        w = [int(x) for x in open("/proc/stat").readline().split()[1:]]
+        return sum(w), w[3] + w[4]
+    a_cpu, a_s, a_ff, t0 = cpu_ges(), sitzungs_cpu(), {t["id"]: ff_fortschritt(t["id"]) for t in laufend}, time.time()
+    gpu = []
+    for _ in range(dauer):
+        time.sleep(1)
+        g = gpu_takt()
+        if g:
+            gpu.append(g[0] / g[1] if g[1] else 0)
+    b_cpu, b_s, dt = cpu_ges(), sitzungs_cpu(), time.time() - t0
+    ticks = os.sysconf("SC_CLK_TCK")
+    ges, leer = b_cpu[0] - a_cpu[0], b_cpu[1] - a_cpu[1]
+    m = {k: int(v.split()[0]) for k, v in (z.split(":", 1) for z in open("/proc/meminfo"))}
+    kerne = os.cpu_count() or 1
+    erg = {"zeit": time.strftime("%Y-%m-%d %H:%M:%S"), "dauer_s": dauer,
+           "system": {"cpu": round(100 * (ges - leer) / ges, 1) if ges else None, "kerne": kerne,
+                      "ram_frei_mb": m.get("MemAvailable", 0) // 1024, "ram_gesamt_mb": m.get("MemTotal", 0) // 1024,
+                      "gpu_last": round(100 * sum(gpu) / len(gpu)) if gpu else None,
+                      "kodierung": (zustand.get("kodierung") or {}).get("art")},
+           "fernseher": []}
+    for t in e["fernseher"]:
+        z = {"id": t["id"], "name": t["name"], "laeuft": t in laufend, "aufloesung": t["aufloesung"],
+             "bitrate_mbit": t["bitrate_mbit"], "codec": codec_fuer(t)}
+        if z["laeuft"]:
+            br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 60]
+            if br:
+                z["fps_seite"] = round(sum(x["fps"] for x in br) / len(br), 1)
+                z["ruckler"] = sum(x["ruckler"] for x in br)
+            f0, f1 = a_ff.get(t["id"]) or {}, ff_fortschritt(t["id"])
+            try:
+                z["fps_kodierung"] = float(f1.get("fps", 0))
+                z["tempo"] = float((f1.get("speed") or "0x").rstrip("x") or 0)
+                z["doppelt"] = int(f1.get("dup_frames", 0)) - int(f0.get("dup_frames", f1.get("dup_frames", 0)))
+                z["verworfen"] = int(f1.get("drop_frames", 0)) - int(f0.get("drop_frames", f1.get("drop_frames", 0)))
+            except ValueError:
+                pass
+            sids = kette_pids(t["id"])
+            z["cpu_kerne"] = round(sum(b_s.get(s, 0) - a_s.get(s, 0) for s in sids) / ticks / dt, 2)
+        erg["fernseher"].append(z)
+    erg["empfehlungen"] = empfehlen(erg)
+    zustand["leistung"] = erg
+    return erg
+
+
+def empfehlen(erg):
+    """Ampel-Hinweise als Kennung + Werte; die Verwaltung setzt den Text in ihrer Sprache."""
+    l, s = [], erg["system"]
+    laufend = [t for t in erg["fernseher"] if t["laeuft"]]
+    if not laufend:
+        l.append({"code": "keine_kette", "stufe": "info"})
+    for t in laufend:
+        p = {"tv": t["name"], "aufloesung": t["aufloesung"], "bitrate": t["bitrate_mbit"], "codec": t["codec"]}
+        if t.get("fps_seite") is not None and t["fps_seite"] < 22:
+            l.append({"code": "seite_langsam", "stufe": "schlecht", "p": dict(p, fps=t["fps_seite"])})
+        if t.get("tempo") and t["tempo"] < 0.97:
+            l.append({"code": "kodierung_langsam", "stufe": "schlecht", "p": dict(p, tempo=t["tempo"])})
+        if t.get("verworfen", 0) + t.get("doppelt", 0) > erg["dauer_s"] * 2:
+            l.append({"code": "bilder_verloren", "stufe": "warn", "p": dict(p, n=t.get("verworfen", 0) + t.get("doppelt", 0))})
+    if s["cpu"] is not None and s["cpu"] > 85:
+        l.append({"code": "cpu_hoch", "stufe": "schlecht", "p": {"cpu": s["cpu"], "kerne": s["kerne"], "ketten": len(laufend)}})
+    elif s["cpu"] is not None and s["cpu"] > 70:
+        l.append({"code": "cpu_knapp", "stufe": "warn", "p": {"cpu": s["cpu"], "kerne": s["kerne"], "ketten": len(laufend)}})
+    if s["ram_frei_mb"] < 400:
+        l.append({"code": "ram_knapp", "stufe": "schlecht", "p": {"frei": s["ram_frei_mb"]}})
+    if s["gpu_last"] is not None and s["gpu_last"] > 90:
+        l.append({"code": "gpu_hoch", "stufe": "warn", "p": {"gpu": s["gpu_last"]}})
+    if s["kodierung"] == "software":
+        l.append({"code": "software", "stufe": "warn"})
+    if laufend and not any(x["stufe"] in ("schlecht", "warn") for x in l):
+        l.append({"code": "server_ok", "stufe": "gut"})
+    return l
+
+
 def render_schreiben(e):
     """Je Fernseher die Werte für tv-render.sh (wirken beim nächsten Start seiner Kette) und die MediaMTX-Pfade
     (MediaMTX lädt die Datei bei Änderung selbst neu)."""
@@ -935,7 +1087,7 @@ def render_schreiben(e):
         k = zustand.get("kodierung") or {}
         software = k.get("art") == "software"           # ohne nutzbare Grafik: H.264 in Full HD per CPU
         aus = "3840 2160" if t["aufloesung"] == 2160 and not software else "1920 1080"
-        codec = "h264" if software else t["codec"] if t["codec"] != "auto" else ("h265" if aus.startswith("3840") else "h264")
+        codec = codec_fuer(t)
         schreib_wenn_anders(os.path.join(DATEN, f"render-{t['id']}.env"),
                             f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n"
                             f"KODIERUNG={'software' if software else 'vaapi'}\nCODEC={codec}\n")
@@ -1312,6 +1464,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
                                       "wechsel": L.WECHSEL})
+        if pfad == "/api/leistung":
+            return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
+                                      "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
         if pfad == "/api/einspieler":
             return self.antwort(200, {"einspieler": einst()["einspieler"], "stand": zustand.get("einspieler", {})})
         if pfad == "/api/zeitzonen":
@@ -1415,6 +1570,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             d["webhook"]["token"] = einst()["webhook"]["token"]
         if p == "/api/einstellungen":
             bn_behalten(d)
+        if p == "/api/leistung/test":                # ca. 10 s messen (läuft im eigenen Anfrage-Thread)
+            return {"ergebnis": leistung_test()}
         if p == "/api/benachrichtigung/test":        # Testnachricht über einen Kanal (gespeicherte Einstellungen)
             kanal = d.get("kanal")
             if kanal not in ("telegram", "email", "ha"):

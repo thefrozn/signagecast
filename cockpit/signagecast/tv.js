@@ -15,7 +15,24 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistungstest" },
+    lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Fernseher läuft.",
+          start: "Test starten (10 s)", laeuftTest: "Test läuft …", system: "System", cpu: "CPU", kerne: "Kerne", ram: "Speicher frei", gpu: "Grafikeinheit",
+          seite: "Bilder/s TV-Seite", kodierung: "Bilder/s Kodierung", tempo: "Tempo", verloren: "verworfen/doppelt", cpuKette: "CPU (Kerne)", aus: "läuft nicht",
+          ziel: "Ziel: 25 Bilder/s, Tempo 1,0×", geraet: "Auf dem Abspielgerät testen", geraetText: "Übertragung und Wiedergabe lassen sich nur auf dem Gerät messen, auf dem es ruckelt. Öffne diese Adresse dort im Browser (gleiches Netz):",
+          letzteGeraete: "Ergebnisse von Geräten", keine: "noch keine", empfehlungen: "Empfehlungen",
+          empf: {
+            keine_kette: () => "Gerade läuft kein Fernseher. Erst den Stream auf dem Fernseher (oder im Browser) öffnen, dann testen.",
+            seite_langsam: (p) => `„${p.tv}“: Die TV-Seite schafft nur ${p.fps} Bilder/s (Ziel 25). Das Layout ist zu aufwendig für die CPU – Webseiten-, Kamera- und Diagramm-Bausteine kosten am meisten. Layout entschlacken, weniger Fernseher gleichzeitig oder dem Container mehr Kerne geben.`,
+            kodierung_langsam: (p) => `„${p.tv}“: Die Kodierung läuft nur mit ${p.tempo}× Echtzeit. ${p.aufloesung === 2160 ? "Ausgabe auf Full HD stellen oder " : ""}Bitrate senken; bei mehreren Fernsehern ist die Grafikeinheit ausgelastet.`,
+            bilder_verloren: (p) => `„${p.tv}“: ${p.n} Bilder verworfen oder doppelt – die Erzeugung hält nicht Schritt. Meist CPU-Last (siehe oben).`,
+            cpu_hoch: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Fernseher). Je Fernseher etwa 1 Kern einplanen – in Proxmox mehr Kerne zuweisen oder weniger Fernseher gleichzeitig.`,
+            cpu_knapp: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Fernseher) – wenig Reserve. Ein weiterer Fernseher oder ein aufwendiges Layout kann zum Ruckeln führen.`,
+            ram_knapp: (p) => `Nur noch ${p.frei} MB Speicher frei. Je Fernseher etwa 0,9 GB einplanen – dem Container mehr Speicher geben.`,
+            gpu_hoch: (p) => `Die Grafikeinheit läuft mit ${p.gpu} % ihres Höchsttakts – nahe an der Grenze. Bitrate oder Auflösung senken.`,
+            software: () => "Keine Grafikeinheit – Video wird per CPU kodiert (nur Full HD, H.264). Für 4K oder mehrere Fernseher die Intel-/AMD-Grafik an den Container durchreichen.",
+            server_ok: () => "Server in Ordnung: Erzeugung und Kodierung schaffen Echtzeit. Ruckelt es trotzdem, liegt es an Übertragung oder Abspielgerät – Test auf dem Gerät (unten).",
+          } },
     as: { titel: "Willkommen bei SignageCast", schritt: (n) => `Schritt ${n} von 4`, sprache: "Sprache der Verwaltung und der Fernseher",
           ort: "Wo steht der Fernseher? Der Ort bestimmt Wetter, Sonnenzeiten und Warnungen.", ha: "Home Assistant verbinden (optional) – für Werte aus dem Haus. Die Anleitung steht danach unter Einstellungen → Home Assistant.",
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
@@ -24,7 +41,8 @@ const TEXTE = {
     todo: { update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
-            software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern" },
+            software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
+            bildrate: (n) => `„${n}“ ruckelt: zu wenige Bilder/s – Leistungstest starten` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
     bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
@@ -58,7 +76,7 @@ const TEXTE = {
     bnTelegram: "Telegram", bnBotToken: "Bot-Token", bnChatId: "Chat-ID", bnEmail: "E-Mail (SMTP)", bnServer: "SMTP-Server", bnPort: "Port",
     bnSicherheit: "Verschlüsselung", bnBenutzer: "Benutzer", bnPasswort: "Passwort", bnAbsender: "Absender", bnEmpfaenger: "Empfänger (mit Komma trennen)",
     bnHA: "Home Assistant", bnDienst: "Benachrichtigungsdienst", bnAktiv: "aktiv", bnTest: "Testnachricht", bnTestOk: "Testnachricht gesendet",
-    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt" },
+    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Fernseher ruckelt (zu wenige Bilder/s)" },
     bnLetzte: "Zuletzt gesendet",
     whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Fernseher legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
     whAktiv: "Meldungen annehmen", whNeu: "Neuen Schlüssel erzeugen", whVorhanden: "Schlüssel gesetzt (••••)", whKeiner: "noch kein Schlüssel",
@@ -173,7 +191,24 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance" },
+    lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering TV is running.",
+          start: "Start test (10 s)", laeuftTest: "Test running …", system: "System", cpu: "CPU", kerne: "cores", ram: "Memory free", gpu: "Graphics unit",
+          seite: "Frames/s TV page", kodierung: "Frames/s encoding", tempo: "Speed", verloren: "dropped/duplicated", cpuKette: "CPU (cores)", aus: "not running",
+          ziel: "Target: 25 frames/s, speed 1.0×", geraet: "Test on the playback device", geraetText: "Transfer and playback can only be measured on the device that stutters. Open this address there in the browser (same network):",
+          letzteGeraete: "Results from devices", keine: "none yet", empfehlungen: "Recommendations",
+          empf: {
+            keine_kette: () => "No TV is running right now. Open the stream on the TV (or in a browser) first, then test.",
+            seite_langsam: (p) => `“${p.tv}”: the TV page reaches only ${p.fps} frames/s (target 25). The layout is too heavy for the CPU – web page, camera and chart elements cost the most. Simplify the layout, run fewer TVs at once or give the container more cores.`,
+            kodierung_langsam: (p) => `“${p.tv}”: encoding runs at only ${p.tempo}× real time. ${p.aufloesung === 2160 ? "Set the output to Full HD or " : ""}lower the bitrate; with several TVs the graphics unit is at its limit.`,
+            bilder_verloren: (p) => `“${p.tv}”: ${p.n} frames dropped or duplicated – rendering cannot keep up. Usually CPU load (see above).`,
+            cpu_hoch: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} TVs). Plan about 1 core per TV – assign more cores in Proxmox or run fewer TVs at once.`,
+            cpu_knapp: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} TVs) – little headroom. Another TV or a heavy layout may cause stutter.`,
+            ram_knapp: (p) => `Only ${p.frei} MB memory free. Plan about 0.9 GB per TV – give the container more memory.`,
+            gpu_hoch: (p) => `The graphics unit runs at ${p.gpu} % of its maximum clock – close to the limit. Lower bitrate or resolution.`,
+            software: () => "No graphics unit – video is encoded by the CPU (Full HD, H.264 only). For 4K or several TVs pass the Intel/AMD graphics through to the container.",
+            server_ok: () => "Server is fine: rendering and encoding keep up with real time. If it still stutters, transfer or the playback device is the cause – test on the device (below).",
+          } },
     as: { titel: "Welcome to SignageCast", schritt: (n) => `Step ${n} of 4`, sprache: "Language of the admin and the TVs",
           ort: "Where is the TV? The place sets weather, sun times and warnings.", ha: "Connect Home Assistant (optional) – for values from your home. The guide is under Settings → Home Assistant afterwards.",
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
@@ -182,7 +217,8 @@ const TEXTE = {
     todo: { update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
-            software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password" },
+            software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
+            bildrate: (n) => `“${n}” stutters: too few frames/s – run the performance test` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
     bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
@@ -216,7 +252,7 @@ const TEXTE = {
     bnTelegram: "Telegram", bnBotToken: "Bot token", bnChatId: "Chat ID", bnEmail: "E-mail (SMTP)", bnServer: "SMTP server", bnPort: "Port",
     bnSicherheit: "Encryption", bnBenutzer: "User", bnPasswort: "Password", bnAbsender: "Sender", bnEmpfaenger: "Recipients (comma separated)",
     bnHA: "Home Assistant", bnDienst: "Notify service", bnAktiv: "active", bnTest: "Test message", bnTestOk: "Test message sent",
-    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected" },
+    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "TV stutters (too few frames/s)" },
     bnLetzte: "Last sent",
     whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the TVs – above any layout. Only with a secret key; the key is shown only once after it is created.",
     whAktiv: "Accept messages", whNeu: "Create new key", whVorhanden: "Key set (••••)", whKeiner: "no key yet",
@@ -426,11 +462,11 @@ window.addEventListener("beforeunload", (e) => { if (ungespeichert()) { e.preven
 const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
                  streams: streamsSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
-                 updates: updatesSeite, sicherung: sicherungSeite, zugang: (i) => verbindung(i, "zugang") };
+                 updates: updatesSeite, sicherung: sicherungSeite, leistung: leistungSeite, zugang: (i) => verbindung(i, "zugang") };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher"]], ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
                   ["videoton", ["streams", "video", "suche", "radio"]], ["einstellungen", ["allgemein", "ha", "benachrichtigung"]],
-                  ["system", CONTAINER ? ["updates", "sicherung", "zugang"] : ["updates", "sicherung"]]];
+                  ["system", CONTAINER ? ["updates", "sicherung", "leistung", "zugang"] : ["updates", "sicherung", "leistung"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
 const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || BEREICHE[0];
@@ -573,11 +609,52 @@ async function assistent(inhalt, n = 1) {
   if ($("#asSpaeter")) $("#asSpaeter").onclick = (e) => { e.preventDefault(); aktion(null, fertig, null); };
 }
 
+// ---------- Leistungstest (seit 0.18) ----------
+async function leistungSeite(inhalt) {
+  const info = await holen("/api/leistung");
+  const host = info.eigene_ip || location.hostname;
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(T.lt.server)}</h2><p class="leise">${esc(T.lt.serverText)}</p>
+      <div class="zeile"><button class="knopf haupt" id="ltStart">${esc(T.lt.start)}</button><span class="leise">${esc(T.lt.ziel)}</span></div>
+      <div id="ltErg"></div></div>
+    <div class="karte"><h2>${esc(T.lt.geraet)}</h2><p class="leise">${esc(T.lt.geraetText)}</p>
+      ${E.fernseher.map((t) => `<div class="zeile"><b>${esc(t.name)}</b><code>http://${esc(host)}:${info.port}/test?tv=${esc(t.id)}</code></div>`).join("")}
+      <h3>${esc(T.lt.letzteGeraete)}</h3><div id="ltGeraete"></div></div>`;
+  const zeigen = (erg) => {
+    if (!erg) return;
+    const s = erg.system, z = (w, ok) => `<td class="${ok ? "gut" : "schlecht"}">${w ?? "–"}</td>`;
+    $("#ltErg").innerHTML = `<p class="leise">${esc(erg.zeit)}</p><div class="tabelle-rahmen"><table class="tabelle">
+      <tr><th></th><th>${esc(T.lt.seite)}</th><th>${esc(T.lt.kodierung)}</th><th>${esc(T.lt.tempo)}</th><th>${esc(T.lt.verloren)}</th><th>${esc(T.lt.cpuKette)}</th></tr>
+      ${erg.fernseher.map((t) => `<tr><td><b>${esc(t.name)}</b><br><span class="leise">${t.aufloesung === 2160 ? "4K" : "Full HD"} · ${t.codec === "h265" ? "H.265" : "H.264"} · ${t.bitrate_mbit} Mbit/s</span></td>
+        ${t.laeuft ? z(t.fps_seite, (t.fps_seite ?? 25) >= 22) + z(t.fps_kodierung, (t.fps_kodierung ?? 25) >= 24) + z(t.tempo != null ? t.tempo + "×" : null, (t.tempo ?? 1) >= 0.97)
+          + z((t.verworfen ?? 0) + (t.doppelt ?? 0), (t.verworfen ?? 0) + (t.doppelt ?? 0) <= erg.dauer_s * 2) + `<td>${t.cpu_kerne ?? "–"}</td>`
+          : `<td colspan="5" class="leise">${esc(T.lt.aus)}</td>`}</tr>`).join("")}</table></div>
+      <p>${esc(T.lt.system)}: ${esc(T.lt.cpu)} <b class="${(s.cpu ?? 0) > 85 ? "schlecht" : (s.cpu ?? 0) > 70 ? "warn" : "gut"}">${s.cpu ?? "–"} %</b> (${s.kerne} ${esc(T.lt.kerne)}) ·
+        ${esc(T.lt.ram)} <b class="${s.ram_frei_mb < 400 ? "schlecht" : "gut"}">${s.ram_frei_mb} MB</b> / ${s.ram_gesamt_mb} MB${s.gpu_last != null ? ` · ${esc(T.lt.gpu)} ${s.gpu_last} %` : ""}</p>
+      <h3>${esc(T.lt.empfehlungen)}</h3><ul class="todo">${erg.empfehlungen.map((x) =>
+        `<li class="${x.stufe === "gut" ? "gut" : x.stufe === "info" ? "info" : "warn"}">${esc((T.lt.empf[x.code] || (() => x.code))(x.p || {}))}</li>`).join("")}</ul>`;
+  };
+  const geraete = (l) => {
+    $("#ltGeraete").innerHTML = l.length ? `<ul class="todo">${l.map((g) => {
+      const tv = (E.fernseher.find((t) => t.id === g.tv) || {}).name || g.tv;
+      const ok = (g.verloren || 0) <= (g.dekodiert || 0) * 0.02 && !g.stocken;
+      return `<li class="${ok ? "gut" : "warn"}">${esc(g.zeit)} · <b>${esc(tv)}</b> · ${g.mbit ?? "–"} Mbit/s · ${g.verloren}/${g.dekodiert} · ${g.stocken}×<br>
+        <span class="leise">${esc(g.geraet)}</span></li>`; }).join("")}</ul>` : `<p class="leise">${esc(T.lt.keine)}</p>`;
+  };
+  zeigen(info.letzte); geraete(info.geraete);
+  $("#ltStart").onclick = (e) => aktion(e.target, async () => {
+    e.target.textContent = T.lt.laeuftTest;
+    try { zeigen((await senden("/api/leistung/test", {})).ergebnis); } finally { e.target.textContent = T.lt.start; }
+  }, null);
+  clearInterval(timer);
+  timer = setInterval(() => holen("/api/leistung").then((d) => geraete(d.geraete)).catch(() => {}), 10000);
+}
+
 // „Zu erledigen“ (seit 0.17): wichtig (warn) zuerst, Tipps danach; jeder Eintrag führt zur passenden Seite
 async function todoZeichnen(s) {
   const l = [];
   const neu = (stufe, text, seite) => l.push({ stufe, text, seite });
   if (s.ha.url && !s.ha.ok) neu("warn", T.todo.ha, "ha");
+  for (const n of s.bildrate_niedrig || []) neu("warn", T.todo.bildrate(n), "leistung");
   const sa = s.sicherung_auto || {};
   if (sa.fehler) neu("warn", T.todo.sicherungFehler, "sicherung");
   if ((s.benachrichtigung || []).some((x) => Object.values(x.ergebnis).some(Boolean))) neu("warn", T.todo.bnFehler, "benachrichtigung");

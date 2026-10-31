@@ -45,7 +45,8 @@ aufraeumen() {
   for p in ${FF:-} ${CR:-} ${XV:-}; do /usr/bin/kill -TERM -- "-$p" 2>/dev/null; done
   sleep 2
   for p in ${FF:-} ${CR:-} ${XV:-}; do pkill -KILL -s "$p" 2>/dev/null; done
-  rm -f "$PIDS" "$DATEN/kette-$TV.skript"
+  [ -n "${LESER:-}" ] && kill "$LESER" 2>/dev/null
+  rm -f "$PIDS" "$DATEN/kette-$TV.skript" "$FIFO" "$FORTSCHRITT"
 }
 trap 'aufraeumen; exit 0' INT TERM
 trap aufraeumen EXIT
@@ -74,7 +75,14 @@ else
   if [ "$CODEC" = h264 ]; then ENC="h264_vaapi -profile:v high"; else ENC="hevc_vaapi -profile:v main"; fi
   VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v $ENC"
 fi
-setsid ffmpeg -hide_banner -loglevel error -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
+# Fortschritt von ffmpeg (Bildrate, Tempo, doppelte/verworfene Bilder) für den Leistungstest: alle 2 s ein Block über
+# eine benannte Pipe; nur der letzte Block bleibt im Arbeitsspeicher (/dev/shm) – nichts wächst, nichts auf die Platte.
+FORTSCHRITT=/dev/shm/signagecast-ff-$TV; FIFO=$FORTSCHRITT.fifo
+rm -f "$FIFO"; mkfifo -m 600 "$FIFO"
+( blk=""; while IFS= read -r z; do blk="$blk$z
+"; case $z in progress=*) printf '%s' "$blk" > "$FORTSCHRITT.neu" && mv -f "$FORTSCHRITT.neu" "$FORTSCHRITT"; blk="";; esac
+  done ) < "$FIFO" & LESER=$!
+setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
   -video_size ${W}x${H} -i $DISP -thread_queue_size 512 -f pulse -i "$SINK.monitor" \
   $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
   -c:a aac -b:a 128k -ac 2 \

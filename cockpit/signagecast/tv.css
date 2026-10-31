@@ -25,6 +25,10 @@ nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px
 .karte.assistent pre { font-size: 1.15em; }
 nav a.hilfe { margin-left: auto; align-self: center; width: 24px; height: 24px; line-height: 24px; text-align: center;
   border: 1px solid var(--linie); border-radius: 50%; color: var(--leise); text-decoration: none; flex: none; }
+.tabelle-rahmen { overflow-x: auto; }
+table.tabelle { width: 100%; border-collapse: collapse; font-size: .92em; }
+table.tabelle th { text-align: left; font-weight: 600; color: var(--leise); padding: 6px; border-bottom: 1px solid var(--linie); }
+table.tabelle td { padding: 6px; border-bottom: 1px solid var(--linie); vertical-align: top; }
 ul.todo { list-style: none; margin: 0; padding: 0; }
 ul.todo li { padding: 6px 0 6px 22px; position: relative; border-bottom: 1px solid var(--linie); }
 ul.todo li:last-child { border-bottom: 0; }

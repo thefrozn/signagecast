@@ -48,7 +48,7 @@ STANDARD = {
         "email": {"aktiv": False, "server": "", "port": 587, "sicherheit": "starttls", "benutzer": "", "passwort": "",
                   "absender": "", "empfaenger": ""},
         "ha": {"aktiv": False, "dienst": "notify.notify"},
-        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True},
+        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True, "leistung": True},
     },
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},

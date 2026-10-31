@@ -68,6 +68,21 @@ def messen(port):
     return json.loads(r.get("result", {}).get("value") or "null")
 
 
+# Bildrate der TV-Seite (seit 0.18): wie oft Chromium in 2 s ein Bild fertig bekommt, dazu Ruckler (> 100 ms Pause)
+JS_BILDRATE = r"""new Promise((fertig) => { let n = 0, lang = 0, t0 = performance.now(), letzt = t0;
+  const f = (t) => { n++; if (t - letzt > 100) lang++; letzt = t;
+    if (t - t0 < 2000) requestAnimationFrame(f); else fertig(JSON.stringify({ fps: Math.round(n * 10000 / (t - t0)) / 10, ruckler: lang })); };
+  requestAnimationFrame(f); })"""
+
+
+def bildrate(port):
+    f = next((z for z in ziele(port) if z.get("type") == "page" and ":8080" in z.get("url", "")), None)
+    if not f:
+        return None
+    r = befehl(port, f, "Runtime.evaluate", {"expression": JS_BILDRATE, "returnByValue": True, "awaitPromise": True})
+    return json.loads(r.get("result", {}).get("value") or "null")
+
+
 def seite_neu_laden(port):
     f = next((z for z in ziele(port) if z.get("type") == "page" and ":8080" in z.get("url", "")), None)
     if not f:
@@ -84,6 +99,14 @@ def schleife(streams, zustand, fernseher, takt_s=10):
     while True:
         jetzt = {}
         for tv, port in fernseher():
+            try:
+                br = bildrate(port)
+            except Exception:
+                br = None
+            if br:                                         # Verlauf der letzten 5 Minuten je Fernseher
+                v = zustand.setdefault("bildrate", {}).setdefault(tv, [])
+                v.append(dict(br, t=time.time()))
+                del v[:-30]
             try:
                 m = messen(port)
             except Exception:
