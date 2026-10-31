@@ -15,7 +15,14 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistungstest" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistungstest", pult: "Durchsage-Pult" },
+    pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
+          stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
+          geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
+          gong: "Gong vor der Durchsage", dauer: "Standard-Anzeigedauer (s)", zugaenge: "Zugänge", zugangText: "Jeder Zugang hat ein eigenes Passwort und darf nur die angehakten Fernseher erreichen (keiner angehakt = alle).",
+          name: "Name", pwNeu: "neues Passwort", pwGesetzt: "Passwort gesetzt", pwFehlt: "noch kein Passwort", zugangNeu: "Zugang hinzufügen",
+          entfernen: "Entfernen", vorlagen: "Vorlagen", vorlagenText: "Eine Vorlage je Zeile; „…“ markiert die Lücke für den Namen.",
+          probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen)." },
     lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Fernseher läuft.",
           start: "Test starten (10 s)", laeuftTest: "Test läuft …", system: "System", cpu: "CPU", kerne: "Kerne", ram: "Speicher frei", gpu: "Grafikeinheit",
           seite: "Bilder/s TV-Seite", kodierung: "Bilder/s Kodierung", tempo: "Tempo", verloren: "verworfen/doppelt", cpuKette: "CPU (Kerne)", aus: "läuft nicht",
@@ -193,7 +200,14 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements" },
+    pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
+          stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
+          geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
+          gong: "Chime before the announcement", dauer: "Default display time (s)", zugaenge: "Accounts", zugangText: "Each account has its own password and may only reach the ticked TVs (none ticked = all).",
+          name: "Name", pwNeu: "new password", pwGesetzt: "password set", pwFehlt: "no password yet", zugangNeu: "Add account",
+          entfernen: "Remove", vorlagen: "Templates", vorlagenText: "One template per line; “…” marks the gap for the name.",
+          probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud)." },
     lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering TV is running.",
           start: "Start test (10 s)", laeuftTest: "Test running …", system: "System", cpu: "CPU", kerne: "cores", ram: "Memory free", gpu: "Graphics unit",
           seite: "Frames/s TV page", kodierung: "Frames/s encoding", tempo: "Speed", verloren: "dropped/duplicated", cpuKette: "CPU (cores)", aus: "not running",
@@ -465,11 +479,11 @@ window.addEventListener("beforeunload", (e) => { if (ungespeichert()) { e.preven
 // ---------- Reiter ----------
 const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
                  streams: streamsSeite, video, suche: sucheSeite, radio: radioSeite,
-                 allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
+                 allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"), pult: pultSeite,
                  updates: updatesSeite, sicherung: sicherungSeite, leistung: leistungSeite, zugang: (i) => verbindung(i, "zugang") };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher"]], ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
-                  ["videoton", ["streams", "video", "suche", "radio"]], ["einstellungen", ["allgemein", "ha", "benachrichtigung"]],
+                  ["videoton", ["streams", "video", "suche", "radio"]], ["einstellungen", ["allgemein", "ha", "benachrichtigung", "pult"]],
                   ["system", CONTAINER ? ["updates", "sicherung", "leistung", "zugang"] : ["updates", "sicherung", "leistung"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
@@ -611,6 +625,59 @@ async function assistent(inhalt, n = 1) {
   if ($("#asZur")) $("#asZur").onclick = () => geh(n - 1);
   if ($("#asUeber")) $("#asUeber").onclick = () => geh(n + 1);
   if ($("#asSpaeter")) $("#asSpaeter").onclick = (e) => { e.preventDefault(); aktion(null, fertig, null); };
+}
+
+// ---------- Durchsage-Pult (seit 0.19) ----------
+async function pultSeite(inhalt) {
+  const info = await holen("/api/pult");
+  const P = JSON.parse(JSON.stringify(E.pult));
+  const adresse = `http://${info.eigene_ip || location.hostname}:${info.port}/pult`;
+  const zeichnen = () => {
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pu.titel)}</h2><p class="leise">${esc(T.pu.text)}</p><pre>${esc(adresse)}</pre>
+        <p class="leise">${esc(T.pu.tonHinweis)}</p></div>
+      <div class="karte"><h2>${esc(T.pu.stimme)}</h2><p class="leise">${esc(T.pu.stimmeText)}</p>
+        ${Object.entries(info.stimmen).map(([k, v]) => `<div class="zeile"><label><input type="radio" name="stimme" value="${k}" ${P.stimme === k ? "checked" : ""}>
+          ${esc(v.name)} (${esc(v.art)})</label><span class="${v.bereit ? "gut" : "leise"}">${esc(v.bereit ? T.pu.geladen : T.pu.nichtGeladen)}</span>
+          ${v.bereit ? "" : `<button class="knopf" data-laden="${k}" ${info.laden.laeuft ? "disabled" : ""}>${esc(info.laden.laeuft ? T.pu.laedtGerade : T.pu.laden)}</button>`}</div>`).join("")}
+        ${info.laden.fehler ? `<p class="schlecht">${esc(info.laden.fehler)}</p>` : ""}
+        <div class="zeile"><label><input type="checkbox" id="puVorlesen" ${P.vorlesen ? "checked" : ""}> ${esc(T.pu.vorlesen)}</label></div>
+        <div class="zeile"><label><input type="checkbox" id="puGong" ${P.gong ? "checked" : ""}> ${esc(T.pu.gong)}</label></div>
+        <div class="zeile"><label>${esc(T.pu.dauer)}</label><input type="number" id="puDauer" min="10" max="3600" value="${P.dauer_s}"></div></div>
+      <div class="karte"><h2>${esc(T.pu.zugaenge)}</h2><p class="leise">${esc(T.pu.zugangText)}</p>
+        ${P.zugaenge.map((z, i) => `<div class="eintrag" data-i="${i}">
+          <div class="zeile"><label>${esc(T.pu.name)}</label><input type="text" name="zName" value="${esc(z.name)}"></div>
+          <div class="zeile">${E.fernseher.map((t) => `<label><input type="checkbox" name="zTv" value="${esc(t.id)}" ${z.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join(" ")}</div>
+          <div class="zeile"><input type="password" name="zPw" placeholder="${esc(T.pu.pwNeu)}" autocomplete="new-password">
+            <span class="leise">${esc(z.passwort ? T.pu.pwGesetzt : T.pu.pwFehlt)}</span><button class="knopf gefahr" name="zWeg">${esc(T.pu.entfernen)}</button></div></div>`).join("")}
+        <div class="zeile"><button class="knopf" id="zNeu">${esc(T.pu.zugangNeu)}</button></div></div>
+      <div class="karte"><h2>${esc(T.pu.vorlagen)}</h2><p class="leise">${esc(T.pu.vorlagenText)}</p>
+        <textarea id="puVorlagen" rows="5" class="breit">${esc(P.vorlagen.join("\n"))}</textarea>
+        <div class="zeile"><button class="knopf haupt" id="puOk">${esc(T.speichern)}</button>
+          <select id="puProbeTv">${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select>
+          <button class="knopf" id="puProbe">${esc(T.pu.probe)}</button></div></div>`;
+    const lesen = () => {                       // Eingaben in P übernehmen (vor Neuzeichnen und Speichern)
+      P.stimme = (inhalt.querySelector("[name=stimme]:checked") || {}).value || P.stimme;
+      P.vorlesen = $("#puVorlesen").checked; P.gong = $("#puGong").checked; P.dauer_s = Number($("#puDauer").value) || 60;
+      P.vorlagen = $("#puVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean);
+      inhalt.querySelectorAll("[data-i]").forEach((el) => {
+        const z = P.zugaenge[Number(el.dataset.i)];
+        z.name = el.querySelector("[name=zName]").value.trim() || "Pult";
+        z.fernseher = [...el.querySelectorAll("[name=zTv]:checked")].map((c) => c.value);
+        const pw = el.querySelector("[name=zPw]").value;
+        if (pw) z.passwort_neu = pw;
+      });
+    };
+    inhalt.querySelectorAll("[name=zWeg]").forEach((b) => { b.onclick = () => { lesen(); P.zugaenge.splice(Number(b.closest("[data-i]").dataset.i), 1); zeichnen(); }; });
+    $("#zNeu").onclick = () => { lesen(); P.zugaenge.push({ id: Math.random().toString(36).slice(2, 10).padEnd(8, "0"), name: "Rezeption", passwort: "", fernseher: [] }); zeichnen(); };
+    $("#puOk").onclick = (e) => { lesen(); speichernE({ pult: P }, e.target).then(() => { Object.assign(P, JSON.parse(JSON.stringify(E.pult))); zeichnen(); }); };
+    $("#puProbe").onclick = (e) => aktion(e.target, () => senden("/api/pult/probe", { tv: $("#puProbeTv").value }), T.pu.probeOk);
+    inhalt.querySelectorAll("[data-laden]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
+      await senden("/api/pult/stimme-laden", { stimme: b.dataset.laden });
+      clearInterval(timer);
+      timer = setInterval(async () => { const i = await holen("/api/pult"); Object.assign(info, i); lesen(); zeichnen(); if (!i.laden.laeuft) clearInterval(timer); }, 3000);
+    }, null); });
+  };
+  zeichnen();
 }
 
 // ---------- Leistungstest (seit 0.18) ----------
