@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.18.0 (unreleased)
+## v0.18.0 (2026-10-31)
 - **Performance test** (System → Performance): measures for 10 s how smoothly each running TV is rendered (frames/s of
   the TV page) and encoded (frames/s, speed, duplicated/dropped frames), CPU per TV, memory and graphics unit – with
   traffic lights and concrete recommendations (simplify layout, more cores, Full HD, lower bitrate, …).
@@ -11,6 +11,9 @@
   fixed, with an explanation in the TV settings.
 - TVs that cannot play any sound (sound off, no clip or camera with sound) now record a silent track instead of the
   live sound – this saves CPU and avoids duplicated frames seen with the live sound capture.
+- **Duplicated frames are monitored:** if the capture of a TV duplicates more than 3 frames per second for 3 minutes, a
+  to-do entry and optionally a notification. “Restart sound and stream” in the performance test restarts PulseAudio and
+  the streams (this cured a state seen once in testing where most frames were duplicated).
 
 ## v0.17.2 (2026-10-31)
 - **Layouts overview:** Content → Layouts now starts with tiles of all layouts – mini preview, name and on which TV
