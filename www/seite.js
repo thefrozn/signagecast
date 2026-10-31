@@ -560,6 +560,7 @@ async function laden() {
     $("quelle").textContent = d.wetter && d.wetter.quelle === "MET Norway" && !d.layout.schwarz ? T.wetterQuelle : "";
     radioSetzen(d);
     meldungExtern(d.meldung_extern);
+    durchsage(d.durchsage);
   } catch (_) { /* nächster Versuch */ }
 }
 
@@ -572,8 +573,37 @@ function meldungExtern(m) {
   el.hidden = false;
 }
 
+// Durchsage (seit 0.19): Fenster zeigen, Gong und Sprache nacheinander abspielen; Radio und Tierton solange leiser
+let durchsageId = null;
+const durchsageTon = new Audio();
+function durchsage(x) {
+  const el = $("durchsage");
+  if (!x || x.bis * 1000 < Date.now()) { el.hidden = true; durchsageId = null; return; }
+  $("durchsage-text").textContent = x.text;
+  el.hidden = false;
+  if (x.id === durchsageId) return;
+  durchsageId = x.id;
+  const liste = [...(x.audio || [])];
+  if (!liste.length) return;
+  window.dispatchEvent(new CustomEvent("durchsage-start"));
+  const naechste = () => {
+    const u = liste.shift();
+    if (!u) { window.dispatchEvent(new CustomEvent("durchsage-ende")); return; }
+    durchsageTon.src = u; durchsageTon.volume = 1;
+    durchsageTon.play().catch(naechste);
+  };
+  durchsageTon.onended = naechste; durchsageTon.onerror = naechste;
+  naechste();
+}
+window.addEventListener("durchsage-start", () => { radio.dataset.vorher = radio.volume; radio.volume = Math.min(radio.volume, 0.15); });
+window.addEventListener("durchsage-ende", () => { if (radio.dataset.vorher) radio.volume = Number(radio.dataset.vorher); });
+
 const start = Date.now();
 laden(); setInterval(laden, 15000);
+setInterval(async () => {                         // Durchsagen schnell abholen (nur lokal, sehr klein)
+  try { const r = await (await fetch("/durchsage.json?tv=" + encodeURIComponent(TV), { cache: "no-store" })).json(); if (r.ok) durchsage(r.durchsage); }
+  catch (_) { /* nächster Versuch */ }
+}, 2000);
 setInterval(uhr, 1000);
 // Speicher frei halten: alle 6 h einmal neu laden
 setInterval(() => { if (new Date().getSeconds() < 5 && Date.now() - start > 6 * 3600 * 1000) location.reload(); }, 1000);

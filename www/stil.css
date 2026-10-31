@@ -97,6 +97,14 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 #quelle { position: absolute; right: 8px; bottom: 4px; font: 400 11px sans-serif; color: rgba(255,255,255,.55);
   text-shadow: 0 1px 2px rgba(0,0,0,.8); z-index: 50; pointer-events: none; }
 
+/* Durchsage (seit 0.19): großes Aufruf-Fenster mittig über jedem Layout */
+#durchsage { position: absolute; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.35); }
+#durchsage-text { max-width: 80%; padding: 4vh 5vw; border-radius: 2.5vh; background: rgba(255,255,255,.96); color: #111;
+  font: 600 6vh/1.25 sans-serif; text-align: center; box-shadow: 0 2vh 6vh rgba(0,0,0,.5); animation: durchsage-rein .5s ease-out; }
+@keyframes durchsage-rein { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+#durchsage[hidden] { display: none; }
+
 /* Meldung per Webhook (seit 0.16) */
 #meldung-extern { position: absolute; left: 4%; right: 4%; top: 4%; z-index: 60; padding: 1.2vh 2vw; border-radius: 1vh;
   background: rgba(20,60,120,.92); color: #fff; font: 600 3.4vh sans-serif; text-align: center;

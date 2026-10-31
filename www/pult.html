@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignageCast – Durchsage</title>
+<style>
+  :root { --text: #1d1d1f; --leise: #6e6e73; --karte: #fff; --hg: #f2f2f5; --linie: #d8d8dc; --akzent: #0066cc; --gut: #2e7d32; --schlecht: #c62828; }
+  @media (prefers-color-scheme: dark) { :root { --text: #f2f2f2; --leise: #a1a1a6; --karte: #1c1c1e; --hg: #000; --linie: #38383a; --akzent: #4da3ff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 17px/1.45 system-ui, sans-serif; background: var(--hg); color: var(--text); }
+  main { max-width: 720px; margin: 0 auto; }
+  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  h1 { font-size: 1.25em; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .leise { color: var(--leise); font-size: .9em; }
+  input[type=text], input[type=password], select { width: 100%; font: inherit; padding: 12px; border-radius: 10px; border: 1px solid var(--linie);
+    background: var(--karte); color: var(--text); }
+  button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--linie); background: var(--karte); color: var(--text); cursor: pointer; }
+  button.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; width: 100%; padding: 14px; font-size: 1.1em; }
+  button:disabled { opacity: .5; }
+  .tvs { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 14px; }
+  .tvs label, .optionen label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--linie); border-radius: 10px; cursor: pointer; }
+  .tvs input:checked + span { font-weight: 600; }
+  .vorlagen { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+  .vorlagen button { font-size: .9em; padding: 6px 10px; }
+  .optionen { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .optionen select { width: auto; padding: 8px; }
+  #meldung { min-height: 1.4em; margin: 10px 0 0; } .gut { color: var(--gut); } .schlecht { color: var(--schlecht); }
+  ul { list-style: none; padding: 0; margin: 0; } li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--linie); }
+  li:last-child { border-bottom: 0; } li .text { flex: 1; min-width: 0; } li.aus { opacity: .55; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="karte" id="anmeldung" hidden>
+    <h1 id="tTitel"></h1>
+    <p class="leise" id="tAnmeldenText"></p>
+    <input type="password" id="pw" autocomplete="current-password">
+    <p><button class="haupt" id="anmelden"></button></p>
+    <p id="anmeldeFehler" class="schlecht"></p>
+  </div>
+  <div id="pult" hidden>
+    <div class="karte">
+      <h1><span id="tTitel2"></span><button id="abmelden"></button></h1>
+      <div class="leise" id="tAn"></div>
+      <div class="tvs" id="tvs"></div>
+      <input type="text" id="text" maxlength="200" autocomplete="off">
+      <div class="vorlagen" id="vorlagen"></div>
+      <div class="optionen">
+        <label id="vorlesenZeile"><input type="checkbox" id="vorlesen"> <span id="tVorlesen"></span></label>
+        <label id="gongZeile"><input type="checkbox" id="gong"> <span id="tGong"></span></label>
+        <span class="leise" id="tDauer"></span><select id="dauer"></select>
+      </div>
+      <button class="haupt" id="senden"></button>
+      <p id="meldung" class="leise"></p>
+    </div>
+    <div class="karte"><h1 id="tZuletzt"></h1><ul id="liste"></ul></div>
+  </div>
+</main>
+<script>
+"use strict";
+// Durchsage-Pult: nur Meldungen an die erlaubten Fernseher senden und beenden – keine Einstellungen.
+const TX = {
+  de: { titel: "Durchsage", anmeldenText: "Bitte mit dem Pult-Passwort anmelden.", anmelden: "Anmelden", abmelden: "Abmelden",
+        an: "An:", alle: "alle", platzhalter: "Text der Durchsage, z. B. Frau Bauer, bitte in Behandlungsraum 2",
+        vorlesen: "vorlesen", gong: "Gong vorher", dauer: "Anzeige:", senden: "Durchsage senden", gesendet: "Gesendet – erscheint in etwa 10 Sekunden.",
+        zuletzt: "Zuletzt", leer: "Noch keine Durchsage.", beenden: "beenden", laeuft: "läuft", keinTv: "Bitte mindestens einen Fernseher wählen.",
+        keinText: "Bitte einen Text eingeben.", falsch: "Falsches Passwort.", min: (n) => `${n} min`, abgelaufen: "Bitte neu anmelden." },
+  en: { titel: "Announcement", anmeldenText: "Please log in with the panel password.", anmelden: "Log in", abmelden: "Log out",
+        an: "To:", alle: "all", platzhalter: "Announcement text, e.g. Mrs Baker, please go to room 2",
+        vorlesen: "read aloud", gong: "chime first", dauer: "Show for:", senden: "Send announcement", gesendet: "Sent – appears in about 10 seconds.",
+        zuletzt: "Recent", leer: "No announcement yet.", beenden: "end", laeuft: "showing", keinTv: "Please choose at least one TV.",
+        keinText: "Please enter a text.", falsch: "Wrong password.", min: (n) => `${n} min`, abgelaufen: "Please log in again." },
+};
+let T = TX[(navigator.language || "de").startsWith("de") ? "de" : "en"], INFO = null;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(pfad, daten) {
+  const r = await fetch("/pult/" + pfad, daten === undefined ? { cache: "no-store", credentials: "same-origin" }
+    : { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-Pult": "1" }, body: JSON.stringify(daten) });
+  if (r.status === 401) { zeigeAnmeldung(T.abgelaufen); throw new Error("401"); }
+  return r.json();
+}
+
+function zeigeAnmeldung(hinweis) {
+  $("#pult").hidden = true; $("#anmeldung").hidden = false;
+  $("#tTitel").textContent = "SignageCast – " + T.titel; $("#tAnmeldenText").textContent = T.anmeldenText;
+  $("#anmelden").textContent = T.anmelden; $("#anmeldeFehler").textContent = hinweis || "";
+  $("#pw").focus();
+}
+
+async function anmelden() {
+  const r = await fetch("/pult/anmelden", { method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-Pult": "1" }, body: JSON.stringify({ passwort: $("#pw").value }) });
+  if (!r.ok) { $("#anmeldeFehler").textContent = T.falsch; return; }
+  $("#pw").value = ""; start();
+}
+
+async function start() {
+  try { INFO = await api("info"); } catch (_) { return; }
+  if (!INFO.ok) return zeigeAnmeldung();
+  T = TX[INFO.sprache] || T;
+  $("#anmeldung").hidden = true; $("#pult").hidden = false;
+  $("#tTitel2").textContent = `${T.titel} · ${INFO.zugang}`; $("#abmelden").textContent = T.abmelden;
+  $("#tAn").textContent = T.an; $("#text").placeholder = T.platzhalter; $("#tVorlesen").textContent = T.vorlesen;
+  $("#tGong").textContent = T.gong; $("#tDauer").textContent = T.dauer; $("#senden").textContent = T.senden; $("#tZuletzt").textContent = T.zuletzt;
+  const tvs = INFO.fernseher.map((t) => `<label><input type="checkbox" value="${esc(t.id)}" ${INFO.fernseher.length === 1 ? "checked" : ""}><span>${esc(t.name)}</span></label>`);
+  if (INFO.fernseher.length > 1) tvs.push(`<label><input type="checkbox" id="alle"><span>${esc(T.alle)}</span></label>`);
+  $("#tvs").innerHTML = tvs.join("");
+  if ($("#alle")) $("#alle").onchange = (e) => { for (const c of document.querySelectorAll("#tvs input[value]")) c.checked = e.target.checked; };
+  $("#vorlagen").innerHTML = INFO.vorlagen.map((v, i) => `<button data-i="${i}">${esc(v)}</button>`).join("");
+  for (const b of document.querySelectorAll("#vorlagen button")) b.onclick = () => {
+    const t = INFO.vorlagen[b.dataset.i], i = t.indexOf("…"), feld = $("#text");
+    feld.value = t; feld.focus();
+    if (i >= 0) feld.setSelectionRange(i, i + 1);                // erste Lücke markieren – gleich den Namen tippen
+  };
+  $("#vorlesenZeile").hidden = !INFO.vorlesen; $("#vorlesen").checked = INFO.vorlesen;
+  $("#gongZeile").hidden = !INFO.vorlesen; $("#gong").checked = INFO.gong;
+  const dauern = [...new Set([30, 60, 120, 300, 600, INFO.dauer_s])].sort((a, b) => a - b);
+  $("#dauer").innerHTML = dauern.map((s) => `<option value="${s}" ${s === INFO.dauer_s ? "selected" : ""}>${s < 60 ? s + " s" : T.min(s / 60)}</option>`).join("");
+  liste(); setInterval(liste, 10000);
+}
+
+async function senden() {
+  const tvs = [...document.querySelectorAll("#tvs input[value]:checked")].map((c) => c.value);
+  const text = $("#text").value.trim(), m = $("#meldung");
+  if (!tvs.length) { m.className = "schlecht"; m.textContent = T.keinTv; return; }
+  if (!text) { m.className = "schlecht"; m.textContent = T.keinText; return; }
+  $("#senden").disabled = true;
+  try {
+    const r = await api("senden", { text, fernseher: tvs, vorlesen: $("#vorlesen").checked, gong: $("#gong").checked, dauer_s: Number($("#dauer").value) });
+    m.className = r.ok ? "gut" : "schlecht"; m.textContent = r.ok ? T.gesendet : r.fehler;
+    if (r.ok) { $("#text").value = ""; liste(); }
+  } catch (_) { /* Anmeldung wird gezeigt */ } finally { $("#senden").disabled = false; }
+}
+
+async function liste() {
+  let d; try { d = await api("liste"); } catch (_) { return; }
+  $("#liste").innerHTML = d.liste.length ? d.liste.map((x) => `<li class="${x.laeuft ? "" : "aus"}"><span class="leise">${esc(x.zeit)}</span>
+    <span class="text">${esc(x.text)}<br><span class="leise">→ ${esc(x.tvs.join(", "))}</span></span>
+    ${x.laeuft ? `<button data-id="${esc(x.id)}">${esc(T.beenden)}</button>` : ""}</li>`).join("") : `<li class="leise">${esc(T.leer)}</li>`;
+  for (const b of document.querySelectorAll("#liste button")) b.onclick = async () => { await api("beenden", { id: b.dataset.id }); liste(); };
+}
+
+$("#anmelden").onclick = anmelden;
+$("#pw").onkeydown = (e) => { if (e.key === "Enter") anmelden(); };
+$("#senden").onclick = senden;
+$("#text").onkeydown = (e) => { if (e.key === "Enter") senden(); };
+$("#abmelden").onclick = async () => { await api("abmelden", {}).catch(() => {}); zeigeAnmeldung(); };
+start();
+</script>
+</body>
+</html>

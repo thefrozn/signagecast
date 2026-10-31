@@ -46,6 +46,9 @@ class LivePlayer {
     this.empfang = (e) => this.nachricht(e);
     window.addEventListener("message", this.empfang);
     this.uhr = setInterval(() => this.tick(), 1000);
+    // Durchsage (seit 0.19): Tierton solange leiser
+    window.addEventListener("durchsage-start", () => { this.durchsage = true; this.tonSetzen(); });
+    window.addEventListener("durchsage-ende", () => { this.durchsage = false; this.tonSetzen(); });
   }
 
   setze(d) {
@@ -75,6 +78,7 @@ class LivePlayer {
 
   tonSetzen() {
     if (this.einspieler) return;
+    if (this.durchsage) { this.befehl("setVolume", [Math.min(this.lautstaerke, 15)]); return; }
     if (this.ton === "tiere") { this.befehl("unMute"); this.befehl("setVolume", [this.lautstaerke]); }
     else this.befehl("mute");
   }

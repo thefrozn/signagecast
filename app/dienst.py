@@ -1590,6 +1590,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         p = urllib.parse.urlparse(self.path)
+        if p.path == "/durchsage.json":               # leichter Abruf alle 2 s – Durchsagen sollen schnell erscheinen
+            tv = (urllib.parse.parse_qs(p.query).get("tv") or [""])[0]
+            return self.antwort(200, {"ok": True, "durchsage": durchsage_fuer(tv)})
         if p.path == "/daten.json":
             tv = (urllib.parse.parse_qs(p.query).get("tv") or [None])[0]
             return self.antwort(200, tv_daten(tv))
