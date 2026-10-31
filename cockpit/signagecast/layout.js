@@ -5,6 +5,10 @@
 
 const LTEXTE = {
   de: {
+    alleLayouts: "Alle Layouts", ausgangspunkt: "Ausgangspunkt", leeresLayout: "leer", vorlagenGruppe: "Vorlagen", kopieVon: "Kopie von",
+    erstellen: "Erstellen", abbrechen: "Abbrechen", bearbeitenL: "Bearbeiten", mehr: "Mehr", nichtVerwendet: "nicht verwendet",
+    laeuftAuf: (n) => `läuft auf: ${n}`, laeuftHinweis: "Änderungen sind nach dem Speichern sofort auf dem Fernseher zu sehen.",
+    nameFehlt: "Bitte einen Namen eingeben.", verwerfen: "Ungespeicherte Änderungen verwerfen?", hgFarben: "Hintergrund & Farben",
     layout: "Layout", neu: "Neues Layout", ausVorlage: "aus Vorlage", duplizieren: "Kopieren", loeschen: "Löschen",
     exportieren: "Exportieren", importieren: "Importieren", rueckgaengig: "Rückgängig", speichern: "Speichern",
     name: "Name", hintergrund: "Hintergrund", hgArt: { wetter: "Wetterbild (nach Wetter)", stil: "Bilderset (nach Tageszeit)", bild: "eigene Bilder", farbe: "Farbe" },
@@ -67,6 +71,10 @@ const LTEXTE = {
     raumNeu: "Raum hinzufügen", op: { "=": "ist gleich", "!=": "ist nicht", ">": "größer als", "<": "kleiner als", an: "ist an/offen", aus: "ist aus/zu" },
   },
   en: {
+    alleLayouts: "All layouts", ausgangspunkt: "Start from", leeresLayout: "empty", vorlagenGruppe: "Templates", kopieVon: "Copy of",
+    erstellen: "Create", abbrechen: "Cancel", bearbeitenL: "Edit", mehr: "More", nichtVerwendet: "not used",
+    laeuftAuf: (n) => `shown on: ${n}`, laeuftHinweis: "Changes are visible on the TV right after saving.",
+    nameFehlt: "Please enter a name.", verwerfen: "Discard unsaved changes?", hgFarben: "Background & colours",
     layout: "Layout", neu: "New layout", ausVorlage: "from template", duplizieren: "Copy", loeschen: "Delete",
     exportieren: "Export", importieren: "Import", rueckgaengig: "Undo", speichern: "Save",
     name: "Name", hintergrund: "Background", hgArt: { wetter: "Weather picture (by weather)", stil: "Picture set (by time of day)", bild: "own pictures", farbe: "Colour" },
@@ -147,10 +155,11 @@ let letzterKlick = null;  // Stelle des letzten Klicks auf die Leinwand (Durchsc
 let VERLAUF = [];         // Rückgängig
 let GEAENDERT = false;
 let VORSCHAU = null;      // Werte für die Vorschau
+let ANSICHT = "liste";    // seit 0.17.2: „liste“ (Kacheln aller Layouts) oder „editor“ (ein Layout)
 
 async function layoutSeite(inhalt) {
   const L = LTEXTE[E.sprache] || LTEXTE.de;
-  if (!LS) { LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; }
+  if (!LS) { LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; ANSICHT = "liste"; }
   const [ents, vorl, vd] = await Promise.all([entitaeten(), holen("/api/vorlagen"), holen("/api/vorschau/daten?tv=" + encodeURIComponent(E.fernseher[0].id)).catch(() => null)]);
   VORSCHAU = vd && vd.ok ? vd : null;
   const handy = () => window.innerWidth < 700;
@@ -163,16 +172,13 @@ async function layoutSeite(inhalt) {
     const l = lay();
     inhalt.innerHTML = `<datalist id="ents">${ents.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</datalist>
       <div class="karte">
-        <div class="zeile"><select id="lWahl" class="breit">${LS.map((x, i) => `<option value="${i}" ${i === LI ? "selected" : ""}>${esc(x.name)}${nutzer(x.id).length ? " – " + esc(nutzer(x.id).join(", ")) : ""}</option>`).join("")}</select>
-          <button class="knopf haupt" id="lSpeichern">${esc(L.speichern)}${GEAENDERT ? " *" : ""}</button>
-          <button class="knopf" id="lZurueck" ${VERLAUF.length ? "" : "disabled"}>${esc(L.rueckgaengig)}</button></div>
-        <div class="zeile"><select id="lVorlage"><option value="">${esc(L.neu)} – ${esc(L.ausVorlage)} …</option>
-            ${vorl.vorlagen.map((v, i) => `<option value="${i}">${esc(v.name)}</option>`).join("")}</select>
-          <button class="knopf" id="lKopie">${esc(L.duplizieren)}</button><button class="knopf" id="lExport">${esc(L.exportieren)}</button>
-          <label class="knopf" style="display:inline-flex;align-items:center">${esc(L.importieren)}<input type="file" id="lImport" accept=".json" hidden></label>
-          <button class="knopf gefahr" id="lLoeschen">${esc(L.loeschen)}</button></div>
-        <details><summary>${esc(L.name)}, ${esc(L.hintergrund)}, ${esc(L.schema)}</summary>
-          <div class="zeile"><label>${esc(L.name)}</label><input type="text" id="lName" value="${esc(l.name)}"></div>
+        <div class="zeile layoutkopf"><button class="knopf" id="lListe">← ${esc(L.alleLayouts)}</button>
+          <input type="text" id="lName" class="layoutname" value="${esc(l.name)}" aria-label="${esc(L.name)}">
+          <span class="leer"></span>
+          <button class="knopf" id="lZurueck" ${VERLAUF.length ? "" : "disabled"}>${esc(L.rueckgaengig)}</button>
+          <button class="knopf haupt" id="lSpeichern">${esc(L.speichern)}${GEAENDERT ? " *" : ""}</button></div>
+        ${nutzer(l.id).length ? `<p class="laeuft">● ${esc(L.laeuftAuf(nutzer(l.id).join(", ")))} – ${esc(L.laeuftHinweis)}</p>` : `<p class="leise">${esc(L.nichtVerwendet)}</p>`}
+        <details><summary>${esc(L.hgFarben)}</summary>
           <div class="zeile"><label>${esc(L.hintergrund)}</label><select id="hgArt">${Object.keys(L.hgArt).map((k) => `<option value="${k}" ${k === l.hintergrund.art ? "selected" : ""}>${esc(L.hgArt[k])}</option>`).join("")}</select></div>
           <div class="eintrag" id="hgStil" ${l.hintergrund.art === "stil" ? "" : "hidden"}>
             <div class="zeile"><label>${esc(L.stil)}</label><select id="hgStilWahl">${Object.keys(L.stilArt).map((k) => `<option value="${k}" ${k === l.hintergrund.stil ? "selected" : ""}>${esc(L.stilArt[k])}</option>`).join("")}</select></div>
@@ -205,57 +211,14 @@ async function layoutSeite(inhalt) {
     if (handy()) listeZeichnen(); else leinwandZeichnen();
     eigenschaftenZeichnen();
     // Kopf
-    $("#lWahl").onchange = (e) => { if (GEAENDERT && !confirm(L.ungespeichert)) { e.target.value = LI; return; } LI = Number(e.target.value); GEWAEHLT = null; zeichnen(); };
+    $("#lListe").onclick = () => {
+      if (GEAENDERT && !confirm(L.verwerfen)) return;
+      LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; GEWAEHLT = null; ANSICHT = "liste"; listeAlle();
+    };
     $("#lSpeichern").onclick = (e) => aktion(e.target, async () => {
       await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; zeichnen();
     }, L.gespeichert);
     $("#lZurueck").onclick = () => { if (VERLAUF.length) { LS = JSON.parse(VERLAUF.pop()); LI = Math.min(LI, LS.length - 1); GEAENDERT = true; zeichnen(); } };
-    $("#lVorlage").onchange = (e) => {
-      if (e.target.value === "") return;
-      merken();
-      const v = JSON.parse(JSON.stringify(vorl.vorlagen[Number(e.target.value)]));
-      v.id = neueId(); v.name = v.name + " " + (LS.length + 1);
-      LS.push(v); LI = LS.length - 1; GEWAEHLT = null; zeichnen();
-    };
-    $("#lKopie").onclick = () => { merken(); const k = JSON.parse(JSON.stringify(lay())); k.id = neueId(); k.name += " (2)"; LS.push(k); LI = LS.length - 1; zeichnen(); };
-    $("#lLoeschen").onclick = () => {
-      if (LS.length < 2) return melden(L.letztes, true);
-      if (nutzer(lay().id).length) return melden(L.nichtLoeschbar, true);
-      if (!confirm(L.wirklichLoeschen)) return;
-      merken(); LS.splice(LI, 1); LI = 0; GEWAEHLT = null; zeichnen();
-    };
-    // Export (seit 0.13.1) mit allen verwendeten Bildern (Logo, Hintergrund, Bilder je Tageszeit) – so lässt sich ein
-    // Layout als Vorlage auf eine andere Installation mitnehmen
-    const bildNamen = (l) => [...new Set([l.hintergrund.bild, ...Object.values(l.hintergrund.bilder_tageszeit || {}),
-      ...l.elemente.map((x) => x.optionen && x.optionen.bild)].filter((n) => /^[0-9a-f]{16}\.(jpg|png)$/.test(n || "")))];
-    $("#lExport").onclick = () => aktion(null, async () => {
-      const bilder = {};
-      for (const n of bildNamen(lay())) {
-        const roh = await dienstBinaer.get(`/bild/${n}`, {}, {});
-        let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
-        bilder[n] = `data:image/${n.endsWith(".png") ? "png" : "jpeg"};base64,` + btoa(bin);
-      }
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 2, layout: lay(), bilder }, null, 1)], { type: "application/json" }));
-      a.download = `signagecast-layout-${lay().name.replace(/[^\w-]+/g, "_")}.json`;
-      document.body.appendChild(a); a.click(); a.remove();
-    }, null);
-    $("#lImport").onchange = async (e) => {
-      try {
-        const d = JSON.parse(await e.target.files[0].text());
-        const l2 = ["signagecast-layout", "tv-stream-layout"].includes(d.art) ? d.layout : d;
-        if (!l2 || !Array.isArray(l2.elemente)) throw new Error("kein Layout");
-        // mitgelieferte Bilder hochladen und Namen im Layout anpassen (der Name ergibt sich aus dem Inhalt)
-        const neu = {};
-        for (const [n, daten] of Object.entries(d.bilder || {})) neu[n] = (await senden("/api/bilder", { daten })).bild;
-        const um = (n) => neu[n] || n;
-        l2.hintergrund = l2.hintergrund || {};
-        if (l2.hintergrund.bild) l2.hintergrund.bild = um(l2.hintergrund.bild);
-        for (const k of Object.keys(l2.hintergrund.bilder_tageszeit || {})) l2.hintergrund.bilder_tageszeit[k] = um(l2.hintergrund.bilder_tageszeit[k]);
-        for (const x of l2.elemente) if (x.optionen && x.optionen.bild) x.optionen.bild = um(x.optionen.bild);
-        merken(); l2.id = neueId(); LS.push(l2); LI = LS.length - 1; zeichnen(); melden(L.importOk);
-      } catch (ex) { melden(ex.message, true); }
-    };
     const kopf = (f) => () => { merken(); f(); GEAENDERT = true; $("#lSpeichern").textContent = L.speichern + " *"; if (!handy()) leinwandZeichnen(); };
     $("#lName").oninput = kopf(() => { lay().name = $("#lName").value; });
     $("#hgArt").onchange = () => { merken(); lay().hintergrund.art = $("#hgArt").value; zeichnen(); offen(); };
@@ -292,6 +255,97 @@ async function layoutSeite(inhalt) {
       const e = { id: neueId().slice(0, 8), typ, x: 1, y: 1, w, h, sichtbar: true, karte: ["kachel", "vorhersage", "kalender"].includes(typ),
                   ausrichtung: "links", optionen: JSON.parse(JSON.stringify(BAUSTEINE[typ] || {})), bedingung: null };
       lay().elemente.push(e); GEWAEHLT = e.id; zeichnen();
+    };
+  };
+
+  // ---------- Übersicht aller Layouts (seit 0.17.2) – Aktionen hier speichern sofort ----------
+  const sofortSpeichern = async () => { await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; };
+  const oeffnen = (i) => { LI = i; GEWAEHLT = null; ANSICHT = "editor"; zeichnen(); window.scrollTo(0, 0); };
+  const miniVorschau = (l) => {
+    const hg = l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
+    return `<div class="mini" style="background:${esc(hg)}">${l.elemente.filter((x) => x.sichtbar).map((x) =>
+      `<span class="mini-el ${x.typ === "video" ? "video" : x.karte || x.typ === "flaeche" ? "karte" : ""}" style="left:${x.x / 48 * 100}%;top:${x.y / 27 * 100}%;width:${x.w / 48 * 100}%;height:${x.h / 27 * 100}%"></span>`).join("")}</div>`;
+  };
+  const bildNamen = (l) => [...new Set([l.hintergrund.bild, ...Object.values(l.hintergrund.bilder_tageszeit || {}),
+    ...l.elemente.map((x) => x.optionen && x.optionen.bild)].filter((n) => /^[0-9a-f]{16}\.(jpg|png)$/.test(n || "")))];
+  // Export (seit 0.13.1) mit allen verwendeten Bildern – so lässt sich ein Layout auf eine andere Installation mitnehmen
+  const exportieren = (l) => aktion(null, async () => {
+    const bilder = {};
+    for (const n of bildNamen(l)) {
+      const roh = await dienstBinaer.get(`/bild/${n}`, {}, {});
+      let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
+      bilder[n] = `data:image/${n.endsWith(".png") ? "png" : "jpeg"};base64,` + btoa(bin);
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 2, layout: l, bilder }, null, 1)], { type: "application/json" }));
+    a.download = `signagecast-layout-${l.name.replace(/[^\w-]+/g, "_")}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+  }, null);
+  const importieren = async (datei) => aktion(null, async () => {
+    const d = JSON.parse(await datei.text());
+    const l2 = ["signagecast-layout", "tv-stream-layout"].includes(d.art) ? d.layout : d;
+    if (!l2 || !Array.isArray(l2.elemente)) throw new Error("kein Layout");
+    // mitgelieferte Bilder hochladen und Namen im Layout anpassen (der Name ergibt sich aus dem Inhalt)
+    const neu = {};
+    for (const [n, daten] of Object.entries(d.bilder || {})) neu[n] = (await senden("/api/bilder", { daten })).bild;
+    const um = (n) => neu[n] || n;
+    l2.hintergrund = l2.hintergrund || {};
+    if (l2.hintergrund.bild) l2.hintergrund.bild = um(l2.hintergrund.bild);
+    for (const k of Object.keys(l2.hintergrund.bilder_tageszeit || {})) l2.hintergrund.bilder_tageszeit[k] = um(l2.hintergrund.bilder_tageszeit[k]);
+    for (const x of l2.elemente) if (x.optionen && x.optionen.bild) x.optionen.bild = um(x.optionen.bild);
+    l2.id = neueId(); LS.push(l2); await sofortSpeichern(); listeAlle();
+  }, L.importOk);
+  const listeAlle = () => {
+    inhalt.innerHTML = `<div class="layoutkacheln">${LS.map((l, i) => {
+      const n = nutzer(l.id);
+      return `<div class="karte layoutkachel" data-i="${i}">${miniVorschau(l)}
+        <b class="lk-name">${esc(l.name)}</b>
+        <span class="${n.length ? "laeuft" : "leise"}">${n.length ? "● " + esc(L.laeuftAuf(n.join(", "))) : esc(L.nichtVerwendet)}</span>
+        <div class="zeile"><button class="knopf haupt" data-a="b">${esc(L.bearbeitenL)}</button>
+          <details class="mehr"><summary class="knopf">⋯</summary><div class="mehr-menue">
+            <button class="knopf" data-a="k">${esc(L.duplizieren)}</button><button class="knopf" data-a="x">${esc(L.exportieren)}</button>
+            <button class="knopf gefahr" data-a="l">${esc(L.loeschen)}</button></div></details></div></div>`;
+    }).join("")}
+      <div class="karte layoutkachel neu" id="lNeuKachel"><button class="neu-knopf" id="lNeu"><span>＋</span>${esc(L.neu)}</button>
+        <label class="leise importlink">${esc(L.importieren)} …<input type="file" id="lImport" accept=".json" hidden></label></div></div>`;
+    inhalt.querySelectorAll(".layoutkachel[data-i]").forEach((k) => {
+      const i = Number(k.dataset.i), l = LS[i];
+      k.querySelector(".mini").onclick = () => oeffnen(i);
+      k.querySelectorAll("[data-a]").forEach((b) => { b.onclick = (ev) => {
+        const a = b.dataset.a;
+        if (a === "b") return oeffnen(i);
+        if (a === "x") return exportieren(l);
+        if (a === "k") return aktion(ev.target, async () => {
+          const c = JSON.parse(JSON.stringify(l)); c.id = neueId(); c.name += " (2)"; LS.push(c); await sofortSpeichern(); listeAlle(); });
+        if (a === "l") {
+          if (LS.length < 2) return melden(L.letztes, true);
+          if (nutzer(l.id).length) return melden(L.nichtLoeschbar, true);
+          if (!confirm(L.wirklichLoeschen + " „" + l.name + "“")) return;
+          aktion(ev.target, async () => { LS.splice(i, 1); LI = 0; await sofortSpeichern(); listeAlle(); });
+        }
+      }; });
+    });
+    $("#lImport").onchange = (e) => { if (e.target.files[0]) importieren(e.target.files[0]); };
+    $("#lNeu").onclick = () => {
+      $("#lNeuKachel").innerHTML = `<h3>${esc(L.neu)}</h3>
+        <div class="zeile"><label>${esc(L.name)}</label><input type="text" id="lnName" data-frei></div>
+        <div class="zeile"><label>${esc(L.ausgangspunkt)}</label><select id="lnBasis" class="breit">
+          <option value="leer">${esc(L.leeresLayout)}</option>
+          <optgroup label="${esc(L.vorlagenGruppe)}">${vorl.vorlagen.map((v, j) => `<option value="v${j}">${esc(v.name)}</option>`).join("")}</optgroup>
+          <optgroup label="${esc(L.kopieVon)}">${LS.map((x, j) => `<option value="k${j}">${esc(x.name)}</option>`).join("")}</optgroup></select></div>
+        <div class="zeile"><button class="knopf" id="lnAb">${esc(L.abbrechen)}</button><button class="knopf haupt" id="lnOk">${esc(L.erstellen)}</button></div>`;
+      $("#lnName").focus();
+      $("#lnAb").onclick = listeAlle;
+      $("#lnOk").onclick = (ev) => aktion(ev.target, async () => {
+        const name = $("#lnName").value.trim();
+        if (!name) throw new Error(L.nameFehlt);
+        const b = $("#lnBasis").value;
+        const quelle = b === "leer" ? Object.assign(JSON.parse(JSON.stringify(vorl.vorlagen[0])), { elemente: [] })
+          : b[0] === "v" ? vorl.vorlagen[Number(b.slice(1))] : LS[Number(b.slice(1))];
+        const l = JSON.parse(JSON.stringify(quelle)); l.id = neueId(); l.name = name;
+        LS.push(l); await sofortSpeichern(); oeffnen(LS.length - 1);
+      }, null);
+      $("#lnName").onkeydown = (e) => { if (e.key === "Enter") $("#lnOk").click(); };
     };
   };
 
@@ -547,7 +601,7 @@ async function layoutSeite(inhalt) {
     ziel.querySelector("[name=weg]").onclick = () => { merken(); els.splice(i, 1); GEWAEHLT = null; zeichnen(); };
   };
 
-  zeichnen();
+  if (ANSICHT === "editor" && LS[LI]) zeichnen(); else { ANSICHT = "liste"; listeAlle(); }
 }
 
 async function stilBilderZeigen(stil) {

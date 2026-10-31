@@ -110,6 +110,24 @@ details { margin: 10px 0; } summary { cursor: pointer; font-weight: 600; padding
 .lw-auswahl .lw-griff, .lw-auswahl .lw-schieber { pointer-events: auto; }
 .lw-schieber { position: absolute; left: 0; top: 0; height: 20px; padding: 0 6px; background: var(--akzent); color: #fff;
   font-size: 13px; line-height: 20px; border-radius: 0 0 4px 0; cursor: move; user-select: none; }
+.layoutkacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.layoutkachel { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.layoutkachel .mini { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; cursor: pointer; }
+.mini-el { position: absolute; box-sizing: border-box; border: 1px solid rgba(255,255,255,.55); border-radius: 2px; background: rgba(255,255,255,.12); }
+.mini-el.video { background: rgba(0,0,0,.7); border-color: rgba(255,255,255,.4); } .mini-el.karte { background: rgba(255,255,255,.8); }
+.lk-name { font-size: 1.05em; }
+.laeuft { color: #2e7d32; font-size: .92em; }
+details.mehr { position: relative; margin: 0; } details.mehr > summary { list-style: none; padding: 6px 12px; }
+details.mehr > summary::-webkit-details-marker { display: none; }
+.mehr-menue { position: absolute; z-index: 5; top: 100%; left: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px;
+  background: var(--karte); border: 1px solid var(--linie); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+.layoutkachel.neu { justify-content: center; align-items: stretch; border-style: dashed; min-height: 200px; }
+.neu-knopf { flex: 1; border: 0; background: none; font: inherit; font-weight: 600; color: var(--akzent); cursor: pointer; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.neu-knopf span { font-size: 2.2em; line-height: 1; }
+.importlink { text-align: center; cursor: pointer; text-decoration: underline; }
+.layoutkopf .layoutname { font-size: 1.15em; font-weight: 600; min-width: 0; flex: 1 1 220px; }
+.layoutkopf .leer { flex: 0 1 0; }
 .lw-seite { display: flex; flex-direction: column; gap: 12px; }
 .ebenen { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
 .ebene { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
