@@ -1760,7 +1760,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         except (E.Fehler, ValueError, KeyError, HAFehler) as ex:
             # 200 mit ok=false: die Verwaltung zeigt den Text direkt an
             m = M.als_dict(ex)
-            return self.antwort(200, dict({"ok": False, "fehler": str(ex).strip("'"), "code": m["code"], "p": m["p"]},
+            return self.antwort(200, dict({"ok": False, "fehler": str(ex).strip("'") if isinstance(ex, KeyError) else str(ex), "code": m["code"], "p": m["p"]},
                                           **({"innen": m["innen"]} if m.get("innen") else {})))
 
     def api_post(self, p, d):

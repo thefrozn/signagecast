@@ -137,4 +137,4 @@ def als_dict(ex):
     """Für die Verwaltung: {"code", "p", "text"[, "innen"]} – bei fremden Fehlern nur der Text."""
     if isinstance(ex, Meldung):
         return dict({"code": ex.code, "p": ex.p, "text": str(ex)}, **({"innen": ex.innen} if ex.innen else {}))
-    return {"code": "", "p": {}, "text": str(ex).strip("'")[:300]}
+    return {"code": "", "p": {}, "text": (str(ex).strip("'") if isinstance(ex, KeyError) else str(ex))[:300]}

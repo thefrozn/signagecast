@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.19.3 (in progress)
+## v0.19.3 (2026-11-04)
 - **Validation messages in English:** errors when saving layouts, TVs, schedules, clips, video streams, radio stations
   and announcements now carry an identifier, so the English admin shows them in English (before: German only).
   Nested messages such as “Layout Hall: colour as #rrggbb” are translated as a whole.
