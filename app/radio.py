@@ -5,6 +5,7 @@
 #   Koordinaten), deshalb mehrere Wege.
 # - Eigene Sender: Adresse prüfen (Playlist .m3u/.pls auflösen, Inhalt muss Audio sein).
 import json, os, re, threading, time, urllib.parse, urllib.request
+from meldung import Meldung
 
 UA = {"User-Agent": "SignageCast/0.4 (TV info screen for Home Assistant)"}   # nur ASCII (HTTP-Kopf)
 RB_SERVER = ["de1.api.radio-browser.info", "de2.api.radio-browser.info", "fi1.api.radio-browser.info", "at1.api.radio-browser.info"]
@@ -134,7 +135,7 @@ def adresse_pruefen(url):
     """Liefert die abspielbare Adresse (Playlist aufgelöst) oder wirft ValueError."""
     url = str(url).strip()
     if not re.fullmatch(r"https?://\S{4,490}", url):
-        raise ValueError("Adresse muss mit http:// oder https:// beginnen")
+        raise Meldung("r_adresse")
     for _ in range(3):
         req = urllib.request.Request(url, headers=dict(UA, **{"Icy-MetaData": "0"}))
         try:
@@ -142,28 +143,28 @@ def adresse_pruefen(url):
                 typ = (r.headers.get("Content-Type") or "").split(";")[0].strip().lower()
                 anfang = r.read(4096)
         except Exception as e:
-            raise ValueError(f"Adresse nicht erreichbar: {e}")
+            raise Meldung("r_nicht_erreichbar", d=e)
         text = anfang.decode("utf-8", "replace")
         if typ in ("audio/x-mpegurl", "audio/mpegurl", "application/x-mpegurl", "audio/x-scpls", "application/pls+xml") \
                 or url.lower().split("?")[0].endswith((".m3u", ".pls")) or text.lstrip().startswith(("#EXTM3U", "[playlist]")):
             if "#EXT-X-" in text:
-                raise ValueError("HLS-Radio (m3u8) wird nicht unterstützt – bitte eine MP3/AAC-Adresse nehmen")
+                raise Meldung("r_hls")
             m = re.search(r"(?im)^(?:File\d+=)?(https?://\S+)", text)
             if not m:
-                raise ValueError("Playlist enthält keine Stream-Adresse")
+                raise Meldung("r_keine_adresse")
             url = m.group(1).strip()
             continue
         if typ.startswith("audio/") or typ in ("application/ogg", "video/mp2t") or (typ == "application/octet-stream" and anfang):
             return url        # nicht die Weiterleitung: deren Adresse enthält oft ablaufende Zugangsschlüssel
-        raise ValueError(f"Kein Audio-Stream (Inhalt: {typ or 'unbekannt'})")
-    raise ValueError("Zu viele verschachtelte Playlists")
+        raise Meldung("r_kein_audio", typ=typ or "?")
+    raise Meldung("r_verschachtelt")
 
 
 def playlist_lesen(text):
     """Inhalt einer M3U- oder PLS-Datei -> [(name, url)]. Namen aus #EXTINF bzw. TitleN=, sonst leer."""
     text = str(text)[:200000]
     if "#EXT-X-" in text:
-        raise ValueError("Das ist eine HLS-Playlist (m3u8 mit #EXT-X-…) – bitte eine MP3/AAC-Adresse nehmen")
+        raise Meldung("r_hls")
     eintraege, name = [], ""
     pls_namen = dict(re.findall(r"(?im)^Title(\d+)\s*=\s*(.+)$", text))
     for zeile in text.splitlines():
@@ -176,7 +177,7 @@ def playlist_lesen(text):
             eintraege.append(((pls_namen.get(m.group(1)) if m.group(1) else name) or "", m.group(2)))
             name = ""
     if not eintraege:
-        raise ValueError("Keine Stream-Adresse (http/https) in der Playlist gefunden")
+        raise Meldung("r_playlist_leer")
     return eintraege[:50]
 
 

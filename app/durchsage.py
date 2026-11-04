@@ -1,6 +1,7 @@
 # Durchsagen (seit 0.19): Sprachausgabe mit Piper (offline), Gong, Passwörter der Pult-Zugänge.
 # Piper und die Stimmen lädt der Dienst bei Bedarf selbst (ohne root) – nur mit passender Prüfsumme.
 import hashlib, hmac, io, math, os, secrets, struct, subprocess, tarfile, threading, urllib.request, wave
+from meldung import Meldung
 
 DATEN = os.environ.get("SC_DATEN", "/var/lib/signagecast")
 ORDNER = os.path.join(DATEN, "piper")
@@ -47,7 +48,7 @@ def bereit(stimme):
 def laden(stimme):
     """Piper (falls nötig) und die Stimme laden – einige Minuten bei langsamer Leitung, daher im eigenen Thread."""
     if stimme not in STIMMEN:
-        raise ValueError("unbekannte Stimme")
+        raise Meldung("d_stimme")
     with _laden:
         stand.update(laeuft=True, fehler=None)
         try:

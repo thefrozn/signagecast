@@ -66,12 +66,12 @@ const TX = {
         an: "An:", alle: "alle", platzhalter: "Text der Durchsage, z. B. Frau Bauer, bitte in Behandlungsraum 2",
         vorlesen: "vorlesen", gong: "Gong vorher", dauer: "Anzeige:", senden: "Durchsage senden", gesendet: "Gesendet – erscheint in etwa 10 Sekunden.",
         zuletzt: "Zuletzt", leer: "Noch keine Durchsage.", beenden: "beenden", laeuft: "läuft", keinTv: "Bitte mindestens einen Fernseher wählen.",
-        keinText: "Bitte einen Text eingeben.", falsch: "Falsches Passwort.", min: (n) => `${n} min`, abgelaufen: "Bitte neu anmelden." },
+        keinText: "Bitte einen Text eingeben.", falsch: "Falsches Passwort.", d_stimme_fehlt: "Die Stimme ist noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult).", min: (n) => `${n} min`, abgelaufen: "Bitte neu anmelden." },
   en: { titel: "Announcement", anmeldenText: "Please log in with the panel password.", anmelden: "Log in", abmelden: "Log out",
         an: "To:", alle: "all", platzhalter: "Announcement text, e.g. Mrs Baker, please go to room 2",
         vorlesen: "read aloud", gong: "chime first", dauer: "Show for:", senden: "Send announcement", gesendet: "Sent – appears in about 10 seconds.",
         zuletzt: "Recent", leer: "No announcement yet.", beenden: "end", laeuft: "showing", keinTv: "Please choose at least one TV.",
-        keinText: "Please enter a text.", falsch: "Wrong password.", min: (n) => `${n} min`, abgelaufen: "Please log in again." },
+        keinText: "Please enter a text.", falsch: "Wrong password.", d_stimme_fehlt: "The voice is not loaded yet (Admin → Settings → Announcement panel).", min: (n) => `${n} min`, abgelaufen: "Please log in again." },
 };
 let T = TX[(navigator.language || "de").startsWith("de") ? "de" : "en"], INFO = null;
 const $ = (s) => document.querySelector(s);
@@ -131,7 +131,7 @@ async function senden() {
   $("#senden").disabled = true;
   try {
     const r = await api("senden", { text, fernseher: tvs, vorlesen: $("#vorlesen").checked, gong: $("#gong").checked, dauer_s: Number($("#dauer").value) });
-    m.className = r.ok ? "gut" : "schlecht"; m.textContent = r.ok ? T.gesendet : r.fehler;
+    m.className = r.ok ? "gut" : "schlecht"; m.textContent = r.ok ? T.gesendet : (T[r.code] || r.fehler);
     if (r.ok) { $("#text").value = ""; liste(); }
   } catch (_) { /* Anmeldung wird gezeigt */ } finally { $("#senden").disabled = false; }
 }

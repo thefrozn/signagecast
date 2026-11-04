@@ -152,12 +152,12 @@ const TEXTE = {
     ausschluss: "Titel darf keines dieser Wörter enthalten", orte: "Ortserkennung aus dem Titel: Muster ; Breite ; Länge (je Zeile)",
     jetztSuchen: "Jetzt suchen", sucheLaeuft: "Suche läuft (bis ca. 1 min) …", sucheErgebnis: (n, g) => `${g} Live-Streams gefunden, ${n} neu`,
     haUrl: "Adresse von Home Assistant", testen: "Verbindung testen", standort: "Standort (für Wetter-Bezug und Anzeige)",
-    standortAusHA: "Aus HA übernehmen", testOk: (v) => `Verbunden – Home Assistant ${v}`, anleitung: "Einrichtung in Home Assistant",
+    standortAusHA: "Aus HA übernehmen", testOk: (v) => `Verbunden – Home Assistant ${v}`, anleitung: "Einrichtung in Home Assistant", ipPlatzhalter: "IP-DES-CONTAINERS", benutzerIdPlatzhalter: "BENUTZER-ID",
     anleitungText: (ip) => [
       "SignageCast meldet sich ohne Passwort bei Home Assistant an – über „vertrauenswürdige Netzwerke“. HA erkennt den Container an seiner IP-Adresse.",
       "1. In HA unter Einstellungen → Personen einen Benutzer anlegen, z. B. „Fernseher“ (kein Administrator, „Nur lokal anmelden“ an).",
       "2. Den Benutzer öffnen – die lange Kennung am Ende der Adresszeile ist die Benutzer-ID.",
-      `3. In der Datei configuration.yaml (z. B. mit dem File-Editor-Add-on) diesen Abschnitt ergänzen, BENUTZER-ID ersetzen. Die IP dieses Containers ist ${ip || "?"}:`,
+      `3. In der Datei configuration.yaml (z. B. mit dem File-Editor-Add-on) diesen Abschnitt ergänzen, BENUTZER-ID ersetzen. Die IP dieses Containers ist ${ip || "unbekannt (Home Assistant nicht erreichbar) – IP-DES-CONTAINERS ersetzen"}:`,
     ], anleitungEnde: "4. Konfiguration prüfen (Entwicklerwerkzeuge → YAML → Konfiguration prüfen) und HA neu starten. Danach hier „Verbindung testen“. " +
       "Wichtig: trusted_networks muss als erster Eintrag stehen, sonst erscheint eine Anmeldeseite. Steht dort schon ein homeassistant:-Abschnitt, nur die Zeilen darunter ergänzen.",
     sicherungLaden: "Sicherung herunterladen", sicherungEinspielen: "Sicherung oder Profil einspielen",
@@ -323,6 +323,28 @@ const TEXTE = {
       med_upload: "Upload interrupted – please try again", med_gross: "File larger than 1 GB", med_unbekannt: "Unknown medium",
       upd_laeuft: "An update is already running – please wait", upd_aktion: "Unknown update action",
       upd_container: "With Docker/Podman update via the image (docker pull)",
+      e_zahl: "not a number: {w}", e_bereich: "{w} is not between {lo} and {hi}", e_wert: "invalid value: {w}",
+      e_objekt: "settings must be an object", e_layout: "Layout {name}: {d}", e_layout_doppelt: "duplicate layout identifier: {id}",
+      e_tv_doppelt: "duplicate TV identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160",
+      e_tv_fehlt: "at least one TV is required", e_zeitzone: "unknown time zone {zz}", e_stufe: "unknown level",
+      e_suchmuster: "invalid search pattern: {x}", e_ortsmuster: "invalid place pattern: {m}",
+      e_ep_quelle: "Clip: unknown source", e_ep_adresse: "Clip: address missing", e_medium_art: "Media: type picture or video",
+      e_pult_pw: "Panel password: at least 6 characters", e_bild_gross: "Picture too large (max. 8 MB)", e_bild_art: "Only JPG or PNG",
+      e_einspielen: "Not a SignageCast backup or profile", e_streamliste: "stream list missing", e_stream_id: "invalid ID {id}",
+      l_entitaet: "invalid entity {w}", l_symbol: "icon must be mdi-…", l_farbe: "colour as #rrggbb", l_bild: "invalid picture",
+      l_quelle: "invalid data source", l_pfad: "path too long", l_adresse: "address with http:// or https://", l_wahl: "allowed: {werte}",
+      l_vergleich: "unknown comparison", l_kennung: "invalid layout identifier {id}", l_hintergrund: "background: wetter, stil, farbe or bild",
+      l_hg_bild: "invalid background picture", l_schema: "scheme light, dark or dimmed", l_schrift: "unknown font",
+      l_baustein: "unknown element {typ}", l_baustein_id: "invalid or duplicate element identifier {id}",
+      z_uhrzeit: "Schedule: time as HH:MM", z_layout: "Schedule: unknown layout {id}",
+      s_kein_link: "No YouTube video or channel link recognised", s_nicht_einbettbar: "This video may not be embedded (or does not exist)",
+      s_ort: "invalid location ({k})",
+      r_adresse: "Address must start with http:// or https://", r_nicht_erreichbar: "Address not reachable: {d}",
+      r_hls: "HLS radio (m3u8) is not supported – please use an MP3/AAC address", r_keine_adresse: "Playlist contains no stream address",
+      r_kein_audio: "Not an audio stream (content: {typ})", r_verschachtelt: "Too many nested playlists",
+      r_playlist_leer: "No stream address (http/https) found in the playlist",
+      d_text_tv: "Text and at least one TV required", d_stimme_fehlt: "Voice not loaded yet (Admin → Settings → Announcement panel)",
+      d_stimme: "unknown voice", bn_kanal: "unknown channel",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
@@ -369,12 +391,12 @@ const TEXTE = {
     ausschluss: "Title must not contain any of these words", orte: "Location from title: pattern ; latitude ; longitude (one per line)",
     jetztSuchen: "Search now", sucheLaeuft: "Searching (up to about 1 min) …", sucheErgebnis: (n, g) => `${g} live streams found, ${n} new`,
     haUrl: "Home Assistant address", testen: "Test connection", standort: "Location",
-    standortAusHA: "Take from HA", testOk: (v) => `Connected – Home Assistant ${v}`, anleitung: "Setup in Home Assistant",
+    standortAusHA: "Take from HA", testOk: (v) => `Connected – Home Assistant ${v}`, anleitung: "Setup in Home Assistant", ipPlatzhalter: "CONTAINER-IP", benutzerIdPlatzhalter: "USER-ID",
     anleitungText: (ip) => [
       "SignageCast logs in to Home Assistant without a password – via “trusted networks”. HA recognises the container by its IP address.",
       "1. In HA under Settings → People create a user, e.g. “TV” (no administrator, “Can only log in from the local network” on).",
       "2. Open the user – the long identifier at the end of the address bar is the user ID.",
-      `3. Add this section to configuration.yaml (e.g. with the File editor add-on) and replace USER-ID. The IP of this container is ${ip || "?"}:`,
+      `3. Add this section to configuration.yaml (e.g. with the File editor add-on) and replace USER-ID. The IP of this container is ${ip || "unknown (Home Assistant not reachable) – replace CONTAINER-IP"}:`,
     ], anleitungEnde: "4. Check the configuration (Developer tools → YAML → Check configuration) and restart HA. Then press “Test connection” here. " +
       "Important: trusted_networks must be the first provider, otherwise a login page appears. If there is already a homeassistant: section, only add the lines below it.",
     sicherungLaden: "Download backup", sicherungEinspielen: "Restore backup or profile",
@@ -430,7 +452,8 @@ async function holen(pfad) {
 // Meldung des Dienstes in der Sprache der Verwaltung (Kennung + Werte), sonst der Text des Dienstes
 function meldungText(m, rueckfall) {
   const vorlage = m && m.code && T.meldung && T.meldung[m.code];
-  return vorlage ? vorlage.replace(/\{(\w+)\}/g, (_, k) => ((m.p || {})[k] ?? "")) : (rueckfall || (m && m.text) || "");
+  const p = m && m.innen ? { ...m.p, d: meldungText(m.innen) } : (m && m.p) || {};    // innere Meldung, z. B. „Layout X: …“
+  return vorlage ? vorlage.replace(/\{(\w+)\}/g, (_, k) => (p[k] ?? "")) : (rueckfall || (m && m.text) || "");
 }
 async function senden(pfad, daten) {
   const t = await dienst.post(pfad, JSON.stringify(daten || {}), KOPF);
@@ -1018,14 +1041,17 @@ async function sucheSeite(inhalt) {
 // ---------- Verbindung ----------
 async function verbindung(inhalt, teil = "ha") {
   const info = await holen("/api/ha/einrichtung");
-  if (CONTAINER && !info.eigene_ip) info.eigene_ip = location.hostname;   // Docker: HA sieht die IP des Hosts
+  // Ohne erreichbares HA kennt der Dienst seine IP nicht: dann die Adresse aus dem Browser (bei Docker die des Hosts,
+  // die HA ohnehin sieht), sofern sie eine IPv4-Adresse ist – sonst ein Platzhalter
+  if (!info.eigene_ip && /^\d{1,3}(\.\d{1,3}){3}$/.test(location.hostname)) info.eigene_ip = location.hostname;
+  const ip = info.eigene_ip || T.ipPlatzhalter;
   const yaml = `homeassistant:
   auth_providers:
     - type: trusted_networks
       trusted_networks:
-        - ${info.eigene_ip || "IP-DES-CONTAINERS"}/32
+        - ${ip}/32
       trusted_users:
-        ${info.eigene_ip || "IP-DES-CONTAINERS"}/32: ${E.sprache === "en" ? "USER-ID" : "BENUTZER-ID"}
+        ${ip}/32: ${T.benutzerIdPlatzhalter}
       allow_bypass_login: true
     - type: homeassistant`;
   const B = E.benachrichtigung;

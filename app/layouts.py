@@ -2,6 +2,7 @@
 # Ein Layout = Hintergrund + Farbschema + Liste von Bausteinen (Position/Größe in Rasterfeldern, Optionen, Bedingung).
 # Werte kommen aus HA-Entitäten oder (seit 0.9) aus eigenen Datenquellen (app/quellen.py: API, RSS, Bild).
 import copy, re
+from meldung import Meldung
 
 SPALTEN, ZEILEN = 48, 27
 ENTITY = re.compile(r"[a-z_]+\.[a-z0-9_]+")
@@ -26,59 +27,59 @@ def _ent(domains=None):
     def p(w):
         w = str(w or "").strip()
         if w and (not ENTITY.fullmatch(w) or (domains and w.split(".")[0] not in domains)):
-            raise ValueError(f"ungültige Entität {w!r}")
+            raise Meldung("l_entitaet", w=repr(w))
         return w
     return p
 def _zahl(lo, hi):
     def p(w):
         w = int(w)
         if not lo <= w <= hi:
-            raise ValueError(f"{w} nicht zwischen {lo} und {hi}")
+            raise Meldung("e_bereich", w=w, lo=lo, hi=hi)
         return w
     return p
 def _icon(w):
     w = str(w or "mdi-information-outline")
     if not re.fullmatch(r"mdi-[a-z0-9-]{1,60}", w):
-        raise ValueError("Symbol muss mdi-… sein")
+        raise Meldung("l_symbol")
     return w
 def _farbe(w):
     w = str(w or "")
     if w and not FARBE.fullmatch(w):
-        raise ValueError("Farbe als #rrggbb")
+        raise Meldung("l_farbe")
     return w
 def _bild(w):
     w = str(w or "")
     if w and not re.fullmatch(r"[0-9a-f]{16}\.(jpg|png)", w):
-        raise ValueError("ungültiges Bild")
+        raise Meldung("l_bild")
     return w
 def _fl(lo, hi):
     def p(w):
         w = float(str(w).replace(",", "."))
         if not lo <= w <= hi:
-            raise ValueError(f"{w} nicht zwischen {lo} und {hi}")
+            raise Meldung("e_bereich", w=w, lo=lo, hi=hi)
         return w
     return p
 def _qid(w):
     w = str(w or "").strip()
     if w and not re.fullmatch(r"[a-z0-9_]{2,16}", w):
-        raise ValueError("ungültige Datenquelle")
+        raise Meldung("l_quelle")
     return w
 def _pfad(w):
     w = str(w or "").strip()
     if len(w) > 160 or "\n" in w:
-        raise ValueError("Pfad zu lang")
+        raise Meldung("l_pfad")
     return w
 def _url(w):
     w = str(w or "").strip()
     if w and not re.fullmatch(r"https?://[^\s\"'<>]{1,1000}", w):
-        raise ValueError("Adresse mit http:// oder https://")
+        raise Meldung("l_adresse")
     return w
 def _icon_leer(w):
     return _icon(w) if str(w or "").strip() else ""
 def _wahl(*werte):
     def p(w):
         if w not in werte:
-            raise ValueError(f"erlaubt: {', '.join(werte)}")
+            raise Meldung("l_wahl", werte=", ".join(werte))
         return w
     return p
 def _raeume(w):
@@ -134,7 +135,7 @@ def _pruefe_bedingung(b):
         return None
     op = b.get("op", "=")
     if op not in OPERATOREN:
-        raise ValueError("unbekannter Vergleich")
+        raise Meldung("l_vergleich")
     if b.get("quelle"):                       # Wert aus einer Datenquelle (seit 0.9)
         return {"quelle": _qid(b["quelle"]), "pfad": _pfad(b.get("pfad", "")), "op": op, "wert": str(b.get("wert", ""))[:60]}
     return {"entity": _ent()(b["entity"]), "op": op, "wert": str(b.get("wert", ""))[:60]}
@@ -143,15 +144,15 @@ def _pruefe_bedingung(b):
 def pruefe_layout(l):
     lid = str(l.get("id", ""))
     if not re.fullmatch(r"[a-z0-9]{2,16}", lid):
-        raise ValueError(f"ungültige Layout-Kennung {lid!r}")
+        raise Meldung("l_kennung", id=repr(lid))
     hg = l.get("hintergrund", {}) or {}
     art = hg.get("art", "wetter")
     if art not in ("wetter", "stil", "farbe", "bild"):
-        raise ValueError("Hintergrund: wetter, stil, farbe oder bild")
+        raise Meldung("l_hintergrund")
     def _bildname(b):
         b = str(b or "")
         if b and not re.fullmatch(r"[0-9a-f]{16}\.(jpg|png)", b):
-            raise ValueError("ungültiges Hintergrundbild")
+            raise Meldung("l_hg_bild")
         return b
     bild = _bildname(hg.get("bild"))
     je_zeit = {z: _bildname((hg.get("bilder_tageszeit") or {}).get(z)) for z in TAGESZEITEN}
@@ -166,18 +167,18 @@ def pruefe_layout(l):
     th = l.get("thema", {}) or {}
     schema = th.get("schema", "dunkel")
     if schema not in ("dunkel", "hell", "gedimmt"):
-        raise ValueError("Schema hell, dunkel oder gedimmt")
+        raise Meldung("l_schema")
     schrift = th.get("schrift", "Roboto")
     if schrift not in SCHRIFTEN:
-        raise ValueError("unbekannte Schrift")
+        raise Meldung("l_schrift")
     elemente, ids = [], set()
     for e in (l.get("elemente") or [])[:60]:
         typ = e.get("typ")
         if typ not in TYPEN:
-            raise ValueError(f"unbekannter Baustein {typ!r}")
+            raise Meldung("l_baustein", typ=repr(typ))
         eid = str(e.get("id", ""))
         if not re.fullmatch(r"[a-z0-9]{1,16}", eid) or eid in ids:
-            raise ValueError(f"ungültige oder doppelte Baustein-Kennung {eid!r}")
+            raise Meldung("l_baustein_id", id=repr(eid))
         ids.add(eid)
         mw, mh = MINDEST.get(typ, (1, 1))
         w = max(mw, min(SPALTEN, int(e.get("w", 4))))
@@ -216,9 +217,9 @@ def pruefe_zeitplan(z, layout_ids):
     for r in (z or [])[:12]:
         von, bis, ziel = str(r.get("von", "")), str(r.get("bis", "")), str(r.get("layout", ""))
         if not UHRZEIT.fullmatch(von) or not UHRZEIT.fullmatch(bis):
-            raise ValueError("Zeitplan: Uhrzeit als HH:MM")
+            raise Meldung("z_uhrzeit")
         if ziel != "schwarz" and ziel not in layout_ids:
-            raise ValueError(f"Zeitplan: unbekanntes Layout {ziel!r}")
+            raise Meldung("z_layout", id=repr(ziel))
         aus.append({"von": von, "bis": bis, "layout": ziel})
     return aus
 

@@ -140,24 +140,24 @@ STANDARD = {
 }
 
 
-class Fehler(ValueError):
-    pass
+class Fehler(Meldung):
+    """Prüffehler mit Kennung (app/meldung.py), damit die Verwaltung ihn übersetzen kann."""
 
 
 def _zahl(w, lo, hi, art=float):
     try:
         w = art(w)
     except Exception:
-        raise Fehler(f"keine Zahl: {w!r}")
+        raise Fehler("e_zahl", w=repr(w))
     if not lo <= w <= hi:
-        raise Fehler(f"{w} liegt nicht zwischen {lo} und {hi}")
+        raise Fehler("e_bereich", w=w, lo=lo, hi=hi)
     return w
 
 
 def _text(w, maxlen=200, muster=None):
     w = str(w).strip()
     if len(w) > maxlen or (muster and not re.fullmatch(muster, w)):
-        raise Fehler(f"ungültiger Wert: {w[:60]!r}")
+        raise Fehler("e_wert", w=repr(w[:60]))
     return w
 
 
@@ -167,15 +167,17 @@ ENTITY = r"[a-z_]+\.[a-z0-9_]+"
 def _zeitplan(z, layout_ids):
     try:
         return L.pruefe_zeitplan(z, layout_ids)
+    except Meldung:
+        raise
     except (ValueError, TypeError) as ex:
-        raise Fehler(str(ex))
+        raise Fehler("e_wert", w=str(ex))
 
 
 def pruefen(e):
     """Nimmt beliebige (z. B. aus der Verwaltung kommende) Einstellungen und liefert eine geprüfte, vollständige Fassung."""
     s = copy.deepcopy(STANDARD)
     if not isinstance(e, dict):
-        raise Fehler("Einstellungen müssen ein Objekt sein")
+        raise Fehler("e_objekt")
     if "sprache" in e:
         s["sprache"] = e["sprache"] if e["sprache"] in ("de", "en", "") else ""
     ha = e.get("ha", {})
@@ -192,9 +194,9 @@ def pruefen(e):
             try:
                 l = L.pruefe_layout(l)
             except (ValueError, TypeError) as ex:
-                raise Fehler(f"Layout {l.get('name', '?')}: {ex}")
+                raise Fehler("e_layout", innen=ex, name=l.get("name", "?"))
             if l["id"] in ids:
-                raise Fehler(f"Layout-Kennung doppelt: {l['id']}")
+                raise Fehler("e_layout_doppelt", id=l["id"])
             ids.add(l["id"])
             ls.append(l)
         s["layouts"] = ls
@@ -208,14 +210,14 @@ def pruefen(e):
         for t in (e.get("fernseher") or [dict(STANDARD["fernseher"][0])])[:8]:
             tid = _text(t.get("id", "tv"), 12, r"[a-z][a-z0-9]{0,11}")
             if tid in ids:
-                raise Fehler(f"Fernseher-Kennung doppelt: {tid}")
+                raise Fehler("e_tv_doppelt", id=tid)
             ids.add(tid)
             ton = t.get("ton", "aus")
             if ton not in ("aus", "radio", "tiere"):
-                raise Fehler("Ton nur aus, radio oder tiere")
+                raise Fehler("e_ton")
             aufl = int(t.get("aufloesung", alt.get("aufloesung", 2160)))
             if aufl not in (1080, 2160):
-                raise Fehler("Auflösung nur 1080 oder 2160")
+                raise Fehler("e_aufloesung")
             liste.append({"id": tid, "name": _text(t.get("name", tid), 40) or tid, "video": bool(t.get("video", True)),
                           "ton": ton, "radio_sender": _text(t.get("radio_sender", ""), 12, r"[a-z0-9]*"),
                           "lautstaerke": _zahl(t.get("lautstaerke", 70), 0, 100, int),
@@ -243,7 +245,7 @@ def pruefen(e):
                 t["nr"] = min(set(range(8)) - belegt)
                 belegt.add(t["nr"])
         if not liste:
-            raise Fehler("Mindestens ein Fernseher nötig")
+            raise Fehler("e_tv_fehlt")
         s["fernseher"] = liste
     ra = e.get("radio", {})
     if "sender" in ra:
@@ -273,7 +275,7 @@ def pruefen(e):
         import zoneinfo
         zz = _text(z["zeitzone"], 60)
         if zz and zz not in zoneinfo.available_timezones():
-            raise Fehler(f"unbekannte Zeitzone {zz!r}")
+            raise Fehler("e_zeitzone", zz=repr(zz))
         s["zeit"]["zeitzone"] = zz
     if "vorhersage" in an: s["anzeige"]["vorhersage"] = bool(an["vorhersage"])
     if "raeume" in an:
@@ -290,7 +292,7 @@ def pruefen(e):
     if "nur_tag" in v: sv["nur_tag"] = bool(v["nur_tag"])
     if "min_sonnenhoehe" in v: sv["min_sonnenhoehe"] = _zahl(v["min_sonnenhoehe"], -18, 30)
     if "mindeststufe" in v:
-        if v["mindeststufe"] not in STUFEN: raise Fehler("unbekannte Stufe")
+        if v["mindeststufe"] not in STUFEN: raise Fehler("e_stufe")
         sv["mindeststufe"] = v["mindeststufe"]
     if "schlecht_s" in v: sv["schlecht_s"] = _zahl(v["schlecht_s"], 5, 170, int)
     if "strike_grenze" in v: sv["strike_grenze"] = _zahl(v["strike_grenze"], 1, 20, int)
@@ -309,7 +311,7 @@ def pruefen(e):
                 try:
                     re.compile(x)
                 except re.error:
-                    raise Fehler(f"ungültiges Suchmuster: {x!r}")
+                    raise Fehler("e_suchmuster", x=repr(x))
             ss[feld] = liste
     if "orte" in su:
         orte = []
@@ -318,7 +320,7 @@ def pruefen(e):
             try:
                 re.compile(m)
             except re.error:
-                raise Fehler(f"ungültiges Ortsmuster: {m!r}")
+                raise Fehler("e_ortsmuster", m=repr(m))
             orte.append({"muster": m, "breite": _zahl(o.get("breite"), -90, 90), "laenge": _zahl(o.get("laenge"), -180, 180)})
         ss["orte"] = orte
     if "einspieler" in e:
@@ -330,10 +332,10 @@ def pruefen(e):
             ids.add(eid)
             quelle = x.get("quelle", "tagesschau100")
             if quelle not in ("tagesschau100", "video", "youtube"):
-                raise Fehler("Einspieler: unbekannte Quelle")
+                raise Fehler("e_ep_quelle")
             url = _text(x.get("url", ""), 500, r"(https?://\S+|[\w-]{11}|UC[\w-]{22})?")
             if quelle != "tagesschau100" and not url:
-                raise Fehler("Einspieler: Adresse fehlt")
+                raise Fehler("e_ep_adresse")
             minuten = sorted({_zahl(m, 0, 59, int) for m in (x.get("minuten") or [0])})
             liste.append({"id": eid, "name": _text(x.get("name", "") or quelle, 40), "quelle": quelle, "url": url,
                           "minuten": minuten, "von": _text(x.get("von", "00:00"), 5, r"([01]\d|2[0-3]):[0-5]\d"),
@@ -411,7 +413,7 @@ def pruefen(e):
                 continue
             ids_m.add(mid)
             if m.get("art") not in ("bild", "video"):
-                raise Fehler("Medium: Art bild oder video")
+                raise Fehler("e_medium_art")
             aus_m.append({"id": mid, "name": _text(m.get("name", "") or mid, 60), "art": m["art"],
                           "datei": _text(m.get("datei", ""), 40, r"[0-9a-f]{16}\.(jpg|png|mp4|webm)"),
                           "dauer_s": _zahl(m.get("dauer_s", 15), 1, 7200), "aktiv": bool(m.get("aktiv", True))})

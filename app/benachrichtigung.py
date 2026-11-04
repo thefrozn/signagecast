@@ -5,6 +5,50 @@ from email.message import EmailMessage
 
 GEHEIM = (("telegram", "token"), ("email", "passwort"))
 
+# Betreff und Text je Ereignis in der Sprache der Verwaltung (seit 0.19.3; vorher nur Deutsch)
+TEXTE = {
+    "de": {
+        "ausfall": ("SignageCast: Ausfall „{tv}“", "Die Wiedergabe für den Fernseher „{tv}“ ist ausgefallen (Render-Kette unvollständig)."),
+        "ausfall_vorbei": ("SignageCast: „{tv}“ läuft wieder", "Die Wiedergabe für den Fernseher „{tv}“ läuft wieder."),
+        "update": ("SignageCast: Update fehlgeschlagen", "{aktion}: {meldung} ({zeit})"),
+        "sicherung": ("SignageCast: Sicherung fehlgeschlagen", "Die automatische Sicherung um {zeit} ist fehlgeschlagen: {fehler}"),
+        "doppelt": ("SignageCast: „{tv}“ ruckelt", "Die Aufnahme für „{tv}“ verdoppelt seit 3 Minuten viele Bilder. "
+                    "Abhilfe: System → Leistungstest → „Ton und Stream neu starten“."),
+        "doppelt_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die Aufnahme für „{tv}“ läuft wieder ohne doppelte Bilder."),
+        "leistung": ("SignageCast: „{tv}“ ruckelt", "Die TV-Seite für „{tv}“ erreicht seit 5 Minuten nur {fps} Bilder/s (Ziel 25). "
+                     "Leistungstest in der Verwaltung: System → Leistungstest."),
+        "leistung_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die TV-Seite für „{tv}“ erreicht wieder genug Bilder/s."),
+        "ha": ("SignageCast: Home Assistant nicht erreichbar", "Seit {seit}: {grund}"),
+        "ha_vorbei": ("SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder."),
+        "test": ("SignageCast: Test", "Testnachricht von SignageCast {version} ({host})."),
+    },
+    "en": {
+        "ausfall": ("SignageCast: “{tv}” failed", "Playback for the TV “{tv}” has failed (render chain incomplete)."),
+        "ausfall_vorbei": ("SignageCast: “{tv}” is running again", "Playback for the TV “{tv}” is running again."),
+        "update": ("SignageCast: update failed", "{aktion}: {meldung} ({zeit})"),
+        "sicherung": ("SignageCast: backup failed", "The automatic backup at {zeit} failed: {fehler}"),
+        "doppelt": ("SignageCast: “{tv}” is stuttering", "The capture for “{tv}” has been duplicating many frames for 3 minutes. "
+                    "Remedy: System → Performance test → “Restart sound and stream”."),
+        "doppelt_vorbei": ("SignageCast: “{tv}” is smooth again", "The capture for “{tv}” runs without duplicate frames again."),
+        "leistung": ("SignageCast: “{tv}” is stuttering", "The TV page for “{tv}” has only reached {fps} frames/s for 5 minutes (target 25). "
+                     "Performance test in the admin: System → Performance test."),
+        "leistung_vorbei": ("SignageCast: “{tv}” is smooth again", "The TV page for “{tv}” reaches enough frames/s again."),
+        "ha": ("SignageCast: Home Assistant not reachable", "Since {seit}: {grund}"),
+        "ha_vorbei": ("SignageCast: Home Assistant connected again", "The connection to Home Assistant is back."),
+        "test": ("SignageCast: test", "Test message from SignageCast {version} ({host})."),
+    },
+}
+# Gründe aus ha.py (HAFehler.code) – auf Deutsch steht der Text von ha.py
+HA_GRUND_EN = {"nicht_erreichbar": "HA not reachable", "kein_trusted": "HA offers no login via trusted networks for this address",
+               "kein_benutzer": "trusted_networks: no user assigned to this IP", "abgelehnt": "login rejected",
+               "http": "HA answered with an error"}
+
+
+def texte(sprache, kennung, **p):
+    """(betreff, text) für ein Ereignis; unbekannte Sprache -> Englisch."""
+    betreff, text = TEXTE.get(sprache, TEXTE["en"])[kennung]
+    return betreff.format(**p), text.format(**p)
+
 
 def telegram(k, betreff, text):
     roh = json.dumps({"chat_id": k["chat_id"], "text": f"{betreff}\n{text}", "disable_web_page_preview": True}).encode()
@@ -60,7 +104,8 @@ def senden(b, ha_post, betreff, text, nur=None):
 
 
 class Melder:
-    """melden(schluessel, art, betreff, text) / vorbei(schluessel, betreff, text): jedes Ereignis nur einmal senden."""
+    """melden(schluessel, art, kennung, **werte) / vorbei(schluessel, kennung, **werte): jedes Ereignis nur einmal senden.
+    Betreff und Text kommen aus TEXTE in der Sprache der Einstellungen."""
 
     def __init__(self, einst, ha_post):
         self.einst, self.ha_post = einst, ha_post
@@ -73,12 +118,15 @@ class Melder:
             self.letzte = ([{"zeit": time.strftime("%Y-%m-%d %H:%M"), "betreff": betreff, "ergebnis": e}] + self.letzte)[:10]
         threading.Thread(target=senden_, daemon=True).start()
 
-    def melden(self, schluessel, art, betreff, text):
+    def sprache(self):
+        return self.einst()["sprache"] or "en"
+
+    def melden(self, schluessel, art, kennung, **p):
         if schluessel in self.offen or not self.einst()["benachrichtigung"]["ereignisse"].get(art):
             return
         self.offen[schluessel] = time.time()
-        self._los(betreff, text)
+        self._los(*texte(self.sprache(), kennung, **p))
 
-    def vorbei(self, schluessel, betreff, text):
+    def vorbei(self, schluessel, kennung, **p):
         if self.offen.pop(schluessel, None) is not None:
-            self._los(betreff, text)
+            self._los(*texte(self.sprache(), kennung, **p))

@@ -4,6 +4,7 @@
 # offiziellen Einbettungsplayer. Keine Umgehung von YouTube-Sperren: bei HTTP 429 wird eine Stunde pausiert.
 import json, math, os, re, threading, time, urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from meldung import Meldung
 
 DATEN = os.environ.get("SC_DATEN", "/var/lib/signagecast")
 STREAMS = os.path.join(DATEN, "streams.json")       # {"streams": {id: {...}}, "abgelehnt": [ids]}
@@ -192,7 +193,7 @@ class Streams:
                 elif k in ("breite", "laenge"):
                     w = float(w)
                     if not (-90 <= w <= 90 if k == "breite" else -180 <= w <= 180):
-                        raise ValueError(k)
+                        raise Meldung("s_ort", k=k)
                     s[k] = round(w, 3)
                 elif k == "herkunft" and w == "fest":
                     s[k] = "fest"            # gefundenen Stream übernehmen: verfällt nicht mehr
@@ -211,11 +212,11 @@ class Streams:
     def hinzufuegen(self, link, name=None, kategorie="neu", breite=None, laenge=None):
         art_id = aus_link(link)
         if not art_id:
-            raise ValueError("Kein YouTube-Video- oder Kanal-Link erkannt")
+            raise Meldung("s_kein_link")
         art, ident = art_id
         info = oembed(ident) if art == "video" else {"titel": name or ident, "kanal": ""}
         if info is None:
-            raise ValueError("Dieses Video darf nicht eingebettet werden (oder existiert nicht)")
+            raise Meldung("s_nicht_einbettbar")
         if breite is None and laenge is None:
             o = self.ort(info["titel"])
             breite, laenge = o if o else (None, None)

@@ -82,7 +82,7 @@ def pult_behalten(neu):
         pw = str(z.pop("passwort_neu", "") or "")
         if pw:
             if len(pw) < 6:
-                raise E.Fehler("Pult-Passwort: mindestens 6 Zeichen")
+                raise E.Fehler("e_pult_pw")
             z["passwort"] = DS.passwort_hash(pw)
         elif z.get("passwort") in (None, "", Q.MASKE):
             z["passwort"] = alt.get(z.get("id"), "")
@@ -510,12 +510,12 @@ def durchsagen_aktiv():
 def durchsage_senden(text, tvs, vorlesen, gong, dauer, von):
     text = " ".join(str(text).split())[:200]
     if not text or not tvs:
-        raise ValueError("Text und mindestens ein Fernseher nötig")
+        raise M.Meldung("d_text_tv")
     p, did = einst()["pult"], secrets.token_hex(6)
     audio = []
     if vorlesen:
         if not DS.bereit(p["stimme"]):
-            raise ValueError("Stimme noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult)")
+            raise M.Meldung("d_stimme_fehlt")
         DS.sprechen(text, p["stimme"], did, mit_gong=gong); audio.append(f"/durchsage/{did}.wav")
     durchsagen.insert(0, {"id": did, "text": text, "tvs": list(tvs), "bis": time.time() + dauer, "audio": audio,
                           "zeit": time.strftime("%H:%M"), "von": von, "t": time.time()})
@@ -642,7 +642,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
                 did = durchsage_senden(daten.get("text", ""), tvs, bool(daten.get("vorlesen")) and p["vorlesen"],
                                        bool(daten.get("gong", p["gong"])), dauer, z["name"])
             except (ValueError, RuntimeError, subprocess.TimeoutExpired) as f:
-                return self.antwort(200, {"ok": False, "fehler": str(f)[:200]})
+                return self.antwort(200, {"ok": False, "fehler": str(f)[:200], "code": getattr(f, "code", "")})
             return self.antwort(200, {"ok": True, "id": did})
         if pfad == "/pult/beenden" and self.command == "POST":
             for x in durchsagen:
@@ -699,23 +699,20 @@ def benachrichtigung_schleife():
                 if kette_pids(t["id"]) and not kette_laeuft(t["id"]):
                     kaputt[t["id"]] = kaputt.get(t["id"], 0) + 1
                     if kaputt[t["id"]] == 2:
-                        melder.melden("ausfall-" + t["id"], "ausfall", f"SignageCast: Ausfall „{t['name']}“",
-                                      f"Die Wiedergabe für den Fernseher „{t['name']}“ ist ausgefallen (Render-Kette unvollständig).")
+                        melder.melden("ausfall-" + t["id"], "ausfall", "ausfall", tv=t["name"])
                 else:
                     kaputt.pop(t["id"], None)
-                    melder.vorbei("ausfall-" + t["id"], f"SignageCast: „{t['name']}“ läuft wieder",
-                                  f"Die Wiedergabe für den Fernseher „{t['name']}“ läuft wieder.")
+                    melder.vorbei("ausfall-" + t["id"], "ausfall_vorbei", tv=t["name"])
             u = update_status() or {}
             if u.get("ts") != gesehen_update:
                 gesehen_update = u.get("ts")
                 if u.get("phase") == "fehler" or (u.get("phase") == "zurueck" and u.get("aktion") != "zurueck"):
-                    melder.melden(f"update-{u.get('ts')}", "update", "SignageCast: Update fehlgeschlagen",
-                                  f"{u.get('aktion')}: {u.get('meldung')} ({u.get('zeit')})")
+                    melder.melden(f"update-{u.get('ts')}", "update", "update", aktion=u.get("aktion"), meldung=u.get("meldung"),
+                                  zeit=u.get("zeit"))
             sa = zustand.get("sicherung_auto") or {}
             if sa.get("fehler") and sa.get("zeit") != gesehen_sicherung:
                 gesehen_sicherung = sa["zeit"]
-                melder.melden(f"sicherung-{sa['zeit']}", "sicherung", "SignageCast: Sicherung fehlgeschlagen",
-                              f"Die automatische Sicherung um {sa['zeit']} ist fehlgeschlagen: {sa['fehler']}")
+                melder.melden(f"sicherung-{sa['zeit']}", "sicherung", "sicherung", zeit=sa["zeit"], fehler=sa["fehler"])
             durchsagen_aktiv()                     # abgelaufene Durchsagen und ihre Sprachdateien entfernen (Datenschutz)
             # Doppelte Bilder der Aufnahme (seit 0.18): mehr als 3 je Sekunde, 3 Minuten in Folge -> melden. Beobachtet am
             # 2026-10-31 mit Echtzeit-Ton; behoben durch Neustart von PulseAudio (Knopf im Leistungstest)
@@ -731,31 +728,27 @@ def benachrichtigung_schleife():
                 if alt and neu[0] > alt[0]:
                     dup_hoch[t["id"]] = dup_hoch.get(t["id"], 0) + 1 if (neu[1] - alt[1]) / 60 > 3 else 0
                     if dup_hoch[t["id"]] == 3:
-                        melder.melden("doppelt-" + t["id"], "leistung", f"SignageCast: „{t['name']}“ ruckelt",
-                                      f"Die Aufnahme für „{t['name']}“ verdoppelt seit 3 Minuten viele Bilder. "
-                                      "Abhilfe: System → Leistungstest → „Ton und Stream neu starten“.")
+                        melder.melden("doppelt-" + t["id"], "leistung", "doppelt", tv=t["name"])
                     elif dup_hoch[t["id"]] == 0:
-                        melder.vorbei("doppelt-" + t["id"], f"SignageCast: „{t['name']}“ läuft wieder flüssig",
-                                      f"Die Aufnahme für „{t['name']}“ läuft wieder ohne doppelte Bilder.")
+                        melder.vorbei("doppelt-" + t["id"], "doppelt_vorbei", tv=t["name"])
             # Bildrate der TV-Seite: 5 Minuten im Schnitt unter 20 Bildern/s -> melden (seit 0.18)
             for t in einst()["fernseher"]:
                 br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 330]
                 schnitt = sum(x["fps"] for x in br) / len(br) if len(br) >= 25 else None
                 if schnitt is not None and schnitt < 20:
-                    melder.melden("leistung-" + t["id"], "leistung", f"SignageCast: „{t['name']}“ ruckelt",
-                                  f"Die TV-Seite für „{t['name']}“ erreicht seit 5 Minuten nur {schnitt:.0f} Bilder/s (Ziel 25). "
-                                  "Leistungstest in der Verwaltung: System → Leistungstest.")
+                    melder.melden("leistung-" + t["id"], "leistung", "leistung", tv=t["name"], fps=f"{schnitt:.0f}")
                 elif schnitt is not None and schnitt >= 22 or not kette_laeuft(t["id"]):
-                    melder.vorbei("leistung-" + t["id"], f"SignageCast: „{t['name']}“ läuft wieder flüssig",
-                                  f"Die TV-Seite für „{t['name']}“ erreicht wieder genug Bilder/s.")
+                    melder.vorbei("leistung-" + t["id"], "leistung_vorbei", tv=t["name"])
             if einst()["ha"]["url"] and zustand["ha_fehler"]:
                 ha_weg = ha_weg or time.time()
                 if time.time() - ha_weg > 300:
-                    melder.melden("ha", "ha", "SignageCast: Home Assistant nicht erreichbar",
-                                  f"Seit {time.strftime('%H:%M', time.localtime(ha_weg))}: {zustand['ha_fehler']}")
+                    code, detail = zustand.get("ha_fehler_code") or ("", "")
+                    grund = zustand["ha_fehler"] if melder.sprache() == "de" or code not in BN.HA_GRUND_EN else \
+                        BN.HA_GRUND_EN[code] + (f" ({detail})" if detail else "")
+                    melder.melden("ha", "ha", "ha", seit=time.strftime("%H:%M", time.localtime(ha_weg)), grund=grund)
             else:
                 ha_weg = None
-                melder.vorbei("ha", "SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder.")
+                melder.vorbei("ha", "ha_vorbei")
         except Exception as ex:
             print("Benachrichtigung:", ex, flush=True)
 
@@ -927,13 +920,13 @@ def kamera_bild(entity):
 def bild_speichern(b64):
     daten = base64.b64decode(str(b64).split(",")[-1], validate=False)
     if len(daten) > 8_000_000:
-        raise E.Fehler("Bild zu groß (höchstens 8 MB)")
+        raise E.Fehler("e_bild_gross")
     if daten[:3] == b"\xff\xd8\xff":
         endung = "jpg"
     elif daten[:8] == b"\x89PNG\r\n\x1a\n":
         endung = "png"
     else:
-        raise E.Fehler("Nur JPG oder PNG")
+        raise E.Fehler("e_bild_art")
     os.makedirs(BILDER, exist_ok=True)
     name = hashlib.sha256(daten).hexdigest()[:16] + "." + endung
     with open(os.path.join(BILDER, name), "wb") as f:
@@ -1420,7 +1413,7 @@ def sicherung_schleife():
 def einspielen(d, mit_strikes=True):
     if not isinstance(d, dict) or d.get("art") not in ("signagecast-sicherung", "signagecast-profil",
                                                          "tv-stream-sicherung", "tv-stream-profil"):   # alte Namen (bis 0.4.1)
-        raise E.Fehler("Keine SignageCast-Sicherung bzw. kein Profil")
+        raise E.Fehler("e_einspielen")
     if "einstellungen" in d:
         neu = d["einstellungen"]
         if isinstance(neu, dict) and isinstance(neu.get("webhook"), dict) and not neu["webhook"].get("token"):
@@ -1441,10 +1434,10 @@ def einspielen(d, mit_strikes=True):
     if "streams" in d:
         s = d["streams"]
         if not isinstance(s.get("streams"), dict):
-            raise E.Fehler("Streamliste fehlt")
+            raise E.Fehler("e_streamliste")
         for sid, x in s["streams"].items():
             if not (ID.fullmatch(sid) or re.fullmatch(r"UC[\w-]{22}", sid)):
-                raise E.Fehler(f"ungültige ID {sid!r}")
+                raise E.Fehler("e_stream_id", id=repr(sid))
         streams._speichern({"streams": s["streams"], "abgelehnt": [a for a in s.get("abgelehnt", []) if isinstance(a, str)]})
     if mit_strikes and isinstance(d.get("strikes"), dict):
         from streams import STRIKES, schreib
@@ -1767,7 +1760,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         except (E.Fehler, ValueError, KeyError, HAFehler) as ex:
             # 200 mit ok=false: die Verwaltung zeigt den Text direkt an
             m = M.als_dict(ex)
-            return self.antwort(200, {"ok": False, "fehler": str(ex).strip("'"), "code": m["code"], "p": m["p"]})
+            return self.antwort(200, dict({"ok": False, "fehler": str(ex).strip("'"), "code": m["code"], "p": m["p"]},
+                                          **({"innen": m["innen"]} if m.get("innen") else {})))
 
     def api_post(self, p, d):
         if p == "/api/einstellungen" and isinstance(d.get("quellen"), list):
@@ -1791,9 +1785,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/benachrichtigung/test":        # Testnachricht über einen Kanal (gespeicherte Einstellungen)
             kanal = d.get("kanal")
             if kanal not in ("telegram", "email", "ha"):
-                raise ValueError("unbekannter Kanal")
-            f = BN.senden(einst()["benachrichtigung"], ha.post, "SignageCast: Test",
-                          f"Testnachricht von SignageCast {VERSION} ({socket.gethostname()}).", nur=kanal)[kanal]
+                raise M.Meldung("bn_kanal")
+            f = BN.senden(einst()["benachrichtigung"], ha.post,
+                          *BN.texte(melder.sprache(), "test", version=VERSION, host=socket.gethostname()), nur=kanal)[kanal]
             if f:
                 raise ValueError(f)
             return {}

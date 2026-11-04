@@ -1,6 +1,6 @@
 # Automatische Tests für SignageCast (nur Python-Standardbibliothek; pyzipper optional).
 # Aufruf im Projektordner:  python3 -m unittest discover -s tests -v
-import datetime, json, os, sys, tempfile, unittest
+import datetime, json, os, re, sys, tempfile, unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app"))
 os.environ.setdefault("SC_EINSTELLUNGEN", os.path.join(tempfile.mkdtemp(), "einstellungen.json"))
@@ -220,6 +220,34 @@ class EinstellungenUndLayouts(unittest.TestCase):
     def test_meldung_mit_code_parameter(self):                              # Fehler aus 0.11.3
         m = M.Meldung("http", code=404, grund="Not Found")
         self.assertEqual((m.code, str(m)), ("http", "HTTP 404 Not Found"))
+
+
+class Uebersetzungen(unittest.TestCase):
+    """Seit 0.19.3: Prüfmeldungen tragen eine Kennung, jede Kennung hat einen englischen Text in der Verwaltung."""
+
+    def test_layoutfehler_mit_innerer_meldung(self):
+        with self.assertRaises(E.Fehler) as f:
+            E.pruefen({"layouts": [{"id": "ab", "name": "Flur", "thema": {"schema": "bunt"}}]})
+        m = M.als_dict(f.exception)
+        self.assertEqual((m["code"], m["p"]["name"], m["innen"]["code"]), ("e_layout", "Flur", "l_schema"))
+        self.assertEqual(m["text"], "Layout Flur: Schema hell, dunkel oder gedimmt")
+
+    def test_bereich(self):
+        with self.assertRaises(E.Fehler) as f:
+            E.pruefen({"standort": {"breite": 200}})
+        self.assertEqual(f.exception.code, "e_bereich")
+
+    def test_jede_kennung_englisch(self):
+        js = open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", "tv.js"), encoding="utf-8").read()
+        en = js[js.index("meldung: {", js.index("Meldungen des Dienstes nach Kennung")):]
+        fehlt = [k for k in M.DE if not re.search(r"\b" + k + r":", en[:en.index("\n    },")])]
+        self.assertEqual(fehlt, [])
+
+    def test_benachrichtigung_beide_sprachen(self):
+        import benachrichtigung as BN
+        self.assertEqual(set(BN.TEXTE["de"]), set(BN.TEXTE["en"]))
+        self.assertEqual(BN.texte("en", "ausfall", tv="Flur")[0], "SignageCast: “Flur” failed")
+        self.assertEqual(BN.texte("xx", "test", version="1", host="h")[0], "SignageCast: test")
 
 
 if __name__ == "__main__":

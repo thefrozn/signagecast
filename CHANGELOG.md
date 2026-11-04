@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.19.3 (in progress)
+- **Validation messages in English:** errors when saving layouts, TVs, schedules, clips, video streams, radio stations
+  and announcements now carry an identifier, so the English admin shows them in English (before: German only).
+  Nested messages such as “Layout Hall: colour as #rrggbb” are translated as a whole.
+- **Notifications in the admin language:** Telegram, e-mail and Home Assistant notifications (failure, stutter, update,
+  backup, Home Assistant) and the test message are sent in the language set in the admin.
+- **Connection:** if Home Assistant cannot be reached yet, the setup guide uses the address from the browser instead of
+  “?” and a German placeholder; without an IPv4 address it shows a placeholder in the admin language.
+- Performance test: the hint for duplicated frames names CPU/graphics shortage as the usual cause (since 0.19.2).
+
 ## v0.19.2 (2026-10-31)
 - **Stutter fixed for TVs with sound:** if ffmpeg captured the screen and the live sound in one process, it slowed the
   screen capture down – up to 90 % of the frames were duplicates (stutter, sound dropouts). Now one process captures

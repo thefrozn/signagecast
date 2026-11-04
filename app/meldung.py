@@ -1,6 +1,7 @@
 # Meldungen mit Kennung: Fehler aus Datenquellen, Kameras, Wetter, Zeit und Einspielern tragen eine Kennung (code) und
 # ihre Werte (p). Der deutsche Text hier dient für Protokoll und deutsche Verwaltung; die Verwaltung übersetzt anhand der
-# Kennung (cockpit/signagecast/tv.js, T.meldung) in andere Sprachen.
+# Kennung (cockpit/signagecast/tv.js, T.meldung) in andere Sprachen. Eine Meldung kann eine innere enthalten
+# (innen=…, z. B. „Layout X: <Grund>“) – ihr Text steht im Wert {d}, die Verwaltung übersetzt beide.
 
 DE = {
     # Datenquellen: Prüfen der Einstellungen
@@ -62,17 +63,78 @@ DE = {
     "upd_laeuft": "Es läuft bereits ein Update – bitte warten",
     "upd_aktion": "Unbekannte Update-Aktion",
     "upd_container": "Im Docker-/Podman-Betrieb wird über das Image aktualisiert (docker pull)",
+    # Einstellungen prüfen (seit 0.19.3)
+    "e_zahl": "keine Zahl: {w}",
+    "e_bereich": "{w} liegt nicht zwischen {lo} und {hi}",
+    "e_wert": "ungültiger Wert: {w}",
+    "e_objekt": "Einstellungen müssen ein Objekt sein",
+    "e_layout": "Layout {name}: {d}",
+    "e_layout_doppelt": "Layout-Kennung doppelt: {id}",
+    "e_tv_doppelt": "Fernseher-Kennung doppelt: {id}",
+    "e_ton": "Ton nur aus, radio oder tiere",
+    "e_aufloesung": "Auflösung nur 1080 oder 2160",
+    "e_tv_fehlt": "Mindestens ein Fernseher nötig",
+    "e_zeitzone": "unbekannte Zeitzone {zz}",
+    "e_stufe": "unbekannte Stufe",
+    "e_suchmuster": "ungültiges Suchmuster: {x}",
+    "e_ortsmuster": "ungültiges Ortsmuster: {m}",
+    "e_ep_quelle": "Einspieler: unbekannte Quelle",
+    "e_ep_adresse": "Einspieler: Adresse fehlt",
+    "e_medium_art": "Medium: Art bild oder video",
+    "e_pult_pw": "Pult-Passwort: mindestens 6 Zeichen",
+    "e_bild_gross": "Bild zu groß (höchstens 8 MB)",
+    "e_bild_art": "Nur JPG oder PNG",
+    "e_einspielen": "Keine SignageCast-Sicherung bzw. kein Profil",
+    "e_streamliste": "Streamliste fehlt",
+    "e_stream_id": "ungültige ID {id}",
+    # Layouts und Zeitplan
+    "l_entitaet": "ungültige Entität {w}",
+    "l_symbol": "Symbol muss mdi-… sein",
+    "l_farbe": "Farbe als #rrggbb",
+    "l_bild": "ungültiges Bild",
+    "l_quelle": "ungültige Datenquelle",
+    "l_pfad": "Pfad zu lang",
+    "l_adresse": "Adresse mit http:// oder https://",
+    "l_wahl": "erlaubt: {werte}",
+    "l_vergleich": "unbekannter Vergleich",
+    "l_kennung": "ungültige Layout-Kennung {id}",
+    "l_hintergrund": "Hintergrund: wetter, stil, farbe oder bild",
+    "l_hg_bild": "ungültiges Hintergrundbild",
+    "l_schema": "Schema hell, dunkel oder gedimmt",
+    "l_schrift": "unbekannte Schrift",
+    "l_baustein": "unbekannter Baustein {typ}",
+    "l_baustein_id": "ungültige oder doppelte Baustein-Kennung {id}",
+    "z_uhrzeit": "Zeitplan: Uhrzeit als HH:MM",
+    "z_layout": "Zeitplan: unbekanntes Layout {id}",
+    # Video-Streams, Radio, Durchsagen
+    "s_kein_link": "Kein YouTube-Video- oder Kanal-Link erkannt",
+    "s_nicht_einbettbar": "Dieses Video darf nicht eingebettet werden (oder existiert nicht)",
+    "s_ort": "ungültiger Ort ({k})",
+    "r_adresse": "Adresse muss mit http:// oder https:// beginnen",
+    "r_nicht_erreichbar": "Adresse nicht erreichbar: {d}",
+    "r_hls": "HLS-Radio (m3u8) wird nicht unterstützt – bitte eine MP3/AAC-Adresse nehmen",
+    "r_keine_adresse": "Playlist enthält keine Stream-Adresse",
+    "r_kein_audio": "Kein Audio-Stream (Inhalt: {typ})",
+    "r_verschachtelt": "Zu viele verschachtelte Playlists",
+    "r_playlist_leer": "Keine Stream-Adresse (http/https) in der Playlist gefunden",
+    "d_text_tv": "Text und mindestens ein Fernseher nötig",
+    "d_stimme_fehlt": "Stimme noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult)",
+    "d_stimme": "unbekannte Stimme",
+    "bn_kanal": "unbekannter Kanal",
 }
 
 
 class Meldung(ValueError):
-    def __init__(self, kennung, **p):              # „kennung“, weil Werte selbst „code“ heißen können (HTTP-Status)
+    def __init__(self, kennung, innen=None, **p):  # „kennung“, weil Werte selbst „code“ heißen können (HTTP-Status)
+        self.innen = als_dict(innen) if innen is not None else None
+        if innen is not None:
+            p["d"] = str(innen).strip("'")
         self.code, self.p = kennung, {k: str(v)[:200] for k, v in p.items()}
         super().__init__(DE.get(kennung, kennung).format(**self.p))
 
 
 def als_dict(ex):
-    """Für die Verwaltung: {"code", "p", "text"} – bei fremden Fehlern nur der Text."""
+    """Für die Verwaltung: {"code", "p", "text"[, "innen"]} – bei fremden Fehlern nur der Text."""
     if isinstance(ex, Meldung):
-        return {"code": ex.code, "p": ex.p, "text": str(ex)}
-    return {"code": "", "p": {}, "text": str(ex)[:300]}
+        return dict({"code": ex.code, "p": ex.p, "text": str(ex)}, **({"innen": ex.innen} if ex.innen else {}))
+    return {"code": "", "p": {}, "text": str(ex).strip("'")[:300]}
