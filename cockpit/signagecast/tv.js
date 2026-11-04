@@ -365,6 +365,8 @@ const TEXTE = {
       ab_http: "Timetable service answered {code}", ab_nicht_erreichbar: "Timetable service not reachable: {d}",
       ab_antwort: "Timetable service: unexpected answer", al_text: "Text for the emergency screen missing",
       sch_entitaet: "No entity for switching is set for this TV",
+      sch_an_nicht: "Home Assistant cannot switch {e} on – the device does not offer it (Samsung/LG often only with Wake-on-LAN)",
+      sch_aus_nicht: "Home Assistant cannot switch {e} off – the device does not offer it",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",

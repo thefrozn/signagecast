@@ -134,6 +134,8 @@ DE = {
     "ab_antwort": "Fahrplan-Dienst: unerwartete Antwort",
     "al_text": "Text für das Notfall-Vollbild fehlt",
     "sch_entitaet": "Für diesen Fernseher ist keine Entität zum Schalten eingetragen",
+    "sch_an_nicht": "Home Assistant kann {e} nicht einschalten – das Gerät bietet es nicht an (Samsung/LG oft nur mit Wake-on-LAN)",
+    "sch_aus_nicht": "Home Assistant kann {e} nicht ausschalten – das Gerät bietet es nicht an",
 }
 
 

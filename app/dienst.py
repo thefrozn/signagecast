@@ -938,7 +938,12 @@ def schalten_soll(t):
 
 def tv_schalten(t, an):
     ent = t["ha_schalten"]
-    ha.post(f"/api/services/{ent.split('.')[0]}/turn_{'on' if an else 'off'}", {"entity_id": ent})
+    try:
+        ha.post(f"/api/services/{ent.split('.')[0]}/turn_{'on' if an else 'off'}", {"entity_id": ent})
+    except HAFehler as f:
+        if f.detail.startswith("400 "):            # HA: Entität bietet turn_on/turn_off nicht an (z. B. Samsung ohne WoL)
+            raise M.Meldung("sch_an_nicht" if an else "sch_aus_nicht", e=ent) from None
+        raise
 
 
 def schalten_einmal(erster=False):

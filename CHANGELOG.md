@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.21.1 (2026-11-04)
+- Switching TVs via Home Assistant: a clear message when the device cannot be switched on or off by HA (e.g. Samsung/LG
+  without Wake-on-LAN) instead of “HA answers 400”.
+
 ## v0.21.0 (2026-11-04)
 - **PDF element:** upload a PDF (price list, menu, notice, presentation – up to 50 pages) in the layout editor; it is
   converted into pictures once (`pdftoppm`, new package `poppler-utils`) and shown page by page, changing by the clock
