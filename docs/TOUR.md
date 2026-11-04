@@ -2,8 +2,7 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show versions
-0.17–0.19 with the six areas Overview, TVs, Content, Video & sound, Settings and System; only the updates page is from
-version 0.13.
+0.17–0.19 with the six areas Overview, TVs, Content, Video & sound, Settings and System.
 
 [← back to the README](../README.md)
 
