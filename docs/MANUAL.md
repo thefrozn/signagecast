@@ -91,6 +91,13 @@ is selected – type the name), tick “read aloud” and send. The call appears
 after a chime; because of the stream it takes about 6–10 seconds. Names are not stored (memory only, 2 hours).
 TVs reachable by a panel account record real sound so that announcements can be heard.
 
+### Show a web page that forbids embedding
+Many sites (news, dashboards, timetables) refuse to be embedded – the *Check* button in the layout editor tells you.
+Set the web page element's **Display** to **Screenshot**: SignageCast loads the page itself and shows a fresh picture
+every *reload* minutes (0 = hourly). Zoom and crop work as with live pages. Limits: no motion or video, no login, and
+cookie banners stay visible – pick a page or a direct sub-page without a banner if possible. Each picture costs about
+2–5 seconds of CPU for Chromium, so intervals of 5 minutes or more are sensible.
+
 ### Get notified when something breaks
 Settings → Notifications. Channels (any combination):
 
@@ -145,6 +152,8 @@ It is never shown again. Create a new one and update the senders.
 ## Deutsch (kurz)
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
+**Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten
+verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtbar),
 **Unwetterwarnungen des DWD** als Layout-Baustein (Stufenfarben, nur Deutschland, Abruf alle 10 min nur bei Nutzung),
 **Meldung per Webhook** (Schlüssel unter Einstellungen → Benachrichtigungen erzeugen – wird nur einmal angezeigt –, dann
 `POST http://<IP>:8890/meldung` mit `Authorization: Bearer <Schlüssel>` und JSON `text`, `dauer`, `stil`, optional `tv`;

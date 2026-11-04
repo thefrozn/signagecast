@@ -1,6 +1,6 @@
 # Automatische Tests für SignageCast (nur Python-Standardbibliothek; pyzipper optional).
 # Aufruf im Projektordner:  python3 -m unittest discover -s tests -v
-import datetime, json, os, re, sys, tempfile, unittest
+import datetime, json, os, re, sys, tempfile, time, unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app"))
 os.environ.setdefault("SC_EINSTELLUNGEN", os.path.join(tempfile.mkdtemp(), "einstellungen.json"))
@@ -248,6 +248,35 @@ class Uebersetzungen(unittest.TestCase):
         self.assertEqual(set(BN.TEXTE["de"]), set(BN.TEXTE["en"]))
         self.assertEqual(BN.texte("en", "ausfall", tv="Flur")[0], "SignageCast: “Flur” failed")
         self.assertEqual(BN.texte("xx", "test", version="1", host="h")[0], "SignageCast: test")
+
+
+class Webbild(unittest.TestCase):
+    """Seit 0.20: Baustein „Webseite“ im Modus Bildschirmfoto."""
+
+    def test_modus_pruefen(self):
+        el = {"id": "w", "typ": "webseite", "optionen": {"url": "https://example.org", "modus": "bild"}}
+        self.assertEqual(L.pruefe_layout({"id": "ab", "elemente": [el]})["elemente"][0]["optionen"]["modus"], "bild")
+        el["optionen"]["modus"] = "video"
+        with self.assertRaises(ValueError):
+            L.pruefe_layout({"id": "ab", "elemente": [el]})
+        self.assertEqual(L.pruefe_layout({"id": "ab", "elemente": [{"id": "w", "typ": "webseite"}]})["elemente"][0]["optionen"]["modus"], "einbetten")
+
+    def test_faellig_und_bild(self):
+        import webbild as WB
+        with tempfile.TemporaryDirectory() as d:
+            a = {"url": "https://example.org", "breite": 640, "hoehe": 480, "faktor": 1, "alle_min": 5}
+            f = WB.Fotograf(d, lambda: [a])
+            k = WB.schluessel(a["url"], 640, 480, 1)
+            self.assertIsNone(f.bild(a))
+            self.assertEqual(f.faellig(a, time.time()), k)                  # noch kein Foto
+            open(f.datei(k), "wb").write(b"x")
+            self.assertTrue(f.bild(a).startswith(f"/webbild/{k}.png?t="))
+            self.assertIsNone(f.faellig(a, time.time()))                     # frisch
+            self.assertEqual(f.faellig(a, time.time() + 301), k)             # nach 5 min wieder
+            os.remove(f.datei(k))
+            f.stand[k] = {"zeit": time.time(), "fehler": "kaputt"}
+            self.assertIsNone(f.faellig(a, time.time() + 100))               # nach Fehler 5 min Pause
+            self.assertEqual(f.faellig(a, time.time() + 301), k)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.20.0 (2026-11-04)
+- **Web page element: new display “Screenshot”** for pages that forbid embedding (X-Frame-Options, CSP
+  frame-ancestors). SignageCast loads the page in a short-lived headless Chromium (fresh profile, low priority, one at
+  a time) and shows a picture refreshed every *reload* minutes (0 = hourly), with the same zoom and crop as live
+  pages. Only while a TV shows the layout; the last picture stays on disk so it appears right after switching on.
+  The *Check* button suggests this display when a page forbids embedding.
+
 ## v0.19.3 (2026-11-04)
 - **Validation messages in English:** errors when saving layouts, TVs, schedules, clips, video streams, radio stations
   and announcements now carry an identifier, so the English admin shows them in English (before: German only).

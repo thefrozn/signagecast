@@ -25,6 +25,7 @@ import unwetter as UW                         # noqa: E402
 import benachrichtigung as BN                 # noqa: E402
 import durchsage as DS                        # noqa: E402
 import quellen as Q                           # noqa: E402
+import webbild as WB                          # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -797,6 +798,34 @@ def fernseher(tv_id=None):
     return next((t for t in liste if t["id"] == tv_id), None) if tv_id else liste[0]
 
 
+# ---------- Webseite als Bildschirmfoto (seit 0.20) ----------
+WEBBILD = os.path.join(DATEN, "webbild")
+
+
+def webbild_auftrag(e):
+    """Baustein „Webseite“ im Modus Bild -> Auftrag für den Fotografen (Größe wie der iframe: Feld / Zoom + Ausschnitt)."""
+    o = e["optionen"]
+    if e["typ"] != "webseite" or o.get("modus") != "bild" or not o.get("url"):
+        return None
+    skala = (o.get("zoom") or 100) / 100
+    gr = lambda felder, versatz: max(40, min(WB.GROESSE_MAX, round(felder * 40 / skala + versatz)))
+    return {"url": o["url"], "breite": gr(e["w"], o.get("versatz_x", 0)), "hoehe": gr(e["h"], o.get("versatz_y", 0)),
+            "faktor": 1, "alle_min": o.get("neu_laden_min") or 60}         # 0 = „nie“ heißt hier: stündlich
+
+
+def webbild_auftraege():
+    """Nur Bausteine der aktuell gezeigten Layouts laufender Fernseher."""
+    e, aus = einst(), []
+    for t in e["fernseher"]:
+        if kette_laeuft(t["id"]):
+            lay = L.aktuelles_layout(t, e["layouts"], time.strftime("%H:%M"))
+            aus += [a for a in (webbild_auftrag(x) for x in lay.get("elemente", []) if x["sichtbar"]) if a]
+    return aus
+
+
+fotograf = WB.Fotograf(WEBBILD, webbild_auftraege, lambda: einst()["sprache"] or "en")
+
+
 def tv_daten(tv_id):
     e = einst()
     t = fernseher(tv_id)
@@ -838,6 +867,7 @@ def tv_daten(tv_id):
                 zeitzone=wirksame_zeitzone(),
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
                 tv=t["id"], layout=layout, kalender=kal, api=api,
+                webbild={x["id"]: fotograf.bild(a) for x in layout.get("elemente", []) if (a := webbild_auftrag(x))},
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
                 unwetter=(zustand.get("unwetter") or {}).get("liste", []),
                 meldung_extern=meldung_fuer(t["id"]),
@@ -1622,6 +1652,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/qvideo/([a-z0-9_]{2,16})", p.path)
         if m:                                     # MJPEG-Kamera durchreichen (Zugangsdaten bleiben im Container)
             return mjpeg_weiterleiten(self, m.group(1))
+        m = re.fullmatch(r"/webbild/([0-9a-f]{16})\.png", p.path)
+        if m:                                     # Bildschirmfoto einer Webseite (Baustein „Webseite“, Modus Bild)
+            try:
+                return self.antwort(200, open(fotograf.datei(m.group(1)), "rb").read(), "image/png")
+            except OSError:
+                return self.antwort(404, {"ok": False})
         m = re.fullmatch(r"/qbild/([a-z0-9_]{2,16})", p.path)
         if m:                                     # Bild aus einer Datenquelle (für die TV-Seite)
             q = next((x for x in einst()["quellen"] if x["id"] == m.group(1)), None)
@@ -1870,6 +1906,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             render_schreiben(einst())
             neu_liste.set()
             einspieler_neu.set()
+            fotograf.neu.set()
             zeit_neu.set()
             wetter_neu.set()
             qn.neu.set()
@@ -2011,7 +2048,7 @@ def main():
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
-                 update_auto_schleife, unwetter_schleife, benachrichtigung_schleife):
+                 update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

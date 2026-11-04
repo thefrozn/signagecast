@@ -49,7 +49,7 @@ const LTEXTE = {
            faktor: "Faktor (z. B. 0,01 für cm → m)", zeile: "Zeile (Platzhalter je Eintrag)", anpassung: "Bild", darstellung: "Darstellung", min: "Minimum", max: "Maximum",
            gelb: "gelb ab", rot: "rot ab", umkehren: "umgekehrt (niedrige Werte schlecht)", ziel: "Ziel (Datum/Uhrzeit)", ende: "Text nach Ablauf",
            inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung",
-           immer: "auch ohne Warnung zeigen", ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie)", zoom: "Zoom (%)",
+           immer: "auch ohne Warnung zeigen", ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie; Foto: stündlich)", modus: "Darstellung", zoom: "Zoom (%)",
            versatz_x: "Ausschnitt: von links (px)", versatz_y: "Ausschnitt: von oben (px)" },
     optHilfe: { temperatur: "leer = Wetter aus Einstellungen → Allgemein; oder ein Temperatur-Sensor", kamera: "z. B. Türklingel – mit Bedingung nur bei Klingeln zeigen",
                 meldung: "Text-Entität in HA (z. B. input_text.tv_meldung). Ändert sich der Text, erscheint er als Banner.",
@@ -63,11 +63,11 @@ const LTEXTE = {
                 text: "Platzhalter wie {quelle:pfad} werden durch Werte aus Datenquellen ersetzt.",
                 webcam: "Kamera aus „Datenquellen“ (Art Kamera). Läuft nur, solange der Baustein sichtbar ist – z. B. mit Bedingung nur beim Klingeln.",
                 diagramm: "Entweder eine HA-Entität (Verlauf aus der HA-Historie) oder Datenquelle + Pfad – deren Werte merkt sich SignageCast ab jetzt (bis 7 Tage).",
-                webseite: "Nur Seiten, die das Einbetten erlauben („Prüfen“). Zoom und Ausschnitt wählen den sichtbaren Teil.",
+                webseite: "„Einbetten“ zeigt die Seite live, geht aber nur, wenn sie es erlaubt („Prüfen“). „Bildschirmfoto“ geht mit fast jeder öffentlichen Seite: SignageCast lädt sie selbst und zeigt alle paar Minuten ein Foto (ohne Bewegung und Anmeldung, Cookie-Hinweise bleiben sichtbar). Zoom und Ausschnitt wählen den sichtbaren Teil.",
                 unwetter: "Amtliche Warnungen des Deutschen Wetterdienstes für den Standort (nur Deutschland). Ohne Warnung unsichtbar – oder „auch ohne Warnung zeigen“." },
-    wahl: { balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)" },
+    wahl: { balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)", einbetten: "einbetten (live)", bild: "Bildschirmfoto" },
     keineQuelle: "– Datenquelle wählen –", waehlen: "wählen …", bedQuelle: "Wert aus", bedHA: "Home Assistant", bedPfad: "Pfad",
-    pruefen: "Prüfen", einbettbarJa: "Seite erlaubt das Einbetten", einbettbarNein: "Seite verbietet das Einbetten", einbettbarUnklar: "nicht prüfbar",
+    pruefen: "Prüfen", einbettbarJa: "Seite erlaubt das Einbetten", einbettbarNein: "Seite verbietet das Einbetten", einbettbarUnklar: "nicht prüfbar", tippFoto: "– Tipp: Darstellung „Bildschirmfoto“ wählen.",
     raumNeu: "Raum hinzufügen", op: { "=": "ist gleich", "!=": "ist nicht", ">": "größer als", "<": "kleiner als", an: "ist an/offen", aus: "ist aus/zu" },
   },
   en: {
@@ -115,7 +115,7 @@ const LTEXTE = {
            faktor: "Factor (e.g. 0.01 for cm → m)", zeile: "Row (placeholders per entry)", anpassung: "Picture", darstellung: "Display", min: "Minimum", max: "Maximum",
            gelb: "yellow from", rot: "red from", umkehren: "reversed (low values are bad)", ziel: "Target (date/time)", ende: "Text when reached",
            inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption",
-           immer: "show also without warning", ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never)", zoom: "Zoom (%)",
+           immer: "show also without warning", ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never; picture: hourly)", modus: "Display", zoom: "Zoom (%)",
            versatz_x: "Crop: from left (px)", versatz_y: "Crop: from top (px)" },
     optHilfe: { temperatur: "empty = weather from Settings → General; or a temperature sensor", kamera: "e.g. doorbell – with a condition only when it rings",
                 meldung: "Text entity in HA (e.g. input_text.tv_message). When the text changes it appears as a banner.",
@@ -129,11 +129,11 @@ const LTEXTE = {
                 text: "Placeholders like {source:path} are replaced with values from data sources.",
                 webcam: "Camera from “Data sources” (type camera). Only runs while the element is visible – e.g. with a condition only when the doorbell rings.",
                 diagramm: "Either an HA entity (history from HA) or data source + path – SignageCast records its values from now on (up to 7 days).",
-                webseite: "Only pages that allow embedding (“Check”). Zoom and crop choose the visible part.",
+                webseite: "“Embed” shows the page live but only works if it allows embedding (“Check”). “Screenshot” works with almost any public page: SignageCast loads it itself and shows a fresh picture every few minutes (no motion, no login, cookie notices stay visible). Zoom and crop choose the visible part.",
                 unwetter: "Official warnings of the German Weather Service for the location (Germany only). Hidden without a warning – or “show also without warning”." },
-    wahl: { balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)" },
+    wahl: { balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)", einbetten: "embed (live)", bild: "Screenshot" },
     keineQuelle: "– choose data source –", waehlen: "pick …", bedQuelle: "Value from", bedHA: "Home Assistant", bedPfad: "Path",
-    pruefen: "Check", einbettbarJa: "page allows embedding", einbettbarNein: "page forbids embedding", einbettbarUnklar: "could not check",
+    pruefen: "Check", einbettbarJa: "page allows embedding", einbettbarNein: "page forbids embedding", einbettbarUnklar: "could not check", tippFoto: "– tip: choose display “Screenshot”.",
     raumNeu: "Add room", op: { "=": "equals", "!=": "is not", ">": "greater than", "<": "less than", an: "is on/open", aus: "is off/closed" },
   },
 };
@@ -144,7 +144,7 @@ const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 
 // welche Arten von Datenquellen ein Baustein anbietet
 const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical"], apibild: ["bild", "json"], apiliste: ["json", "rss", "ical", "text"],
   diagramm: ["json", "text"], apiwert: ["json", "text", "rss", "ical"], anzeige: ["json", "text"], countdown: ["json", "text", "ical"] };
-const WAHL = { darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"] };
+const WAHL = { darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"], modus: ["einbetten", "bild"] };
 const ENT_DOMAINS = { temperatur: ["weather", "sensor"], wetterlage: ["weather"], feuchte: ["weather", "sensor"], wind: ["weather", "sensor"],
   kamera: ["camera"], kalender: ["calendar"], meldung: ["input_text", "sensor", "text"] };
 
@@ -589,7 +589,7 @@ async function layoutSeite(inhalt) {
     if (up) up.onclick = (ev) => aktion(ev.target, async () => {
       const r = await senden("/api/webseite/pruefen", { url: ziel.querySelector("[name=o_url]").value });
       ziel.querySelector("#urlErg").innerHTML = r.einbettbar === true ? `<span class="gut">${esc(L.einbettbarJa)}</span>`
-        : r.einbettbar === false ? `<span class="schlecht">${esc(L.einbettbarNein)}: ${esc(r.grund)}</span>` : `${esc(L.einbettbarUnklar)}: ${esc(r.grund)}`;
+        : r.einbettbar === false ? `<span class="schlecht">${esc(L.einbettbarNein)}: ${esc(r.grund)}</span> ${esc(L.tippFoto)}` : `${esc(L.einbettbarUnklar)}: ${esc(r.grund)}`;
     }, null);
     const pw = ziel.querySelector("[name=pfadWahl]");
     if (pw) pw.onclick = (ev) => aktion(ev.target, () => pfadWaehlen(ziel.querySelector(".pfadBaum"), ziel.querySelector("[name=o_quelle]").value,

@@ -29,7 +29,8 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
   placeholders like `{source:path}` in any text, and conditions on API values.
 - **Cameras, charts, calendars, web pages** – IP cameras (RTSP, HLS or MJPEG; e.g. the doorbell only when it rings),
   history charts (Home Assistant history or recorded API values), calendars from any iCal address (waste collection,
-  Google/Outlook – without Home Assistant), and embedded web pages that allow it (zoom, crop, reload interval).
+  Google/Outlook – without Home Assistant), and web pages – embedded live where the site allows it, otherwise as a screenshot refreshed every few minutes
+  (zoom, crop, interval).
 - **Templates** – Standard, Video large, Video only, Info without video, *Practice – calm (waiting room)*,
   *Company – corporate design*, *Window to the world*, Night.
 - **Backgrounds by time of day** – picture sets (nature, city, sky, mountains, sea) for sunrise, day, sunset and night,
@@ -190,7 +191,9 @@ see [NOTICE.md](NOTICE.md).
 - **Cameras:** RTSP/HLS cameras are pulled by MediaMTX only while a TV shows them and can only be read inside the
   container (not on port 8888 from the network). The camera must deliver **H.264** (Chromium in the container cannot
   decode H.265). Rootless Podman with the default port forwarder may hide the client address – use host networking there.
-- **Web pages** are embedded only if the site allows it (X-Frame-Options / frame-ancestors); nothing is circumvented.
+- **Web pages** are embedded live only if the site allows it (X-Frame-Options / frame-ancestors). The *screenshot* mode
+  loads the page in a short-lived headless Chromium inside the container (fresh profile each time, no cookies or
+  logins kept) only while a TV shows it, one page at a time at low priority. Please respect the site's terms of use.
 
 ## Updates and backups
 

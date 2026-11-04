@@ -367,8 +367,9 @@ function fuellen() {
         break;
       }
       case "webseite": {
-        sichtbar = sichtbar && !!o.url;
-        if (sichtbar) webseite(b); else if (b.stopp) { b.stopp(); }
+        const foto = o.modus === "bild" ? (daten.webbild || {})[e.id] : null;   // Modus Bild: Foto vom Dienst (seit 0.20)
+        sichtbar = sichtbar && !!o.url && (o.modus !== "bild" || !!foto);
+        if (sichtbar) webseite(b, foto); else if (b.stopp) { b.stopp(); }
         break;
       }
       case "meldung": {
@@ -453,10 +454,18 @@ function diagrammZeichnen(z, punkte) {
     <text x="0" y="${rand + 14}" class="achse">${zahl1(hi)}</text><text x="0" y="${h - rand}" class="achse">${zahl1(lo)}</text></svg>`;
 }
 
-// ---------- Webseite: eingebettet (nur wenn die Seite es erlaubt), mit Zoom, Ausschnitt und Neuladen ----------
-function webseite(b) {
+// ---------- Webseite: eingebettet (nur wenn die Seite es erlaubt) oder als Foto, mit Zoom, Ausschnitt und Neuladen ----------
+function webseite(b, foto) {
   const o = b.e.optionen, d = b.d;
   const skala = (o.zoom || 100) / 100;
+  if (foto) {                               // Foto in der Größe des iframes, gleicher Ausschnitt und Zoom
+    if (!b.foto) { if (b.stopp) b.stopp(); b.foto = document.createElement("img"); b.foto.alt = ""; d.appendChild(b.foto);
+      b.stopp = () => { if (b.foto) { b.foto.remove(); b.foto = null; } }; }
+    if (b.foto.dataset.src !== foto) { b.foto.dataset.src = foto; b.foto.src = foto; }
+    Object.assign(b.foto.style, { left: -o.versatz_x * skala + "px", top: -o.versatz_y * skala + "px", transform: `scale(${skala})` });
+    return;
+  }
+  if (b.foto) b.stopp();
   if (!b.rahmen || b.rahmenUrl !== o.url) {
     if (b.rahmen) b.rahmen.remove();
     const f = document.createElement("iframe");
