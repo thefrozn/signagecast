@@ -98,6 +98,40 @@ every *reload* minutes (0 = hourly). Zoom and crop work as with live pages. Limi
 cookie banners stay visible – pick a page or a direct sub-page without a banner if possible. Each picture costs about
 2–5 seconds of CPU for Chromium, so intervals of 5 minutes or more are sensible.
 
+### Show a PDF (price list, menu, presentation)
+Add the element **PDF (page by page)** and upload the file (up to 50 pages; export PowerPoint or Word as PDF first).
+SignageCast converts every page into a picture once; the element shows them one after another, *seconds per page*
+apart. Pages change by the clock, so several TVs turn pages together. *Fit* shows the whole page, *fill* crops it. A new
+upload replaces the file in this element only – save the layout afterwards.
+
+### Show something only for a while
+Every element has **Only during …** with *from* and *until* (date, optionally a time). Without a time the whole day
+counts: from 2026-12-23 until 2027-01-02 shows the text from the morning of 23 December to the end of 2 January. The
+editor marks such elements with ⏱. Combine it with a condition if needed (both must apply).
+
+### Emergency screen
+Settings → Announcements → **Emergency screen**: enter templates (the first is used from the admin and the webhook),
+optionally a warning tone, then *Trigger now* (all TVs or one) and *End*. It shows the text in red across the whole
+screen above every layout – also during “black” – and stays until someone ends it, even across a restart. Panel
+accounts with **may trigger the emergency screen** get a red section in the panel. By webhook (key from “Message via
+webhook”):
+
+```bash
+curl -X POST http://<IP>:8890/alarm -H "Authorization: Bearer <key>" -H "Content-Type: application/json" -d '{"text": "Please leave the building."}'
+curl -X POST http://<IP>:8890/alarm -H "Authorization: Bearer <key>" -d '{"aus": true}'      # end
+```
+
+The warning tone is audible only on TVs that record sound (sound on, or reachable by a panel account with read-aloud).
+An emergency screen is an additional notice, not a replacement for a certified alarm system.
+
+### Really switch TVs off at night
+TVs → **Switch via HA**: enter the TV's entity in Home Assistant (`media_player.…`, `switch.…` for a smart plug, or
+`remote.…`), save, try *Off (test)* and *On (test)*. From then on the TV is switched off when “black” starts in its
+schedule and on again when it ends or an emergency screen comes – only at that moment, so a TV switched on by hand at
+night stays on. Switching on works only if Home Assistant can do it (Samsung and LG usually need Wake-on-LAN in their
+integration; a smart plug works with TVs that start on power). After switching on, the TV must open the SignageCast
+address by itself (start page or autostart of its browser).
+
 ### Get notified when something breaks
 Settings → Notifications. Channels (any combination):
 
@@ -159,4 +193,8 @@ verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtb
 `POST http://<IP>:8890/meldung` mit `Authorization: Bearer <Schlüssel>` und JSON `text`, `dauer`, `stil`, optional `tv`;
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,
-Test-Knopf je Kanal. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.
+Test-Knopf je Kanal.
+Seit 0.21: **PDF** als Baustein (bis 50 Seiten, blättert nach der Uhr), **Zeitraum** je Baustein
+(„ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Einstellungen → Durchsage-Pult; im Pult für Zugänge mit
+dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernseher über Home Assistant schalten**
+(Fernseher → „Über HA schalten“: bei „schwarz“ aus, danach wieder an – nur beim Wechsel). Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.

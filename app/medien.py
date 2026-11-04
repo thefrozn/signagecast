@@ -89,6 +89,13 @@ class Hochladen:
                 pass
             raise
 
+    def fertig_roh(self, kennung):
+        """Fertige Datei ohne Prüfung (z. B. PDF für app/pdf.py) -> Pfad; der Aufrufer löscht sie danach."""
+        u = self.offen.pop(kennung, None)
+        if not u:
+            raise Meldung("med_upload")
+        return u["pfad"]
+
     def _weg(self, kennung):
         u = self.offen.pop(kennung, None)
         if u:

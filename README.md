@@ -41,9 +41,13 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 - **Messages and notifications** – official severe weather warnings of the DWD (Germany) as a layout element; short
   messages from other systems (e.g. Home Assistant) as a banner on the TVs via a webhook with a secret key; notifications
   via Telegram, e-mail or Home Assistant when a TV fails, an update or backup fails or Home Assistant is disconnected.
+- **PDF** – a PDF (price list, menu, presentation) page by page.
+- **Elements with a period** – e.g. “Closed from 23 Dec to 2 Jan” appears and disappears by itself.
+- **Emergency screen** – a red full-screen message on all TVs until someone ends it (admin, panel or webhook).
 - **Announcement panel** – a separate page for the reception: send a call like “Mrs Baker, please go to room 2” to
   chosen TVs, read aloud offline (Piper, female or male voice), without access to any settings.
-- **Energy saving** – rendering runs only while someone watches; schedules can switch a TV to night mode or black.
+- **Energy saving** – rendering runs only while someone watches; schedules can switch a TV to night mode or black –
+  and really switch it off and on again via Home Assistant.
 - **Clear admin** – six areas with a to-do list on the overview, setup assistant on a new installation, marked unsaved
   changes, own address per page, one menu on the phone.
 - **Admin in Cockpit** – overview with preview picture, system pages, backup/restore, German and English.
@@ -240,7 +244,9 @@ dazu ein großes Fenster mit **Live-Kameras von Tieren und Natur** aus aller Wel
 Gezeichnet wird in einem kleinen Linux-Container, der Fernseher öffnet nur eine Adresse im Browser. Das Bild gestaltest
 du im **Layout-Editor** (Bausteine ziehen, Größe ändern, Vorlagen für Wohnzimmer, Wartezimmer und Firma),
 dazu Hintergründe nach Tageszeit, Internetradio, Einspieler wie „tagesschau in 100 Sekunden“, mehrere Fernseher,
-Unwetterwarnungen des DWD, Meldungen per Webhook und Benachrichtigungen über Telegram, E-Mail oder Home Assistant
+Unwetterwarnungen des DWD, Meldungen per Webhook und Benachrichtigungen über Telegram, E-Mail oder Home Assistant,
+PDFs Seite für Seite, Bausteine mit Zeitraum („vom 23.12. bis 2.1. geschlossen“), ein
+Notfall-Vollbild für alle Fernseher und echtes Aus-/Einschalten der Fernseher über Home Assistant
 (siehe [Handbuch](docs/MANUAL.md)).
 
 **Installation auf Proxmox** (in der Shell des Proxmox-Hosts):

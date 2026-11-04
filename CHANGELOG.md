@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.21.0 (2026-11-04)
+- **PDF element:** upload a PDF (price list, menu, notice, presentation – up to 50 pages) in the layout editor; it is
+  converted into pictures once (`pdftoppm`, new package `poppler-utils`) and shown page by page, changing by the clock
+  so all TVs turn pages together. Pages are part of the backup.
+- **Elements with a period:** every element can get *from*/*until* (date, optionally with time), e.g. “Closed from
+  23 Dec to 2 Jan” appears and disappears by itself. Marked with ⏱ in the editor.
+- **Emergency screen:** a red full screen with a text (optional warning tone every 10 s) above every layout, also at
+  night, until someone ends it – from the admin (Settings → Announcements), from the panel for accounts with the new
+  right “may trigger the emergency screen”, or by webhook (`POST /alarm` with the webhook key, `{"aus": true}` ends
+  it). Survives a restart of the service.
+- **Switch TVs via Home Assistant:** per TV an entity (media_player, switch or remote). When “black” starts in the
+  schedule the TV is switched off, afterwards (or for an emergency screen) on again – only at the change, so switching
+  on by hand is kept. Test buttons in the TV settings.
+
 ## v0.20.0 (2026-11-04)
 - **Web page element: new display “Screenshot”** for pages that forbid embedding (X-Frame-Options, CSP
   frame-ancestors). SignageCast loads the page in a short-lived headless Chromium (fresh profile, low priority, one at

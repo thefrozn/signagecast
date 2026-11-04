@@ -44,6 +44,11 @@ STANDARD = {
     "pult": {"zugaenge": [], "vorlagen": ["Frau …, bitte in Behandlungsraum …", "Herr …, bitte in Behandlungsraum …",
                                           "Bitte haben Sie noch etwas Geduld."],
              "stimme": "kerstin", "vorlesen": True, "gong": True, "dauer_s": 60},
+    # Notfall-Vollbild (seit 0.21): rotes Vollbild auf allen (oder gewählten) Fernsehern, bis jemand es beendet;
+    # auslösen über die Verwaltung, das Pult (Zugang mit „alarm“) oder den Webhook (/alarm)
+    "alarm": {"vorlagen": ["Bitte verlassen Sie das Gebäude über die gekennzeichneten Notausgänge.",
+                           "Achtung: Bitte bleiben Sie in den Räumen und folgen Sie den Anweisungen des Personals."],
+              "ton": True},
     # Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation; vorhandene Einstellungen ohne den Schlüssel gelten als eingerichtet
     "assistent_fertig": False,
     # Benachrichtigungen (seit 0.16): Kanäle Telegram, E-Mail (SMTP), Home Assistant; Geheimnisse: Bot-Token, SMTP-Passwort
@@ -228,6 +233,8 @@ def pruefen(e):
                           "nr": t.get("nr") if isinstance(t.get("nr"), int) and 0 <= t.get("nr") < 8 else None,
                           "layout": t.get("layout") if t.get("layout") in layout_ids else s["layouts"][0]["id"],
                           "zeitplan": _zeitplan(t.get("zeitplan"), layout_ids),
+                          # seit 0.21: Fernseher über HA aus-/einschalten, wenn der Zeitplan „schwarz“ beginnt/endet
+                          "ha_schalten": _text(t.get("ha_schalten") or "", 100, r"((media_player|switch|remote)\.[a-z0-9_]+)?"),
                           # seit 0.15: Quelle des Videofensters und Layout-Karussell
                           "video_quelle": t.get("video_quelle") if t.get("video_quelle") in ("youtube", "medien", "gemischt") else "youtube",
                           "medien_alle": _zahl(t.get("medien_alle", 3), 1, 20, int),
@@ -376,12 +383,17 @@ def pruefen(e):
                 sp["zugaenge"].append({"id": _text(z.get("id", ""), 12, r"[a-z0-9]{4,12}"), "name": _text(z.get("name", ""), 40) or "Pult",
                                        "passwort": _text(z.get("passwort", ""), 200, r"(pbkdf2\$\d+\$[0-9a-f]+\$[0-9a-f]+)?"),
                                        "fernseher": [x for x in (z.get("fernseher") or []) if isinstance(x, str) and re.fullmatch(r"[a-z][a-z0-9]{0,11}", x)
-                                                     and (tv_ids is None or x in tv_ids)]})
+                                                     and (tv_ids is None or x in tv_ids)],
+                                       "alarm": bool(z.get("alarm", False))})          # darf das Notfall-Vollbild auslösen (seit 0.21)
         if "vorlagen" in pu: sp["vorlagen"] = [_text(v, 120) for v in (pu["vorlagen"] or [])[:20] if str(v).strip()]
         if "stimme" in pu: sp["stimme"] = pu["stimme"] if pu["stimme"] in ("kerstin", "thorsten") else "kerstin"
         for k in ("vorlesen", "gong"):
             if k in pu: sp[k] = bool(pu[k])
         if "dauer_s" in pu: sp["dauer_s"] = _zahl(pu["dauer_s"], 10, 3600, int)
+    al = e.get("alarm", {})
+    if isinstance(al, dict):
+        if "vorlagen" in al: s["alarm"]["vorlagen"] = [_text(v, 200) for v in (al["vorlagen"] or [])[:10] if str(v).strip()]
+        if "ton" in al: s["alarm"]["ton"] = bool(al["ton"])
     wh = e.get("webhook", {})
     if "aktiv" in wh: s["webhook"]["aktiv"] = bool(wh["aktiv"])
     if "token" in wh: s["webhook"]["token"] = _text(wh.get("token") or "", 64, r"[A-Za-z0-9_-]*")

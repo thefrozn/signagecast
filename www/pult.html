@@ -29,6 +29,9 @@
   ul { list-style: none; padding: 0; margin: 0; } li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--linie); }
   li:last-child { border-bottom: 0; } li .text { flex: 1; min-width: 0; } li.aus { opacity: .55; }
   [hidden] { display: none !important; }
+  #notfall { border-color: #c62828; } #notfall h1 { color: #c62828; }
+  button.notfall { background: #c62828; border-color: #c62828; color: #fff; font-weight: 600; width: 100%; padding: 14px; font-size: 1.1em; }
+  #alarmLaeuft { background: #c62828; color: #fff; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -56,6 +59,15 @@
       <p id="meldung" class="leise"></p>
     </div>
     <div class="karte"><h1 id="tZuletzt"></h1><ul id="liste"></ul></div>
+    <div class="karte" id="notfall" hidden>
+      <h1 id="tNotfall"></h1>
+      <div id="alarmLaeuft" hidden><b id="alarmText"></b><br><span id="alarmSeit"></span>
+        <p><button id="alarmAus"></button></p></div>
+      <div id="alarmNeu"><p class="leise" id="tNotfallText"></p>
+        <select id="alarmVorlage"></select>
+        <p><input type="text" id="alarmEigen" maxlength="200" autocomplete="off"></p>
+        <button class="notfall" id="alarmAn"></button></div>
+    </div>
   </div>
 </main>
 <script>
@@ -66,12 +78,18 @@ const TX = {
         an: "An:", alle: "alle", platzhalter: "Text der Durchsage, z. B. Frau Bauer, bitte in Behandlungsraum 2",
         vorlesen: "vorlesen", gong: "Gong vorher", dauer: "Anzeige:", senden: "Durchsage senden", gesendet: "Gesendet – erscheint in etwa 10 Sekunden.",
         zuletzt: "Zuletzt", leer: "Noch keine Durchsage.", beenden: "beenden", laeuft: "läuft", keinTv: "Bitte mindestens einen Fernseher wählen.",
-        keinText: "Bitte einen Text eingeben.", falsch: "Falsches Passwort.", d_stimme_fehlt: "Die Stimme ist noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult).", min: (n) => `${n} min`, abgelaufen: "Bitte neu anmelden." },
+        keinText: "Bitte einen Text eingeben.", falsch: "Falsches Passwort.", d_stimme_fehlt: "Die Stimme ist noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult).", min: (n) => `${n} min`, abgelaufen: "Bitte neu anmelden.",
+        notfall: "Notfall-Vollbild", notfallText: "Zeigt den Text rot über den ganzen Bildschirm aller gewählten Fernseher – bis jemand es hier beendet.",
+        eigen: "oder eigener Text", ausloesen: "Notfall-Vollbild zeigen", wirklich: "Wirklich das Notfall-Vollbild auf den Fernsehern zeigen?",
+        beendenAlarm: "Notfall-Vollbild beenden", seit: (z, v) => `seit ${z} Uhr (${v})`, wirklichAus: "Notfall-Vollbild beenden?" },
   en: { titel: "Announcement", anmeldenText: "Please log in with the panel password.", anmelden: "Log in", abmelden: "Log out",
         an: "To:", alle: "all", platzhalter: "Announcement text, e.g. Mrs Baker, please go to room 2",
         vorlesen: "read aloud", gong: "chime first", dauer: "Show for:", senden: "Send announcement", gesendet: "Sent – appears in about 10 seconds.",
         zuletzt: "Recent", leer: "No announcement yet.", beenden: "end", laeuft: "showing", keinTv: "Please choose at least one TV.",
-        keinText: "Please enter a text.", falsch: "Wrong password.", d_stimme_fehlt: "The voice is not loaded yet (Admin → Settings → Announcement panel).", min: (n) => `${n} min`, abgelaufen: "Please log in again." },
+        keinText: "Please enter a text.", falsch: "Wrong password.", d_stimme_fehlt: "The voice is not loaded yet (Admin → Settings → Announcement panel).", min: (n) => `${n} min`, abgelaufen: "Please log in again.",
+        notfall: "Emergency screen", notfallText: "Shows the text in red across the whole screen of the chosen TVs – until someone ends it here.",
+        eigen: "or own text", ausloesen: "Show emergency screen", wirklich: "Really show the emergency screen on the TVs?",
+        beendenAlarm: "End emergency screen", seit: (z, v) => `since ${z} (${v === "Verwaltung" ? "admin" : v})`, wirklichAus: "End the emergency screen?" },
 };
 let T = TX[(navigator.language || "de").startsWith("de") ? "de" : "en"], INFO = null;
 const $ = (s) => document.querySelector(s);
@@ -120,7 +138,35 @@ async function start() {
   $("#gongZeile").hidden = !INFO.vorlesen; $("#gong").checked = INFO.gong;
   const dauern = [...new Set([30, 60, 120, 300, 600, INFO.dauer_s])].sort((a, b) => a - b);
   $("#dauer").innerHTML = dauern.map((s) => `<option value="${s}" ${s === INFO.dauer_s ? "selected" : ""}>${s < 60 ? s + " s" : T.min(s / 60)}</option>`).join("");
+  $("#notfall").hidden = !INFO.alarm;
+  if (INFO.alarm) {
+    $("#tNotfall").textContent = "⚠ " + T.notfall; $("#tNotfallText").textContent = T.notfallText;
+    $("#alarmVorlage").innerHTML = INFO.alarm_vorlagen.map((v, i) => `<option value="${i}">${esc(v)}</option>`).join("");
+    $("#alarmEigen").placeholder = T.eigen; $("#alarmAn").textContent = T.ausloesen; $("#alarmAus").textContent = T.beendenAlarm;
+  }
   liste(); setInterval(liste, 10000);
+}
+
+// Notfall-Vollbild (seit 0.21): nur für Zugänge mit diesem Recht; Fernseher wie bei der Durchsage (keiner gewählt = alle erlaubten)
+async function alarmStand(d) {
+  if (!INFO || !INFO.alarm) return;
+  if (!d) { try { d = await api("alarm"); } catch (_) { return; } }
+  $("#alarmLaeuft").hidden = !d.aktiv; $("#alarmNeu").hidden = !!d.aktiv;
+  if (d.aktiv) { $("#alarmText").textContent = d.text; $("#alarmSeit").textContent = T.seit(d.zeit, d.von); }
+}
+async function alarmAn() {
+  const text = $("#alarmEigen").value.trim() || INFO.alarm_vorlagen[Number($("#alarmVorlage").value)] || "";
+  if (!text) { $("#meldung").className = "schlecht"; $("#meldung").textContent = T.keinText; return; }
+  if (!confirm(T.wirklich + "\n\n" + text)) return;
+  const tvs = [...document.querySelectorAll("#tvs input[value]:checked")].map((c) => c.value);
+  const r = await api("alarm", { text, fernseher: tvs }).catch(() => null);
+  if (r && r.ok === false) { $("#meldung").className = "schlecht"; $("#meldung").textContent = T[r.code] || r.fehler; }
+  $("#alarmEigen").value = "";
+  alarmStand(r && r.ok ? r : null);
+}
+async function alarmAus() {
+  if (!confirm(T.wirklichAus)) return;
+  alarmStand(await api("alarm", { aus: true }).catch(() => null));
 }
 
 async function senden() {
@@ -137,6 +183,7 @@ async function senden() {
 }
 
 async function liste() {
+  alarmStand();
   let d; try { d = await api("liste"); } catch (_) { return; }
   $("#liste").innerHTML = d.liste.length ? d.liste.map((x) => `<li class="${x.laeuft ? "" : "aus"}"><span class="leise">${esc(x.zeit)}</span>
     <span class="text">${esc(x.text)}<br><span class="leise">→ ${esc(x.tvs.join(", "))}</span></span>
@@ -147,6 +194,8 @@ async function liste() {
 $("#anmelden").onclick = anmelden;
 $("#pw").onkeydown = (e) => { if (e.key === "Enter") anmelden(); };
 $("#senden").onclick = senden;
+$("#alarmAn").onclick = alarmAn;
+$("#alarmAus").onclick = alarmAus;
 $("#text").onkeydown = (e) => { if (e.key === "Enter") senden(); };
 $("#abmelden").onclick = async () => { await api("abmelden", {}).catch(() => {}); zeigeAnmeldung(); };
 start();

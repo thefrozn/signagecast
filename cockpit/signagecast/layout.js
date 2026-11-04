@@ -40,7 +40,8 @@ const LTEXTE = {
            vorhersage: "Vorhersage", raeume: "Räume", kachel: "Kachel (HA-Wert)", video: "Live-Video", sender: "Radio-Sender",
            text: "Freier Text", logo: "Logo / Bild", kamera: "Kamera (HA)", kalender: "Kalender / Müllabfuhr", meldung: "Meldung von HA", flaeche: "Fläche (Farbe)",
            apiwert: "API-Wert", apiliste: "API-Liste / Feed", apibild: "API-Bild", anzeige: "Anzeige (Balken/Ampel)", countdown: "Countdown", qrcode: "QR-Code",
-           webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite", unwetter: "Unwetterwarnung (DWD)" },
+           webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite", unwetter: "Unwetterwarnung (DWD)",
+           pdf: "PDF (Seite für Seite)", abfahrten: "Abfahrten (Bus & Bahn)" },
     opt: { sekunden: "mit Sekunden", wochentag: "mit Wochentag", jahr: "mit Jahr", entity: "Entität (aus HA)", tage: "Tage",
            liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", text: "Text",
            bild: "Bild hochladen (PNG mit durchsichtigem Hintergrund oder JPG)", laufband: "als Laufband (läuft durch)",
@@ -50,7 +51,9 @@ const LTEXTE = {
            gelb: "gelb ab", rot: "rot ab", umkehren: "umgekehrt (niedrige Werte schlecht)", ziel: "Ziel (Datum/Uhrzeit)", ende: "Text nach Ablauf",
            inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung",
            immer: "auch ohne Warnung zeigen", ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie; Foto: stündlich)", modus: "Darstellung", zoom: "Zoom (%)",
-           versatz_x: "Ausschnitt: von links (px)", versatz_y: "Ausschnitt: von oben (px)" },
+           versatz_x: "Ausschnitt: von links (px)", versatz_y: "Ausschnitt: von oben (px)",
+           datei: "PDF hochladen", sekunden: "Sekunden je Seite", haltestelle: "Haltestelle", vorlauf_min: "erst ab (min, Weg zur Haltestelle)",
+           minuten: "in Minuten (unter 1 Stunde)", dienst: "Fahrplan-Dienst (leer = Deutsche Bahn über db.transport.rest)" },
     optHilfe: { temperatur: "leer = Wetter aus Einstellungen → Allgemein; oder ein Temperatur-Sensor", kamera: "z. B. Türklingel – mit Bedingung nur bei Klingeln zeigen",
                 meldung: "Text-Entität in HA (z. B. input_text.tv_meldung). Ändert sich der Text, erscheint er als Banner.",
                 kalender: "Kalender-Entität, z. B. Müllabfuhr (Waste Collection Schedule) oder Familienkalender – oder eine iCal-Datenquelle (dann ohne HA)",
@@ -64,10 +67,15 @@ const LTEXTE = {
                 webcam: "Kamera aus „Datenquellen“ (Art Kamera). Läuft nur, solange der Baustein sichtbar ist – z. B. mit Bedingung nur beim Klingeln.",
                 diagramm: "Entweder eine HA-Entität (Verlauf aus der HA-Historie) oder Datenquelle + Pfad – deren Werte merkt sich SignageCast ab jetzt (bis 7 Tage).",
                 webseite: "„Einbetten“ zeigt die Seite live, geht aber nur, wenn sie es erlaubt („Prüfen“). „Bildschirmfoto“ geht mit fast jeder öffentlichen Seite: SignageCast lädt sie selbst und zeigt alle paar Minuten ein Foto (ohne Bewegung und Anmeldung, Cookie-Hinweise bleiben sichtbar). Zoom und Ausschnitt wählen den sichtbaren Teil.",
-                unwetter: "Amtliche Warnungen des Deutschen Wetterdienstes für den Standort (nur Deutschland). Ohne Warnung unsichtbar – oder „auch ohne Warnung zeigen“." },
+                unwetter: "Amtliche Warnungen des Deutschen Wetterdienstes für den Standort (nur Deutschland). Ohne Warnung unsichtbar – oder „auch ohne Warnung zeigen“.",
+                pdf: "Preisliste, Speisekarte, Aushang oder Präsentation (als PDF speichern). Bis 50 Seiten; die Seiten wechseln nach der Uhr – alle Fernseher blättern gleich.",
+                abfahrten: "Nächste Abfahrten einer Haltestelle mit Verspätung und Ausfällen (Deutschland, Daten der Deutschen Bahn inkl. Nahverkehr). Haltestelle suchen und wählen." },
     wahl: { balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)", einbetten: "einbetten (live)", bild: "Bildschirmfoto" },
     keineQuelle: "– Datenquelle wählen –", waehlen: "wählen …", bedQuelle: "Wert aus", bedHA: "Home Assistant", bedPfad: "Pfad",
     pruefen: "Prüfen", einbettbarJa: "Seite erlaubt das Einbetten", einbettbarNein: "Seite verbietet das Einbetten", einbettbarUnklar: "nicht prüfbar", tippFoto: "– Tipp: Darstellung „Bildschirmfoto“ wählen.",
+    zeitraum: "Nur im Zeitraum …", zeitraumText: "Zum Beispiel „Praxis vom 23.12. bis 2.1. geschlossen“: erscheint und verschwindet von selbst. Ohne Uhrzeit gilt der ganze Tag.",
+    ab: "ab", bis: "bis", zeitraumAus: "außerhalb des Zeitraums", seiten: (n) => `${n} Seiten`, laedt: "Lade hoch und wandle um …",
+    suchen: "Suchen", hsBeispiel: "z. B. Hauptbahnhof", keineTreffer: "Keine Haltestelle gefunden",
     raumNeu: "Raum hinzufügen", op: { "=": "ist gleich", "!=": "ist nicht", ">": "größer als", "<": "kleiner als", an: "ist an/offen", aus: "ist aus/zu" },
   },
   en: {
@@ -106,7 +114,8 @@ const LTEXTE = {
            vorhersage: "Forecast", raeume: "Rooms", kachel: "Tile (HA value)", video: "Live video", sender: "Radio station",
            text: "Free text", logo: "Logo / picture", kamera: "Camera (HA)", kalender: "Calendar / waste collection", meldung: "Message from HA", flaeche: "Area (colour)",
            apiwert: "API value", apiliste: "API list / feed", apibild: "API picture", anzeige: "Gauge (bar/traffic light)", countdown: "Countdown", qrcode: "QR code",
-           webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page", unwetter: "Weather warning (DWD)" },
+           webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page", unwetter: "Weather warning (DWD)",
+           pdf: "PDF (page by page)", abfahrten: "Departures (bus & train)" },
     opt: { sekunden: "with seconds", wochentag: "with weekday", jahr: "with year", entity: "Entity (from HA)", tage: "Days",
            liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", text: "Text",
            bild: "Upload picture (PNG with transparent background or JPG)", laufband: "as ticker (scrolling)",
@@ -116,7 +125,9 @@ const LTEXTE = {
            gelb: "yellow from", rot: "red from", umkehren: "reversed (low values are bad)", ziel: "Target (date/time)", ende: "Text when reached",
            inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption",
            immer: "show also without warning", ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never; picture: hourly)", modus: "Display", zoom: "Zoom (%)",
-           versatz_x: "Crop: from left (px)", versatz_y: "Crop: from top (px)" },
+           versatz_x: "Crop: from left (px)", versatz_y: "Crop: from top (px)",
+           datei: "Upload PDF", sekunden: "Seconds per page", haltestelle: "Stop", vorlauf_min: "only from (min, walk to the stop)",
+           minuten: "in minutes (under 1 hour)", dienst: "Timetable service (empty = Deutsche Bahn via db.transport.rest)" },
     optHilfe: { temperatur: "empty = weather from Settings → General; or a temperature sensor", kamera: "e.g. doorbell – with a condition only when it rings",
                 meldung: "Text entity in HA (e.g. input_text.tv_message). When the text changes it appears as a banner.",
                 kalender: "Calendar entity, e.g. waste collection or family calendar – or an iCal data source (then without HA)",
@@ -130,17 +141,23 @@ const LTEXTE = {
                 webcam: "Camera from “Data sources” (type camera). Only runs while the element is visible – e.g. with a condition only when the doorbell rings.",
                 diagramm: "Either an HA entity (history from HA) or data source + path – SignageCast records its values from now on (up to 7 days).",
                 webseite: "“Embed” shows the page live but only works if it allows embedding (“Check”). “Screenshot” works with almost any public page: SignageCast loads it itself and shows a fresh picture every few minutes (no motion, no login, cookie notices stay visible). Zoom and crop choose the visible part.",
-                unwetter: "Official warnings of the German Weather Service for the location (Germany only). Hidden without a warning – or “show also without warning”." },
+                unwetter: "Official warnings of the German Weather Service for the location (Germany only). Hidden without a warning – or “show also without warning”.",
+                pdf: "Price list, menu, notice or presentation (saved as PDF). Up to 50 pages; pages change by the clock – all TVs turn pages together.",
+                abfahrten: "Next departures of a stop with delays and cancellations (Germany, Deutsche Bahn data incl. local transport; other HAFAS-REST services possible). Search and pick the stop." },
     wahl: { balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)", einbetten: "embed (live)", bild: "Screenshot" },
     keineQuelle: "– choose data source –", waehlen: "pick …", bedQuelle: "Value from", bedHA: "Home Assistant", bedPfad: "Path",
     pruefen: "Check", einbettbarJa: "page allows embedding", einbettbarNein: "page forbids embedding", einbettbarUnklar: "could not check", tippFoto: "– tip: choose display “Screenshot”.",
+    zeitraum: "Only during …", zeitraumText: "For example “Closed from 23 Dec to 2 Jan”: appears and disappears by itself. Without a time the whole day counts.",
+    ab: "from", bis: "until", zeitraumAus: "outside the period", seiten: (n) => `${n} pages`, laedt: "Uploading and converting …",
+    suchen: "Search", hsBeispiel: "e.g. main station", keineTreffer: "No stop found",
     raumNeu: "Add room", op: { "=": "equals", "!=": "is not", ">": "greater than", "<": "less than", an: "is on/open", aus: "is off/closed" },
   },
 };
 const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 2], wetterlage: [9, 1], feuchte: [9, 1], wind: [9, 1],
   vorhersage: [8, 5], raeume: [9, 5], kachel: [5, 5], video: [24, 14], sender: [9, 1], text: [12, 2], kamera: [12, 7],
   kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4], apiwert: [8, 3], apiliste: [14, 6], apibild: [10, 8], anzeige: [8, 3],
-  countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12], unwetter: [20, 3] };
+  countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12], unwetter: [20, 3],
+  pdf: [16, 20], abfahrten: [18, 8] };
 // welche Arten von Datenquellen ein Baustein anbietet
 const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical"], apibild: ["bild", "json"], apiliste: ["json", "rss", "ical", "text"],
   diagramm: ["json", "text"], apiwert: ["json", "text", "rss", "ical"], anzeige: ["json", "text"], countdown: ["json", "text", "ical"] };
@@ -156,6 +173,10 @@ let VERLAUF = [];         // Rückgängig
 let GEAENDERT = false;
 let VORSCHAU = null;      // Werte für die Vorschau
 let ANSICHT = "liste";    // seit 0.17.2: „liste“ (Kacheln aller Layouts) oder „editor“ (ein Layout)
+
+// Bausteine, die (noch) nicht neu hinzugefügt werden können: „abfahrten“ braucht einen offenen Fahrplan-Dienst – die
+// Deutsche Bahn blockt seit Mai 2026 Anfragen, die nicht aus einem Browser kommen (db.transport.rest abgeschaltet).
+const VERSTECKT = ["abfahrten"];
 
 async function layoutSeite(inhalt) {
   const L = LTEXTE[E.sprache] || LTEXTE.de;
@@ -203,7 +224,7 @@ async function layoutSeite(inhalt) {
             <label>${esc(L.akzent)}</label><input type="color" id="thAkzent" value="${esc(l.thema.akzent)}">
             <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option style="font-family:'${esc(k)}'" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
         </details>
-        <div class="zeile"><select id="bTyp">${Object.keys(L.typ).map((k) => `<option value="${k}">${esc(L.typ[k])}</option>`).join("")}</select>
+        <div class="zeile"><select id="bTyp">${Object.keys(L.typ).filter((k) => !VERSTECKT.includes(k)).map((k) => `<option value="${k}">${esc(L.typ[k])}</option>`).join("")}</select>
           <button class="knopf" id="bNeu">${esc(L.bausteinNeu)}</button></div>
         <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}</p>
       </div>
@@ -513,6 +534,12 @@ async function layoutSeite(inhalt) {
       if (k === "pfad") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_pfad" value="${esc(w ?? "")}" spellcheck="false">
         <button class="knopf" type="button" name="pfadWahl">${esc(L.waehlen)}</button></div><div class="pfadBaum"></div>`;
       if (WAHL[k]) return `<div class="zeile"><label>${lab}</label><select name="o_${k}">${WAHL[k].map((x) => `<option value="${x}" ${x === w ? "selected" : ""}>${esc(L.wahl[x] || x)}</option>`).join("")}</select></div>`;
+      if (k === "datei") return `<div class="zeile"><label>${lab}</label><input type="file" name="o_pdfDatei" accept="application/pdf">
+        <span class="leise" name="pdfStand">${esc(w ? "✓ " + w : "")}</span></div>`;
+      if (k === "haltestelle") return `<div class="zeile"><label>${lab}</label><input type="text" name="hsSuche" value="${esc(o.name || "")}" placeholder="${esc(L.hsBeispiel)}">
+        <button class="knopf" type="button" name="hsSuchen">${esc(L.suchen)}</button><span class="leise">${esc(w || "")}</span>
+        <input type="hidden" name="o_haltestelle" value="${esc(w || "")}"></div><div class="hsTreffer"></div>`;
+      if (k === "name" && e.typ === "abfahrten") return `<input type="hidden" name="o_name" value="${esc(w || "")}">`;
       if (k === "ziel") return `<div class="zeile"><label>${lab}</label><input type="datetime-local" name="o_ziel" value="${esc(w || "")}"></div>`;
       if (k === "bild") return `<div class="zeile"><label>${lab}</label><input type="file" name="o_bildDatei" accept="image/png,image/jpeg">
         <span class="leise">${esc(w || "")}</span></div>`;
@@ -535,6 +562,9 @@ async function layoutSeite(inhalt) {
       <div class="zeile"><label>${esc(L.gewicht)}</label><select name="gewicht">${Object.keys(L.gewichtArt).map((k) => `<option value="${k}" ${k === (e.gewicht || "") ? "selected" : ""}>${esc(L.gewichtArt[k])}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(L.position)}</label></div>
       <div class="zeile pos">${["x", "y", "w", "h"].map((k) => `<label>${{ x: "←", y: "↓", w: "↔", h: "↕" }[k]}<input type="number" name="p_${k}" value="${e[k]}" aria-label="${k}"></label>`).join("")}</div>
+      <details ${e.ab || e.bis ? "open" : ""}><summary>${esc(L.zeitraum)}</summary><p class="leise">${esc(L.zeitraumText)}</p>
+        ${["ab", "bis"].map((k) => `<div class="zeile"><label>${esc(L[k])}</label><input type="date" name="z_${k}_tag" value="${esc((e[k] || "").slice(0, 10))}">
+          <input type="time" name="z_${k}_zeit" value="${esc((e[k] || "").slice(11, 16))}"></div>`).join("")}</details>
       <details ${b.entity || b.quelle ? "open" : ""}><summary>${esc(L.bedingung)}</summary>
         <div class="zeile"><label>${esc(L.bedQuelle)}</label><select name="b_quelle"><option value="">${esc(L.bedHA)}</option>
           ${(E.quellen || []).map((q) => `<option value="${esc(q.id)}" ${q.id === b.quelle ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>
@@ -548,7 +578,7 @@ async function layoutSeite(inhalt) {
     const aendern = () => {
       merken();
       for (const k of Object.keys(o)) {
-        if (k === "liste" || k === "bild") continue;
+        if (k === "liste" || k === "bild" || k === "datei") continue;
         const inp = ziel.querySelector(`[name=o_${k}]`); if (!inp) continue;
         o[k] = inp.type === "checkbox" ? inp.checked : inp.type === "number" ? Number(inp.value) : inp.value;
         if (k === "pfad") o[k] = o[k].trim();
@@ -566,6 +596,10 @@ async function layoutSeite(inhalt) {
       const bop = ziel.querySelector("[name=b_op]").value, bw = ziel.querySelector("[name=b_wert]").value;
       e.bedingung = bq ? { quelle: bq, pfad: ziel.querySelector("[name=b_pfad]").value.trim(), op: bop, wert: bw }
         : be ? { entity: be, op: bop, wert: bw } : null;
+      for (const k of ["ab", "bis"]) {                  // Zeitraum (seit 0.21): Datum, optional mit Uhrzeit
+        const tag = ziel.querySelector(`[name=z_${k}_tag]`).value, zeit = ziel.querySelector(`[name=z_${k}_zeit]`).value;
+        e[k] = tag ? tag + (zeit ? "T" + zeit : "") : "";
+      }
       ziel.querySelector("[data-bed=ha]").hidden = !!bq; ziel.querySelector("[data-bed=api]").hidden = !bq;
       $("#lSpeichern").textContent = L.speichern + " *";
       if (handy()) listeZeichnen(); else leinwandZeichnen();
@@ -584,6 +618,43 @@ async function layoutSeite(inhalt) {
       merken(); o.bild = d.bild; $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen();
       if (handy()) listeZeichnen(); else leinwandZeichnen();
     });
+    // PDF hochladen (seit 0.21): in Stücken wie eigene Medien; der Dienst wandelt die Seiten in Bilder um
+    const pd = ziel.querySelector("[name=o_pdfDatei]");
+    if (pd) pd.onchange = () => aktion(null, async () => {
+      const f = pd.files[0]; if (!f) return;
+      const STUECK = 3 * 1024 * 1024, teile = Math.max(1, Math.ceil(f.size / STUECK));
+      const kennung = Math.random().toString(36).slice(2, 12).replace(/[^a-z0-9]/g, "a").padEnd(10, "x");
+      ziel.querySelector("[name=pdfStand]").textContent = L.laedt;
+      let d = null;
+      for (let nr = 0; nr < teile; nr++) {
+        const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
+        let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
+        d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, zweck: "pdf" });
+      }
+      merken(); o.datei = d.pdf; $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen();
+      ziel.querySelector("[name=pdfStand]").textContent = "✓ " + L.seiten(d.seiten);
+      if (handy()) listeZeichnen(); else leinwandZeichnen();
+    });
+    // Haltestelle suchen (seit 0.21) und per Klick übernehmen
+    const hs = ziel.querySelector("[name=hsSuchen]");
+    if (hs) {
+      const suchen = (ev) => aktion(ev && ev.target, async () => {
+        const r = await holen("/api/abfahrten/suche?q=" + encodeURIComponent(ziel.querySelector("[name=hsSuche]").value) +
+                              "&dienst=" + encodeURIComponent(o.dienst || ""));
+        if (!r.ok) throw new Error(meldungText(r, r.fehler));
+        const t = ziel.querySelector(".hsTreffer");
+        t.innerHTML = r.haltestellen.length ? r.haltestellen.map((h, i) => `<button class="knopf" type="button" data-hs="${i}">${esc(h.name)}</button>`).join(" ")
+          : `<p class="leise">${esc(L.keineTreffer)}</p>`;
+        t.querySelectorAll("[data-hs]").forEach((k) => { k.onclick = () => {
+          const h = r.haltestellen[Number(k.dataset.hs)];
+          merken(); o.haltestelle = h.id; o.name = h.name; $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen();
+          if (handy()) listeZeichnen(); else leinwandZeichnen();
+        }; });
+      }, null);
+      hs.onclick = suchen;
+      ziel.querySelector("[name=hsSuche]").onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); suchen(ev); } };
+      ziel.querySelector("[name=hsSuche]").onchange = null;          // Suchtext ist keine Einstellung
+    }
     // Pfad aus der letzten Antwort der Datenquelle wählen (Baum)
     const up = ziel.querySelector("[name=urlPruefen]");
     if (up) up.onclick = (ev) => aktion(ev.target, async () => {
@@ -627,6 +698,9 @@ function neueId() { return Math.random().toString(36).slice(2, 10).replace(/[^a-
 function klemm(w, lo, hi) { return Math.max(lo, Math.min(hi, w)); }
 
 function vorschauText(e, L) {
+  return (e.ab || e.bis ? "⏱ " : "") + vorschauInhalt(e, L);        // ⏱ = nur im Zeitraum (seit 0.21)
+}
+function vorschauInhalt(e, L) {
   const d = VORSCHAU, o = e.optionen;
   const w = (ent, f) => (d && d.werte && d.werte[ent] ? (f ? d.werte[ent][f] : d.werte[ent].state) : null);
   switch (e.typ) {
@@ -651,6 +725,8 @@ function vorschauText(e, L) {
     case "unwetter": return "⚠ " + L.typ.unwetter;
     case "diagramm": return "📈 " + (o.name || o.entity || o.pfad || L.typ.diagramm);
     case "webseite": return "🌐 " + (o.url.replace(/^https?:\/\//, "").slice(0, 30) || L.typ.webseite);
+    case "pdf": return "📄 " + (o.datei ? "PDF" : L.typ.pdf);
+    case "abfahrten": return "🚆 " + (o.name || L.typ.abfahrten);
     default: return L.typ[e.typ] || e.typ;
   }
 }

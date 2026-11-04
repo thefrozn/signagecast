@@ -17,14 +17,16 @@ const TEXTE = {
           "windy": "Windig", "windy-variant": "Windig, bewölkt" },
         feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes", wetterQuelle: "Wetterdaten: MET Norway",
         heute: "Heute", morgen: "Morgen", keineTermine: "Keine Termine", locale: "de-DE",
-        bis: "bis", keineWarnung: "Keine Unwetterwarnung", dwd: "Quelle: Deutscher Wetterdienst" },
+        bis: "bis", keineWarnung: "Keine Unwetterwarnung", dwd: "Quelle: Deutscher Wetterdienst",
+        jetzt: "jetzt", min: "min", gleis: "Gl.", faelltAus: "fällt aus", keineAbfahrten: "Keine Abfahrten", alarm: "Notfall" },
   en: { lage: { "clear-night": "Clear night", "cloudy": "Cloudy", "exceptional": "Exceptional", "fog": "Fog", "hail": "Hail",
           "lightning": "Thunderstorm", "lightning-rainy": "Thunderstorm, rain", "partlycloudy": "Partly cloudy",
           "pouring": "Pouring", "rainy": "Rainy", "snowy": "Snowy", "snowy-rainy": "Sleet", "sunny": "Sunny",
           "windy": "Windy", "windy-variant": "Windy, cloudy" },
         feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway",
         heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB",
-        bis: "until", keineWarnung: "No weather warning", dwd: "Source: Deutscher Wetterdienst" },
+        bis: "until", keineWarnung: "No weather warning", dwd: "Source: Deutscher Wetterdienst",
+        jetzt: "now", min: "min", gleis: "Pl.", faelltAus: "cancelled", keineAbfahrten: "No departures", alarm: "Emergency" },
 };
 const FAKTOR = { uhr: 0.82, temperatur: 0.72, datum: 0.5, wetterlage: 0.6, feuchte: 0.5, wind: 0.5, sender: 0.5, text: 0.55, meldung: 0.42, countdown: 0.55 };
 let T = TEXTE.de;
@@ -52,6 +54,9 @@ function bauen(layout) {
   const th = layout.thema || {};
   f.className = (th.schema || "dunkel") + (layout.hintergrund.art === "wetter" && layout.hintergrund.abdunkeln ? " abdunkeln" : "");
   f.style.setProperty("--akzent", th.akzent || "#3d8cd0");
+  // Schrift auf der Akzentfarbe (Linien der Abfahrten): dunkel auf hellem Akzent, sonst weiß
+  const ak = /^#([0-9a-f]{6})$/i.exec(th.akzent || "") ? parseInt(th.akzent.slice(1), 16) : 0x3d8cd0;
+  f.style.setProperty("--akzent-text", (0.299 * (ak >> 16) + 0.587 * (ak >> 8 & 255) + 0.114 * (ak & 255)) > 160 ? "#111" : "#fff");
   f.style.setProperty("--schrift", th.schrift || "Roboto");
   for (const e of layout.elemente) {
     const d = document.createElement("div");
@@ -89,6 +94,8 @@ function bauen(layout) {
     if (e.typ === "qrcode") d.innerHTML = `<div class="qr"></div>${e.optionen.beschriftung ? `<div class="beschriftung">${esc(e.optionen.beschriftung)}</div>` : ""}`;
     if (e.typ === "diagramm") d.innerHTML = `<div class="kopf"><span class="name">${esc(e.optionen.name)}</span><span class="wert"></span></div><div class="kurve"></div>`;
     if (e.typ === "webcam") d.classList.add(e.optionen.anpassung === "einpassen" ? "einpassen" : "fuellen");
+    if (e.typ === "pdf") { d.innerHTML = `<img alt="">`; d.classList.add(e.optionen.anpassung === "fuellen" ? "fuellen" : "einpassen"); }
+    if (e.typ === "abfahrten") d.innerHTML = (e.optionen.titel && e.optionen.name ? `<div class="titel">${esc(e.optionen.name)}</div>` : "") + `<div class="zeilen"></div>`;
     if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
@@ -197,7 +204,7 @@ function fuellen() {
   for (const b of bausteine) {
     const { e, d } = b;
     const o = e.optionen;
-    let sichtbar = e.sichtbar && bedingungErfuellt(e.bedingung);
+    let sichtbar = e.sichtbar && bedingungErfuellt(e.bedingung) && imZeitraum(e);
     switch (e.typ) {
       case "temperatur": {
         const t = o.entity && !o.entity.startsWith("weather.") ? wert(o.entity) : (o.entity ? wert(o.entity, "temperature") : w.temperatur);
@@ -372,6 +379,19 @@ function fuellen() {
         if (sichtbar) webseite(b, foto); else if (b.stopp) { b.stopp(); }
         break;
       }
+      case "pdf": {
+        b.pdf = (daten.pdf || {})[e.id];
+        sichtbar = sichtbar && !!(b.pdf && b.pdf.seiten);
+        if (sichtbar) pdfSeite(b);
+        break;
+      }
+      case "abfahrten": {
+        const a = (daten.abfahrten || {})[e.id] || { liste: [] };
+        const neu = JSON.stringify(a.liste) + Math.floor(jetztMs() / 30000);       // Minuten-Angaben laufend erneuern
+        sichtbar = sichtbar && !!o.haltestelle;
+        if (sichtbar && neu !== b.apiText) { b.apiText = neu; abfahrtenZeichnen(b, a); }
+        break;
+      }
       case "meldung": {
         const s = wert(o.entity);
         const m = meldungen[o.entity];
@@ -481,6 +501,46 @@ function webseite(b, foto) {
   if (o.neu_laden_min > 0 && Date.now() - b.geladen > o.neu_laden_min * 60000) { b.geladen = Date.now(); b.rahmen.src = o.url; }
 }
 
+// Zeitraum (seit 0.21): „ab“/„bis“ als Datum oder Datum mit Uhrzeit; ein reines Datum bei „bis“ gilt bis Tagesende.
+// Ortszeit vom Dienst (gleiche Zeitzone wie Zeitplan und Uhr).
+function imZeitraum(e) {
+  const jetzt = (daten && daten.jetzt_lokal) || "";
+  if (!jetzt || (!e.ab && !e.bis)) return true;
+  if (e.ab && jetzt.slice(0, e.ab.length) < e.ab) return false;
+  if (e.bis && (e.bis.length === 10 ? jetzt.slice(0, 10) > e.bis : jetzt.slice(0, 16) >= e.bis)) return false;
+  return true;
+}
+
+// PDF (seit 0.21): Seite nach der Uhr, damit alle Fernseher gleich blättern; nächste Seite erst nach dem Laden zeigen
+function pdfSeite(b) {
+  const o = b.e.optionen, p = b.pdf;
+  if (!p || !p.seiten) return;
+  const nr = Math.floor(jetztMs() / 1000 / Math.max(3, o.sekunden)) % p.seiten + 1;
+  const url = `pdf/${p.datei}/${nr}.jpg`;
+  if (b.pdfUrl === url) return;
+  b.pdfUrl = url;
+  const neu = new Image();
+  neu.onload = () => { if (b.pdfUrl === url) b.d.querySelector("img").src = url; };
+  neu.src = url;
+}
+
+// Abfahrten (seit 0.21): Zeit (in Minuten oder Uhrzeit), Linie, Ziel, Gleis, Verspätung
+function abfahrtenZeichnen(b, a) {
+  const o = b.e.optionen, d = b.d, z = d.querySelector(".zeilen");
+  const jetzt = jetztMs() / 1000;
+  const zeit = (t) => new Date(t * 1000).toLocaleTimeString(T.locale, { hour: "2-digit", minute: "2-digit", ...(ZEIT.zone ? { timeZone: ZEIT.zone } : {}) });
+  z.innerHTML = a.liste.length ? a.liste.map((x) => {
+    const rest = Math.round((x.zeit - jetzt) / 60);
+    const wann = o.minuten && rest < 60 ? (rest <= 0 ? T.jetzt : `${rest} ${T.min}`) : zeit(x.zeit);
+    const plus = x.ausfall ? `<span class="plus">${esc(T.faelltAus)}</span>` : x.plus > 0 ? `<span class="plus">+${x.plus}</span>` : "";
+    return `<div class="zeile${x.ausfall ? " ausfall" : ""}"><span class="wann">${esc(wann)}</span><span class="linie">${esc(x.linie)}</span>` +
+           `<span class="ziel">${esc(x.ziel)}</span>${plus}<span class="gleis">${x.gleis ? esc(/^\d/.test(x.gleis) ? T.gleis + " " + x.gleis : x.gleis) : ""}</span></div>`;
+  }).join("") : `<div class="zeile leer">${esc(T.keineAbfahrten)}</div>`;
+  const n = Math.max(1, a.liste.length) + (d.querySelector(".titel") ? 1.3 : 0);
+  d.style.fontSize = Math.min(d.clientHeight / n * 0.55, 44) + "px";
+  for (let i = 0; i < 15 && d.scrollHeight > d.clientHeight + 1; i++) d.style.fontSize = parseFloat(d.style.fontSize) * 0.92 + "px";
+}
+
 // Countdown: Rest bis zum Ziel in Tagen/Stunden/Minuten/Sekunden nach der Vorlage, danach der Ende-Text
 function countdown(b) {
   const o = b.e.optionen, d = b.d;
@@ -511,6 +571,8 @@ function uhr() {
       if (!d.dataset.gepasst) { einpassen(d, FAKTOR.datum); d.dataset.gepasst = 1; }
     } else if (e.typ === "countdown") {
       countdown(bausteine.find((x) => x.e === e));
+    } else if (e.typ === "pdf" && !d.classList.contains("versteckt")) {
+      pdfSeite(bausteine.find((x) => x.e === e));
     } else if (e.typ === "meldung" && !d.classList.contains("versteckt")) {
       const m = meldungen[e.optionen.entity];
       if (m && Date.now() - m.seit > e.optionen.dauer * 1000) d.classList.add("versteckt");
@@ -570,6 +632,7 @@ async function laden() {
     radioSetzen(d);
     meldungExtern(d.meldung_extern);
     durchsage(d.durchsage);
+    alarmZeigen(d.alarm);
   } catch (_) { /* nächster Versuch */ }
 }
 
@@ -580,6 +643,37 @@ function meldungExtern(m) {
   el.textContent = m.text;
   el.className = m.stil === "warnung" ? "warnung" : "";
   el.hidden = false;
+}
+
+// Notfall-Vollbild (seit 0.21): rotes Vollbild über allem (auch über „schwarz“), bis es beendet wird; optional
+// alle 10 s ein Warnton (erzeugt im Browser, keine Datei). Radio und Ton der Kameras solange stumm.
+let alarmId = null, alarmTon = null, alarmCtx = null;
+function alarmPiepen() {
+  try {
+    alarmCtx = alarmCtx || new AudioContext();
+    const t0 = alarmCtx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const osc = alarmCtx.createOscillator(), g = alarmCtx.createGain();
+      osc.frequency.value = i % 2 ? 660 : 880; osc.connect(g); g.connect(alarmCtx.destination);
+      g.gain.setValueAtTime(0.0001, t0 + i * 0.6); g.gain.exponentialRampToValueAtTime(0.5, t0 + i * 0.6 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.6 + 0.5);
+      osc.start(t0 + i * 0.6); osc.stop(t0 + i * 0.6 + 0.55);
+    }
+  } catch (_) { /* ohne Ton */ }
+}
+function alarmZeigen(a) {
+  const el = $("alarm");
+  if (!a) {
+    if (alarmId) { el.hidden = true; alarmId = null; clearInterval(alarmTon); alarmTon = null; radio.muted = false; }
+    return;
+  }
+  $("alarm-text").textContent = a.text;
+  $("alarm-titel").textContent = "⚠ " + T.alarm;
+  el.hidden = false;
+  if (a.id === alarmId) return;
+  alarmId = a.id; radio.muted = true;
+  clearInterval(alarmTon); alarmTon = null;
+  if (a.ton) { alarmPiepen(); alarmTon = setInterval(alarmPiepen, 10000); }
 }
 
 // Durchsage (seit 0.19): Fenster zeigen, Gong und Sprache nacheinander abspielen; Radio und Tierton solange leiser
@@ -610,7 +704,7 @@ window.addEventListener("durchsage-ende", () => { if (radio.dataset.vorher) radi
 const start = Date.now();
 laden(); setInterval(laden, 15000);
 setInterval(async () => {                         // Durchsagen schnell abholen (nur lokal, sehr klein)
-  try { const r = await (await fetch("/durchsage.json?tv=" + encodeURIComponent(TV), { cache: "no-store" })).json(); if (r.ok) durchsage(r.durchsage); }
+  try { const r = await (await fetch("/durchsage.json?tv=" + encodeURIComponent(TV), { cache: "no-store" })).json(); if (r.ok) { durchsage(r.durchsage); alarmZeigen(r.alarm); } }
   catch (_) { /* nächster Versuch */ }
 }, 2000);
 setInterval(uhr, 1000);

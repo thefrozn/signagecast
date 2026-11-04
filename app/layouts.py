@@ -82,6 +82,16 @@ def _wahl(*werte):
             raise Meldung("l_wahl", werte=", ".join(werte))
         return w
     return p
+def _pdf(w):
+    w = str(w or "")
+    if w and not re.fullmatch(r"[0-9a-f]{16}", w):
+        raise Meldung("l_pdf")
+    return w
+def _haltestelle(w):
+    w = str(w or "").strip()
+    if w and not re.fullmatch(r"[A-Za-z0-9:_.-]{1,40}", w):
+        raise Meldung("l_haltestelle")
+    return w
 def _raeume(w):
     return [{"name": str(r.get("name", ""))[:30], "entity": _ent()(r.get("entity"))} for r in (w or [])[:8] if r.get("entity")]
 
@@ -125,10 +135,34 @@ TYPEN = {
     # modus bild (seit 0.20): SignageCast fotografiert die Seite (app/webbild.py) – auch wenn sie das Einbetten verbietet
     "webseite":   {"url": (_url, ""), "modus": (_wahl("einbetten", "bild"), "einbetten"), "neu_laden_min": (_zahl(0, 1440), 15), "zoom": (_zahl(25, 300), 100),
                    "versatz_x": (_zahl(0, 10000), 0), "versatz_y": (_zahl(0, 10000), 0)},
+    # seit 0.21: PDF Seite für Seite (app/pdf.py wandelt beim Hochladen in Bilder um), Abfahrten von Bus und Bahn (app/abfahrten.py)
+    "pdf":        {"datei": (_pdf, ""), "sekunden": (_zahl(3, 3600), 15), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen")},
+    "abfahrten":  {"haltestelle": (_haltestelle, ""), "name": (_t(60), ""), "anzahl": (_zahl(1, 20), 6), "vorlauf_min": (_zahl(0, 60), 0),
+                   "minuten": (_b, True), "titel": (_b, True), "dienst": (_url, "")},
 }
 # Mindestgröße je Typ (Felder)
 MINDEST = {"logo": (2, 1), "video": (8, 5), "kamera": (4, 3), "kalender": (6, 3), "raeume": (4, 2), "vorhersage": (4, 3),
-           "apibild": (2, 2), "qrcode": (2, 2), "apiliste": (4, 1), "webcam": (4, 3), "diagramm": (4, 2), "webseite": (4, 3)}
+           "apibild": (2, 2), "qrcode": (2, 2), "apiliste": (4, 1), "webcam": (4, 3), "diagramm": (4, 2), "webseite": (4, 3),
+           "pdf": (3, 3), "abfahrten": (8, 3)}
+# Zeitraum eines Bausteins (seit 0.21): „ab“/„bis“ als Datum oder Datum mit Uhrzeit (Ortszeit); leer = unbegrenzt
+ZEITPUNKT = re.compile(r"\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(T([01]\d|2[0-3]):[0-5]\d)?")
+
+
+def _zeitpunkt(w):
+    w = str(w or "").strip().replace(" ", "T")[:16]
+    if w and not ZEITPUNKT.fullmatch(w):
+        raise Meldung("l_zeitraum")
+    return w
+
+
+def im_zeitraum(e, jetzt):
+    """Liegt jetzt ("YYYY-MM-DDTHH:MM", Ortszeit) im Zeitraum des Bausteins? Ein reines Datum bei „bis“ gilt bis Tagesende."""
+    ab, bis = e.get("ab") or "", e.get("bis") or ""
+    if ab and jetzt[:len(ab)] < ab:
+        return False
+    if bis and (jetzt[:10] > bis if len(bis) == 10 else jetzt[:16] >= bis):
+        return False
+    return True
 
 
 def _pruefe_bedingung(b):
@@ -194,7 +228,8 @@ def pruefe_layout(l):
                          "schrift": e.get("schrift") if e.get("schrift") in SCHRIFTEN else "",          # leer = wie Layout
                          "gewicht": e.get("gewicht") if e.get("gewicht") in GEWICHTE else "",
                          "textfarbe": _farbe(e.get("textfarbe", "")),                                   # leer = Farbschema
-                         "optionen": optionen, "bedingung": _pruefe_bedingung(e.get("bedingung"))})
+                         "optionen": optionen, "bedingung": _pruefe_bedingung(e.get("bedingung")),
+                         "ab": _zeitpunkt(e.get("ab")), "bis": _zeitpunkt(e.get("bis"))})
     return {"id": lid, "name": str(l.get("name", lid))[:40] or lid,
             "hintergrund": {"art": art, "farbe": _farbe(hg.get("farbe", "#202020")) or "#202020", "bild": bild,
                             "bilder_tageszeit": je_zeit, "stil": stil, "wechsel": wechsel, "diashow_min": diashow_min,

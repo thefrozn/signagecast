@@ -22,7 +22,12 @@ const TEXTE = {
           gong: "Gong vor der Durchsage", dauer: "Standard-Anzeigedauer (s)", zugaenge: "Zugänge", zugangText: "Jeder Zugang hat ein eigenes Passwort und darf nur die angehakten Fernseher erreichen (keiner angehakt = alle).",
           name: "Name", pwNeu: "neues Passwort", pwGesetzt: "Passwort gesetzt", pwFehlt: "noch kein Passwort", zugangNeu: "Zugang hinzufügen",
           entfernen: "Entfernen", vorlagen: "Vorlagen", vorlagenText: "Eine Vorlage je Zeile; „…“ markiert die Lücke für den Namen.",
-          art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen)." },
+          art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
+          darfAlarm: "darf das Notfall-Vollbild auslösen" },
+    al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Fernseher → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
+          vorlagen: "Vorlagen (eine je Zeile)", ton: "Warnton alle 10 Sekunden (hörbar auf Fernsehern mit Ton oder Pult-Vorlesen)", an: "Jetzt auslösen", aus: "Beenden", alle: "alle Fernseher",
+          wirklich: "Notfall-Vollbild wirklich jetzt auf den Fernsehern zeigen?", laeuft: (z, v) => `Notfall-Vollbild läuft seit ${z} Uhr (${v})`,
+          webhook: "Per Webhook (Schlüssel aus „Meldung per Webhook“):", beendet: "Notfall-Vollbild beendet", ausgeloest: "Notfall-Vollbild ausgelöst" },
     lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Fernseher läuft.",
           start: "Test starten (10 s)", laeuftTest: "Test läuft …", system: "System", cpu: "CPU", kerne: "Kerne", ram: "Speicher frei", gpu: "Grafikeinheit",
           seite: "Bilder/s TV-Seite", kodierung: "Bilder/s Kodierung", tempo: "Tempo", verloren: "verworfen/doppelt", cpuKette: "CPU (Kerne)", aus: "läuft nicht",
@@ -59,6 +64,8 @@ const TEXTE = {
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
     kennung: "Kennung (a–z, 0–9, steht in der Adresse)", fernseherNeu: "Fernseher hinzufügen", fernseherWeg: "Fernseher entfernen",
+    schalten: "Über HA schalten", schaltenText: "Entität des Fernsehers in Home Assistant (media_player, switch oder remote). Beginnt im Zeitplan „schwarz“, wird er ausgeschaltet, danach wieder eingeschaltet – nur beim Wechsel, Einschalten von Hand bleibt also. Einschalten klappt nur, wenn es in HA geht (Samsung/LG oft nur mit Wake-on-LAN). Erst speichern, dann testen.",
+    schaltenAus: "Aus (Test)", schaltenAn: "An (Test)", schaltenOk: "An Home Assistant geschickt",
     wirklichTvWeg: "Diesen Fernseher entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Fernseher",
     tvHinweis: "Ton, Sender, Lautstärke und Videos wirken sofort; Ausgabe und Bitrate beim nächsten Start des Streams.",
     meineSender: "Meine Sender", keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
@@ -208,7 +215,12 @@ const TEXTE = {
           gong: "Chime before the announcement", dauer: "Default display time (s)", zugaenge: "Accounts", zugangText: "Each account has its own password and may only reach the ticked TVs (none ticked = all).",
           name: "Name", pwNeu: "new password", pwGesetzt: "password set", pwFehlt: "no password yet", zugangNeu: "Add account",
           entfernen: "Remove", vorlagen: "Templates", vorlagenText: "One template per line; “…” marks the gap for the name.",
-          art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud)." },
+          art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud).",
+          darfAlarm: "may trigger the emergency screen" },
+    al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (TVs → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
+          vorlagen: "Templates (one per line)", ton: "Warning tone every 10 seconds (audible on TVs with sound or panel read-aloud)", an: "Trigger now", aus: "End", alle: "all TVs",
+          wirklich: "Really show the emergency screen on the TVs now?", laeuft: (z, v) => `Emergency screen showing since ${z} (${v === "Verwaltung" ? "admin" : v})`,
+          webhook: "Via webhook (key from “Message via webhook”):", beendet: "Emergency screen ended", ausgeloest: "Emergency screen triggered" },
     lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering TV is running.",
           start: "Start test (10 s)", laeuftTest: "Test running …", system: "System", cpu: "CPU", kerne: "cores", ram: "Memory free", gpu: "Graphics unit",
           seite: "Frames/s TV page", kodierung: "Frames/s encoding", tempo: "Speed", verloren: "dropped/duplicated", cpuKette: "CPU (cores)", aus: "not running",
@@ -245,6 +257,8 @@ const TEXTE = {
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
     kennung: "Identifier (a–z, 0–9, part of the address)", fernseherNeu: "Add TV", fernseherWeg: "Remove TV",
+    schalten: "Switch via HA", schaltenText: "The TV's entity in Home Assistant (media_player, switch or remote). When “black” starts in the schedule it is switched off, afterwards on again – only at the change, so switching on by hand stays. Switching on only works if HA can do it (Samsung/LG often only with Wake-on-LAN). Save first, then test.",
+    schaltenAus: "Off (test)", schaltenAn: "On (test)", schaltenOk: "Sent to Home Assistant",
     wirklichTvWeg: "Remove this TV? Its address will stop working.", weitererTv: "Another TV",
     tvHinweis: "Sound, station, volume and videos apply immediately; output and bitrate at the next stream start.",
     meineSender: "My stations", keineSender: "No stations yet – load suggestions below or enter your own address.",
@@ -345,6 +359,12 @@ const TEXTE = {
       r_playlist_leer: "No stream address (http/https) found in the playlist",
       d_text_tv: "Text and at least one TV required", d_stimme_fehlt: "Voice not loaded yet (Admin → Settings → Announcement panel)",
       d_stimme: "unknown voice", bn_kanal: "unknown channel",
+      l_pdf: "invalid PDF", l_haltestelle: "invalid stop", l_zeitraum: "Period: date as YYYY-MM-DD, optionally with time",
+      pdf_art: "Not a PDF file", pdf_werkzeug: "pdftoppm missing (package poppler-utils) – please update SignageCast",
+      pdf_zeit: "Converting takes longer than {s} s – please use a smaller PDF", pdf_kaputt: "PDF not readable: {d}",
+      ab_http: "Timetable service answered {code}", ab_nicht_erreichbar: "Timetable service not reachable: {d}",
+      ab_antwort: "Timetable service: unexpected answer", al_text: "Text for the emergency screen missing",
+      sch_entitaet: "No entity for switching is set for this TV",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
@@ -654,8 +674,8 @@ async function assistent(inhalt, n = 1) {
 
 // ---------- Durchsage-Pult (seit 0.19) ----------
 async function pultSeite(inhalt) {
-  const info = await holen("/api/pult");
-  const P = JSON.parse(JSON.stringify(E.pult));
+  const [info, al] = await Promise.all([holen("/api/pult"), holen("/api/alarm")]);
+  const P = JSON.parse(JSON.stringify(E.pult)), A = JSON.parse(JSON.stringify(E.alarm));
   const adresse = `http://${info.eigene_ip || location.hostname}:${info.port}/pult`;
   const zeichnen = () => {
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pu.titel)}</h2><p class="leise">${esc(T.pu.text)}</p><pre>${esc(adresse)}</pre>
@@ -672,6 +692,7 @@ async function pultSeite(inhalt) {
         ${P.zugaenge.map((z, i) => `<div class="eintrag" data-i="${i}">
           <div class="zeile"><label>${esc(T.pu.name)}</label><input type="text" name="zName" value="${esc(z.name)}"></div>
           <div class="zeile">${E.fernseher.map((t) => `<label><input type="checkbox" name="zTv" value="${esc(t.id)}" ${z.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join(" ")}</div>
+          <div class="zeile"><label><input type="checkbox" name="zAlarm" ${z.alarm ? "checked" : ""}> ${esc(T.pu.darfAlarm)}</label></div>
           <div class="zeile"><input type="password" name="zPw" placeholder="${esc(T.pu.pwNeu)}" autocomplete="new-password">
             <span class="leise">${esc(z.passwort ? T.pu.pwGesetzt : T.pu.pwFehlt)}</span><button class="knopf gefahr" name="zWeg">${esc(T.pu.entfernen)}</button></div></div>`).join("")}
         <div class="zeile"><button class="knopf" id="zNeu">${esc(T.pu.zugangNeu)}</button></div></div>
@@ -679,22 +700,42 @@ async function pultSeite(inhalt) {
         <textarea id="puVorlagen" rows="5" class="breit">${esc(P.vorlagen.join("\n"))}</textarea>
         <div class="zeile"><button class="knopf haupt" id="puOk">${esc(T.speichern)}</button>
           <select id="puProbeTv">${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select>
-          <button class="knopf" id="puProbe">${esc(T.pu.probe)}</button></div></div>`;
+          <button class="knopf" id="puProbe">${esc(T.pu.probe)}</button></div></div>
+      <div class="karte"><h2>⚠ ${esc(T.al.titel)}</h2><p class="leise">${esc(T.al.text)}</p>
+        ${al.jetzt ? `<p class="schlecht"><b>${esc(T.al.laeuft(al.jetzt.zeit, al.jetzt.von))}:</b> ${esc(al.jetzt.text)}</p>` : ""}
+        <label>${esc(T.al.vorlagen)}</label><textarea id="alVorlagen" rows="3" class="breit">${esc(A.vorlagen.join("\n"))}</textarea>
+        <div class="zeile"><label><input type="checkbox" id="alTon" ${A.ton ? "checked" : ""}> ${esc(T.al.ton)}</label></div>
+        <div class="zeile"><button class="knopf haupt" id="alOk">${esc(T.speichern)}</button>
+          <select id="alTv"><option value="">${esc(T.al.alle)}</option>${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select>
+          <button class="knopf gefahr" id="alAn">${esc(T.al.an)}</button><button class="knopf" id="alAus" ${al.jetzt ? "" : "disabled"}>${esc(T.al.aus)}</button></div>
+        <p class="leise">${esc(T.al.webhook)}</p><pre>curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)}/alarm -H "Authorization: Bearer …" -d '{"text": "…"}'
+curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)}/alarm -H "Authorization: Bearer …" -d '{"aus": true}'</pre></div>`;
     const lesen = () => {                       // Eingaben in P übernehmen (vor Neuzeichnen und Speichern)
       P.stimme = (inhalt.querySelector("[name=stimme]:checked") || {}).value || P.stimme;
       P.vorlesen = $("#puVorlesen").checked; P.gong = $("#puGong").checked; P.dauer_s = Number($("#puDauer").value) || 60;
       P.vorlagen = $("#puVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean);
+      A.vorlagen = $("#alVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean); A.ton = $("#alTon").checked;
       inhalt.querySelectorAll("[data-i]").forEach((el) => {
         const z = P.zugaenge[Number(el.dataset.i)];
         z.name = el.querySelector("[name=zName]").value.trim() || "Pult";
         z.fernseher = [...el.querySelectorAll("[name=zTv]:checked")].map((c) => c.value);
+        z.alarm = el.querySelector("[name=zAlarm]").checked;
         const pw = el.querySelector("[name=zPw]").value;
         if (pw) z.passwort_neu = pw;
       });
     };
     inhalt.querySelectorAll("[name=zWeg]").forEach((b) => { b.onclick = () => { lesen(); P.zugaenge.splice(Number(b.closest("[data-i]").dataset.i), 1); zeichnen(); }; });
     $("#zNeu").onclick = () => { lesen(); P.zugaenge.push({ id: Math.random().toString(36).slice(2, 10).padEnd(8, "0"), name: "Rezeption", passwort: "", fernseher: [] }); zeichnen(); };
-    $("#puOk").onclick = (e) => { lesen(); speichernE({ pult: P }, e.target).then(() => { Object.assign(P, JSON.parse(JSON.stringify(E.pult))); zeichnen(); }); };
+    $("#puOk").onclick = (e) => { lesen(); speichernE({ pult: P, alarm: A }, e.target).then(() => { Object.assign(P, JSON.parse(JSON.stringify(E.pult))); zeichnen(); }); };
+    $("#alOk").onclick = $("#puOk").onclick;
+    $("#alAn").onclick = (e) => {
+      lesen();
+      const text = A.vorlagen[0];
+      if (!text || !confirm(T.al.wirklich + "\n\n" + text)) return;
+      aktion(e.target, async () => { const r = await senden("/api/alarm", { text, fernseher: $("#alTv").value ? [$("#alTv").value] : [] });
+        al.jetzt = r.jetzt; zeichnen(); }, T.al.ausgeloest);
+    };
+    $("#alAus").onclick = (e) => { lesen(); aktion(e.target, async () => { await senden("/api/alarm", { aus: true }); al.jetzt = null; zeichnen(); }, T.al.beendet); };
     $("#puProbe").onclick = (e) => aktion(e.target, () => senden("/api/pult/probe", { tv: $("#puProbeTv").value }), T.pu.probeOk);
     inhalt.querySelectorAll("[data-laden]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
       await senden("/api/pult/stimme-laden", { stimme: b.dataset.laden });
@@ -776,6 +817,7 @@ async function todoZeichnen(s) {
 
 async function uebersicht(inhalt) {
   inhalt.innerHTML = `
+    <div id="alarmHinweis"></div>
     <div class="karte" id="todoKarte"><h2>${esc(T.todoTitel)}</h2><ul class="todo" id="todo"></ul></div>
     <div id="updateHinweis"></div>
     <div class="raster" id="tvs"></div>
@@ -833,6 +875,14 @@ async function uebersicht(inhalt) {
         : `<pre>curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh | sh</pre><p class="leise">${esc(T.updateText)}</p>`}
       <p class="leise"><a href="${esc(s.projekt)}/releases" target="_blank" rel="noopener">${esc(T.aenderungen)}</a></p></div>` : "";
     todoZeichnen(s);
+    holen("/api/alarm").then((a) => {
+      const z = $("#alarmHinweis");
+      if (!z) return;
+      z.innerHTML = a.jetzt ? `<div class="karte warn"><b>⚠ ${esc(T.al.laeuft(a.jetzt.zeit, a.jetzt.von))}</b><p>${esc(a.jetzt.text)}</p>
+        <button class="knopf gefahr" id="alarmBeenden">${esc(T.al.aus)}</button></div>` : "";
+      const k2 = $("#alarmBeenden");
+      if (k2) k2.onclick = (ev) => aktion(ev.target, async () => { await senden("/api/alarm", { aus: true }); z.innerHTML = ""; }, T.al.beendet);
+    }).catch(() => {});
     $("#kacheln").innerHTML = k.map(([t, w2, u]) => `<div class="karte"><div class="leise">${esc(t)}</div><div class="wert">${w2}</div><div class="leise">${u}</div></div>`).join("");
     $("#aufgaben").innerHTML = s.aufgaben.map((a) => `<div class="zeile"><b>${esc(T.aufgabe[a.name] || a.name)}</b>
       <span class="leise">${esc(a.alle_s ? T.alleSek(a.alle_s) + (a.nur_stream ? ", " + T.nurStream : "") : a.wann || T.deaktiviert)}${a.zuletzt ? " · " + esc(T.zuletzt) + " " + esc(a.zuletzt.zeit || "") : ""}</span></div>`).join("");
@@ -1226,6 +1276,9 @@ async function fernseherSeite(inhalt) {
           <div class="zeile"><label>${esc(T.karussellAn)}</label>${schalter("k_aktiv", (t.karussell || {}).aktiv)}
             <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" style="width:80px"></div>
           ${E.layouts.map((l) => `<label style="margin-right:12px"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
+        <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
+          <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
+            <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div></details>
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" style="width:70px"></span></div>
@@ -1252,6 +1305,8 @@ async function fernseherSeite(inhalt) {
       const alleSichtbar = () => { k.querySelector("[name=alleTeil]").style.display = k.querySelector("[name=video_quelle]").value === "gemischt" ? "" : "none"; };
       k.querySelector("[name=video_quelle]").onchange = alleSichtbar; alleSichtbar();
       k.querySelector("[name=lautstaerke]").oninput = (e) => { k.querySelector("[name=lw]").textContent = e.target.value + " %"; };
+      for (const [n, an] of [["schAus", false], ["schAn", true]])
+        k.querySelector(`[name=${n}]`).onclick = (ev) => aktion(ev.target, () => senden("/api/fernseher/schalten", { tv: t.id, an }), T.schaltenOk);
       const weg = k.querySelector("[name=weg]");
       if (weg) weg.onclick = () => { if (confirm(T.wirklichTvWeg)) { E.fernseher = lesen().filter((_, j) => j !== i); zeichnen(); } };
       liste.appendChild(k);
@@ -1263,7 +1318,7 @@ async function fernseherSeite(inhalt) {
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
                kategorien_aus: KATEGORIEN.filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
                bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
-               video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3,
+               video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),
                karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
                             layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
                zeitplan: [...k.querySelectorAll("[name=zeiten] .zeile")].map((z) => ({ von: z.querySelector("[name=zvon]").value,

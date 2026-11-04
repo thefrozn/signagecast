@@ -26,6 +26,8 @@ import benachrichtigung as BN                 # noqa: E402
 import durchsage as DS                        # noqa: E402
 import quellen as Q                           # noqa: E402
 import webbild as WB                          # noqa: E402
+import pdf as PDF                             # noqa: E402
+import abfahrten as AB                        # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -529,6 +531,58 @@ def durchsage_fuer(tv_id):
     return {"id": x["id"], "text": x["text"], "bis": x["bis"], "audio": x["audio"]} if x else None
 
 
+# ---------- Notfall-Vollbild (seit 0.21) ----------
+# Bleibt, bis jemand es beendet – auch über einen Neustart des Dienstes (Datei), damit eine Räumung nicht verschwindet.
+ALARM = os.path.join(DATEN, "alarm.json")
+
+
+def alarm_laden():
+    try:
+        a = json.load(open(ALARM))
+        return a if isinstance(a, dict) and a.get("text") else None
+    except (OSError, ValueError):
+        return None
+
+
+alarm = {"jetzt": alarm_laden()}
+
+
+def alarm_ausloesen(text, tvs, von):
+    """tvs leer = alle Fernseher."""
+    text = " ".join(str(text or "").split())[:200]
+    if not text:
+        raise M.Meldung("al_text")
+    alle = {t["id"] for t in einst()["fernseher"]}
+    a = {"id": secrets.token_hex(6), "text": text, "tvs": [x for x in (tvs or []) if x in alle], "von": str(von)[:40],
+         "seit": int(time.time()), "zeit": time.strftime("%H:%M")}
+    tmp = ALARM + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(a, f, ensure_ascii=False)
+    os.replace(tmp, ALARM)
+    alarm["jetzt"] = a
+    schalten_neu.set()                           # ausgeschaltete Fernseher sofort einschalten
+    print(f"Notfall-Vollbild ausgelöst von {a['von']}", flush=True)
+    return a
+
+
+def alarm_beenden(von):
+    if alarm["jetzt"]:
+        print(f"Notfall-Vollbild beendet von {str(von)[:40]}", flush=True)
+    alarm["jetzt"] = None
+    try:
+        os.remove(ALARM)
+    except OSError:
+        pass
+    schalten_neu.set()
+
+
+def alarm_fuer(tv_id):
+    a = alarm["jetzt"]
+    if not a or (a["tvs"] and tv_id not in a["tvs"]):
+        return None
+    return {"id": a["id"], "text": a["text"], "ton": einst()["alarm"]["ton"]}
+
+
 def pult_zugang(handler):
     """Angemeldeter Pult-Zugang aus dem Sitzungs-Cookie (oder None)."""
     for teil in (handler.headers.get("Cookie") or "").split(";"):
@@ -582,7 +636,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             return self.antwort(200, {"ok": True})
         if u.path.startswith("/pult"):
             return self.pult(u.path, daten)
-        if u.path != "/meldung":
+        if u.path not in ("/meldung", "/alarm"):
             return self.antwort(404, {"ok": False})
         wh = einst()["webhook"]
         q = urllib.parse.parse_qs(u.query)
@@ -590,6 +644,19 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         if not wh["aktiv"] or not wh["token"] or not hmac.compare_digest(gegeben.encode(), wh["token"].encode()):
             time.sleep(1)
             return self.antwort(403, {"ok": False})
+        if u.path == "/alarm":                    # Notfall-Vollbild (seit 0.21): {"text": …} auslösen, {"aus": true} beenden
+            if daten.get("aus") or (q.get("aus") or [""])[0] in ("1", "true"):
+                alarm_beenden("Webhook")
+                return self.antwort(200, {"ok": True, "beendet": True})
+            if self.command != "POST":
+                return self.antwort(405, {"ok": False})
+            tv = str(daten.get("tv", (q.get("tv") or [""])[0]))[:12]
+            try:
+                text = daten.get("text") or (q.get("text") or [""])[0] or (einst()["alarm"]["vorlagen"] or [""])[0]
+                a = alarm_ausloesen(text, [tv] if tv else [], "Webhook")
+            except M.Meldung:
+                return self.antwort(400, {"ok": False, "fehler": "text fehlt"})
+            return self.antwort(200, {"ok": True, "id": a["id"]})
         text = str(daten.get("text", (q.get("text") or [""])[0]))[:300].strip()
         if not text:
             zustand["meldung_extern"] = None
@@ -630,7 +697,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "zugang": z["name"], "sprache": einst()["sprache"] or "de",
                                       "fernseher": [{"id": t["id"], "name": t["name"]} for t in pult_fernseher(z)],
                                       "vorlagen": p["vorlagen"], "vorlesen": p["vorlesen"] and DS.bereit(p["stimme"]),
-                                      "gong": p["gong"], "dauer_s": p["dauer_s"]})
+                                      "gong": p["gong"], "dauer_s": p["dauer_s"],
+                                      "alarm": z.get("alarm", False), "alarm_vorlagen": einst()["alarm"]["vorlagen"] if z.get("alarm") else []})
         erlaubt = {t["id"] for t in pult_fernseher(z)}
         if pfad == "/pult/liste":
             return self.antwort(200, {"ok": True, "liste": [{k: x[k] for k in ("id", "text", "zeit", "von")} | {
@@ -650,6 +718,20 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
                 if x["id"] == daten.get("id") and set(x["tvs"]) & erlaubt:
                     x["bis"] = 0
             return self.antwort(200, {"ok": True})
+        if pfad == "/pult/alarm":                 # Notfall-Vollbild (seit 0.21): nur Zugänge mit dem Recht „alarm“
+            if not z.get("alarm"):
+                return self.antwort(403, {"ok": False})
+            if self.command == "POST":
+                if daten.get("aus"):
+                    alarm_beenden(z["name"])
+                else:
+                    try:
+                        alarm_ausloesen(daten.get("text", ""), [x for x in (daten.get("fernseher") or []) if x in erlaubt] or
+                                        ([] if not z["fernseher"] else sorted(erlaubt)), z["name"])
+                    except M.Meldung as f:
+                        return self.antwort(200, {"ok": False, "fehler": str(f), "code": f.code})
+            a = alarm["jetzt"]
+            return self.antwort(200, {"ok": True, "aktiv": bool(a), **({"text": a["text"], "zeit": a["zeit"], "von": a["von"]} if a else {})})
         if pfad == "/pult/abmelden" and self.command == "POST":
             for k in [k for k, v in pult_sitzungen.items() if v["zugang"] == z["id"] and k in (self.headers.get("Cookie") or "")]:
                 pult_sitzungen.pop(k, None)
@@ -819,11 +901,72 @@ def webbild_auftraege():
     for t in e["fernseher"]:
         if kette_laeuft(t["id"]):
             lay = L.aktuelles_layout(t, e["layouts"], time.strftime("%H:%M"))
-            aus += [a for a in (webbild_auftrag(x) for x in lay.get("elemente", []) if x["sichtbar"]) if a]
+            jetzt = time.strftime("%Y-%m-%dT%H:%M")
+            aus += [a for a in (webbild_auftrag(x) for x in lay.get("elemente", []) if x["sichtbar"] and L.im_zeitraum(x, jetzt)) if a]
     return aus
 
 
 fotograf = WB.Fotograf(WEBBILD, webbild_auftraege, lambda: einst()["sprache"] or "en")
+
+
+# ---------- PDF (seit 0.21) ----------
+PDF_ORDNER = os.path.join(DATEN, "pdf")
+
+
+def pdf_schleife():
+    """Stündlich: umgewandelte PDFs entfernen, die kein Layout mehr nutzt."""
+    while True:
+        PDF.aufraeumen(PDF_ORDNER, {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf"})
+        time.sleep(3600)
+
+
+# ---------- Abfahrten (seit 0.21) ----------
+abfahrten = AB.Abfahrten(lambda: [x["optionen"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "abfahrten"])
+
+
+# ---------- Fernseher über HA schalten (seit 0.21) ----------
+# Beginnt im Zeitplan „schwarz“, wird der Fernseher ausgeschaltet; endet es (oder kommt ein Notfall-Vollbild), wird er
+# eingeschaltet. Nur beim Wechsel – wer nachts von Hand einschaltet, wird nicht gleich wieder ausgeschaltet.
+schalten_neu = threading.Event()
+schalten_stand = {}                               # tv -> {"soll", "zeit", "fehler", "versuche"}
+
+
+def schalten_soll(t):
+    lay = L.aktuelles_layout(t, einst()["layouts"], time.strftime("%H:%M"))
+    return "an" if alarm_fuer(t["id"]) or not lay.get("schwarz") else "aus"
+
+
+def tv_schalten(t, an):
+    ent = t["ha_schalten"]
+    ha.post(f"/api/services/{ent.split('.')[0]}/turn_{'on' if an else 'off'}", {"entity_id": ent})
+
+
+def schalten_einmal(erster=False):
+    for t in einst()["fernseher"]:
+        if not t["ha_schalten"] or not einst()["ha"]["url"]:
+            schalten_stand.pop(t["id"], None)
+            continue
+        soll, st = schalten_soll(t), schalten_stand.get(t["id"])
+        if erster or not st or st.get("entity") != t["ha_schalten"]:     # beim Start nur merken, nichts schalten
+            schalten_stand[t["id"]] = {"soll": soll, "entity": t["ha_schalten"], "zeit": None, "fehler": None, "versuche": 0}
+            continue
+        if soll == st["soll"] and not (st["fehler"] and st["versuche"] < 5):
+            continue
+        try:
+            tv_schalten(t, soll == "an")
+            st.update(soll=soll, zeit=time.strftime("%H:%M"), fehler=None, versuche=0)
+        except Exception as ex:
+            st.update(soll=soll, zeit=time.strftime("%H:%M"), fehler=str(ex)[:200], versuche=st["versuche"] + 1)
+            print(f"Fernseher {t['id']} {soll}schalten:", ex, flush=True)
+
+
+def schalten_schleife():
+    erster = True
+    while True:
+        schalten_einmal(erster)
+        erster = False
+        schalten_neu.wait(30)
+        schalten_neu.clear()
 
 
 def tv_daten(tv_id):
@@ -868,6 +1011,10 @@ def tv_daten(tv_id):
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
                 tv=t["id"], layout=layout, kalender=kal, api=api,
                 webbild={x["id"]: fotograf.bild(a) for x in layout.get("elemente", []) if (a := webbild_auftrag(x))},
+                pdf={x["id"]: {"datei": x["optionen"]["datei"], "seiten": PDF.seiten(PDF_ORDNER, x["optionen"]["datei"])}
+                     for x in layout.get("elemente", []) if x["typ"] == "pdf" and x["optionen"]["datei"]},
+                abfahrten={x["id"]: abfahrten.fuer(x["optionen"]) for x in layout.get("elemente", []) if x["typ"] == "abfahrten"},
+                jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M"), alarm=alarm_fuer(t["id"]),
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
                 unwetter=(zustand.get("unwetter") or {}).get("liste", []),
                 meldung_extern=meldung_fuer(t["id"]),
@@ -1367,6 +1514,9 @@ def sicherung_zip(mit_geheimnissen, passwort=None):
                 dateien[f"bilder/{n}"] = open(os.path.join(BILDER, n), "rb").read()
     except OSError:
         pass
+    for n in {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf" and x["optionen"]["datei"]}:
+        for i in range(1, PDF.seiten(PDF_ORDNER, n) + 1):             # Seiten der PDFs in Layouts (seit 0.21)
+            dateien[f"pdf/{n}/{i}.jpg"] = open(os.path.join(PDF_ORDNER, n, f"{i}.jpg"), "rb").read()
     if qn.verlauf:
         with qn.verlauf.sperre:
             dateien["verlauf.json"] = json.dumps(qn.verlauf.reihen).encode()
@@ -1405,6 +1555,12 @@ def sicherung_zip_einspielen(roh, passwort=None, mit_strikes=True):
     for name, inhalt in dateien.items():
         if name.startswith("medien/") and re.fullmatch(r"[0-9a-f]{16}\.(jpg|png|mp4|webm)", name[7:]):
             with open(os.path.join(MEDIEN, name[7:]), "wb") as f:
+                f.write(inhalt)
+    for name, inhalt in dateien.items():
+        m = re.fullmatch(r"pdf/([0-9a-f]{16})/(\d{1,3})\.jpg", name)
+        if m:
+            os.makedirs(os.path.join(PDF_ORDNER, m.group(1)), exist_ok=True)
+            with open(os.path.join(PDF_ORDNER, m.group(1), m.group(2) + ".jpg"), "wb") as f:
                 f.write(inhalt)
     if "verlauf.json" in dateien and qn.verlauf:
         reihen = json.loads(dateien["verlauf.json"])
@@ -1628,7 +1784,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         p = urllib.parse.urlparse(self.path)
         if p.path == "/durchsage.json":               # leichter Abruf alle 2 s – Durchsagen sollen schnell erscheinen
             tv = (urllib.parse.parse_qs(p.query).get("tv") or [""])[0]
-            return self.antwort(200, {"ok": True, "durchsage": durchsage_fuer(tv)})
+            return self.antwort(200, {"ok": True, "durchsage": durchsage_fuer(tv), "alarm": alarm_fuer(tv)})
         if p.path == "/daten.json":
             tv = (urllib.parse.parse_qs(p.query).get("tv") or [None])[0]
             return self.antwort(200, tv_daten(tv))
@@ -1652,6 +1808,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/qvideo/([a-z0-9_]{2,16})", p.path)
         if m:                                     # MJPEG-Kamera durchreichen (Zugangsdaten bleiben im Container)
             return mjpeg_weiterleiten(self, m.group(1))
+        m = re.fullmatch(r"/pdf/([0-9a-f]{16})/(\d{1,3})\.jpg", p.path)
+        if m:                                     # Seite eines PDFs (Baustein „PDF“, seit 0.21)
+            try:
+                return self.antwort(200, open(os.path.join(PDF_ORDNER, m.group(1), m.group(2) + ".jpg"), "rb").read(), "image/jpeg")
+            except OSError:
+                return self.antwort(404, {"ok": False})
         m = re.fullmatch(r"/webbild/([0-9a-f]{16})\.png", p.path)
         if m:                                     # Bildschirmfoto einer Webseite (Baustein „Webseite“, Modus Bild)
             try:
@@ -1699,6 +1861,14 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "stimmen": {k: dict(v, bereit=DS.bereit(k)) for k, v in DS.STIMMEN.items()},
                                       "laden": DS.stand, "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
                                       "aktiv": [dict(x, text="…") for x in durchsagen_aktiv()]})
+        if pfad == "/api/alarm":
+            return self.antwort(200, {"ok": True, "jetzt": alarm["jetzt"], "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
+                                      "schalten": schalten_stand})
+        if pfad == "/api/abfahrten/suche":
+            try:
+                return self.antwort(200, {"ok": True, "haltestellen": AB.suchen((q.get("q") or [""])[0], (q.get("dienst") or [""])[0])})
+            except M.Meldung as f:
+                return self.antwort(200, dict({"ok": False, "fehler": str(f)}, **M.als_dict(f)))
         if pfad == "/api/leistung":
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
@@ -1838,6 +2008,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             hochladen.teil(str(d.get("kennung", "")), int(d.get("nr", -1)), base64.b64decode(str(d.get("daten", "")), validate=False))
             if not d.get("fertig"):
                 return {}
+            if d.get("zweck") == "pdf":           # PDF für den Baustein „PDF“: in Seitenbilder umwandeln, nicht in die Medienliste
+                roh = hochladen.fertig_roh(str(d["kennung"]))
+                try:
+                    name, n = PDF.umwandeln(roh, PDF_ORDNER)
+                finally:
+                    os.remove(roh)
+                return {"pdf": name, "seiten": n}
             art, datei, dauer = hochladen.fertig(str(d["kennung"]))
             medium = {"id": MED.neue_kennung(), "name": str(d.get("name") or datei)[:60], "art": art, "datei": datei,
                       "dauer_s": dauer, "aktiv": True}
@@ -1856,6 +2033,17 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 except OSError:
                     pass
             return {"einstellungen": einst_aussen()}
+        if p == "/api/alarm":                    # Notfall-Vollbild aus der Verwaltung
+            if d.get("aus"):
+                alarm_beenden("Verwaltung")
+                return {"jetzt": None}
+            return {"jetzt": alarm_ausloesen(d.get("text", ""), d.get("fernseher") or [], "Verwaltung")}
+        if p == "/api/fernseher/schalten":        # Ein-/Ausschalten über HA ausprobieren
+            t = fernseher(str(d.get("tv", "")))
+            if not t or not t["ha_schalten"]:
+                raise M.Meldung("sch_entitaet")
+            tv_schalten(t, bool(d.get("an")))
+            return {}
         if p == "/api/updates/anfrage":
             update_anfragen(str(d.get("aktion", "")))
             return {}
@@ -2048,7 +2236,8 @@ def main():
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
-                 update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife):
+                 update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
+                 pdf_schleife, abfahrten.schleife, schalten_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]
