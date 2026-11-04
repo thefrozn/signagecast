@@ -1,0 +1,75 @@
+# SignageCast – how it works
+
+[← README](../README.md) · [installation](INSTALL.md) · [hardware](HARDWARE.md) · [manual](MANUAL.md)
+
+## Parts
+
+| Part | Where | Task |
+|---|---|---|
+| Data service `signagecast` | `/opt/signagecast/app/`, only 127.0.0.1:8080 | TV page, Home Assistant values, stream list, search, quality watch, API for the admin |
+| Render chain | `/opt/signagecast/render/tv-render.sh` | Xvfb + Chromium (Full HD) → ffmpeg → Intel GPU (upscale, H.265) + AAC → MediaMTX |
+| MediaMTX `signagecast-mediamtx` | `/opt/mediamtx`, port 8888 | HLS stream, starts rendering on demand |
+| Admin | `/usr/share/cockpit/signagecast`, port 9090 | Cockpit extension (Docker/Podman: same page served by `app/verwaltung.py` with its own login) |
+| Settings / data | `/etc/signagecast/`, `/var/lib/signagecast/` | backup and restore in the admin |
+
+Only the Python standard library and Debian packages are used. Third-party components and picture sources:
+see [NOTICE.md](../NOTICE.md).
+
+## Good to know
+
+- Only public YouTube pages and the **official embed player** are used; streams whose operators do not allow embedding
+  are not shown. If YouTube reports too many requests, SignageCast pauses for an hour. Nothing is circumvented.
+- The small browser extension `render/h264-fluessig` tells YouTube that H.264 up to 1080p plays smoothly – Chromium in
+  the container decodes without GPU and would otherwise report “not smooth”, and YouTube would deliver only 144p.
+- The admin user `tvadmin` has no administrator rights in the container.
+- **Data sources:** only http/https, response at most 1 MB (pictures 5 MB), 10 s timeout, interval 30 s to 24 h; on
+  errors the next attempt waits longer (up to 1 h). Secret headers are shown as •••• and left out of backups unless you
+  tick “include secrets”. The TV page only receives the finished values, never addresses or keys.
+- **Cameras:** RTSP/HLS cameras are pulled by MediaMTX only while a TV shows them and can only be read inside the
+  container (not on port 8888 from the network). The camera must deliver **H.264** (Chromium in the container cannot
+  decode H.265). Rootless Podman with the default port forwarder may hide the client address – use host networking there.
+- **Web pages** are embedded live only if the site allows it (X-Frame-Options / frame-ancestors). The *screenshot* mode
+  loads the page in a short-lived headless Chromium inside the container (fresh profile each time, no cookies or
+  logins kept) only while a TV shows it, one page at a time at low priority. Please respect the site's terms of use.
+
+## Updates and backups
+
+**Updates tab** (LXC and native installations): available Debian updates (security updates marked) and the latest
+SignageCast release, with buttons to check, install all, install security updates only, update SignageCast and return
+to the previous version. Optionally automatic – system (all or security only) and SignageCast separately – but only
+within a maintenance window and only while nobody is watching. Default: notify only.
+
+- **Signed releases:** from v0.13.0 every release is signed with [minisign](https://jedisct1.github.io/minisign/).
+  The in-app update and `install.sh` only install a package whose signature matches the public key built into
+  SignageCast – a checksum alone would not help if the GitHub account were taken over.
+  Public key: `RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD`
+  (check manually: `minisign -Vm signagecast-vX.Y.Z.tar.gz -P <key>`).
+- **Safe update:** settings and data are backed up first; the previous version is kept. If SignageCast does not run
+  within a minute after the update, it returns to the previous version automatically.
+- **How it works:** the admin page runs without root rights. It only drops a request file with one word (`pruefen`,
+  `system`, `sicherheit`, `signagecast`, `zurueck`); a systemd path unit starts the fixed root script
+  `werkzeug/aktualisieren.sh`, which accepts only these actions – no sudo, no polkit.
+- **Docker / Podman:** updates come with the image (`docker pull …`, `podman auto-update`); the tab shows the commands.
+
+**Backup tab:** ZIP with settings, stream list, pictures and history; credentials only
+in an AES-256 encrypted ZIP with a strong password; automatic backups; restore in the admin or when installing
+(`SC_SICHERUNG=… SC_SICHERUNG_PASSWORT=…`).
+
+---
+
+## Deutsch (kurz)
+
+**Aufbau:** Datendienst (`app/`, nur 127.0.0.1:8080) liefert TV-Seite und Werte; je Fernseher Xvfb + Chromium (Full HD)
+→ ffmpeg → Intel-Grafik (Hochskalieren, H.265) → MediaMTX (HLS auf Port 8888, rendert nur, solange jemand zuschaut);
+Verwaltung als Cockpit-Erweiterung (Docker/NAS: eigene Anmeldung auf 19090). Nur Python-Standardbibliothek und
+Debian-Pakete.
+
+**Gut zu wissen:** Nur öffentliche YouTube-Seiten und der offizielle Einbett-Player, nichts wird umgangen. Datenquellen
+nur http/https mit Größen- und Zeitgrenzen; geheime Kopfzeilen bleiben im Container. Kameras liest nur MediaMTX im
+Container (H.264 nötig). Webseiten live nur, wo die Seite das Einbetten erlaubt, sonst als Bildschirmfoto.
+
+**Updates & Sicherung:** Reiter „Updates“ (System- und SignageCast-Updates per Knopf oder automatisch im Wartungsfenster,
+nur wenn niemand zuschaut; Rückkehr zur vorigen Version, automatisch bei Fehlern) und „Sicherung“ (ZIP, mit Zugangsdaten
+nur AES-256 mit starkem Passwort). Ab v0.13.0 sind alle Releases mit minisign **signiert**; Updates installieren nur
+Pakete mit gültiger Signatur (öffentlicher Schlüssel `RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD`).
+Docker/NAS: Update über ein neues Image.

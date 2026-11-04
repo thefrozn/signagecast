@@ -1,8 +1,8 @@
 # SignageCast – manual and FAQ
 
-[← back to the README](../README.md) · [screenshot tour](TOUR.md)
+[← README](../README.md) · [installation](INSTALL.md) · [hardware](HARDWARE.md) · [how it works](HOW-IT-WORKS.md) · [screenshot tour](TOUR.md)
 
-This manual explains the daily use of SignageCast. Installation is described in the README.
+This manual explains the daily use of SignageCast. Installation is described in [installation](INSTALL.md).
 
 ---
 
@@ -158,7 +158,7 @@ Browsers block autoplay with sound until you interact once. Click/press OK once 
 The same HLS address, e.g. in a media player card or with `media_player.play_media` and content type `video`.
 
 **Can I use a Raspberry Pi as server?**
-Not recommended – rendering and encoding need an x86 CPU with Intel/AMD graphics (see README, Hardware).
+Not recommended – rendering and encoding need an x86 CPU with Intel/AMD graphics (see [hardware](HARDWARE.md)).
 A Pi is fine as the *player* that opens the stream.
 
 **Why does a live stream disappear from the list?**

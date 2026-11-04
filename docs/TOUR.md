@@ -4,7 +4,7 @@ A walk through SignageCast: what the TV shows and how you set it up in the brows
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show versions
 0.17–0.19 with the six areas Overview, TVs, Content, Video & sound, Settings and System.
 
-[← back to the README](../README.md)
+[← README](../README.md) · [installation](INSTALL.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
 ---
 
