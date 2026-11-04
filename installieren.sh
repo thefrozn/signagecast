@@ -168,4 +168,4 @@ if [ -n "${NEUER_ADMIN:-}" ]; then
   else echo "  Startpasswort für tvadmin: $STARTPW   (nur jetzt sichtbar – bitte notieren oder ändern: passwd tvadmin)"; fi
 fi
 echo "  Stream (TV): http://$IP:$PORT/tv   (weitere Fernseher: http://$IP:$PORT/<kennung>)"
-echo "  Danach in der Verwaltung unter „Verbindung“ Home Assistant einrichten (Anleitung steht dort)."
+echo "  Danach in der Verwaltung unter „Einstellungen → Home Assistant“ Home Assistant einrichten (Anleitung steht dort)."

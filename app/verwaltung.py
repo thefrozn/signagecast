@@ -90,8 +90,9 @@ def einrichten():
         passwort_setzen(pw, start=not os.environ.get("SC_PASSWORT"))
         d = _lesen()
     if d.get("start"):
-        print(f"SignageCast – Startpasswort der Verwaltung: {d['start']}  (bitte in der Verwaltung unter „Verbindung“ ändern)",
-              flush=True)
+        # zweisprachig: die NAS-Anleitungen verweisen auf „Startpasswort der Verwaltung“
+        print(f"SignageCast – Startpasswort der Verwaltung / initial admin password: {d['start']}  "
+              "(ändern unter System → Zugang / change it under System → Access)", flush=True)
 
 
 def passwort_ok(pw):

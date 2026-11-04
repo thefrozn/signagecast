@@ -51,7 +51,7 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 - `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
   Rootless Podman additionally needs `--group-add keep-groups`.
 - **Admin:** http://&lt;host&gt;:**19090** – the initial password is printed in the log: `docker logs signagecast`
-  (line “Startpasswort der Verwaltung”, or set your own with `-e SC_PASSWORT=…`). Change it under **System → Access**.
+  (line “Startpasswort der Verwaltung / initial admin password”, or set your own with `-e SC_PASSWORT=…`). Change it under **System → Access**.
   No Cockpit inside the container.
 - `SC_HOST_IP` = the IP of the Docker host; the Home Assistant guide in the admin shows it (HA sees the host's IP).
 - All settings and data are in the volume `/data`. **Update:** `docker pull ghcr.io/thefrozn/signagecast:latest`, then

@@ -50,8 +50,8 @@ Installation by mouse in **Container Station** – no command line needed.
 
 6. Click **Validate YAML** (optional, shows typing errors), then **Create**. Container Station downloads the image
    (about 1 GB, takes a few minutes) and starts it.
-7. **Find the initial password:** go to **Containers**, click **signagecast** and open its **log**. Look for the line
-   `SignageCast – Startpasswort der Verwaltung: …` – the text after the colon is the password.
+7. **Find the initial password:** go to **Containers**, click **signagecast** and open its **log**. Look for the line starting with
+   `SignageCast – Startpasswort der Verwaltung / initial admin password:` – the word after the colon is the password.
 8. **Open the admin** in your browser: `http://<NAS-IP>:19090` and log in with this password. Change it right away
    under **System → Access**. A short assistant asks for language, location and (optionally) Home Assistant.
 9. **On the TV** open `http://<NAS-IP>:8888/tv` in the browser and set it as start page.
@@ -112,8 +112,8 @@ Installation per Maus in der **Container Station** – ohne Kommandozeile.
    Hat das NAS keine Intel-Grafik, die zwei Zeilen `devices:` und `- /dev/dri:/dev/dri` löschen.
 6. **YAML prüfen** (optional, zeigt Tippfehler), dann **Erstellen**. Die Container Station lädt das Image (etwa 1 GB,
    einige Minuten) und startet es.
-7. **Startpasswort finden:** unter **Container** auf **signagecast** klicken und das **Protokoll** (Log) öffnen. Dort
-   steht `SignageCast – Startpasswort der Verwaltung: …` – der Text nach dem Doppelpunkt ist das Passwort.
+7. **Startpasswort finden:** unter **Container** auf **signagecast** klicken und das **Protokoll** (Log) öffnen. Dort steht eine
+   Zeile `SignageCast – Startpasswort der Verwaltung / initial admin password: …` – das Wort nach dem Doppelpunkt ist das Passwort.
 8. **Verwaltung öffnen:** im Browser `http://<NAS-IP>:19090`, mit diesem Passwort anmelden und es gleich unter
    **System → Zugang** ändern. Ein kurzer Assistent fragt nach Sprache, Ort und (optional) Home Assistant.
 9. **Am Fernseher** im Browser `http://<NAS-IP>:8888/tv` öffnen und als Startseite festlegen.

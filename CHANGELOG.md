@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.21.2 (2026-11-05)
+- Docker/NAS: the log line with the initial admin password is now in German and English and names the right place
+  to change it (System → Access); the installer points to Settings → Home Assistant.
+
 ## v0.21.1 (2026-11-04)
 - Switching TVs via Home Assistant: a clear message when the device cannot be switched on or off by HA (e.g. Samsung/LG
   without Wake-on-LAN) instead of “HA answers 400”.
