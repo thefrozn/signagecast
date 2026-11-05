@@ -554,5 +554,119 @@ class Player023(unittest.TestCase):
         self.assertNotIn(PL.daten["wlan"][0]["psk"], json.dumps(PL.liste(lambda g: [])))
 
 
+class Direktmodus024(unittest.TestCase):
+    """Direktmodus: Schlüssel für /anzeige, erlaubte Pfade, Modus je Modell."""
+    def setUp(self):
+        import player as PL
+        self.PL, d = PL, tempfile.mkdtemp()
+        PL.DATEI, PL.ORDNER, PL.GRUND = os.path.join(d, "player.json"), os.path.join(d, "p"), os.path.join(d, "p", "basis")
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+        PL.stand.clear()
+
+    def test_schluessel_wie_agent(self):
+        import types
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        PL = self.PL
+        g = PL.neu({"name": "Flur", "tv": "tv"}, {"tv"})
+        k = {"id": g["id"], "schluessel": g["schluessel"], "server": "http://x:8890"}
+        url = agent.Player.direkt_url(types.SimpleNamespace(server=agent.Server(k), k=k))
+        tok = PL.anzeige_schluessel(g)
+        self.assertEqual(url, "http://x:8890/anzeige/" + tok)
+        self.assertNotIn(g["schluessel"], url)
+        self.assertIs(PL.geraet_fuer_anzeige(tok), g)
+        self.assertIsNone(PL.geraet_fuer_anzeige("0" * 32))
+        self.assertIsNone(PL.geraet_fuer_anzeige(tok + "x"))
+        PL.entfernen(g["id"])
+        self.assertIsNone(PL.geraet_fuer_anzeige(tok))           # entfernt: Zugang sofort ungültig
+
+    def test_pfade(self):
+        ok, PL = self.PL.anzeige_pfad_ok, self.PL
+        for p in ("/", "/index.html", "/seite.js", "/daten.json", "/mdi/x.svg", "/hls/hls.light.min.js", "/medien/0123456789abcdef.mp4",
+                  "/radio/tv/abcd", "/durchsage/gong.wav", "/kamera/camera.flur.jpg"):
+            self.assertTrue(ok(p), p)
+        for p in ("/api/einstellungen", "/api/player", "/../etc/passwd", "/a/../b", "//x", "/hlscam/cam_x/index.m3u8", "/a b"):
+            self.assertFalse(ok(p), p)
+        self.assertTrue(PL.ANZEIGE_MODI)
+
+    def test_modus_je_modell(self):
+        PL = self.PL
+        g = PL.neu({"name": "A", "tv": "tv", "anzeige_modus": "direkt"}, {"tv"})
+        self.assertEqual(PL.modus_fuer(g), "direkt")
+        self.assertEqual(PL.modus_fuer(g, {"modell": "Raspberry Pi 3 Model B Rev 1.2"}), "stream")
+        self.assertEqual(PL.modus_fuer(g, {"modell": "Raspberry Pi Zero 2 W Rev 1.0"}), "stream")
+        a = PL.melden(g, {"modell": "Raspberry Pi 5 Model B Rev 1.0"}, "1.2.3.4", None, None)
+        self.assertEqual((a["modus"], a["direkt_abruf"]), ("direkt", None))
+        PL.direkt_abruf[g["id"]] = time.time() - 5
+        self.assertLessEqual(PL.melden(g, {}, "1.2.3.4", None, None)["direkt_abruf"], 6)
+        PL.aendern(g["id"], {"modell": "pi3", "anzeige_modus": "direkt"}, {"tv"})   # Pi 3: immer Stream
+        self.assertEqual(g["anzeige_modus"], "stream")
+        h = PL.neu({"name": "B"}, set())
+        self.assertEqual(h["anzeige_modus"], "stream")                              # Standard bleibt der Stream
+        alt = {k: v for k, v in h.items() if k != "anzeige_modus"}                   # Geräte von 0.23 ohne das Feld
+        self.assertEqual(PL.modus_fuer(alt), "stream")
+        self.assertNotIn("schluessel", json.dumps(PL.liste(lambda g: [])))
+
+    def test_agent_umschalten_und_rueckfall(self):
+        """Agent: Direktmodus startet den Browser statt mpv; drei Abstürze -> eine Stunde Stream; „Player neu“ setzt zurück."""
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+
+        class Falsch:
+            def __init__(self):
+                self.an, self.gestartet, self.optionen, self.starts, self.url = False, 0, {}, 0, None
+
+            def laeuft(self):
+                return self.an
+
+            def starten(self, url, *a, **k):
+                self.an, self.gestartet, self.url = True, time.time(), url
+                self.starts += 1
+                return True
+
+            def beenden(self):
+                self.an, self.gestartet = False, 0
+
+        alt_v, alt_m = agent.Browser.verfuegbar, agent.modell
+        agent.Browser.verfuegbar, agent.modell = staticmethod(lambda: True), lambda: "Raspberry Pi 5 Model B Rev 1.0"
+        try:
+            p = agent.Player({"id": "abcd1234", "schluessel": "00" * 32, "server": "http://x:8890", "name": "T"})
+            p.anzeige, p.browser = Falsch(), Falsch()
+            p.anzeige.an = True
+            p.kontakt, p.zustand = time.time(), "spielt"
+            p.soll = {"modus": "direkt", "stream": {"port": 8888, "pfad": "tv"}, "direkt_abruf": 3}
+            jetzt = time.time()
+            self.assertTrue(p.direkt_gewuenscht(jetzt))
+            p.direkt_schritt(jetzt)                         # mpv gibt den Bildschirm frei, Browser startet
+            self.assertFalse(p.anzeige.an)
+            self.assertTrue(p.browser.an and p.browser.url.startswith("http://x:8890/anzeige/"))
+            p.direkt_schritt(jetzt)
+            self.assertEqual(p.zustand, "direkt")
+            for _ in range(3):                              # dreimal abgestürzt
+                p.browser.an = False
+                p.direkt_schritt(time.time())
+                p.direkt_schritt(time.time())               # startet neu
+            self.assertEqual(p.rueckfall, "abgestuerzt")
+            self.assertFalse(p.direkt_gewuenscht(time.time()))   # eine Stunde Stream
+            p.soll["befehle"] = [{"id": "1", "art": "player_neu"}]
+            p.befehle()
+            self.assertTrue(p.direkt_gewuenscht(time.time()))
+            p.soll["befehle"] = []
+            p.browser.starten("u")                          # Seite lädt nicht: Server sieht 90 s keine Abrufe
+            p.browser.gestartet -= 100
+            p.soll["direkt_abruf"] = None
+            p.direkt_schritt(time.time())
+            self.assertFalse(p.browser.an)
+            self.assertEqual(len(p.direkt_fehler), 1)
+            p.soll["modus"] = "stream"
+            self.assertFalse(p.direkt_gewuenscht(time.time()))
+            p.soll["modus"] = "direkt"
+            agent.modell = lambda: "Raspberry Pi 3 Model B Plus Rev 1.3"
+            self.assertFalse(p.direkt_gewuenscht(time.time()))    # Pi 3: nie direkt
+        finally:
+            agent.Browser.verfuegbar, agent.modell = alt_v, alt_m
+
+
 if __name__ == "__main__":
     unittest.main()

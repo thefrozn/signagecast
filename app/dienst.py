@@ -740,7 +740,92 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         return self.antwort(404, {"ok": False})
 
     def do_GET(self):
+        if self.anzeige():
+            return
         self.bearbeiten({})
+
+    # --- Direktmodus (seit 0.24): der Pi zeigt die TV-Seite selbst ---
+    def anzeige(self):
+        """/anzeige/<Schlüssel> setzt ein Cookie und leitet auf die TV-Seite; danach reicht der Zugang alle Abrufe der Seite
+        an den Datendienst weiter – nur für den Fernseher dieses Pi, ohne Verwaltungs-API. True = beantwortet."""
+        u = urllib.parse.urlparse(self.path)
+        m = re.fullmatch(r"/anzeige/([0-9a-f]{32})", u.path)
+        if m:
+            g = PL.geraet_fuer_anzeige(m.group(1))
+            if not g:
+                time.sleep(1)
+                self.antwort(403, {"ok": False})
+                return True
+            self.send_response(302); self.send_header("Location", "/?tv=" + urllib.parse.quote(g["tv"] or "-"))
+            self.send_header("Set-Cookie", f"sc_anzeige={m.group(1)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000")
+            self.send_header("Content-Length", "0"); self.end_headers()
+            return True
+        c = re.search(r"(?:^|;\s*)sc_anzeige=([0-9a-f]{32})", self.headers.get("Cookie") or "")
+        if not c or u.path.startswith(("/test", "/pult", "/meldung", "/alarm", "/player/")):
+            return False
+        g = PL.geraet_fuer_anzeige(c.group(1))
+        t = next((t for t in einst()["fernseher"] if t["id"] == g["tv"]), None) if g else None
+        if not t:
+            time.sleep(0 if g else 1)
+            self.antwort(403 if not g else 404, {"ok": False})
+            return True
+        m = re.fullmatch(r"/hlscam/(cam_[a-z0-9_]{2,16})/([A-Za-z0-9_.\-]{1,80})", u.path)
+        if m:                                     # Kamera-Stream: nur Kameras aus der letzten daten.json dieses Fernsehers
+            if m.group(1) not in PL.kameras_erlaubt.get(t["id"], set()):
+                self.antwort(404, {"ok": False})
+                return True
+            self.weiterleiten(HLS_PORT, f"/{m.group(1)}/{m.group(2)}" + ("?" + u.query if u.query else ""))
+            return True
+        m = re.fullmatch(r"/radio/([a-z][a-z0-9]{0,11})/.*", u.path)
+        if (m and m.group(1) != t["id"]) or not PL.anzeige_pfad_ok(u.path):
+            self.antwort(404, {"ok": False})
+            return True
+        q = [(k, v) for k, v in urllib.parse.parse_qsl(u.query, keep_blank_values=True) if k != "tv"]
+        if u.path in ("/", "/index.html", "/daten.json", "/durchsage.json") or "tv=" in u.query:
+            q.append(("tv", t["id"]))             # immer der eigene Fernseher, egal was die Seite fragt
+        ziel = u.path + ("?" + urllib.parse.urlencode(q) if q else "")
+        if u.path == "/daten.json":
+            PL.direkt_abruf[g["id"]] = time.time()
+            self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel, kameras=t["id"])
+        else:
+            self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel)
+        return True
+
+    def weiterleiten(self, port, ziel, kameras=None):
+        """GET an 127.0.0.1:<port> durchreichen (mit Range, als Datenstrom – auch Radio und MJPEG)."""
+        import http.client
+        kopf = {k: self.headers[k] for k in ("Range", "If-None-Match", "If-Modified-Since", "User-Agent") if self.headers.get(k)}
+        try:
+            c = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+            c.request("GET", ziel, headers=kopf)
+            r = c.getresponse()
+        except OSError:
+            return self.antwort(502, {"ok": False})
+        try:
+            if kameras is not None:               # Kamera-Adressen (nur im Container lesbar) auf diesen Zugang umschreiben
+                roh = r.read().replace(f"http://127.0.0.1:{HLS_PORT}/cam_".encode(), b"/hlscam/cam_")
+                PL.kameras_erlaubt[kameras] = set(x.decode() for x in re.findall(rb"/hlscam/(cam_[a-z0-9_]{2,16})/", roh))
+                self.send_response(r.status); self.send_header("Content-Type", r.getheader("Content-Type") or "application/json")
+                self.send_header("Cache-Control", "no-store"); self.send_header("Content-Length", str(len(roh)))
+                self.end_headers(); self.wfile.write(roh)
+                return
+            self.send_response(r.status)
+            for k in ("Content-Type", "Content-Length", "Content-Range", "Accept-Ranges", "Cache-Control", "Last-Modified", "ETag"):
+                if r.getheader(k):
+                    self.send_header(k, r.getheader(k))
+            ort = r.getheader("Location") or ""
+            if ort.startswith("/") and r.status in (301, 302, 303, 307, 308):   # z. B. MediaMTX: „cookieCheck“-Umleitung
+                self.send_header("Location", ("/hlscam" if port == HLS_PORT else "") + ort)
+            self.end_headers()
+            while True:
+                teil = r.read1(65536) if hasattr(r, "read1") else r.read(65536)
+                if not teil:
+                    break
+                self.wfile.write(teil)
+        except OSError:
+            pass
+        finally:
+            c.close()
 
     def player(self, pfad, roh):
         """Raspberry-Pi-Player (seit 0.23): signierte Meldungen, Bildschirmfotos, Protokolle, Agent-Update."""
@@ -818,6 +903,13 @@ def player_hinweise(g):
         h.append("pi_heiss")
     if PL.online(g["id"]) and b.get("hdmi") is False:
         h.append("pi_kein_hdmi")
+    if g.get("anzeige_modus") == "direkt":       # Direktmodus (seit 0.24)
+        if klasse == "pi3":
+            h.append("pi_direkt_pi3")
+        elif b.get("browser") is False:
+            h.append("pi_direkt_kein_browser")
+        elif b.get("rueckfall"):
+            h.append("pi_direkt_rueckfall")
     return h
 
 

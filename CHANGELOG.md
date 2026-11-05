@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.24.0 (2026-11-06)
+- **Raspberry Pi player – direct mode (experimental):** per Pi under *Settings → Display*. A Pi 4/5 shows the TV page
+  itself (Chromium in the kiosk shell cage, no desktop) instead of the stream – sharp text, no stream delay, and the
+  server renders and encodes nothing for this Pi. Sound comes from the Pi's HDMI. Full HD by default (4K TVs upscale).
+  Pi 3/Zero 2 W always use the stream.
+- **Fallback:** three browser crashes or page-load failures within 10 minutes → the Pi shows the stream for one hour
+  (note in the admin; *Restart player* retries at once).
+- **Access:** the Pi opens `/anzeige/<key>` on port 8890; the key is derived from the device key and only gives access
+  to the page of its own TV – no admin API, only the cameras in that TV's layout (camera streams stay closed to the
+  network otherwise). Removing the Pi revokes it.
+- The player image now contains Chromium, cage, seatd, grim and wlr-randr (larger download). Images from 0.23 keep
+  working with the stream; for direct mode flash a new image (the admin says so).
+
 ## v0.23.3 (2026-11-05)
 - Radio → playlist import: the list of rejected entries is now shown in the admin language (was always German).
 - Announcement panel and emergency screen: the preset templates follow the admin language. Templates you changed

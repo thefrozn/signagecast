@@ -54,7 +54,7 @@ const TEXTE = {
     pl: { titel: "Raspberry Pi als Player", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
-          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen.",
+          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Einstellungen → Anzeige).",
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 700 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
@@ -73,11 +73,14 @@ const TEXTE = {
           zuletzt: (z) => `zuletzt ${z}`, seit: (z) => `seit ${z}`, ip: "IP", netzArt: { kabel: "Kabel", wlan: "WLAN", hotspot: "Hotspot (Einrichtung)", keins: "kein Netz" },
           temp: "Temperatur", version: "Player", hdmi: "Bildschirm", keinHdmi: "kein Bildschirm erkannt", video: "Video",
           zustand: { start: "startet", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
-                     stream_fehler: "Stream-Fehler", gesperrt: "entfernt", unbekannt: "dem Server unbekannt" },
+                     stream_fehler: "Stream-Fehler", gesperrt: "entfernt", unbekannt: "dem Server unbekannt", direkt: "zeigt die Seite direkt", direkt_start: "Browser startet …" },
           drehung: "Drehung", aufloesung: "Ausgabe", a: { auto: "wie der Fernseher meldet", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Lautstärke (%)", cec: "Fernseher nach Zeitplan ein- und ausschalten (HDMI-CEC)", cecText: "Wenn das Layout „schwarz“ ist (Zeitplan des Fernsehers), schaltet der Pi den Fernseher per HDMI aus und danach wieder ein. Am Fernseher muss CEC an sein (Samsung „Anynet+“, LG „SimpLink“, Sony „Bravia Sync“).",
           schreibschutz: "Schreibschutz (empfohlen)", schreibschutzText: "Das System läuft im Arbeitsspeicher, die SD-Karte bleibt unverändert – Stromausfall und Ausstecken schaden ihr nicht. Ändern startet den Pi neu.",
           systemupdate: "Systemupdates", su: { woechentlich: "wöchentlich (So 3 Uhr)", aus: "nur von Hand" }, hwdec: "Video-Dekodierung", hw: { auto: "Hardware (Standard)", aus: "nur CPU (bei Bildfehlern)" },
+          anzeige: "Anzeige", am: { stream: "Stream vom Server (Standard)", direkt: "Direkt: Pi zeigt die Seite selbst (experimentell)" },
+          anzeigeText: "Direkt: Der Pi öffnet die TV-Seite selbst im Browser – gestochen scharf, ohne Verzögerung, und der Server muss für diesen Pi nichts kodieren. Der Pi zeichnet in Full HD (4K-Fernseher rechnen hoch). Nur Pi 4/5; Videos und Kameras können ruckeln. Macht der Browser Probleme, nimmt der Pi für eine Stunde den Stream.",
+          direktModus: "Direktmodus (Browser)",
           b: { bild: "Bildschirmfoto", erkennen: "Name anzeigen", cec_an: "TV ein", cec_aus: "TV aus", player_neu: "Player neu starten", neustart: "Pi neu starten",
                systemupdate: "Systemupdate jetzt", protokoll: "Protokoll holen" },
           bText: { erkennen: "Zeigt 30 Sekunden Name und IP auf dem Fernseher – so findest du den richtigen Pi.", systemupdate: "Der Pi lädt Updates (Schreibschutz kurz aus) und startet zweimal neu – etwa 5–15 Minuten." },
@@ -91,7 +94,10 @@ const TEXTE = {
           h: { pi_kein_tv: "Kein Fernseher zugewiesen – der Pi zeigt nur einen Hinweis.", pi_h265: "Pi 3/Zero 2 W kann H.265 nicht flüssig abspielen: beim Fernseher den Codec „H.264“ wählen.",
                pi_4k: "Pi 3/Zero 2 W schafft kein 4K: beim Fernseher die Auflösung „Full HD“ wählen.", pi5_h264_4k: "Der Pi 5 dekodiert H.264 nur per CPU – 4K ruckelt. Beim Fernseher „H.265“ oder „Full HD“ wählen.",
                pi_strom: "Der Pi meldet Unterspannung oder Drosselung – offizielles Netzteil nehmen.", pi_heiss: "Der Pi ist sehr warm (über 80 °C) – Gehäuse mit Kühlung oder Lüfter.",
-               pi_kein_hdmi: "Kein Bildschirm erkannt – HDMI-Kabel prüfen (Pi 4/5: den Anschluss neben dem Strom nehmen)." } },
+               pi_kein_hdmi: "Kein Bildschirm erkannt – HDMI-Kabel prüfen (Pi 4/5: den Anschluss neben dem Strom nehmen).",
+               pi_direkt_pi3: "Der Direktmodus braucht einen Pi 4 oder Pi 5 – dieser Pi zeigt den Stream.",
+               pi_direkt_kein_browser: "Das Image dieses Pi hat noch keinen Browser (vor 0.24 erstellt): für den Direktmodus ein neues Image herunterladen und flashen. Bis dahin zeigt er den Stream.",
+               pi_direkt_rueckfall: "Der Browser hatte Probleme – der Pi zeigt für eine Stunde den Stream. „Player neu starten“ versucht es sofort wieder." } },
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
     todo: { player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
@@ -304,7 +310,7 @@ const TEXTE = {
     pl: { titel: "Raspberry Pi as player", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
-          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models.",
+          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Settings → Display).",
           basis: "Player image", basisFehlt: "not downloaded yet – about 700 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
@@ -323,11 +329,14 @@ const TEXTE = {
           zuletzt: (z) => `last seen ${z}`, seit: (z) => `since ${z}`, ip: "IP", netzArt: { kabel: "cable", wlan: "Wi-Fi", hotspot: "hotspot (setup)", keins: "no network" },
           temp: "Temperature", version: "Player", hdmi: "Screen", keinHdmi: "no screen detected", video: "Video",
           zustand: { start: "starting", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
-                     stream_fehler: "stream error", gesperrt: "removed", unbekannt: "unknown to the server" },
+                     stream_fehler: "stream error", gesperrt: "removed", unbekannt: "unknown to the server", direkt: "shows the page directly", direkt_start: "browser starting …" },
           drehung: "Rotation", aufloesung: "Output", a: { auto: "as the TV reports", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Volume (%)", cec: "Switch the TV on and off by schedule (HDMI-CEC)", cecText: "When the layout is “black” (schedule of the TV), the Pi switches the TV off via HDMI and on again later. CEC must be enabled on the TV (Samsung “Anynet+”, LG “SimpLink”, Sony “Bravia Sync”).",
           schreibschutz: "Write protection (recommended)", schreibschutzText: "The system runs in memory, the SD card stays unchanged – power cuts and unplugging do not harm it. Changing it restarts the Pi.",
           systemupdate: "System updates", su: { woechentlich: "weekly (Sun 3 am)", aus: "manual only" }, hwdec: "Video decoding", hw: { auto: "hardware (default)", aus: "CPU only (on picture errors)" },
+          anzeige: "Display", am: { stream: "stream from the server (default)", direkt: "direct: the Pi shows the page itself (experimental)" },
+          anzeigeText: "Direct: the Pi opens the TV page itself in a browser – sharp, without delay, and the server does not need to encode anything for this Pi. The Pi draws in Full HD (4K TVs upscale). Pi 4/5 only; videos and cameras may stutter. If the browser has problems, the Pi uses the stream for one hour.",
+          direktModus: "direct mode (browser)",
           b: { bild: "Screenshot", erkennen: "Show name", cec_an: "TV on", cec_aus: "TV off", player_neu: "Restart player", neustart: "Restart Pi",
                systemupdate: "System update now", protokoll: "Fetch log" },
           bText: { erkennen: "Shows name and IP on the TV for 30 seconds – so you find the right Pi.", systemupdate: "The Pi installs updates (write protection off for a moment) and restarts twice – about 5–15 minutes." },
@@ -341,7 +350,10 @@ const TEXTE = {
           h: { pi_kein_tv: "No TV assigned – the Pi only shows a note.", pi_h265: "Pi 3/Zero 2 W cannot play H.265 smoothly: choose codec “H.264” for the TV.",
                pi_4k: "Pi 3/Zero 2 W cannot do 4K: choose resolution “Full HD” for the TV.", pi5_h264_4k: "The Pi 5 decodes H.264 on the CPU only – 4K stutters. Choose “H.265” or “Full HD” for the TV.",
                pi_strom: "The Pi reports under-voltage or throttling – use the official power supply.", pi_heiss: "The Pi is very warm (above 80 °C) – use a case with cooling or a fan.",
-               pi_kein_hdmi: "No screen detected – check the HDMI cable (Pi 4/5: use the port next to the power)." } },
+               pi_kein_hdmi: "No screen detected – check the HDMI cable (Pi 4/5: use the port next to the power).",
+               pi_direkt_pi3: "Direct mode needs a Pi 4 or Pi 5 – this Pi shows the stream.",
+               pi_direkt_kein_browser: "This Pi’s image has no browser yet (created before 0.24): download and flash a new image for direct mode. Until then it shows the stream.",
+               pi_direkt_rueckfall: "The browser had problems – the Pi shows the stream for one hour. “Restart player” tries again right away." } },
     todoTitel: "To do", todoOk: "All good.",
     todo: { player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
@@ -971,7 +983,7 @@ async function playerSeite(inhalt) {
     const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? " " + T.pl.zitat(b.ssid) : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
     const zeilen = g.zuletzt ? [[T.pl.modell, b.modell], [T.pl.ip, g.ip], [T.pl.netz, netz],
       [T.pl.hdmi, b.hdmi ? (b.tv_name || "HDMI") + (b.ausgang ? ` (${b.ausgang})` : "") : T.pl.keinHdmi],
-      [T.pl.video, v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
+      [T.pl.video, b.modus_ist === "direkt" ? T.pl.direktModus : v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
       [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
       [T.pl.update, b.letztes_update ? zeit(b.letztes_update.zeit) + (b.letztes_update.ok ? "" : " – " + T.pl.fehlgeschlagen) : "–"]] : [];
     return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
@@ -998,6 +1010,8 @@ async function playerSeite(inhalt) {
         <div class="zeile"><label><input type="checkbox" name="schreibschutz" ${g.schreibschutz ? "checked" : ""}> ${esc(T.pl.schreibschutz)}</label></div><p class="leise">${esc(T.pl.schreibschutzText)}</p>
         <div class="zeile"><label>${esc(T.pl.systemupdate)}</label><select name="systemupdate">${opt(["woechentlich", "aus"], g.systemupdate, T.pl.su)}</select></div>
         <div class="zeile"><label>${esc(T.pl.hwdec)}</label><select name="hwdec">${opt(["auto", "aus"], g.hwdec, T.pl.hw)}</select></div>
+        <div class="zeile" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}><label>${esc(T.pl.anzeige)}</label><select name="anzeige_modus">${opt(["stream", "direkt"], g.anzeige_modus || "stream", T.pl.am)}</select></div>
+        <p class="leise" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}>${esc(T.pl.anzeigeText)}</p>
         <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div></details>
       <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
         ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
@@ -1026,9 +1040,11 @@ async function playerSeite(inhalt) {
         const w = (n) => k.querySelector(`[name=${n}]`);
         await senden(`/api/player/${g.id}/aendern`, { name: w("name").value, tv: w("tv").value, modell: w("modell").value, drehung: Number(w("drehung").value),
           aufloesung: w("aufloesung").value, lautstaerke: Number(w("lautstaerke").value), cec_zeitplan: w("cec_zeitplan").checked,
-          schreibschutz: w("schreibschutz").checked, systemupdate: w("systemupdate").value, hwdec: w("hwdec").value });
+          schreibschutz: w("schreibschutz").checked, systemupdate: w("systemupdate").value, hwdec: w("hwdec").value,
+          anzeige_modus: w("modell").value === "pi3" ? "stream" : w("anzeige_modus").value });
         P = await holen("/api/player"); listeZeichnen();
       });
+      k.querySelector("[name=modell]").onchange = (e) => k.querySelectorAll("[data-anzeige]").forEach((x) => { x.hidden = e.target.value === "pi3"; });
       k.querySelector("[data-wlan-senden]").onclick = (e) => aktion(e.target, async () => {
         await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); P = await holen("/api/player"); listeZeichnen(); }, T.pl.wlanGesendet);
       k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {

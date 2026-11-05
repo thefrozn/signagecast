@@ -2,6 +2,9 @@
 # Fernsehers per HDMI und melden sich alle paar Sekunden über den Webhook-Port (8890) – dabei holen sie Einstellungen und
 # Befehle ab (Pull, am Pi ist kein Port offen). Jede Anfrage und jede Antwort ist mit dem Schlüssel des Geräts signiert
 # (HMAC-SHA256); der Schlüssel steht nur in der Gerätedatei auf der SD-Karte und hier.
+# Direktmodus (seit 0.24): Statt des Streams zeigt der Pi die TV-Seite selbst (Chromium im Kiosk-Rahmen cage). Der Pi
+# öffnet dazu /anzeige/<Schlüssel> auf dem Webhook-Port; der Schlüssel ist aus dem Geräte-Schlüssel abgeleitet und gilt
+# nur für die Seite seines eigenen Fernsehers (Weiterleitung an den Datendienst, ohne /api/).
 # Image je Gerät: ein Grundimage (GitHub-Release, signiert) wird einmal geladen; beim Herunterladen schreibt die
 # Verwaltung die Gerätedatei in den Platzhalter auf der Boot-Partition (bekannter Versatz) und packt neu – ohne mounten.
 import hashlib, hmac, json, lzma, os, re, secrets, shutil, subprocess, threading, time, urllib.request, zlib
@@ -21,6 +24,7 @@ SCHLUESSEL = "RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD"
 PLATZ = 16384                                          # Länge des Platzhalters signagecast.json im Image
 MODELLE = ("pi45", "pi3")                              # Pi 5/4/400/CM4 | Pi 3/Zero 2 W (nur H.264 bis Full HD)
 AUFLOESUNGEN = ("auto", "720", "1080", "2160")
+ANZEIGE_MODI = ("stream", "direkt")                    # Direktmodus nur Pi 4/5 (Pi 3/Zero 2 W: zu wenig Speicher)
 BEFEHLE = ("neustart", "player_neu", "bild", "protokoll", "cec_an", "cec_aus", "erkennen", "systemupdate")
 ONLINE_S = 60
 LAENDER = {"Europe/Berlin": "DE", "Europe/Vienna": "AT", "Europe/Zurich": "CH", "Europe/Amsterdam": "NL", "Europe/Brussels": "BE",
@@ -33,6 +37,8 @@ stand = {}            # id -> {"zeit", "bericht", "ip"} (letzte Meldung, nur im 
 befehle = {}          # id -> [{"id", "art", "zeit"}] noch nicht abgeholt
 ergebnisse = {}       # id -> [{"art", "ok", "hinweis", "zeit"}] (die letzten 10)
 einmal = {}           # Download-Kennung -> {"id", "netze", "server", "bis"}
+direkt_abruf = {}     # id -> Zeit des letzten Abrufs von daten.json im Direktmodus (zeigt: die Seite lebt)
+kameras_erlaubt = {}  # TV-Kennung -> {"cam_<id>", …} aus der letzten daten.json (nur diese Kamera-Streams gibt der Zugang frei)
 basis_stand = {"phase": "", "geladen": 0, "gesamt": 0, "fehler": "", "code": "", "p": {}, "version": ""}
 
 
@@ -122,13 +128,17 @@ def _felder(g, d, tvs):
         g["systemupdate"] = d["systemupdate"]
     if d.get("hwdec") in ("auto", "aus"):
         g["hwdec"] = d["hwdec"]
+    if d.get("anzeige_modus") in ANZEIGE_MODI:
+        g["anzeige_modus"] = d["anzeige_modus"]
+    if g.get("modell") == "pi3":
+        g["anzeige_modus"] = "stream"
 
 
 def neu(d, tvs):
     """Neues Gerät anlegen. Gibt das Gerät zurück; das Image dazu kommt über herunterladen_vorbereiten()."""
     g = {"id": secrets.token_hex(4), "schluessel": secrets.token_hex(32), "erstellt": time.strftime("%Y-%m-%d %H:%M"),
          "name": "", "tv": "", "modell": "pi45", "aufloesung": "auto", "drehung": 0, "lautstaerke": 100, "cec_zeitplan": False,
-         "schreibschutz": True, "systemupdate": "woechentlich", "hwdec": "auto", "wlan_rev": 0, "wlan_soll": None,
+         "schreibschutz": True, "systemupdate": "woechentlich", "hwdec": "auto", "anzeige_modus": "stream", "wlan_rev": 0, "wlan_soll": None,
          "hotspot_pw": "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz23456789") for _ in range(10))}
     _felder(g, dict({"name": d.get("name", "")}, **d), tvs)
     with sperre:
@@ -155,6 +165,7 @@ def entfernen(gid):
         speichern(daten)
     stand.pop(gid, None)
     befehle.pop(gid, None)
+    direkt_abruf.pop(gid, None)
     for endung in (".jpg", ".log"):
         try:
             os.unlink(os.path.join(ORDNER, gid + endung))
@@ -232,6 +243,32 @@ def signatur(g, zeit, inhalt):
     return hmac.new(bytes.fromhex(g["schluessel"]), f"antwort\n{zeit}\n".encode() + inhalt, "sha256").hexdigest()
 
 
+def anzeige_schluessel(g):
+    """Schlüssel für den Direktmodus: aus dem Geräte-Schlüssel abgeleitet (der Pi rechnet ihn selbst aus)."""
+    return hmac.new(bytes.fromhex(g["schluessel"]), b"anzeige", "sha256").hexdigest()[:32]
+
+
+def geraet_fuer_anzeige(schluessel):
+    if not re.fullmatch(r"[0-9a-f]{32}", schluessel or ""):
+        return None
+    return next((g for g in daten["geraete"] if hmac.compare_digest(anzeige_schluessel(g), schluessel)), None)
+
+
+def anzeige_pfad_ok(pfad):
+    """Was der Direktmodus abrufen darf: die TV-Seite mit ihren Dateien, nie die Verwaltungs-API."""
+    if pfad.startswith(("/api/", "/hlscam/")) or ".." in pfad or "//" in pfad:
+        return False
+    return bool(re.fullmatch(r"/([A-Za-z0-9_.\-]+/)*[A-Za-z0-9_.\-]*", pfad))
+
+
+def modus_fuer(g, bericht=None):
+    """Stream oder direkt – Pi 3/Zero 2 W (laut Meldung oder Einstellung) immer Stream."""
+    modell = ((bericht or (stand.get(g["id"]) or {}).get("bericht")) or {}).get("modell") or ""
+    if g.get("modell") == "pi3" or re.search(r"Pi 3|Zero 2", modell):
+        return "stream"
+    return g.get("anzeige_modus", "stream") if g.get("anzeige_modus") in ANZEIGE_MODI else "stream"
+
+
 def agent_hash():
     try:
         return hashlib.sha256(open(AGENT, "rb").read()).hexdigest()
@@ -251,7 +288,9 @@ def melden(g, bericht, ip, stream, bildschirm):
         if ws and int(bericht.get("wlan_rev") or 0) >= ws["rev"]:
             g["wlan_soll"] = None
             speichern(daten)
+    abruf = direkt_abruf.get(g["id"])
     return {"ok": True, "intervall": 15, "name": g["name"], "stream": stream, "lautstaerke": g["lautstaerke"],
+            "modus": modus_fuer(g, bericht), "direkt_abruf": int(time.time() - abruf) if abruf else None,
             "drehung": g["drehung"], "aufloesung": g["aufloesung"], "hwdec": g["hwdec"], "schreibschutz": g["schreibschutz"],
             "bildschirm": bildschirm, "befehle": [{"id": b["id"], "art": b["art"]} for b in offen],
             "wlan": {"rev": g["wlan_soll"]["rev"], "netze": g["wlan_soll"]["netze"]} if g.get("wlan_soll") else None,
@@ -291,7 +330,8 @@ def liste(hinweise):
                         bericht=s.get("bericht") or {}, ip=s.get("ip"), wlan_offen=(g.get("wlan_soll") or {}).get("netze", [{}])[0].get("ssid"),
                         befehle=[b["art"] for b in befehle.get(g["id"], [])], ergebnisse=ergebnisse.get(g["id"], []),
                         bild=int(os.path.getmtime(bild)) if os.path.exists(bild) else None,
-                        protokoll=os.path.exists(os.path.join(ORDNER, g["id"] + ".log")), hinweise=hinweise(g)))
+                        protokoll=os.path.exists(os.path.join(ORDNER, g["id"] + ".log")), hinweise=hinweise(g),
+                        anzeige_modus=g.get("anzeige_modus", "stream"), modus=modus_fuer(g)))
     return aus
 
 

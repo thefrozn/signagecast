@@ -5,11 +5,13 @@
 # am Pi ist kein Port offen. Ohne Netz öffnet er einen Hotspot mit Einrichtungsseite; der QR-Code steht auf dem TV.
 # Alles, was einen Neustart überstehen muss, steht in /boot/firmware/signagecast.json – so verträgt sich der Player mit
 # dem Schreibschutz (overlayroot): das System selbst bleibt unverändert, Stromausfälle schaden der Karte nicht.
-# Nur Python-Standardbibliothek; läuft als root (WLAN, CEC, Neustart), mpv als Benutzer „signage“.
-import hashlib, hmac, json, os, re, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+# Direktmodus (seit 0.24, Pi 4/5): Statt des Streams zeigt Chromium im Kiosk-Rahmen cage die TV-Seite selbst; Hinweise
+# (Start, Hotspot, Fehler) zeigt weiter mpv. Macht der Browser dreimal in 10 min Probleme, nimmt der Pi eine Stunde den Stream.
+# Nur Python-Standardbibliothek; läuft als root (WLAN, CEC, Neustart), mpv und Chromium als Benutzer „signage“.
+import hashlib, hmac, json, os, re, shutil, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0"
+VERSION = "1.1"
 BOOT = "/boot/firmware"
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
 AGENT_BOOT = BOOT + "/signagecast/agent.py"       # vom Server aktualisiert; start.sh nimmt ihn vor dem eingebauten
@@ -30,7 +32,7 @@ TEXTE = {
            "wlan2": "2. Die Einrichtungsseite öffnet sich – sonst http://10.42.0.1 aufrufen",
            "wlan3": "3. WLAN auswählen und Passwort eingeben", "wlan_fehler": "„{ssid}“: Verbindung fehlgeschlagen – Passwort prüfen",
            "wlan_versuch": "Verbinde mit WLAN „{ssid}“ …", "suche": "Suche bekannte WLANs …", "update": "Systemupdate läuft – bitte nicht ausschalten …",
-           "neustart": "Starte neu …", "seite_titel": "SignageCast – WLAN einrichten", "netz": "WLAN", "anderes": "anderes WLAN (Name eingeben)",
+           "neustart": "Starte neu …", "direkt": "Lade die Seite …", "seite_titel": "SignageCast – WLAN einrichten", "netz": "WLAN", "anderes": "anderes WLAN (Name eingeben)",
            "passwort": "Passwort", "speichern": "Verbinden", "fertig": "Der Player verbindet sich jetzt. Erscheint der QR-Code in einer Minute "
            "wieder auf dem Fernseher, war das Passwort falsch.", "name": "Name des WLANs"},
     "en": {"start": "SignageCast is starting …", "verbinde": "Connecting to the server …", "kein_server": "Server not reachable",
@@ -43,7 +45,7 @@ TEXTE = {
            "wlan2": "2. The setup page opens – otherwise open http://10.42.0.1",
            "wlan3": "3. Choose your Wi-Fi and enter its password", "wlan_fehler": "“{ssid}”: connection failed – check the password",
            "wlan_versuch": "Connecting to Wi-Fi “{ssid}” …", "suche": "Looking for known Wi-Fi networks …", "update": "System update running – do not switch off …",
-           "neustart": "Restarting …", "seite_titel": "SignageCast – set up Wi-Fi", "netz": "Wi-Fi", "anderes": "other Wi-Fi (enter name)",
+           "neustart": "Restarting …", "direkt": "Loading the page …", "seite_titel": "SignageCast – set up Wi-Fi", "netz": "Wi-Fi", "anderes": "other Wi-Fi (enter name)",
            "passwort": "Password", "speichern": "Connect", "fertig": "The player is connecting now. If the QR code appears on the TV again "
            "within a minute, the password was wrong.", "name": "Wi-Fi name"},
 }
@@ -434,6 +436,135 @@ class Anzeige:
                 "hwdec": self.eigenschaft("hwdec-current"), "verworfen": self.eigenschaft("frame-drop-count")}
 
 
+# ---------- Direktmodus: Chromium im Kiosk-Rahmen cage (Wayland, ohne Desktop) ----------
+BROWSER_HOME = "/var/lib/signage"
+BROWSER_AUFLOESUNG = {"preferred": "1920x1080", "1920x1080": "1920x1080", "1280x720": "1280x720", "3840x2160": "3840x2160"}
+
+
+def chromium_pfad():
+    return shutil.which("chromium") or shutil.which("chromium-browser")
+
+
+class Browser:
+    """Zeigt die TV-Seite des Servers. Ton über ALSA (eigener Lautstärkeregler „SignageCast“ vor dem HDMI-Ausgang)."""
+    def __init__(self):
+        self.proc, self.gestartet, self.url, self.optionen, self.lautstaerke = None, 0, None, {}, None
+
+    @staticmethod
+    def verfuegbar():
+        return bool(shutil.which("cage") and chromium_pfad())
+
+    def laeuft(self):
+        return self.proc is not None and self.proc.poll() is None
+
+    def _umgebung(self):
+        return dict(os.environ, HOME=BROWSER_HOME, XDG_RUNTIME_DIR=LAUF, WAYLAND_DISPLAY="wayland-0", LIBSEAT_BACKEND="seatd")
+
+    def _als_signage(self, *befehl, zeit=15):
+        uid, gid = benutzer_ids()
+        try:
+            r = subprocess.run(befehl, capture_output=True, timeout=zeit, user=uid, group=gid, extra_groups=gruppen(), env=self._umgebung())
+            return r.returncode, r.stdout
+        except (OSError, subprocess.TimeoutExpired):
+            return 1, b""
+
+    def _ton(self):
+        """ALSA: Kette „signagecast“ = Lautstärkeregler (softvol) vor dem HDMI-Gerät; Chromium spielt dorthin."""
+        m = re.match(r"alsa/hdmi:CARD=(\w+),DEV=0", hdmi_ton())
+        if not m:
+            return None
+        karte = m.group(1)
+        try:
+            with open(BROWSER_HOME + "/.asoundrc", "w") as f:
+                f.write(f'''pcm.signagecast {{ type plug; slave.pcm "sc_lautstaerke" }}
+pcm.sc_lautstaerke {{ type softvol; slave.pcm "hdmi:CARD={karte},DEV=0"; control {{ name "SignageCast"; card {karte} }} }}
+''')
+            os.chown(BROWSER_HOME + "/.asoundrc", *benutzer_ids())
+        except (OSError, KeyError):
+            return None
+        return karte
+
+    def starten(self, url, optionen, sprache):
+        self.beenden()
+        self.gestartet, self.url, self.optionen, self.lautstaerke = time.time(), url, dict(optionen), None
+        os.makedirs(LAUF, exist_ok=True)
+        try:
+            os.makedirs(BROWSER_HOME, exist_ok=True)
+            os.chown(LAUF, *benutzer_ids())
+            os.chmod(LAUF, 0o700)
+        except (OSError, KeyError):
+            pass
+        karte = self._ton()
+        args = ["cage", "-d", "--", chromium_pfad(), "--kiosk", "--ozone-platform=wayland", "--noerrdialogs", "--disable-infobars",
+                "--no-first-run", "--disable-session-crashed-bubble", "--disable-features=Translate,TranslateUI,MediaRouter",
+                "--check-for-update-interval=31536000", "--autoplay-policy=no-user-gesture-required", "--password-store=basic",
+                "--overscroll-history-navigation=0", "--disable-pinch", "--force-device-scale-factor=1", "--disk-cache-size=67108864",
+                f"--user-data-dir={BROWSER_HOME}/chromium", f"--lang={'en-GB' if sprache == 'en' else 'de-DE'}"]
+        if karte:
+            args.append("--alsa-output-device=signagecast")
+        if optionen.get("hwdec") == "aus":
+            args.append("--disable-accelerated-video-decode")
+        args.append(url)
+        uid, gid = benutzer_ids()
+        try:
+            self.proc = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                         user=uid, group=gid, extra_groups=gruppen(), env=self._umgebung(), start_new_session=True)
+        except (OSError, KeyError, TypeError) as f:
+            log("Browser startet nicht:", f)
+            self.proc = None
+            return False
+        threading.Thread(target=self._fehlerausgabe, args=(self.proc,), daemon=True).start()
+        threading.Thread(target=self._ausgabe_einstellen, args=(self.proc, karte), daemon=True).start()
+        log("Direktmodus:", url.rsplit("/", 1)[0] + "/…")
+        return True
+
+    def _fehlerausgabe(self, proc):
+        for z in proc.stderr:
+            z = z.decode(errors="replace").strip()
+            if z and ("ERROR" in z or "FATAL" in z or z.startswith("[cage]") or "seat" in z.lower()):
+                log("Browser:", z[:300])
+
+    def _ausgabe_einstellen(self, proc, karte):
+        """Nach dem Start: Auflösung und Drehung (wlr-randr), Lautstärke."""
+        for _ in range(20):
+            time.sleep(1)
+            if proc.poll() is not None:
+                return
+            code, aus = self._als_signage("wlr-randr")
+            namen = re.findall(rb"^(\S+)", aus, re.M)
+            if code == 0 and namen:
+                break
+        else:
+            return
+        o = self.optionen
+        dreh = {0: "normal", 90: "90", 180: "180", 270: "270"}.get(o.get("drehung", 0), "normal")
+        for n in namen:
+            self._als_signage("wlr-randr", "--output", n.decode(), "--mode", BROWSER_AUFLOESUNG.get(o.get("modus"), "1920x1080"), "--transform", dreh)
+        self.lautstaerke_setzen(o.get("lautstaerke", 100), karte)
+
+    def lautstaerke_setzen(self, wert, karte=None):
+        m = re.match(r"alsa/hdmi:CARD=(\w+),DEV=0", hdmi_ton())
+        karte = karte or (m.group(1) if m else None)
+        if karte and wert != self.lautstaerke and lauf("amixer", "-q", "-c", karte, "sset", "SignageCast", f"{min(100, int(wert))}%")[0] == 0:
+            self.lautstaerke = wert                 # der Regler entsteht erst, wenn Chromium das erste Mal Ton abspielt
+
+    def beenden(self):
+        if self.proc and self.proc.poll() is None:
+            try:
+                os.killpg(self.proc.pid, signal.SIGTERM)
+                self.proc.wait(8)
+            except (OSError, subprocess.TimeoutExpired):
+                try:
+                    os.killpg(self.proc.pid, signal.SIGKILL)
+                except OSError:
+                    pass
+        self.proc, self.gestartet = None, 0
+
+    def bildschirmfoto(self):
+        code, roh = self._als_signage("grim", "-t", "jpeg", "-q", "70", "-", zeit=20)
+        return roh if code == 0 and roh[:2] == b"\xff\xd8" else None
+
+
 def benutzer_ids():
     import pwd
     p = pwd.getpwnam("signage")
@@ -595,6 +726,8 @@ class Player:
         self.t = TEXTE.get(k.get("sprache"), TEXTE["de"])
         self.server = Server(k)
         self.anzeige = Anzeige()
+        self.browser = Browser()
+        self.direkt_fehler, self.rueckfall_bis, self.rueckfall, self.modus_alt = [], 0, "", None
         self.hotspot = Hotspot(self)
         self.soll = {}                      # letzte Antwort des Servers
         self.ergebnisse = []                # erledigte Befehle für die nächste Meldung
@@ -695,7 +828,7 @@ class Player:
     def bericht(self):
         art, ssid, signal, ip = netz()
         verbunden, tv_name, ausgang = hdmi()
-        v = self.anzeige.video_info() if self.anzeige.url else {}
+        v = self.anzeige.video_info() if self.anzeige.url and self.anzeige.laeuft() else {}
         return {"version": VERSION, "modell": modell(), "netz": art, "ssid": ssid, "signal": signal, "ip": ip,
                 "temperatur": round(int(lesen("/sys/class/thermal/thermal_zone0/temp", "0") or 0) / 1000, 1),
                 "drossel": lauf("vcgencmd", "get_throttled")[1].partition("=")[2], "laufzeit": int(time.time() - START),
@@ -703,7 +836,8 @@ class Player:
                 "ausgang": ausgang, "zustand": self.zustand, "zustand_text": self.zustand_text, "video": v,
                 "schreibschutz": schreibschutz_aktiv(), "cec": bool(glob_liste("/dev/cec*")), "wlan_rev": self.wlan_rev,
                 "netze": [n["ssid"] for n in self.k.get("wlan") or []], "letztes_update": self.k.get("letztes_update"),
-                "ergebnisse": self.ergebnisse[:10]}
+                "ergebnisse": self.ergebnisse[:10], "browser": Browser.verfuegbar(), "modus_ist": "direkt" if self.browser.laeuft() else "stream",
+                "rueckfall": self.rueckfall if time.time() < self.rueckfall_bis else ""}
 
     def melden_versuch(self):
         try:
@@ -735,10 +869,12 @@ class Player:
                     self.ergebnisse.append(erg)
                     self.melden_versuch()
                     self.neustart()
-                elif art == "player_neu":
+                elif art == "player_neu":           # auch: Direktmodus nach einem Rückfall wieder versuchen
                     self.anzeige.beenden()
+                    self.browser.beenden()
+                    self.direkt_fehler, self.rueckfall_bis, self.rueckfall = [], 0, ""
                 elif art == "bild":
-                    roh = self.anzeige.bildschirmfoto()
+                    roh = self.browser.bildschirmfoto() if self.browser.laeuft() else self.anzeige.bildschirmfoto()
                     if roh:
                         self.server.anfrage("/player/bild", roh=roh, zeit=60)
                     else:
@@ -778,6 +914,16 @@ class Player:
         if opt != self.k.get("anzeige"):            # merken: nach dem Neustart gleich richtig gedreht
             self.k["anzeige"] = opt
             konfig_speichern(self.k)
+        if self.browser.laeuft() and opt != self.browser.optionen:
+            if {k: v for k, v in opt.items() if k != "lautstaerke"} == {k: v for k, v in self.browser.optionen.items() if k != "lautstaerke"}:
+                self.browser.optionen = opt
+                self.browser.lautstaerke_setzen(opt["lautstaerke"])
+            else:
+                self.browser.beenden()              # neu mit Drehung/Auflösung (nächste Runde)
+        elif self.browser.laeuft() and self.browser.lautstaerke != opt["lautstaerke"]:
+            self.browser.lautstaerke_setzen(opt["lautstaerke"])
+        if s.get("modus") != self.modus_alt:        # Modus in der Verwaltung geändert: neuer Versuch ohne Rückfall
+            self.modus_alt, self.direkt_fehler, self.rueckfall_bis, self.rueckfall = s.get("modus"), [], 0, ""
         if self.anzeige.laeuft() and opt != self.anzeige.optionen:
             if {k: v for k, v in opt.items() if k != "lautstaerke"} == {k: v for k, v in self.anzeige.optionen.items() if k != "lautstaerke"}:
                 self.anzeige.befehl("set_property", "volume", opt["lautstaerke"], warten=False)
@@ -822,6 +968,7 @@ class Player:
             schreiben_sicher(AGENT_BOOT, roh)
             log("Agent aktualisiert – starte neu")
             self.anzeige.beenden()
+            self.browser.beenden()
             sys.exit(0)
 
     # --- Hauptschleife ---
@@ -834,8 +981,12 @@ class Player:
                 self.einstellungen_anwenden()
                 self.befehle()
         if self.wlan_laeuft:
+            self.browser.beenden()
             return
-        if not self.anzeige.laeuft():
+        direkt = self.direkt_gewuenscht(jetzt)
+        if self.browser.laeuft() and not direkt:
+            self.browser.beenden()
+        if not self.anzeige.laeuft() and not direkt:
             if (hdmi()[0] or not glob_liste("/sys/class/drm/card*-HDMI-A-*")) and jetzt - self.anzeige.gestartet > 10:
                 self.anzeige.starten(self.anzeige.optionen)
             return
@@ -880,6 +1031,8 @@ class Player:
             self.zustand = "aus"
             self.anzeige.zeigen([""])
             return
+        if direkt:
+            return self.direkt_schritt(jetzt)
         u = urllib.parse.urlparse(self.server.basis())
         url = f"http://{u.hostname}:{stream['port']}/{stream['pfad']}/index.m3u8"
         if self.anzeige.url != url:
@@ -897,6 +1050,42 @@ class Player:
             self.anzeige.neu_laden()
         if self.versuche > 3:
             self.anzeige.befehl("osd-overlay", 1, "ass-events", "{\\an2\\fs34\\bord2}" + self.t["kein_stream"], 1920, 1080, warten=False)
+
+    # --- Direktmodus ---
+    def direkt_gewuenscht(self, jetzt):
+        s = self.soll
+        return (s.get("modus") == "direkt" and Browser.verfuegbar() and jetzt >= self.rueckfall_bis and bool(s.get("stream"))
+                and jetzt - self.kontakt < 120 and s.get("bildschirm") != "aus" and not self.hotspot.aktiv
+                and self.erkennen_bis <= jetzt and self.zustand not in ("gesperrt", "unbekannt") and not re.search(r"Pi 3|Zero 2", modell()))
+
+    def direkt_url(self):
+        return self.server.basis() + "/anzeige/" + hmac.new(bytes.fromhex(self.k["schluessel"]), b"anzeige", "sha256").hexdigest()[:32]
+
+    def direkt_problem(self, grund, jetzt):
+        """Drei Probleme in 10 min: eine Stunde lang den Stream zeigen (die Verwaltung zeigt den Grund)."""
+        self.direkt_fehler = [t for t in self.direkt_fehler if jetzt - t < 600] + [jetzt]
+        log("Direktmodus:", grund)
+        self.browser.beenden()
+        if len(self.direkt_fehler) >= 3:
+            self.rueckfall, self.rueckfall_bis, self.direkt_fehler = grund, jetzt + 3600, []
+            log("Direktmodus: Rückfall auf den Stream für 1 h")
+
+    def direkt_schritt(self, jetzt):
+        if self.anzeige.laeuft():                   # mpv gibt den Bildschirm frei (nur einer kann ihn belegen)
+            self.anzeige.beenden()
+        if not self.browser.laeuft():
+            if self.browser.gestartet:              # lief und ist beendet: abgestürzt
+                self.direkt_problem("abgestuerzt", jetzt)
+                return
+            self.zustand, self.zustand_text = "direkt_start", ""
+            if not self.browser.starten(self.direkt_url(), self.anzeige.optionen, self.k.get("sprache")):
+                self.direkt_problem("startet_nicht", jetzt)
+            return
+        abruf = self.soll.get("direkt_abruf")
+        if jetzt - self.browser.gestartet > 90 and jetzt - self.kontakt < 30 and (abruf is None or abruf > 90):
+            self.direkt_problem("seite_laedt_nicht", jetzt)   # der Server sieht keine Abrufe der Seite
+            return
+        self.zustand, self.zustand_text = "direkt", ""
 
     def laufen(self):
         self.anzeige.starten(dict(STANDARD_ANZEIGE, **(self.k.get("anzeige") or {})))

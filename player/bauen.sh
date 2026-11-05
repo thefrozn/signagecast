@@ -1,6 +1,7 @@
 #!/bin/sh
 # SignageCast Player – Image bauen (GitHub Actions auf ubuntu-24.04-arm, als root; arm64 läuft dort nativ im chroot).
 # Nimmt das offizielle Raspberry Pi OS Lite (64 bit, mit Prüfsumme), baut mpv, qrencode, overlayroot und den Player ein
+# (seit 0.24 auch Chromium im Kiosk-Rahmen cage für den Direktmodus)
 # und legt auf der Boot-Partition den Platzhalter signagecast.json (16 KiB) an. Die Verwaltung schreibt beim Herunterladen
 # die Gerätedaten genau an diese Stelle des Images (Versatz steht in der .json daneben) – ohne mounten, auch im Container.
 #
@@ -29,7 +30,7 @@ xz -d "$A/os.img.xz"
 IMG=$A/os.img
 
 echo "== Platz schaffen und einhängen"
-truncate -s +768M "$IMG"
+truncate -s +2048M "$IMG"                # Platz für mpv und Chromium
 parted -s "$IMG" resizepart 2 100%
 LOOP=$(losetup -fP --show "$IMG")
 e2fsck -fy "${LOOP}p2" >/dev/null || true
@@ -49,6 +50,11 @@ chroot "$A/root" /bin/sh -eu <<'CHROOT'
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
 apt-get install -y -q --no-install-recommends mpv qrencode overlayroot iw rfkill unattended-upgrades
+# Direktmodus (seit 0.24): Chromium in cage (Wayland-Kiosk), seatd vergibt den Bildschirm ohne Anmeldung, grim macht
+# Bildschirmfotos, wlr-randr stellt Auflösung und Drehung ein, amixer die Lautstärke
+apt-get install -y -q --no-install-recommends cage seatd grim wlr-randr alsa-utils fonts-dejavu-core
+apt-get install -y -q --no-install-recommends chromium || apt-get install -y -q --no-install-recommends chromium-browser
+command -v chromium >/dev/null || command -v chromium-browser >/dev/null
 update-initramfs -u -k all
 apt-get clean
 rm -rf /var/lib/apt/lists/*
@@ -57,6 +63,14 @@ useradd -r -m -d /var/lib/signage -s /usr/sbin/nologin -G video,render,audio sig
 systemctl mask userconfig.service
 systemctl disable getty@tty1.service
 systemctl enable signagecast-player.service
+# seatd: Gruppe video darf den Bildschirm nehmen (Benutzer signage ist darin)
+mkdir -p /etc/systemd/system/seatd.service.d
+if [ -f /usr/lib/systemd/system/seatd.service ] || [ -f /lib/systemd/system/seatd.service ]; then
+  printf '[Service]\nExecStart=\nExecStart=/usr/bin/seatd -g video\n' > /etc/systemd/system/seatd.service.d/signagecast.conf
+else
+  printf '[Unit]\nDescription=Seat management daemon\n\n[Service]\nType=simple\nExecStart=/usr/bin/seatd -g video\nRestart=always\nRestartSec=1\n\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/seatd.service
+fi
+systemctl enable seatd.service
 # Hotspot: jede Adresse zeigt auf den Pi – Handys öffnen die Einrichtungsseite dann von selbst
 mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 echo 'address=/#/10.42.0.1' > /etc/NetworkManager/dnsmasq-shared.d/signagecast.conf

@@ -1,6 +1,6 @@
 [Unit]
 Description=SignageCast Player (Stream am HDMI-Ausgang, Verbindung zum Server)
-After=NetworkManager.service systemd-user-sessions.service
+After=NetworkManager.service systemd-user-sessions.service seatd.service
 Wants=NetworkManager.service
 
 [Service]

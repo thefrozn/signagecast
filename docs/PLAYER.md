@@ -55,9 +55,27 @@ networks again – after a power cut the router is often slower than the Pi.
   Previous networks stay as fallback.
 - **Download image again** for a new card (same key – an old card keeps working). **Remove** makes the key invalid.
 
+## Direct mode (since 0.24, experimental)
+
+Under *Settings → Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
+kiosk shell `cage` (no desktop) and opens the page from your server. Text and ticker are sharp, there is no stream
+delay, and the server does not need to render or encode anything for this Pi. Sound (radio, announcements, gong) comes
+from the Pi's HDMI.
+
+- The Pi draws in **Full HD** (a 4K TV upscales); *Output 4K* forces 4K, which is usually too much for the Pi.
+- **Pi 3 and Zero 2 W** always use the stream (not enough memory); the setting is hidden for them.
+- Videos and cameras are decoded by the Pi – they may stutter, especially H.264 on the Pi 5 (no hardware decoder).
+- **Fallback:** if the browser crashes or the page does not load three times within 10 minutes, the Pi shows the
+  stream for one hour; the admin shows a note. *Restart player* tries direct mode again right away.
+- Images created **before 0.24** have no browser – the admin says so; download and flash a new image.
+- Security: the Pi opens `http://<server>:8890/anzeige/<key>`. The key is derived from the device key and only gives
+  access to the page of **its own TV** (no admin API; only the cameras in that TV's layout). Removing the Pi makes it
+  invalid at once.
+
 ## How it works (short)
 
-- The image is the official **Raspberry Pi OS Lite (64 bit)** plus `mpv`, `qrencode`, `overlayroot` and the player
+- The image is the official **Raspberry Pi OS Lite (64 bit)** plus `mpv`, `qrencode`, `overlayroot`, for direct mode
+  `chromium`, `cage`, `seatd`, `grim`, `wlr-randr`, and the player
   (`player/agent.py`), built by GitHub Actions for every release (`player/bauen.sh`). The admin writes the device file
   (server address, device key, Wi-Fi) into a placeholder on the boot partition while you download – no mounting, so it
   works in Docker and on a NAS too.
@@ -80,6 +98,7 @@ networks again – after a power cut the router is often slower than the Pi.
 | Black screen, Pi online | Check *Video* in the admin; Pi 3/Zero 2 W: set the TV to H.264 / Full HD; try *Video decoding: CPU only*. |
 | Under-voltage warning | Use the official power supply and a short cable. |
 | TV on/off does nothing | Enable CEC on the TV; some TVs only switch on via CEC from standby, not when fully off. |
+| Direct mode: stream instead of page | Note in the admin: image before 0.24 (flash a new one) or fallback after browser problems (*Restart player*). |
 
 ---
 
@@ -141,9 +160,27 @@ der Pi die bekannten WLANs erneut – nach einem Stromausfall ist der Router oft
 - **Image erneut herunterladen** für eine neue Karte (gleicher Schlüssel – eine alte Karte läuft weiter). **Entfernen**
   macht den Schlüssel ungültig.
 
+## Direktmodus (seit 0.24, experimentell)
+
+Unter *Einstellungen → Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
+Kiosk-Rahmen `cage` (ohne Desktop) und öffnet die Seite von deinem Server. Schrift und Laufband sind gestochen scharf,
+es gibt keine Stream-Verzögerung, und der Server muss für diesen Pi nichts zeichnen oder kodieren. Der Ton (Radio,
+Durchsagen, Gong) kommt aus dem HDMI des Pi.
+
+- Der Pi zeichnet in **Full HD** (ein 4K-Fernseher rechnet hoch); *Ausgabe 4K* erzwingt 4K, das ist für den Pi meist zu viel.
+- **Pi 3 und Zero 2 W** zeigen immer den Stream (zu wenig Speicher); die Einstellung ist dort ausgeblendet.
+- Videos und Kameras dekodiert der Pi – sie können ruckeln, vor allem H.264 auf dem Pi 5 (ohne Hardware-Dekoder).
+- **Rückfall:** Stürzt der Browser ab oder lädt die Seite dreimal in 10 Minuten nicht, zeigt der Pi eine Stunde lang den
+  Stream; die Verwaltung zeigt einen Hinweis. *Player neu starten* versucht den Direktmodus sofort wieder.
+- Images von **vor 0.24** haben keinen Browser – die Verwaltung sagt das; neues Image herunterladen und flashen.
+- Sicherheit: Der Pi öffnet `http://<Server>:8890/anzeige/<Schlüssel>`. Der Schlüssel ist aus dem Geräteschlüssel
+  abgeleitet und gibt nur die Seite **seines Fernsehers** frei (keine Verwaltungs-API; nur die Kameras aus dessen
+  Layout). Entfernen macht ihn sofort ungültig.
+
 ## Technik (kurz)
 
-- Das Image ist das offizielle **Raspberry Pi OS Lite (64 bit)** mit `mpv`, `qrencode`, `overlayroot` und dem Player
+- Das Image ist das offizielle **Raspberry Pi OS Lite (64 bit)** mit `mpv`, `qrencode`, `overlayroot`, für den
+  Direktmodus `chromium`, `cage`, `seatd`, `grim`, `wlr-randr`, und dem Player
   (`player/agent.py`), gebaut von GitHub Actions zu jedem Release (`player/bauen.sh`). Die Verwaltung schreibt die
   Gerätedatei (Server-Adresse, Geräteschlüssel, WLAN) beim Herunterladen in einen Platzhalter auf der Boot-Partition –
   ohne Einhängen, darum geht es auch im Docker-Container und auf dem NAS.
@@ -166,3 +203,4 @@ der Pi die bekannten WLANs erneut – nach einem Stromausfall ist der Router oft
 | Schwarzes Bild, Pi online | In der Verwaltung *Video* ansehen; Pi 3/Zero 2 W: Fernseher auf H.264 / Full HD; *Video-Dekodierung: nur CPU* probieren. |
 | Warnung Unterspannung | Offizielles Netzteil und kurzes Kabel nehmen. |
 | TV ein/aus tut nichts | CEC am Fernseher einschalten; manche Fernseher lassen sich per CEC nur aus dem Standby einschalten. |
+| Direktmodus: Stream statt Seite | Hinweis in der Verwaltung: Image von vor 0.24 (neues flashen) oder Rückfall nach Browser-Problemen (*Player neu starten*). |
