@@ -971,18 +971,18 @@ async function playerSeite(inhalt) {
       [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
       [T.pl.update, b.letztes_update ? zeit(b.letztes_update.zeit) + (b.letztes_update.ok ? "" : " – " + T.pl.fehlgeschlagen) : "–"]] : [];
     return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
-      ${g.zuletzt ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
+      ${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
       ${g.wlan_offen ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
       ${g.befehle.length ? `<p class="leise">${esc(T.pl.wartet(g.befehle.map((a) => T.pl.b[a] || a).join(", ")))}</p>` : ""}
       ${g.ergebnisse.length ? `<p class="leise">${esc(T.pl.ergebnis)}: ${g.ergebnisse.slice(0, 3).map((e) => `${esc(e.zeit)} ${esc(T.pl.b[e.art] || (e.art === "wlan" ? T.pl.wlan : e.art))} ${e.ok
         ? `<span class="gut">${esc(T.pl.ok)}</span>` : `<span class="schlecht">${esc(T.pl.fehlgeschlagen)}</span>${e.hinweis ? " (" + esc(e.hinweis) + ")" : ""}`}`).join(" · ")}</p>` : ""}
-      ${g.bild ? `<p><img src="" data-bild="${g.id}" alt="${esc(T.pl.bildAlt(zeit(g.bild)))}" title="${esc(T.pl.bildAlt(zeit(g.bild)))}" style="max-width:100%;width:480px;border-radius:6px;border:1px solid var(--linie)"></p>` : ""}
+      ${g.bild ? `<p><img src="" data-bild="${g.id}" alt="${esc(T.pl.bildAlt(zeit(g.bild)))}" title="${esc(T.pl.bildAlt(zeit(g.bild)))}" class="pl-bild"></p>` : ""}
       ${zeilen.length ? `<div class="tabelle-rahmen"><table class="tabelle">${zeilen.map(([k, w]) => `<tr><td class="leise">${esc(k)}</td><td>${esc(w ?? "–")}</td></tr>`).join("")}</table></div>` : ""}
       <div class="zeile">${["bild", "erkennen", "cec_an", "cec_aus", "player_neu", "neustart", "systemupdate", "protokoll"].map((a) =>
         `<button class="knopf" data-befehl="${a}" title="${esc(T.pl.bText[a] || "")}">${esc(T.pl.b[a])}</button>`).join("")}
         ${g.protokoll ? `<button class="knopf" data-protokoll>${esc(T.pl.protokollZeigen)}</button>` : ""}</div>
-      <pre data-log hidden style="max-height:320px;overflow:auto"></pre>
+      <pre data-log hidden class="pl-log"></pre>
       <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>

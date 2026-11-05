@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update -q && sudo apt-get install -y -q parted e2fsprogs xz-utils
+      - run: sudo apt-get update -q && sudo apt-get install -y -q parted e2fsprogs xz-utils zerofree
       - name: Image bauen
         run: |
           V=${GITHUB_REF_NAME#v}

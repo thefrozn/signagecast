@@ -83,6 +83,7 @@ done
 sync
 umount -R "$A/root"
 e2fsck -fy "${LOOP}p2" >/dev/null || true
+zerofree "${LOOP}p2"                   # freie Blöcke mit Nullen füllen (gelöschte Paketlisten) – das Image packt viel kleiner
 losetup -d "$LOOP"
 LOOP=
 
