@@ -55,7 +55,7 @@ const TEXTE = {
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
           experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen.",
-          basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 600 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
+          basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 700 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
           neu: "Player hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Fernseher", keinTv: "– noch keiner –", modell: "Modell",
@@ -305,7 +305,7 @@ const TEXTE = {
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
           experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models.",
-          basis: "Player image", basisFehlt: "not downloaded yet – about 600 MB once", basisLaden: "Download player image", basisNeu: "Download again",
+          basis: "Player image", basisFehlt: "not downloaded yet – about 700 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
           neu: "Add player", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the TV", keinTv: "– none yet –", modell: "Model",
@@ -467,7 +467,8 @@ const TEXTE = {
       sch_aus_nicht: "Home Assistant cannot switch {e} off – the device does not offer it",
       pi_ssid: "Wi-Fi name missing or longer than 32 characters", pi_wlan_pw: "Wi-Fi password: 8 to 63 characters",
       pi_wlan_unbekannt: "This Wi-Fi is not saved (any more)", pi_name: "Player name missing", pi_tv: "Unknown TV", pi_lautstaerke: "Volume 0 to 100",
-      pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_server: "Server address as http://IP:port", pi_port: "Port 1 to 65535",
+      pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_server: "Server address as http://IP:port",
+      pi_server_lokal: "The Pi cannot find the server with this address – enter the IP in your home network under Advanced (e.g. http://192.168.1.20:8890)", pi_port: "Port 1 to 65535",
       pi_kein_image: "No player image yet – first “Download player image”", pi_signatur: "Signature of the player image invalid – not used",
       pi_pruefsumme: "Checksum of the player image wrong – please download again", pi_platz: "Not enough disk space – about {mb} MB needed",
       pi_konfig_gross: "Too much data for the device file", pi_link_alt: "Download link expired – click “Download image” again",
@@ -668,7 +669,7 @@ function reiterZeichnen() {
   const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
                   fernseher: "#show-something-different-at-night" }[aktiv] || "";
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener"
-    href="https://github.com/thefrozn/signagecast/blob/main/docs/MANUAL.md${anker}">?</a>`));
+    href="https://github.com/thefrozn/signagecast/blob/main/docs/${aktiv === "player" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "") : "MANUAL.md" + anker}">?</a>`));
   sub.hidden = unter.length < 2;
   for (const s of unter) {
     const k = el(`<button class="${s === aktiv ? "an" : ""}">${esc(T.reiter[s])}</button>`);

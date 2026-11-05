@@ -13,6 +13,8 @@ Choose one way. All of them need an **x86 computer** (Intel or AMD CPU); for 4K 
 | **QNAP** | QNAP NAS with Intel/AMD CPU, Container Station (no command line) | [QNAP guide](install/QNAP.md) |
 | **Synology** | Synology NAS with Intel/AMD CPU, Container Manager (no command line) | [Synology guide](install/SYNOLOGY.md) |
 
+**At the TV**, besides its browser: a **Raspberry Pi as player** (from 0.23) – image from the admin, see [PLAYER.md](PLAYER.md).
+
 ## Proxmox VE
 
 Run on the Proxmox host shell, answer the questions (Enter = suggestion):
@@ -75,7 +77,8 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 - **Why a random password on native installations?** `tvadmin` is a Linux account that can log in to Cockpit; on a real
   computer a known default password would be a risk. In a container it only affects the container.
 - **Webhook messages** (optional, from v0.16): port **8890** (`SC_WEBHOOK_PORT`; Docker: add `-p 8890:8890`), only
-  answers with a secret key created in the admin – see the [manual](MANUAL.md).
+  answers with a secret key created in the admin – see the [manual](MANUAL.md). The same port serves the announcement
+  panel and the **Raspberry Pi players** (signed requests per device).
 - The installer checks whether the stream port is free and stops with a hint if another program uses it.
 
 ## First steps
@@ -103,7 +106,9 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 Wege: **Proxmox** (Einzeiler oben in der Shell des Proxmox-Hosts), **Debian 13** (`install.sh` als root, erneut
 ausführen = Update), **Docker/Podman** (`docker run …` oder `compose.yaml`), **QNAP** ([Anleitung](install/QNAP.md))
 und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der Container-App des NAS. Nötig ist ein
-x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht nicht.
+x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
+kann ab 0.23 ein **Raspberry Pi als Player** stehen – Image aus der Verwaltung, siehe [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player)
+(braucht Port 8890, im Docker-/NAS-Betrieb freigeben).
 
 | Weg | Verwaltung | Stream | Erste Anmeldung |
 |---|---|---|---|

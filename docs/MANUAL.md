@@ -18,7 +18,7 @@ that video, so the TV needs no app, no login and no updates.
 | Area | Pages | What you do there |
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
-| **TVs** | – | Address, layout, schedule, carousel, sound, video source (YouTube / own media / mixed), quality |
+| **TVs** | TVs · Players (Raspberry Pi) | Address, layout, schedule, carousel, sound, video source (YouTube / own media / mixed), quality; Raspberry Pi players at the TV ([PLAYER.md](PLAYER.md)) |
 | **Content** | Layouts · Data sources · Media · Clips | Layout editor and templates, JSON APIs/feeds/iCal/cameras, own pictures and videos, scheduled clips |
 | **Video & sound** | Streams · Rules · Search · Radio | Live cams, rotation and quality rules, nightly search, radio stations |
 | **Settings** | General · Home Assistant · Notifications | Language, weather, location, time source; HA address and guide; Telegram/e-mail/HA and webhook |
@@ -132,6 +132,12 @@ night stays on. Switching on works only if Home Assistant can do it (Samsung and
 integration; a smart plug works with TVs that start on power). After switching on, the TV must open the SignageCast
 address by itself (start page or autostart of its browser).
 
+### Play on a Raspberry Pi at the TV
+
+From 0.23 (experimental): **TVs → Players (Raspberry Pi)** creates a ready SD card image per screen (Wi-Fi included)
+and manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
+[Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
+
 ### Choose the encoder (advanced)
 TVs → **Video stream** → **Encoding (advanced)**, per TV. Normally leave everything on *Automatic*. Every option has an
 explanation in the admin; in short:
@@ -200,6 +206,9 @@ It is never shown again. Create a new one and update the senders.
 ---
 
 ## Deutsch (kurz)
+
+Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Player – fertiges Image je Bildschirm mit WLAN,
+zentrale Verwaltung; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten

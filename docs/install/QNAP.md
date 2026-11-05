@@ -78,7 +78,7 @@ The admin shows a note when a new version is out (**System → Updates**).
 | Picture stutters | Without Intel graphics the CPU encodes (Full HD) – the NAS may be too weak; check **System → Performance** and run fewer TVs at once. |
 | Home Assistant guide shows a wrong IP | `SC_HOST_IP` must be the IP of the NAS. |
 
-Webhook messages (optional) additionally need the line `- "8890:8890"` under `ports:`.
+Webhook messages, the announcement panel and [Raspberry Pi players](../PLAYER.md) additionally need the line `- "8890:8890"` under `ports:`.
 
 ---
 
@@ -140,4 +140,4 @@ Die Verwaltung zeigt einen Hinweis, wenn es eine neue Version gibt (**System →
 | Bild ruckelt | Ohne Intel-Grafik rechnet die CPU (Full HD) – das NAS ist evtl. zu schwach; **System → Leistungstest** prüfen, weniger Fernseher gleichzeitig. |
 | Home-Assistant-Anleitung zeigt falsche IP | `SC_HOST_IP` muss die IP des NAS sein. |
 
-Meldungen per Webhook (optional) brauchen zusätzlich die Zeile `- "8890:8890"` unter `ports:`.
+Meldungen per Webhook, das Durchsage-Pult und [Raspberry-Pi-Player](../PLAYER.md#deutsch-raspberry-pi-als-player) brauchen zusätzlich die Zeile `- "8890:8890"` unter `ports:`.

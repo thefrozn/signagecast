@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.23.0 (2026-11-05)
+- **Raspberry Pi as player (experimental):** TVs → *Players (Raspberry Pi)*. A Pi at the TV plays the finished stream
+  via HDMI (mpv directly on the screen, no desktop). The admin downloads a signed base image once (Raspberry Pi OS Lite
+  64 bit with the player, built by GitHub Actions for each release) and creates a ready SD card image per screen –
+  server address, device key and Wi-Fi are written into it on download (no mounting, works in Docker/NAS too). Write it
+  with Raspberry Pi Imager or balenaEtcher, plug in, done. Pi 5/4/400 up to 4K (H.265), Pi 3/Zero 2 W Full HD with H.264.
+- **Central management:** status (online, model, IP, Wi-Fi signal, screen, video, temperature, under-voltage), warnings
+  for settings that do not fit the model, screenshot, show name on the TV, TV on/off via HDMI-CEC (also by the TV's
+  schedule), restart, weekly or manual system updates, log; rotation, output resolution, volume, write protection
+  (overlayroot, on by default). Notification when a Pi has not reported for 5 minutes. The player updates itself.
+- **Wi-Fi:** change it from the admin – the Pi tries the new network and returns to the old one if it cannot reach the
+  server. Without network the Pi opens a hotspot and shows a QR code on the TV; the setup page opens on the phone.
+  The Wi-Fi password is never stored in plain text (only the WPA key); saving it in the admin is optional.
+- **Security:** the Pis only pull (no open port), every request and answer is signed per device (HMAC-SHA256), removed
+  players are locked out. Uses the webhook port 8890 – with Docker/NAS publish it (`-p 8890:8890`).
+- New package `minisign` in the container image (checks the player image).
+
 ## v0.22.0 (2026-11-05)
 - **Encoding per TV (advanced):** TVs → Video stream → *Encoding (advanced)*: encoder (Automatic, Intel/AMD graphics
   via VAAPI, Intel Quick Sync, NVIDIA NVENC – experimental, untested –, software libx264), preset (ultrafast …

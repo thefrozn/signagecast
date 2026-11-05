@@ -437,6 +437,8 @@ def herunterladen_vorbereiten(gid, w, server):
         wlan_merken(netz)
     if not re.fullmatch(r"https?://[A-Za-z0-9.\-\[\]:]+", server or ""):
         raise Fehler("pi_server")
+    if re.match(r"https?://(localhost|127\.|\[::1\]|0\.0\.0\.0)", server):
+        raise Fehler("pi_server_lokal")
     jetzt = time.time()
     for k in [k for k, v in einmal.items() if v["bis"] < jetzt]:
         del einmal[k]

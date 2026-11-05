@@ -823,7 +823,15 @@ def player_hinweise(g):
 
 def player_server():
     """Adresse, unter der die Pis den Server erreichen: eingestellt, sonst eigene IP mit Webhook-Port."""
-    return PL.daten["server"] or (f"http://{eigene_ip()}:{WEBHOOK_PORT}" if eigene_ip() else "")
+    ip = eigene_ip()
+    if not ip and not CONTAINER:                 # ohne Home Assistant: Adresse der Standardroute (im Container wäre es die interne)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("192.0.2.1", 9))
+                ip = s.getsockname()[0]
+        except OSError:
+            ip = None
+    return PL.daten["server"] or (f"http://{ip}:{WEBHOOK_PORT}" if ip else "")
 
 
 def player_schleife():

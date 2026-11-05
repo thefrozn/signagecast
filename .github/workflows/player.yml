@@ -5,7 +5,6 @@ name: Player-Image
 on:
   push:
     tags: ["v*"]
-    branches: ["pi-player"]          # nur zum Testen vor dem Release, wird vor dem Zusammenführen entfernt
   workflow_dispatch:
 permissions:
   contents: write
