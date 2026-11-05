@@ -28,6 +28,7 @@ import quellen as Q                           # noqa: E402
 import webbild as WB                          # noqa: E402
 import pdf as PDF                             # noqa: E402
 import abfahrten as AB                        # noqa: E402
+import player as PL                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -741,14 +742,108 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
     def do_GET(self):
         self.bearbeiten({})
 
+    def player(self, pfad, roh):
+        """Raspberry-Pi-Player (seit 0.23): signierte Meldungen, Bildschirmfotos, Protokolle, Agent-Update."""
+        g, code, zeit = PL.pruefen(self.headers, pfad, roh)
+        if not g:
+            if code in (403, 404):
+                time.sleep(1)
+            roh_a = json.dumps({"ok": False}).encode()
+            self.send_response(code); self.send_header("Content-Type", "application/json")
+            self.send_header("X-Server-Zeit", str(int(time.time()))); self.send_header("Content-Length", str(len(roh_a)))
+            self.end_headers(); self.wfile.write(roh_a)
+            return
+        if pfad == "/player/melden":
+            try:
+                bericht = json.loads(roh or b"{}")
+            except ValueError:
+                bericht = {}
+            antwort = json.dumps(player_antwort(g, bericht, self.client_address[0])).encode()
+            typ = "application/json"
+        elif pfad == "/player/bild" and roh[:2] == b"\xff\xd8":
+            PL.datei_ablegen(g, ".jpg", roh)
+            antwort, typ = b'{"ok": true}', "application/json"
+        elif pfad == "/player/protokoll":
+            PL.datei_ablegen(g, ".log", roh[-300_000:])
+            antwort, typ = b'{"ok": true}', "application/json"
+        elif pfad == "/player/agent":
+            antwort, typ = open(PL.AGENT, "rb").read(), "text/x-python"
+        else:
+            return self.antwort(404, {"ok": False})
+        self.send_response(200); self.send_header("Content-Type", typ); self.send_header("Content-Length", str(len(antwort)))
+        self.send_header("X-Server-Zeit", str(int(time.time()))); self.send_header("X-Signatur", PL.signatur(g, zeit, antwort))
+        self.end_headers(); self.wfile.write(antwort)
+
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
+        if urllib.parse.urlparse(self.path).path.startswith("/player/"):
+            if n > 8_000_000:
+                return self.antwort(413, {"ok": False})
+            return self.player(urllib.parse.urlparse(self.path).path, self.rfile.read(n) if n else b"")
         roh = self.rfile.read(min(n, 4096)) if n else b""
         try:
             daten = json.loads(roh) if roh.strip().startswith(b"{") else {"text": roh.decode(errors="replace")}
         except ValueError:
             daten = {}
         self.bearbeiten(daten if isinstance(daten, dict) else {})
+
+
+# ---------- Raspberry-Pi-Player (seit 0.23) ----------
+def player_antwort(g, bericht, ip):
+    t = next((t for t in einst()["fernseher"] if t["id"] == g["tv"]), None)
+    stream = {"port": PL.daten["stream_port"] or HLS_PORT, "pfad": t["id"]} if t else None
+    bildschirm = schalten_soll(t) if t and g["cec_zeitplan"] else None
+    return PL.melden(g, bericht, ip, stream, bildschirm)
+
+
+def player_hinweise(g):
+    """Passt der Fernseher zum Pi? Pi 3/Zero 2 W: nur H.264 bis Full HD; Pi 5: H.264 nur per CPU (kein 4K)."""
+    t = next((t for t in einst()["fernseher"] if t["id"] == g["tv"]), None)
+    if not t:
+        return ["pi_kein_tv"]
+    modell = ((PL.stand.get(g["id"]) or {}).get("bericht") or {}).get("modell") or ""
+    klasse = "pi3" if re.search(r"Pi 3|Zero 2", modell) else "pi5" if "Pi 5" in modell else g["modell"] if not modell else "pi4"
+    hoehe = 2160 if t["aufloesung"] == 2160 and encoder_fuer(t) != "software" else 1080
+    h = []
+    if klasse == "pi3" and codec_fuer(t) == "h265":
+        h.append("pi_h265")
+    if klasse == "pi3" and hoehe == 2160:
+        h.append("pi_4k")
+    if klasse == "pi5" and codec_fuer(t) == "h264" and hoehe == 2160:
+        h.append("pi5_h264_4k")
+    b = (PL.stand.get(g["id"]) or {}).get("bericht") or {}
+    if b.get("drossel") not in (None, "", "0x0"):
+        h.append("pi_strom")
+    if (b.get("temperatur") or 0) >= 80:
+        h.append("pi_heiss")
+    if PL.online(g["id"]) and b.get("hdmi") is False:
+        h.append("pi_kein_hdmi")
+    return h
+
+
+def player_server():
+    """Adresse, unter der die Pis den Server erreichen: eingestellt, sonst eigene IP mit Webhook-Port."""
+    return PL.daten["server"] or (f"http://{eigene_ip()}:{WEBHOOK_PORT}" if eigene_ip() else "")
+
+
+def player_schleife():
+    """Jede Minute: Ausfall eines Players melden (5 min ohne Meldung), sonntags 3 Uhr Systemupdates anstoßen."""
+    weg = {}
+    while True:
+        time.sleep(60)
+        try:
+            for g in PL.daten["geraete"]:
+                s = PL.stand.get(g["id"])
+                if s and time.time() - s["zeit"] > 300:
+                    if not weg.get(g["id"]):
+                        weg[g["id"]] = True
+                        melder.melden("player-" + g["id"], "ausfall", "player_aus", name=g["name"])
+                elif s:
+                    weg.pop(g["id"], None)
+                    melder.vorbei("player-" + g["id"], "player_wieder", name=g["name"])
+            PL.wochenpflege()
+        except Exception as ex:
+            print("Player:", ex, flush=True)
 
 
 # ---------- Benachrichtigungen (seit 0.16) ----------
@@ -1238,6 +1333,8 @@ def status():
                              sum(x["fps"] for x in br) / len(br) < 20)([x for x in (zustand.get("bildrate") or {}).get(t["id"], [])
                                                                        if time.time() - x["t"] < 90])],
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
+        "player": [{"id": g["id"], "name": g["name"], "online": PL.online(g["id"]), "gesehen": bool(PL.stand.get(g["id"]))}
+                   for g in PL.daten["geraete"]],
         "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"],
                "code": (zustand.get("ha_fehler_code") or (None, None))[0], "detail": (zustand.get("ha_fehler_code") or (None, None))[1]},
         "liste": streams.status, "anzahl_in_rotation": len(streams.liste),
@@ -1546,8 +1643,9 @@ def sicherung(mit_geheimnissen=False):
         e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""),
                  webhook=dict(e["webhook"], token=""), benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: ""),
                  pult=dict(e["pult"], zugaenge=[dict(z, passwort="") for z in e["pult"]["zugaenge"]]))
-    return {"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
-            "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()}
+    return dict({"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
+                 "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()},
+                **({"player": PL.daten} if mit_geheimnissen and PL.daten["geraete"] else {}))
 
 
 def sicherung_zip(mit_geheimnissen, passwort=None):
@@ -1675,6 +1773,11 @@ def einspielen(d, mit_strikes=True):
             if not (ID.fullmatch(sid) or re.fullmatch(r"UC[\w-]{22}", sid)):
                 raise E.Fehler("e_stream_id", id=repr(sid))
         streams._speichern({"streams": s["streams"], "abgelehnt": [a for a in s.get("abgelehnt", []) if isinstance(a, str)]})
+    if isinstance(d.get("player"), dict) and isinstance(d["player"].get("geraete"), list):   # Pis behalten ihre Schlüssel
+        with PL.sperre:
+            PL.daten.clear()
+            PL.daten.update(dict(PL._leer(), **d["player"]))
+            PL.speichern(PL.daten)
     if mit_strikes and isinstance(d.get("strikes"), dict):
         from streams import STRIKES, schreib
         schreib(STRIKES, d["strikes"])
@@ -1922,6 +2025,36 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/leistung":
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
+        if pfad == "/api/player":
+            return self.antwort(200, {"ok": True, "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(),
+                                      "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
+                                      "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
+                                      "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER})
+        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(bild|protokoll)", pfad)
+        if m:
+            try:
+                roh = open(os.path.join(PL.ORDNER, m.group(1) + (".jpg" if m.group(2) == "bild" else ".log")), "rb").read()
+            except OSError:
+                return self.antwort(404, {"ok": False})
+            return self.antwort(200, roh, "image/jpeg" if m.group(2) == "bild" else "text/plain; charset=utf-8")
+        if pfad == "/api/player/image":            # Image je Gerät als Datenstrom (.img.gz, ohne Länge, endet mit der Verbindung)
+            kennung = (q.get("t") or [""])[0]
+            e = PL.einmal.get(kennung)
+            g = PL.geraet(e["id"]) if e else None
+            if not g or not PL.basis_meta():
+                return self.antwort(404, {"ok": False, "fehler": str(M.Meldung("pi_link_alt"))})
+            self.send_response(200)
+            self.send_header("Content-Type", "application/gzip")
+            self.send_header("Content-Disposition", f'attachment; filename="{PL.dateiname(g)}"')
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.close_connection = True
+            try:
+                PL.image_schreiben(kennung, self.wfile.write, einst()["sprache"] or "de", wirksame_zeitzone())
+            except (OSError, M.Meldung) as f:
+                print("Player-Image:", f, flush=True)
+            return
         if pfad == "/api/einspieler":
             return self.antwort(200, {"einspieler": einst()["einspieler"], "stand": zustand.get("einspieler", {})})
         if pfad == "/api/zeitzonen":
@@ -2255,7 +2388,39 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/sicherung":
             einspielen(d, mit_strikes=bool(d.get("strikes")))
             return {}
+        if p.startswith("/api/player"):
+            return self.player_post(p, d)
         raise KeyError(p)
+
+    def player_post(self, p, d):
+        tvs = {t["id"] for t in einst()["fernseher"]}
+        if p == "/api/player/neu":
+            return {"geraet": PL.neu(d, tvs)["id"]}
+        if p == "/api/player/basis-laden":
+            threading.Thread(target=PL.basis_laden, args=(VERSION,), daemon=True).start()
+            return {}
+        if p == "/api/player/einstellungen":
+            PL.einstellen(d)
+            return {}
+        if p == "/api/player/wlan-vergessen":
+            PL.wlan_vergessen(str(d.get("ssid", "")))
+            return {}
+        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image)", p)
+        if not m:
+            raise KeyError(p)
+        gid, art = m.groups()
+        if art == "aendern":
+            PL.aendern(gid, d, tvs)
+        elif art == "entfernen":
+            PL.entfernen(gid)
+        elif art == "befehl":
+            PL.befehl(gid, str(d.get("art", "")))
+        elif art == "wlan":
+            PL.wlan_wechseln(gid, d.get("wlan") or {})
+        elif art == "image":
+            kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), str(d.get("server") or player_server()))
+            return {"kennung": kennung, "datei": PL.dateiname(PL.geraet(gid))}
+        return {}
 
 
 def main():
@@ -2288,7 +2453,7 @@ def main():
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
-                 pdf_schleife, abfahrten.schleife, schalten_schleife):
+                 pdf_schleife, abfahrten.schleife, schalten_schleife, player_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

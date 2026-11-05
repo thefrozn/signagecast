@@ -168,8 +168,35 @@ class Bearbeiter(BaseHTTPRequestHandler):
         except Exception as e:
             self.senden(502, f"Datendienst nicht erreichbar: {e}")
 
+    def strom(self, ziel):
+        """Großen Download (Player-Image, seit 0.23) direkt durchreichen, ohne ihn im Speicher zu sammeln."""
+        if not self.sitzung():
+            return self.senden(401, "abgemeldet")
+        try:
+            r = urllib.request.urlopen(urllib.request.Request(DIENST + ziel, headers={"X-SignageCast": "1"}), timeout=120)
+        except urllib.error.HTTPError as e:
+            return self.senden(e.code, e.read(), e.headers.get("Content-Type") or "text/plain; charset=utf-8")
+        except Exception as e:
+            return self.senden(502, f"Datendienst nicht erreichbar: {e}")
+        with r:
+            self.send_response(200)
+            for k in ("Content-Type", "Content-Disposition"):
+                if r.headers.get(k):
+                    self.send_header(k, r.headers[k])
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.close_connection = True
+            while True:
+                teil = r.read(1 << 20)
+                if not teil:
+                    break
+                self.wfile.write(teil)
+
     def do_GET(self):
         pfad = urllib.parse.urlparse(self.path).path
+        if pfad == "/laden/player-image":
+            return self.strom("/api/player/image?" + urllib.parse.urlparse(self.path).query)
         if pfad.startswith("/dienst/"):
             return self.weiterreichen()
         if pfad == "/base1/cockpit.js":

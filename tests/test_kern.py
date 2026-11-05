@@ -382,5 +382,119 @@ class Neu021(unittest.TestCase):
             E.pruefen({"fernseher": [{"id": "tv", "ha_schalten": "light.flur"}]})
 
 
+class Player023(unittest.TestCase):
+    """Raspberry-Pi-Player: Image je Gerät, signierte Meldungen, WLAN-Schlüssel."""
+    def setUp(self):
+        import player as PL
+        self.PL, d = PL, tempfile.mkdtemp()
+        PL.DATEI, PL.ORDNER, PL.GRUND = os.path.join(d, "player.json"), os.path.join(d, "p"), os.path.join(d, "p", "basis")
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+
+    def grundimage(self):
+        """Kleines Image (8 MiB) mit Platzhalter wie aus player/bauen.sh."""
+        import lzma
+        PL, marke = self.PL, "SCPH-test"
+        platz = b"".join((f"{marke}-{i:04d}".ljust(511) + "\n").encode() for i in range(32))
+        img = bytearray(os.urandom(1 << 20)) + bytes(6 << 20) + bytearray(os.urandom(1 << 20))
+        img[3 << 20:(3 << 20) + len(platz)] = platz
+        os.makedirs(PL.GRUND)
+        open(os.path.join(PL.GRUND, "x.img.xz"), "wb").write(lzma.compress(bytes(img)))
+        json.dump({"art": "signagecast-player-image", "version": "0", "datei": "x.img.xz", "groesse": len(img),
+                   "platzhalter": {"offset": 3 << 20, "laenge": 16384, "marke": marke}}, open(os.path.join(PL.GRUND, "meta.json"), "w"))
+        return bytes(img)
+
+    def test_image_je_geraet(self):
+        import gzip
+        PL, img = self.PL, self.grundimage()
+        g = PL.neu({"name": "Wohnzimmer Süd", "tv": "tv", "modell": "pi3"}, {"tv"})
+        k = PL.herunterladen_vorbereiten(g["id"], {"ssid": "Heim", "passwort": "geheim123", "speichern": False}, "http://192.168.1.20:8890")
+        aus = []
+        PL.image_schreiben(k, aus.append, "de", "Europe/Vienna")
+        neu = gzip.decompress(b"".join(aus))
+        self.assertEqual(len(neu), len(img))
+        self.assertEqual(neu[:3 << 20], img[:3 << 20])
+        self.assertEqual(neu[(3 << 20) + 16384:], img[(3 << 20) + 16384:])
+        konf = json.loads(neu[3 << 20:(3 << 20) + 16384])
+        self.assertEqual((konf["id"], konf["land"], konf["hostname"], konf["server"]), (g["id"], "AT", "sc-wohnzimmer-s-d", "http://192.168.1.20:8890"))
+        self.assertEqual(konf["wlan"], [{"ssid": "Heim", "psk": PL.psk("Heim", "geheim123")}])
+        self.assertNotIn("geheim123", neu[3 << 20:(3 << 20) + 16384].decode())
+        self.assertEqual(PL.daten["wlan"], [])                       # nicht gespeichert
+        with self.assertRaises(M.Meldung):                           # Link nur einmal
+            PL.image_schreiben(k, aus.append, "de", "")
+
+    def test_psk_wie_wpa_supplicant(self):
+        # wpa_passphrase "IEEE" "password" (Testvektor IEEE 802.11i)
+        self.assertEqual(self.PL.psk("IEEE", "password"), "f42c6fc52df0ebef9ebb4b90b38a5f902e83fe1b135a70e23aed762e9710a12e")
+        with self.assertRaises(M.Meldung):
+            self.PL.psk("x", "kurz")
+
+    def test_signatur_wie_agent(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        PL = self.PL
+        g = PL.neu({"name": "Flur"}, set())
+        gesendet = {}
+
+        class Antwort:
+            status, headers = 200, {}
+
+            def __init__(self, inhalt, kopf):
+                self.inhalt, self.headers = inhalt, kopf
+
+            def read(self):
+                return self.inhalt
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                pass
+
+        def urlopen(anf, timeout=0):
+            kopf = dict(anf.header_items())
+            kopf = {k.title(): v for k, v in kopf.items()}
+            gesendet.update(kopf)
+            gg, code, zeit = PL.pruefen(kopf, "/player/melden", anf.data)
+            self.assertEqual(code, 200)
+            inhalt = json.dumps(PL.melden(gg, json.loads(anf.data), "1.2.3.4", None, None)).encode()
+            return Antwort(inhalt, {"X-Signatur": PL.signatur(gg, zeit, inhalt), "X-Server-Zeit": str(int(time.time()))})
+        alt = agent.urllib.request.urlopen
+        agent.urllib.request.urlopen = urlopen
+        try:
+            s = agent.Server({"id": g["id"], "schluessel": g["schluessel"], "server": "http://x:8890"})
+            code, inhalt = s.anfrage("/player/melden", {"modell": "Raspberry Pi 4"})
+            self.assertEqual(json.loads(inhalt)["name"], "Flur")
+            self.assertTrue(PL.online(g["id"]))
+            self.assertNotIn(g["schluessel"], json.dumps(gesendet))
+            # fremde Antwort (falsche Signatur) wird abgelehnt
+            agent.urllib.request.urlopen = lambda a, timeout=0: Antwort(b"{}", {"X-Signatur": "0" * 64})
+            with self.assertRaises(PermissionError):
+                s.anfrage("/player/melden", {})
+        finally:
+            agent.urllib.request.urlopen = alt
+        self.assertEqual(PL.pruefen({"X-Geraet": g["id"], "X-Zeit": str(int(time.time())), "X-Signatur": "0" * 64}, "/player/melden", b"{}")[1], 403)
+        self.assertEqual(PL.pruefen({"X-Geraet": g["id"], "X-Zeit": "1", "X-Signatur": ""}, "/player/melden", b"{}")[1], 401)
+        PL.entfernen(g["id"])
+        self.assertEqual(PL.pruefen({"X-Geraet": g["id"]}, "/player/melden", b"")[1], 410)
+
+    def test_felder_und_wlan_wechsel(self):
+        PL = self.PL
+        g = PL.neu({"name": "Empfang", "tv": "tv"}, {"tv"})
+        with self.assertRaises(M.Meldung):
+            PL.aendern(g["id"], {"tv": "gibtsnicht"}, {"tv"})
+        PL.aendern(g["id"], {"drehung": 90, "lautstaerke": 250, "aufloesung": "1080", "drehung_x": 1}, {"tv"})
+        self.assertEqual((g["drehung"], g["lautstaerke"], g["aufloesung"]), (90, 100, "1080"))
+        PL.wlan_wechseln(g["id"], {"ssid": "Praxis", "passwort": "abcdefgh", "speichern": True})
+        self.assertEqual(PL.daten["wlan"][0]["ssid"], "Praxis")
+        a = PL.melden(g, {"wlan_rev": 0}, "", None, None)
+        self.assertEqual((a["wlan"]["rev"], a["wlan"]["netze"][0]["ssid"]), (1, "Praxis"))
+        a = PL.melden(g, {"wlan_rev": 1, "ergebnisse": [{"art": "wlan", "ok": True}]}, "", None, None)
+        self.assertIsNone(a["wlan"])
+        self.assertEqual(PL.ergebnisse[g["id"]][0]["art"], "wlan")
+        self.assertNotIn("schluessel", json.dumps(PL.liste(lambda g: [])))
+        self.assertNotIn(PL.daten["wlan"][0]["psk"], json.dumps(PL.liste(lambda g: [])))
+
+
 if __name__ == "__main__":
     unittest.main()

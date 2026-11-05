@@ -21,6 +21,9 @@ TEXTE = {
         "ha": ("SignageCast: Home Assistant nicht erreichbar", "Seit {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder."),
         "test": ("SignageCast: Test", "Testnachricht von SignageCast {version} ({host})."),
+        "player_aus": ("SignageCast: Player „{name}“ meldet sich nicht", "Der Raspberry-Pi-Player „{name}“ hat sich seit 5 Minuten "
+                       "nicht gemeldet (Strom, Netz oder WLAN?)."),
+        "player_wieder": ("SignageCast: Player „{name}“ wieder da", "Der Raspberry-Pi-Player „{name}“ meldet sich wieder."),
     },
     "en": {
         "ausfall": ("SignageCast: “{tv}” failed", "Playback for the TV “{tv}” has failed (render chain incomplete)."),
@@ -36,6 +39,9 @@ TEXTE = {
         "ha": ("SignageCast: Home Assistant not reachable", "Since {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant connected again", "The connection to Home Assistant is back."),
         "test": ("SignageCast: test", "Test message from SignageCast {version} ({host})."),
+        "player_aus": ("SignageCast: player “{name}” not responding", "The Raspberry Pi player “{name}” has not reported for "
+                       "5 minutes (power, network or Wi-Fi?)."),
+        "player_wieder": ("SignageCast: player “{name}” is back", "The Raspberry Pi player “{name}” reports again."),
     },
 }
 # Gründe aus ha.py (HAFehler.code) – auf Deutsch steht der Text von ha.py

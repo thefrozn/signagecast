@@ -1,0 +1,12 @@
+[Unit]
+Description=SignageCast Player (Stream am HDMI-Ausgang, Verbindung zum Server)
+After=NetworkManager.service systemd-user-sessions.service
+Wants=NetworkManager.service
+
+[Service]
+ExecStart=/usr/lib/signagecast-player/start.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -3,6 +3,7 @@
 #
 #   ./release.sh v0.14.0            prüfen, taggen, Paket bauen, signieren, hochladen, gegenprüfen
 #   ./release.sh v0.14.0 --trocken  alles prüfen und Paket bauen/signieren, aber nichts veröffentlichen
+#   ./release.sh v0.23.0 --player   nach der Action „Player-Image“: dessen .json signieren und hochladen
 #
 # Voraussetzungen: git, gh (angemeldet), minisign, python3 (+ python3-pyzipper für alle Tests), optional shellcheck.
 # Signaturschlüssel: $SIGNATUR_SCHLUESSEL oder ~/.config/signagecast-signatur/signagecast.key (nie im Repo).
@@ -16,6 +17,25 @@ fehler() { echo "Abbruch: $*" >&2; exit 1; }
 case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) fehler "Version als vX.Y.Z angeben";; esac
 V=${TAG#v}
 
+# Player-Image (seit 0.23): GitHub Actions baut es nach dem Tag; danach hier seine .json signieren und hochladen
+if [ "$TROCKEN" = "--player" ]; then
+  [ -r "$SCHLUESSEL_DATEI" ] || fehler "Signaturschlüssel fehlt: $SCHLUESSEL_DATEI"
+  OEFFENTLICH=$(sed -n 's/^SCHLUESSEL=//p' werkzeug/aktualisieren.sh)
+  P=$(mktemp -d)
+  trap 'rm -rf "$P"' EXIT
+  M="signagecast-player-$TAG.json"
+  echo "== Warten auf das Player-Image ($M)"
+  for _ in $(seq 1 90); do gh release download "$TAG" -p "$M" -D "$P" --clobber >/dev/null 2>&1 && break; sleep 20; done
+  [ -s "$P/$M" ] || fehler "$M nicht im Release – läuft die Action „Player-Image“? (gh run list -w player.yml)"
+  python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["art"]=="signagecast-player-image" and m["version"]==sys.argv[2]' "$P/$M" "$V" \
+    || fehler "$M passt nicht zu $TAG"
+  minisign -Sqm "$P/$M" -s "$SCHLUESSEL_DATEI" -t "SignageCast Player $TAG"
+  minisign -Vqm "$P/$M" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel"
+  gh release upload "$TAG" "$P/$M.minisig" --clobber
+  echo "   ok: $M signiert"
+  exit 0
+fi
+
 echo "== Prüfen"
 [ -z "$(git status --porcelain)" ] || fehler "Arbeitskopie nicht sauber (git status)"
 [ "$(git rev-parse --abbrev-ref HEAD)" = main ] || fehler "nicht auf main"
@@ -28,6 +48,7 @@ git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fehler "Tag $TAG gibt e
 # Der Schlüssel muss zu dem öffentlichen Schlüssel passen, den die Installationen prüfen
 OEFFENTLICH=$(sed -n 's/^SCHLUESSEL=//p' werkzeug/aktualisieren.sh)
 [ "$(sed -n 's/^SCHLUESSEL=//p' install.sh)" = "$OEFFENTLICH" ] || fehler "install.sh und aktualisieren.sh nennen verschiedene Schlüssel"
+[ "$(sed -n 's/^SCHLUESSEL = "\(.*\)"$/\1/p' app/player.py)" = "$OEFFENTLICH" ] || fehler "app/player.py nennt einen anderen Schlüssel"
 python3 -m unittest discover -s tests >/dev/null 2>&1 || fehler "Tests schlagen fehl (python3 -m unittest discover -s tests -v)"
 find . -name __pycache__ -prune -exec rm -rf {} +
 if command -v shellcheck >/dev/null; then
@@ -64,3 +85,4 @@ for _ in 1 2 3 4 5; do gh release download "$TAG" -D "$P" --clobber >/dev/null 2
 (cd "$P" && sha256sum -c SHA256SUMS >/dev/null) || fehler "Prüfsumme der hochgeladenen Datei falsch"
 minisign -Vqm "$P/$A" -P "$OEFFENTLICH" -x "$P/$A.minisig" || fehler "Signatur der hochgeladenen Datei falsch"
 echo "   ok: https://github.com/thefrozn/signagecast/releases/tag/$TAG"
+echo "   Player-Image baut GitHub Actions (~20 min); danach: ./release.sh $TAG --player"
