@@ -26,7 +26,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 
 ## Step by step
 
-1. Admin → **TVs → Players (Raspberry Pi)** → **Download player image** (once, about 700 MB; checked with the project's
+1. Admin → **TVs → Players (Raspberry Pi)** → **Download player image** (once, about 850 MB; checked with the project's
    signature).
 2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
@@ -129,7 +129,7 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 
 ## Schritt für Schritt
 
-1. Verwaltung → **Fernseher → Player (Raspberry Pi)** → **Player-Image laden** (einmalig, etwa 700 MB; mit der Signatur
+1. Verwaltung → **Fernseher → Player (Raspberry Pi)** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
    des Projekts geprüft).
 2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
    oder **WLAN** (Name und Passwort – oder ein gespeichertes). **Image erstellen und herunterladen** klicken.
