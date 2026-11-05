@@ -1755,7 +1755,8 @@ async function radioSeite(inhalt) {
     const d = await senden("/api/radio/playlist", { text: $("#plText").value });
     E = d.einstellungen; meineZeichnen();
     $("#plErg").innerHTML = `<p>${esc(T.playlistErgebnis(d.neu.length, d.doppelt))}</p>` +
-      (d.fehler.length ? `<p class="warn">${d.fehler.map(esc).join("<br>")}</p>` : "");
+      (d.fehler.length ? `<p class="warn">${(d.fehler_m || []).length
+        ? d.fehler_m.map((m) => esc(`${m.name}: ${meldungText(m, m.text)}`)).join("<br>") : d.fehler.map(esc).join("<br>")}</p>` : "");
     if (d.neu.length) $("#plText").value = "";
   }, null);
   const senderListe = (ziel, liste) => {

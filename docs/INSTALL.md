@@ -52,6 +52,15 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 
 - `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
   Rootless Podman additionally needs `--group-add keep-groups`.
+- **Rootless Podman: use host networking.** Its default port forwarder can hide the client address – every request
+  then seems to come from inside the container, and camera streams (only readable inside the container) could be
+  read from the network. With `--network host` no `-p` is needed:
+
+  ```bash
+  podman run -d --name signagecast --restart unless-stopped --network host --device /dev/dri --group-add keep-groups \
+    -v signagecast:/data -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
+  ```
+  The ports are then 8888 (TVs), 19090 (admin) and 8890 (webhook, panel, Pi players) directly on the host.
 - **Admin:** http://&lt;host&gt;:**19090** – the initial password is printed in the log: `docker logs signagecast`
   (line “Startpasswort der Verwaltung / initial admin password”, or set your own with `-e SC_PASSWORT=…`). Change it under **System → Access**.
   No Cockpit inside the container.
@@ -108,7 +117,9 @@ ausführen = Update), **Docker/Podman** (`docker run …` oder `compose.yaml`), 
 und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der Container-App des NAS. Nötig ist ein
 x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
 kann ab 0.23 ein **Raspberry Pi als Player** stehen – Image aus der Verwaltung, siehe [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player)
-(braucht Port 8890, im Docker-/NAS-Betrieb freigeben).
+(braucht Port 8890, im Docker-/NAS-Betrieb freigeben). **Rootless Podman** bitte mit `--network host` starten
+(Befehl oben): Die normale Portweiterleitung kann die Absenderadresse verdecken, dann wären Kamera-Streams (sonst nur im
+Container lesbar) aus dem Netz abrufbar.
 
 | Weg | Verwaltung | Stream | Erste Anmeldung |
 |---|---|---|---|

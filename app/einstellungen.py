@@ -44,12 +44,12 @@ STANDARD = {
     "webhook": {"aktiv": False, "token": ""},
     # Durchsage-Pult (seit 0.19): Zugänge nur für Meldungen; Passwort nur als Hash; fernseher leer = alle
     "pult": {"zugaenge": [], "vorlagen": ["Frau …, bitte in Behandlungsraum …", "Herr …, bitte in Behandlungsraum …",
-                                          "Bitte haben Sie noch etwas Geduld."],
+                                          "Bitte haben Sie noch etwas Geduld."],     # = VORLAGEN["de"]["pult"]
              "stimme": "kerstin", "vorlesen": True, "gong": True, "dauer_s": 60},
     # Notfall-Vollbild (seit 0.21): rotes Vollbild auf allen (oder gewählten) Fernsehern, bis jemand es beendet;
     # auslösen über die Verwaltung, das Pult (Zugang mit „alarm“) oder den Webhook (/alarm)
     "alarm": {"vorlagen": ["Bitte verlassen Sie das Gebäude über die gekennzeichneten Notausgänge.",
-                           "Achtung: Bitte bleiben Sie in den Räumen und folgen Sie den Anweisungen des Personals."],
+                           "Achtung: Bitte bleiben Sie in den Räumen und folgen Sie den Anweisungen des Personals."],   # = VORLAGEN["de"]["alarm"]
               "ton": True},
     # Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation; vorhandene Einstellungen ohne den Schlüssel gelten als eingerichtet
     "assistent_fertig": False,
@@ -178,6 +178,27 @@ def _zeitplan(z, layout_ids):
         raise
     except (ValueError, TypeError) as ex:
         raise Fehler("e_wert", w=str(ex))
+
+
+# Vorlagen für Pult und Notfall-Vollbild je Sprache (seit 0.23.3): Sind sie noch die unveränderten Standardtexte einer
+# anderen Sprache, gelten die der eingestellten Sprache – eigene Texte bleiben immer, wie sie sind.
+VORLAGEN = {
+    "de": {"pult": ["Frau …, bitte in Behandlungsraum …", "Herr …, bitte in Behandlungsraum …", "Bitte haben Sie noch etwas Geduld."],
+           "alarm": ["Bitte verlassen Sie das Gebäude über die gekennzeichneten Notausgänge.",
+                     "Achtung: Bitte bleiben Sie in den Räumen und folgen Sie den Anweisungen des Personals."]},
+    "en": {"pult": ["Ms …, please go to treatment room …", "Mr …, please go to treatment room …", "Thank you for your patience."],
+           "alarm": ["Please leave the building via the marked emergency exits.",
+                     "Attention: please stay in the rooms and follow the instructions of the staff."]},
+}
+
+
+def _vorlagen_sprache(s):
+    ziel = VORLAGEN.get(s["sprache"])
+    if not ziel:
+        return
+    for teil in ("pult", "alarm"):
+        if any(s[teil]["vorlagen"] == v[teil] for k, v in VORLAGEN.items() if k != s["sprache"]):
+            s[teil]["vorlagen"] = list(ziel[teil])
 
 
 def pruefen(e):
@@ -444,6 +465,7 @@ def pruefen(e):
             raise                                  # Meldung mit Kennung (Verwaltung übersetzt sie)
     sr = e.get("stream", {})
     if "abschalten_s" in sr: s["stream"]["abschalten_s"] = _zahl(sr["abschalten_s"], 10, 3600, int)
+    _vorlagen_sprache(s)
     return s
 
 

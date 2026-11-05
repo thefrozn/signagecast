@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.23.3 (2026-11-05)
+- Radio → playlist import: the list of rejected entries is now shown in the admin language (was always German).
+- Announcement panel and emergency screen: the preset templates follow the admin language. Templates you changed
+  yourself stay as they are.
+- Docs: rootless Podman should run with host networking (`--network host`) – its default port forwarder can hide the
+  client address, so camera streams would be readable from the network (command in docs/INSTALL.md).
+
 ## v0.23.2 (2026-11-05)
 - Raspberry Pi player: the Wi-Fi name is quoted as usual in the admin language (English “Office” instead of the German
   „Office“).

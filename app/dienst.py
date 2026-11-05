@@ -2351,8 +2351,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             def pruefen(nu):
                 try:
                     return nu[0], radio.adresse_pruefen(nu[1]), None
-                except ValueError as ex:
-                    return nu[0], nu[1], str(ex)
+                except ValueError as ex:          # als Meldung mit Kennung – die Verwaltung übersetzt (seit 0.23.3)
+                    return nu[0], nu[1], ex
             with ThreadPoolExecutor(max_workers=4) as pool:
                 ergebnis = list(pool.map(pruefen, eintraege))
             e = einst()
@@ -2361,6 +2361,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if neu:
                 zustand["einstellungen"] = E.speichern(E.zusammenfuehren(e, {"radio": {"sender": e["radio"]["sender"] + neu}}))
             return {"neu": [x["name"] for x in neu], "fehler": [f"{n or u}: {f}" for n, u, f in ergebnis if f],
+                    "fehler_m": [dict(M.als_dict(f), name=n or u) for n, u, f in ergebnis if f],
                     "doppelt": sum(1 for n, u, f in ergebnis if not f and u in vorhanden), "einstellungen": einst_aussen()}
         m = re.fullmatch(r"/api/radio/sender/([a-z0-9]{4,12})", p)
         if m:                                     # Sender bearbeiten: Name und/oder Adresse (neue Adresse wird geprüft)

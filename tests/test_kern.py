@@ -382,6 +382,36 @@ class Neu021(unittest.TestCase):
             E.pruefen({"fernseher": [{"id": "tv", "ha_schalten": "light.flur"}]})
 
 
+class Vorlagen0233(unittest.TestCase):
+    """Pult-/Notfall-Vorlagen folgen der Sprache, solange sie unverändert sind; eigene Texte bleiben."""
+    def test_sprache(self):
+        self.assertEqual(E.pruefen({"sprache": "en"})["alarm"]["vorlagen"], E.VORLAGEN["en"]["alarm"])
+        self.assertEqual(E.pruefen({"sprache": "en"})["pult"]["vorlagen"], E.VORLAGEN["en"]["pult"])
+        en = E.pruefen({"sprache": "en"})
+        zurueck = E.pruefen(dict(en, sprache="de"))
+        self.assertEqual(zurueck["pult"]["vorlagen"], E.VORLAGEN["de"]["pult"])
+        self.assertEqual(E.pruefen({"sprache": "", "alarm": {"vorlagen": E.VORLAGEN["en"]["alarm"]}})["alarm"]["vorlagen"],
+                         E.VORLAGEN["en"]["alarm"])          # Sprache noch offen: nichts ändern
+
+    def test_eigene_bleiben(self):
+        e = E.pruefen({"sprache": "en", "pult": {"vorlagen": ["Bitte warten"]}, "alarm": {"vorlagen": E.VORLAGEN["de"]["alarm"][:1]}})
+        self.assertEqual(e["pult"]["vorlagen"], ["Bitte warten"])
+        self.assertEqual(e["alarm"]["vorlagen"], E.VORLAGEN["de"]["alarm"][:1])
+
+    def test_standard_gleich(self):
+        self.assertEqual(E.STANDARD["pult"]["vorlagen"], E.VORLAGEN["de"]["pult"])
+        self.assertEqual(E.STANDARD["alarm"]["vorlagen"], E.VORLAGEN["de"]["alarm"])
+
+    def test_playlist_fehler_als_meldung(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
+        import radio
+        with self.assertRaises(M.Meldung) as k:
+            radio.playlist_lesen("#EXTM3U\nkeine adresse\n")
+        d = M.als_dict(k.exception)
+        self.assertEqual(d["code"], "r_playlist_leer")
+        self.assertIn(d["code"], M.DE)
+
+
 class Player023(unittest.TestCase):
     """Raspberry-Pi-Player: Image je Gerät, signierte Meldungen, WLAN-Schlüssel."""
     def setUp(self):
