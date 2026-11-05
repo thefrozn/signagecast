@@ -323,7 +323,8 @@ def basis_meta():
 
 
 def _holen(url, ziel=None, fortschritt=None):
-    anf = urllib.request.Request(url, headers={"User-Agent": "SignageCast", "Accept": "application/octet-stream"})
+    art = "application/vnd.github+json" if url.startswith("https://api.github.com/") else "application/octet-stream"
+    anf = urllib.request.Request(url, headers={"User-Agent": "SignageCast", "Accept": art})
     with urllib.request.urlopen(anf, timeout=60) as r:
         if not ziel:
             return r.read(4_000_000)

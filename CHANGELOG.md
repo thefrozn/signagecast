@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.23.1 (2026-11-05)
+- Raspberry Pi player: “Download player image” failed with “HTTP Error 415” – the request to GitHub's release list
+  sent the wrong Accept header.
+
 ## v0.23.0 (2026-11-05)
 - **Raspberry Pi as player (experimental):** TVs → *Players (Raspberry Pi)*. A Pi at the TV plays the finished stream
   via HDMI (mpv directly on the screen, no desktop). The admin downloads a signed base image once (Raspberry Pi OS Lite

@@ -478,6 +478,33 @@ class Player023(unittest.TestCase):
         PL.entfernen(g["id"])
         self.assertEqual(PL.pruefen({"X-Geraet": g["id"]}, "/player/melden", b"")[1], 410)
 
+    def test_github_api_kopf(self):
+        """Die GitHub-API lehnt Accept: application/octet-stream mit 415 ab (Fehler in 0.23.0)."""
+        PL, kopf = self.PL, {}
+
+        class A:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                pass
+
+            def read(self, n=-1):
+                return b"[]"
+
+        def urlopen(anf, timeout=0):
+            kopf[anf.full_url] = anf.get_header("Accept")
+            return A()
+        alt = PL.urllib.request.urlopen
+        PL.urllib.request.urlopen = urlopen
+        try:
+            with self.assertRaises(M.Meldung):
+                PL._quelle("0.23.0")
+            PL._holen("https://github.com/x/releases/download/v1/a.img.xz")
+        finally:
+            PL.urllib.request.urlopen = alt
+        self.assertEqual(list(kopf.values()), ["application/vnd.github+json", "application/octet-stream"])
+
     def test_felder_und_wlan_wechsel(self):
         PL = self.PL
         g = PL.neu({"name": "Empfang", "tv": "tv"}, {"tv"})
