@@ -13,7 +13,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player (Raspberry Pi)", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistungstest", pult: "Durchsage-Pult" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
@@ -51,8 +51,49 @@ const TEXTE = {
           ort: "Wo steht der Fernseher? Der Ort bestimmt Wetter, Sonnenzeiten und Warnungen.", ha: "Home Assistant verbinden (optional) – für Werte aus dem Haus. Die Anleitung steht danach unter Einstellungen → Home Assistant.",
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
+    pl: { titel: "Raspberry Pi als Player", text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
+          modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
+          bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
+          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen.",
+          basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 700 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
+          basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
+          port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
+          neu: "Player hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Fernseher", keinTv: "– noch keiner –", modell: "Modell",
+          m: { pi45: "Pi 5, Pi 4 oder Pi 400", pi3: "Pi 3 oder Zero 2 W" }, netz: "Netzwerk", kabel: "LAN-Kabel", wlan: "WLAN",
+          wlanGesp: "Gespeichertes WLAN", wlanNeu: "neues WLAN eingeben", ssid: "WLAN-Name (SSID)", pw: "WLAN-Passwort", merken: "WLAN in der Verwaltung speichern (für weitere Pis)",
+          merkenText: "Gespeichert wird nur der WPA-Schlüssel, nicht das Passwort selbst. Er gibt trotzdem Zugang zum WLAN – Sicherungen enthalten ihn nur „mit Zugangsdaten“.",
+          erweitert: "Erweitert", server: "Server-Adresse für die Pis", serverText: "Leer = automatisch. Ändern, wenn die Pis den Server unter einer anderen Adresse erreichen (z. B. anderer Port im Container).",
+          streamPort: "Stream-Port von außen", streamPortText: "Leer = wie eingestellt. Nur nötig, wenn der Container den Stream-Port auf einen anderen Port abbildet.",
+          gespeicherte: "Gespeicherte WLANs", vergessen: "Vergessen", erstellen: "Image erstellen und herunterladen", laedtHerunter: "Download startet …",
+          schritte: "So geht es weiter", s1: "Raspberry Pi Imager öffnen → Gerät wählen → Betriebssystem: ganz unten „Eigenes Image“ (Use custom) → die heruntergeladene Datei → SD-Karte → Weiter.",
+          s2: "Fragt der Imager nach „OS-Anpassungen“: Nein – alles steht schon im Image. (balenaEtcher: Datei wählen, Karte wählen, Flash.)",
+          s3: "Karte in den Pi stecken, HDMI an den Fernseher, Strom an. Der erste Start dauert 2–3 Minuten (der Pi startet einmal neu), dann erscheint das Bild.",
+          s4: "Findet der Pi kein Netz, öffnet er nach 2 Minuten einen Hotspot und zeigt auf dem Fernseher einen QR-Code – mit dem Handy scannen und das WLAN auswählen.",
+          liste: "Player", keine: "Noch kein Player.", online: "online", offline: "offline", nieGesehen: "hat sich noch nie gemeldet",
+          zuletzt: (z) => `zuletzt ${z}`, seit: (z) => `seit ${z}`, ip: "IP", netzArt: { kabel: "Kabel", wlan: "WLAN", hotspot: "Hotspot (Einrichtung)", keins: "kein Netz" },
+          temp: "Temperatur", version: "Player", hdmi: "Bildschirm", keinHdmi: "kein Bildschirm erkannt", video: "Video",
+          zustand: { start: "startet", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
+                     stream_fehler: "Stream-Fehler", gesperrt: "entfernt", unbekannt: "dem Server unbekannt" },
+          drehung: "Drehung", aufloesung: "Ausgabe", a: { auto: "wie der Fernseher meldet", "720": "720p", "1080": "Full HD", "2160": "4K" },
+          lautstaerke: "Lautstärke (%)", cec: "Fernseher nach Zeitplan ein- und ausschalten (HDMI-CEC)", cecText: "Wenn das Layout „schwarz“ ist (Zeitplan des Fernsehers), schaltet der Pi den Fernseher per HDMI aus und danach wieder ein. Am Fernseher muss CEC an sein (Samsung „Anynet+“, LG „SimpLink“, Sony „Bravia Sync“).",
+          schreibschutz: "Schreibschutz (empfohlen)", schreibschutzText: "Das System läuft im Arbeitsspeicher, die SD-Karte bleibt unverändert – Stromausfall und Ausstecken schaden ihr nicht. Ändern startet den Pi neu.",
+          systemupdate: "Systemupdates", su: { woechentlich: "wöchentlich (So 3 Uhr)", aus: "nur von Hand" }, hwdec: "Video-Dekodierung", hw: { auto: "Hardware (Standard)", aus: "nur CPU (bei Bildfehlern)" },
+          b: { bild: "Bildschirmfoto", erkennen: "Name anzeigen", cec_an: "TV ein", cec_aus: "TV aus", player_neu: "Player neu starten", neustart: "Pi neu starten",
+               systemupdate: "Systemupdate jetzt", protokoll: "Protokoll holen" },
+          bText: { erkennen: "Zeigt 30 Sekunden Name und IP auf dem Fernseher – so findest du den richtigen Pi.", systemupdate: "Der Pi lädt Updates (Schreibschutz kurz aus) und startet zweimal neu – etwa 5–15 Minuten." },
+          wartet: (a) => `wartet auf den Pi: ${a}`, ergebnis: "Zuletzt", ok: "ok", fehlgeschlagen: "fehlgeschlagen",
+          protokollZeigen: "Protokoll anzeigen", wlanAendern: "WLAN ändern", wlanAendernText: "Der Pi probiert das neue WLAN aus. Erreicht er den Server damit nicht, kehrt er zum bisherigen zurück. Bisherige WLANs bleiben als Ersatz gespeichert.",
+          wlanOffen: (s) => `WLAN-Wechsel zu „${s}“ wartet auf den Pi`, wlanSenden: "An den Pi senden", wlanGesendet: "Gesendet – der Pi übernimmt es bei der nächsten Meldung",
+          imageNeu: "Image erneut herunterladen", imageNeuText: "Für eine neue SD-Karte. Der Schlüssel bleibt gleich – eine alte Karte mit diesem Player funktioniert weiter.",
+          entfernen: "Entfernen", entfernenFrage: (n) => `Player „${n}“ entfernen? Sein Schlüssel wird ungültig, der Pi zeigt dann nur noch einen Hinweis.`,
+          befehlOk: "Befehl gesendet – der Pi holt ihn in wenigen Sekunden ab", bildAlt: (z) => `Bildschirmfoto von ${z}`, netzwerke: "WLANs auf dem Pi",
+          update: "Letztes Systemupdate",
+          h: { pi_kein_tv: "Kein Fernseher zugewiesen – der Pi zeigt nur einen Hinweis.", pi_h265: "Pi 3/Zero 2 W kann H.265 nicht flüssig abspielen: beim Fernseher den Codec „H.264“ wählen.",
+               pi_4k: "Pi 3/Zero 2 W schafft kein 4K: beim Fernseher die Auflösung „Full HD“ wählen.", pi5_h264_4k: "Der Pi 5 dekodiert H.264 nur per CPU – 4K ruckelt. Beim Fernseher „H.265“ oder „Full HD“ wählen.",
+               pi_strom: "Der Pi meldet Unterspannung oder Drosselung – offizielles Netzteil nehmen.", pi_heiss: "Der Pi ist sehr warm (über 80 °C) – Gehäuse mit Kühlung oder Lüfter.",
+               pi_kein_hdmi: "Kein Bildschirm erkannt – HDMI-Kabel prüfen (Pi 4/5: den Anschluss neben dem Strom nehmen)." } },
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
-    todo: { update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
+    todo: { player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
             software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
@@ -222,7 +263,7 @@ const TEXTE = {
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "TVs", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players (Raspberry Pi)", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
@@ -260,8 +301,49 @@ const TEXTE = {
           ort: "Where is the TV? The place sets weather, sun times and warnings.", ha: "Connect Home Assistant (optional) – for values from your home. The guide is under Settings → Home Assistant afterwards.",
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
+    pl: { titel: "Raspberry Pi as player", text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
+          modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
+          bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
+          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models.",
+          basis: "Player image", basisFehlt: "not downloaded yet – about 700 MB once", basisLaden: "Download player image", basisNeu: "Download again",
+          basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
+          port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
+          neu: "Add player", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the TV", keinTv: "– none yet –", modell: "Model",
+          m: { pi45: "Pi 5, Pi 4 or Pi 400", pi3: "Pi 3 or Zero 2 W" }, netz: "Network", kabel: "LAN cable", wlan: "Wi-Fi",
+          wlanGesp: "Saved Wi-Fi", wlanNeu: "enter new Wi-Fi", ssid: "Wi-Fi name (SSID)", pw: "Wi-Fi password", merken: "Save the Wi-Fi in the admin (for more Pis)",
+          merkenText: "Only the WPA key is stored, not the password itself. It still grants access to the Wi-Fi – backups contain it only “with credentials”.",
+          erweitert: "Advanced", server: "Server address for the Pis", serverText: "Empty = automatic. Change it if the Pis reach the server under a different address (e.g. other port in a container).",
+          streamPort: "Stream port from outside", streamPortText: "Empty = as configured. Only needed if the container maps the stream port to a different port.",
+          gespeicherte: "Saved Wi-Fi networks", vergessen: "Forget", erstellen: "Create and download image", laedtHerunter: "Download starting …",
+          schritte: "Next steps", s1: "Open Raspberry Pi Imager → choose device → operating system: at the bottom “Use custom” → the downloaded file → SD card → Next.",
+          s2: "If the Imager asks about “OS customisation”: No – everything is already in the image. (balenaEtcher: choose file, choose card, Flash.)",
+          s3: "Put the card into the Pi, HDMI to the TV, power on. The first start takes 2–3 minutes (the Pi restarts once), then the picture appears.",
+          s4: "If the Pi finds no network, after 2 minutes it opens a hotspot and shows a QR code on the TV – scan it with your phone and choose the Wi-Fi.",
+          liste: "Players", keine: "No player yet.", online: "online", offline: "offline", nieGesehen: "has never reported",
+          zuletzt: (z) => `last seen ${z}`, seit: (z) => `since ${z}`, ip: "IP", netzArt: { kabel: "cable", wlan: "Wi-Fi", hotspot: "hotspot (setup)", keins: "no network" },
+          temp: "Temperature", version: "Player", hdmi: "Screen", keinHdmi: "no screen detected", video: "Video",
+          zustand: { start: "starting", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
+                     stream_fehler: "stream error", gesperrt: "removed", unbekannt: "unknown to the server" },
+          drehung: "Rotation", aufloesung: "Output", a: { auto: "as the TV reports", "720": "720p", "1080": "Full HD", "2160": "4K" },
+          lautstaerke: "Volume (%)", cec: "Switch the TV on and off by schedule (HDMI-CEC)", cecText: "When the layout is “black” (schedule of the TV), the Pi switches the TV off via HDMI and on again later. CEC must be enabled on the TV (Samsung “Anynet+”, LG “SimpLink”, Sony “Bravia Sync”).",
+          schreibschutz: "Write protection (recommended)", schreibschutzText: "The system runs in memory, the SD card stays unchanged – power cuts and unplugging do not harm it. Changing it restarts the Pi.",
+          systemupdate: "System updates", su: { woechentlich: "weekly (Sun 3 am)", aus: "manual only" }, hwdec: "Video decoding", hw: { auto: "hardware (default)", aus: "CPU only (on picture errors)" },
+          b: { bild: "Screenshot", erkennen: "Show name", cec_an: "TV on", cec_aus: "TV off", player_neu: "Restart player", neustart: "Restart Pi",
+               systemupdate: "System update now", protokoll: "Fetch log" },
+          bText: { erkennen: "Shows name and IP on the TV for 30 seconds – so you find the right Pi.", systemupdate: "The Pi installs updates (write protection off for a moment) and restarts twice – about 5–15 minutes." },
+          wartet: (a) => `waiting for the Pi: ${a}`, ergebnis: "Last", ok: "ok", fehlgeschlagen: "failed",
+          protokollZeigen: "Show log", wlanAendern: "Change Wi-Fi", wlanAendernText: "The Pi tries the new Wi-Fi. If it cannot reach the server with it, it returns to the previous one. Previous networks stay as fallback.",
+          wlanOffen: (s) => `Wi-Fi change to “${s}” is waiting for the Pi`, wlanSenden: "Send to the Pi", wlanGesendet: "Sent – the Pi applies it at its next report",
+          imageNeu: "Download image again", imageNeuText: "For a new SD card. The key stays the same – an old card with this player keeps working.",
+          entfernen: "Remove", entfernenFrage: (n) => `Remove player “${n}”? Its key becomes invalid; the Pi then only shows a note.`,
+          befehlOk: "Command sent – the Pi picks it up within a few seconds", bildAlt: (z) => `Screenshot from ${z}`, netzwerke: "Wi-Fi networks on the Pi",
+          update: "Last system update",
+          h: { pi_kein_tv: "No TV assigned – the Pi only shows a note.", pi_h265: "Pi 3/Zero 2 W cannot play H.265 smoothly: choose codec “H.264” for the TV.",
+               pi_4k: "Pi 3/Zero 2 W cannot do 4K: choose resolution “Full HD” for the TV.", pi5_h264_4k: "The Pi 5 decodes H.264 on the CPU only – 4K stutters. Choose “H.265” or “Full HD” for the TV.",
+               pi_strom: "The Pi reports under-voltage or throttling – use the official power supply.", pi_heiss: "The Pi is very warm (above 80 °C) – use a case with cooling or a fan.",
+               pi_kein_hdmi: "No screen detected – check the HDMI cable (Pi 4/5: use the port next to the power)." } },
     todoTitel: "To do", todoOk: "All good.",
-    todo: { update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
+    todo: { player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
             software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
@@ -383,6 +465,14 @@ const TEXTE = {
       sch_entitaet: "No entity for switching is set for this TV",
       sch_an_nicht: "Home Assistant cannot switch {e} on – the device does not offer it (Samsung/LG often only with Wake-on-LAN)",
       sch_aus_nicht: "Home Assistant cannot switch {e} off – the device does not offer it",
+      pi_ssid: "Wi-Fi name missing or longer than 32 characters", pi_wlan_pw: "Wi-Fi password: 8 to 63 characters",
+      pi_wlan_unbekannt: "This Wi-Fi is not saved (any more)", pi_name: "Player name missing", pi_tv: "Unknown TV", pi_lautstaerke: "Volume 0 to 100",
+      pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_server: "Server address as http://IP:port",
+      pi_server_lokal: "The Pi cannot find the server with this address – enter the IP in your home network under Advanced (e.g. http://192.168.1.20:8890)", pi_port: "Port 1 to 65535",
+      pi_kein_image: "No player image yet – first “Download player image”", pi_signatur: "Signature of the player image invalid – not used",
+      pi_pruefsumme: "Checksum of the player image wrong – please download again", pi_platz: "Not enough disk space – about {mb} MB needed",
+      pi_konfig_gross: "Too much data for the device file", pi_link_alt: "Download link expired – click “Download image” again",
+      pi_platzhalter: "Player image damaged – please download again",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
@@ -556,12 +646,12 @@ const ungespeichert = () => !!document.querySelector("#inhalt .karte.geaendert")
 window.addEventListener("beforeunload", (e) => { if (ungespeichert()) { e.preventDefault(); e.returnValue = ""; } });
 
 // ---------- Reiter ----------
-const SEITEN = { uebersicht, fernseher: fernseherSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
+const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
                  streams: streamsSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"), pult: pultSeite,
                  updates: updatesSeite, sicherung: sicherungSeite, leistung: leistungSeite, zugang: (i) => verbindung(i, "zugang") };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
-const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher"]], ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
+const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]], ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
                   ["videoton", ["streams", "video", "suche", "radio"]], ["einstellungen", ["allgemein", "ha", "benachrichtigung", "pult"]],
                   ["system", CONTAINER ? ["updates", "sicherung", "leistung", "zugang"] : ["updates", "sicherung", "leistung"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
@@ -579,7 +669,7 @@ function reiterZeichnen() {
   const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
                   fernseher: "#show-something-different-at-night" }[aktiv] || "";
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener"
-    href="https://github.com/thefrozn/signagecast/blob/main/docs/MANUAL.md${anker}">?</a>`));
+    href="https://github.com/thefrozn/signagecast/blob/main/docs/${aktiv === "player" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "") : "MANUAL.md" + anker}">?</a>`));
   sub.hidden = unter.length < 2;
   for (const s of unter) {
     const k = el(`<button class="${s === aktiv ? "an" : ""}">${esc(T.reiter[s])}</button>`);
@@ -780,6 +870,191 @@ curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)
   zeichnen();
 }
 
+// ---------- Raspberry-Pi-Player (seit 0.23) ----------
+// Download des Images je Gerät: in Cockpit als „externer Kanal“ (https, der Browser speichert direkt, nichts im Speicher),
+// im Docker-Betrieb über /laden/player-image der eigenen Verwaltung.
+function plHerunterladen(kennung, datei) {
+  let url;
+  if (CONTAINER) url = "/laden/player-image?t=" + encodeURIComponent(kennung);
+  else {
+    const opt = { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: "/api/player/image?t=" + encodeURIComponent(kennung),
+                  headers: { "X-SignageCast": "1" }, binary: "raw",
+                  external: { "content-disposition": `attachment; filename="${datei}"`, "content-type": "application/gzip" } };
+    url = "/cockpit/channel/" + cockpit.transport.csrf_token + "?" + window.btoa(JSON.stringify(opt));
+  }
+  const a = document.createElement("a");
+  a.href = url; a.download = datei; document.body.appendChild(a); a.click(); a.remove();
+}
+// Netzwerk-Auswahl (neu, Image erneut, WLAN ändern): Kabel | gespeichertes WLAN | neues WLAN
+function plNetz(px, gespeichert, mitKabel) {
+  return `<div class="zeile"><label>${esc(T.pl.netz)}</label><select name="${px}Art">
+      ${mitKabel ? `<option value="kabel">${esc(T.pl.kabel)}</option>` : ""}
+      ${gespeichert.map((s) => `<option value="g:${esc(s)}">${esc(T.pl.wlanGesp)}: ${esc(s)}</option>`).join("")}
+      <option value="neu" ${!gespeichert.length && !mitKabel ? "selected" : ""}>${esc(T.pl.wlanNeu)}</option></select></div>
+    <div data-neu="${px}"><div class="zeile"><label>${esc(T.pl.ssid)}</label><input type="text" name="${px}Ssid" maxlength="32" autocomplete="off"></div>
+      <div class="zeile"><label>${esc(T.pl.pw)}</label><input type="password" name="${px}Pw" maxlength="63" autocomplete="new-password"></div>
+      <div class="zeile"><label><input type="checkbox" name="${px}Merken"> ${esc(T.pl.merken)}</label></div>
+      <p class="leise">${esc(T.pl.merkenText)}</p></div>`;
+}
+function plNetzAnbinden(wurzel, px) {
+  const art = wurzel.querySelector(`[name=${px}Art]`), neu = wurzel.querySelector(`[data-neu=${px}]`);
+  const sicht = () => { neu.hidden = art.value !== "neu"; };
+  art.onchange = sicht; sicht();
+  return () => art.value === "kabel" ? null : art.value.startsWith("g:") ? { gespeichert: art.value.slice(2) }
+    : { ssid: wurzel.querySelector(`[name=${px}Ssid]`).value.trim(), passwort: wurzel.querySelector(`[name=${px}Pw]`).value,
+        speichern: wurzel.querySelector(`[name=${px}Merken]`).checked };
+}
+
+async function playerSeite(inhalt) {
+  let P = await holen("/api/player");
+  const tvOpt = (w) => `<option value="">${esc(T.pl.keinTv)}</option>` + E.fernseher.map((t) => `<option value="${esc(t.id)}" ${t.id === w ? "selected" : ""}>${esc(t.name)}</option>`).join("");
+  const opt = (werte, w, texte) => werte.map((x) => `<option value="${esc(x)}" ${String(x) === String(w) ? "selected" : ""}>${esc(texte ? texte[x] : x)}</option>`).join("");
+  const mb = (b) => Math.round(b / 1e6);
+  const basisText = () => {
+    const b = P.basis;
+    if (b.phase === "laedt") return `<span class="warn">${esc(T.pl.basisLaedt(mb(b.geladen), mb(b.gesamt) || "…"))}</span>`;
+    const f = b.phase === "fehler" ? `<span class="schlecht">${esc(T.pl.basisFehler)}: ${esc(meldungText(b, b.fehler))}</span> ` : "";
+    return f + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>` : esc(T.pl.basisFehlt));
+  };
+  const zeichnen = () => {
+    const bereit = !!P.basis.vorhanden;
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pl.titel)}</h2><p>${esc(T.pl.text)}</p>
+        <p class="leise">${esc(T.pl.modelle)}</p><p class="leise">${esc(T.pl.bedarf)}</p><p class="leise warn">${esc(T.pl.experimentell)}</p>
+        <div class="zeile"><label>${esc(T.pl.basis)}</label><span id="plBasis">${basisText()}</span>
+          <button class="knopf" id="plBasisLaden" ${P.basis.phase === "laedt" ? "disabled" : ""}>${esc(bereit ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+        ${P.container ? `<p class="leise">${esc(T.pl.port(P.webhook_port))}</p>` : ""}</div>
+      <div class="karte" id="plNeu"><h2>${esc(T.pl.neu)}</h2>
+        <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" id="plName" maxlength="40" placeholder="${esc(T.pl.namePlatz)}"></div>
+        <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3"], "pi45", T.pl.m)}</select></div>
+        ${plNetz("n", P.wlan, true)}
+        <div class="zeile"><button class="knopf haupt" id="plErstellen" ${bereit ? "" : "disabled"}>${esc(T.pl.erstellen)}</button></div>
+        <div id="plSchritte" hidden><h3>${esc(T.pl.schritte)}</h3><ol><li>${esc(T.pl.s1)}</li><li>${esc(T.pl.s2)}</li><li>${esc(T.pl.s3)}</li><li>${esc(T.pl.s4)}</li></ol></div>
+        <details class="erweitert"><summary>${esc(T.pl.erweitert)}</summary>
+          <div class="zeile"><label>${esc(T.pl.server)}</label><input type="text" id="plServer" value="${esc(P.server)}" placeholder="${esc(P.server_auto || `http://${location.hostname}:${P.webhook_port}`)}"></div>
+          <p class="leise">${esc(T.pl.serverText)}</p>
+          <div class="zeile"><label>${esc(T.pl.streamPort)}</label><input type="number" id="plStreamPort" min="1" max="65535" value="${P.stream_port || ""}" placeholder="${P.hls_port}"></div>
+          <p class="leise">${esc(T.pl.streamPortText)}</p>
+          <div class="zeile"><button class="knopf" id="plServerOk">${esc(T.speichern)}</button></div>
+          ${P.wlan.length ? `<h3>${esc(T.pl.gespeicherte)}</h3>${P.wlan.map((s) => `<div class="zeile"><span>${esc(s)}</span>
+            <button class="knopf klein" data-vergessen="${esc(s)}">${esc(T.pl.vergessen)}</button></div>`).join("")}` : ""}</details></div>
+      <h2>${esc(T.pl.liste)}</h2><div id="plListe"></div>`;
+    const netzNeu = plNetzAnbinden($("#plNeu"), "n");
+    $("#plBasisLaden").onclick = (e) => aktion(e.target, async () => { await senden("/api/player/basis-laden"); P.basis.phase = "laedt"; zeichnen(); beobachten(); }, null);
+    $("#plErstellen").onclick = (e) => aktion(e.target, async () => {
+      const wlan = netzNeu();
+      const r = await senden("/api/player/neu", { name: $("#plName").value, tv: $("#plTv").value, modell: $("#plModell").value });
+      let d;
+      try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
+      catch (f) { await senden(`/api/player/${r.geraet}/entfernen`); throw f; }        // ohne Image kein halbes Gerät zurücklassen
+      plHerunterladen(d.kennung, d.datei);
+      $("#plSchritte").hidden = false; $("#plName").value = "";
+      P = await holen("/api/player"); listeZeichnen();
+    }, T.pl.laedtHerunter);
+    $("#plServerOk").onclick = (e) => aktion(e.target, async () => {
+      await senden("/api/player/einstellungen", { server: $("#plServer").value.trim(), stream_port: Number($("#plStreamPort").value) || 0 });
+      P = await holen("/api/player");
+    });
+    inhalt.querySelectorAll("[data-vergessen]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
+      await senden("/api/player/wlan-vergessen", { ssid: b.dataset.vergessen }); P = await holen("/api/player"); zeichnen(); }); });
+    listeZeichnen();
+  };
+  const karte = (g) => {
+    const b = g.bericht || {}, v = b.video || {};
+    const zeit = (ts) => ts ? new Date(ts * 1000).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
+    const status = g.online ? `<span class="gut">● ${esc(T.pl.online)}</span> <span class="leise">${esc(T.pl.seit(zeit(g.seit)))}</span>`
+      : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
+      : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
+    const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? ` „${b.ssid}“` : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
+    const zeilen = g.zuletzt ? [[T.pl.modell, b.modell], [T.pl.ip, g.ip], [T.pl.netz, netz],
+      [T.pl.hdmi, b.hdmi ? (b.tv_name || "HDMI") + (b.ausgang ? ` (${b.ausgang})` : "") : T.pl.keinHdmi],
+      [T.pl.video, v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
+      [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
+      [T.pl.update, b.letztes_update ? zeit(b.letztes_update.zeit) + (b.letztes_update.ok ? "" : " – " + T.pl.fehlgeschlagen) : "–"]] : [];
+    return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
+      ${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
+      ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
+      ${g.wlan_offen ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
+      ${g.befehle.length ? `<p class="leise">${esc(T.pl.wartet(g.befehle.map((a) => T.pl.b[a] || a).join(", ")))}</p>` : ""}
+      ${g.ergebnisse.length ? `<p class="leise">${esc(T.pl.ergebnis)}: ${g.ergebnisse.slice(0, 3).map((e) => `${esc(e.zeit)} ${esc(T.pl.b[e.art] || (e.art === "wlan" ? T.pl.wlan : e.art))} ${e.ok
+        ? `<span class="gut">${esc(T.pl.ok)}</span>` : `<span class="schlecht">${esc(T.pl.fehlgeschlagen)}</span>${e.hinweis ? " (" + esc(e.hinweis) + ")" : ""}`}`).join(" · ")}</p>` : ""}
+      ${g.bild ? `<p><img src="" data-bild="${g.id}" alt="${esc(T.pl.bildAlt(zeit(g.bild)))}" title="${esc(T.pl.bildAlt(zeit(g.bild)))}" class="pl-bild"></p>` : ""}
+      ${zeilen.length ? `<div class="tabelle-rahmen"><table class="tabelle">${zeilen.map(([k, w]) => `<tr><td class="leise">${esc(k)}</td><td>${esc(w ?? "–")}</td></tr>`).join("")}</table></div>` : ""}
+      <div class="zeile">${["bild", "erkennen", "cec_an", "cec_aus", "player_neu", "neustart", "systemupdate", "protokoll"].map((a) =>
+        `<button class="knopf" data-befehl="${a}" title="${esc(T.pl.bText[a] || "")}">${esc(T.pl.b[a])}</button>`).join("")}
+        ${g.protokoll ? `<button class="knopf" data-protokoll>${esc(T.pl.protokollZeigen)}</button>` : ""}</div>
+      <pre data-log hidden class="pl-log"></pre>
+      <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
+        <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
+        <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select name="modell">${opt(["pi45", "pi3"], g.modell, T.pl.m)}</select></div>
+        <div class="zeile"><label>${esc(T.pl.drehung)}</label><select name="drehung">${opt([0, 90, 180, 270], g.drehung, { 0: "0°", 90: "90°", 180: "180°", 270: "270°" })}</select></div>
+        <div class="zeile"><label>${esc(T.pl.aufloesung)}</label><select name="aufloesung">${opt(["auto", "720", "1080", "2160"], g.aufloesung, T.pl.a)}</select></div>
+        <div class="zeile"><label>${esc(T.pl.lautstaerke)}</label><input type="number" name="lautstaerke" min="0" max="100" value="${g.lautstaerke}"></div>
+        <div class="zeile"><label><input type="checkbox" name="cec_zeitplan" ${g.cec_zeitplan ? "checked" : ""}> ${esc(T.pl.cec)}</label></div><p class="leise">${esc(T.pl.cecText)}</p>
+        <div class="zeile"><label><input type="checkbox" name="schreibschutz" ${g.schreibschutz ? "checked" : ""}> ${esc(T.pl.schreibschutz)}</label></div><p class="leise">${esc(T.pl.schreibschutzText)}</p>
+        <div class="zeile"><label>${esc(T.pl.systemupdate)}</label><select name="systemupdate">${opt(["woechentlich", "aus"], g.systemupdate, T.pl.su)}</select></div>
+        <div class="zeile"><label>${esc(T.pl.hwdec)}</label><select name="hwdec">${opt(["auto", "aus"], g.hwdec, T.pl.hw)}</select></div>
+        <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div></details>
+      <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
+        ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
+      <details class="erweitert" data-image><summary>${esc(T.pl.imageNeu)}</summary><p class="leise">${esc(T.pl.imageNeuText)}</p>
+        ${plNetz("i" + g.id, P.wlan, true)}<div class="zeile"><button class="knopf" data-image-laden ${P.basis.vorhanden ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
+        <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
+  };
+  const bilderLaden = () => inhalt.querySelectorAll("img[data-bild]").forEach(async (i) => {
+    try { i.src = URL.createObjectURL(new Blob([await dienstBinaer.get(`/api/player/${i.dataset.bild}/bild`, { t: Date.now() }, { "X-SignageCast": "1" })], { type: "image/jpeg" })); }
+    catch (_) { i.remove(); }
+  });
+  const listeZeichnen = () => {
+    const ziel = $("#plListe");
+    if (!ziel) return;
+    ziel.innerHTML = P.geraete.length ? P.geraete.map(karte).join("") : `<p class="leise">${esc(T.pl.keine)}</p>`;
+    bilderLaden();
+    for (const g of P.geraete) {
+      const k = ziel.querySelector(`[data-g="${g.id}"]`);
+      const wlanLesen = plNetzAnbinden(k, "w" + g.id), imageLesen = plNetzAnbinden(k, "i" + g.id);
+      k.querySelectorAll("[data-befehl]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
+        await senden(`/api/player/${g.id}/befehl`, { art: b.dataset.befehl }); g.befehle.push(b.dataset.befehl); }, T.pl.befehlOk); });
+      const log = k.querySelector("[data-protokoll]");
+      if (log) log.onclick = (e) => aktion(e.target, async () => {
+        const p = k.querySelector("[data-log]"); p.textContent = await dienst.get(`/api/player/${g.id}/protokoll`, {}, KOPF); p.hidden = false; p.scrollTop = p.scrollHeight; }, null);
+      k.querySelector("[data-speichern]").onclick = (e) => aktion(e.target, async () => {
+        const w = (n) => k.querySelector(`[name=${n}]`);
+        await senden(`/api/player/${g.id}/aendern`, { name: w("name").value, tv: w("tv").value, modell: w("modell").value, drehung: Number(w("drehung").value),
+          aufloesung: w("aufloesung").value, lautstaerke: Number(w("lautstaerke").value), cec_zeitplan: w("cec_zeitplan").checked,
+          schreibschutz: w("schreibschutz").checked, systemupdate: w("systemupdate").value, hwdec: w("hwdec").value });
+        P = await holen("/api/player"); listeZeichnen();
+      });
+      k.querySelector("[data-wlan-senden]").onclick = (e) => aktion(e.target, async () => {
+        await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); P = await holen("/api/player"); listeZeichnen(); }, T.pl.wlanGesendet);
+      k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {
+        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+        plHerunterladen(d.kennung, d.datei); }, T.pl.laedtHerunter);
+      k.querySelector("[data-entfernen]").onclick = (e) => {
+        if (!confirm(T.pl.entfernenFrage(g.name))) return;
+        aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holen("/api/player"); listeZeichnen(); });
+      };
+    }
+  };
+  // alle 10 s auffrischen – nicht, solange jemand in einer Karte tippt oder ein Formular offen ist
+  const beobachten = () => {
+    clearInterval(timer);
+    timer = setInterval(async () => {
+      if (aktiv !== "player") return;
+      const alt = P.basis.phase;
+      P = await holen("/api/player");
+      if (alt === "laedt" || P.basis.phase === "laedt") {
+        $("#plBasis").innerHTML = basisText();
+        if (alt === "laedt" && P.basis.phase !== "laedt") zeichnen();
+      }
+      if (!inhalt.querySelector("#plListe :focus, #plListe details[open], #plListe pre:not([hidden]), #plListe .geaendert")) listeZeichnen();
+    }, P.basis.phase === "laedt" ? 2000 : 10000);
+  };
+  zeichnen();
+  beobachten();
+}
+
 // ---------- Leistungstest (seit 0.18) ----------
 async function leistungSeite(inhalt) {
   const info = await holen("/api/leistung");
@@ -829,6 +1104,7 @@ async function todoZeichnen(s) {
   if (s.ha.url && !s.ha.ok) neu("warn", T.todo.ha, "ha");
   for (const n of s.bildrate_niedrig || []) neu("warn", T.todo.bildrate(n), "leistung");
   for (const n of s.doppelt_hoch || []) neu("warn", T.todo.doppelt(n), "leistung");
+  for (const g of s.player || []) if (g.gesehen && !g.online) neu("warn", T.todo.player(g.name), "player");
   const sa = s.sicherung_auto || {};
   if (sa.fehler) neu("warn", T.todo.sicherungFehler, "sicherung");
   if ((s.benachrichtigung || []).some((x) => Object.values(x.ergebnis).some(Boolean))) neu("warn", T.todo.bnFehler, "benachrichtigung");

@@ -136,6 +136,25 @@ DE = {
     "sch_entitaet": "Für diesen Fernseher ist keine Entität zum Schalten eingetragen",
     "sch_an_nicht": "Home Assistant kann {e} nicht einschalten – das Gerät bietet es nicht an (Samsung/LG oft nur mit Wake-on-LAN)",
     "sch_aus_nicht": "Home Assistant kann {e} nicht ausschalten – das Gerät bietet es nicht an",
+    # seit 0.23: Raspberry-Pi-Player
+    "pi_ssid": "WLAN-Name fehlt oder ist länger als 32 Zeichen",
+    "pi_wlan_pw": "WLAN-Passwort: 8 bis 63 Zeichen",
+    "pi_wlan_unbekannt": "Dieses WLAN ist nicht (mehr) gespeichert",
+    "pi_name": "Name des Players fehlt",
+    "pi_tv": "Unbekannter Fernseher",
+    "pi_lautstaerke": "Lautstärke 0 bis 100",
+    "pi_unbekannt": "Player nicht gefunden",
+    "pi_befehl": "Unbekannter Befehl",
+    "pi_server": "Server-Adresse als http://IP:Port",
+    "pi_server_lokal": "Mit dieser Server-Adresse findet der Pi den Server nicht – unter Erweitert die IP im Heimnetz eintragen (z. B. http://192.168.1.20:8890)",
+    "pi_port": "Port 1 bis 65535",
+    "pi_kein_image": "Noch kein Player-Image vorhanden – erst „Player-Image laden“",
+    "pi_signatur": "Signatur des Player-Images ungültig – nicht verwendet",
+    "pi_pruefsumme": "Prüfsumme des Player-Images falsch – bitte erneut laden",
+    "pi_platz": "Zu wenig Speicherplatz – etwa {mb} MB nötig",
+    "pi_konfig_gross": "Zu viele Angaben für die Gerätedatei",
+    "pi_link_alt": "Download-Link abgelaufen – bitte erneut auf „Image herunterladen“ klicken",
+    "pi_platzhalter": "Player-Image beschädigt – bitte erneut laden",
 }
 
 

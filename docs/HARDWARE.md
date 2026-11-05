@@ -25,7 +25,7 @@ encoding (H.265/HEVC in 4K via VAAPI); the CPU mainly runs the browser, which de
 | **Without usable graphics** | Software fallback: H.264 in Full HD on the CPU (about one more core while someone is watching) |
 | **AMD graphics** | VAAPI drivers are installed, but untested so far |
 | **NVIDIA graphics card** | Experimental from 0.22: encoder *NVIDIA NVENC* per TV, if card and driver are passed into the container (`/dev/nvidia*`, Docker `--gpus all`) – untested |
-| **Raspberry Pi** | Not suitable as a server: the Pi 5 has **no** hardware video encoder, the Pi 4 only H.264 up to 1080p and too little CPU for browser + video. A “player mode” (Pi at the TV showing the page directly via HDMI, no encoding) is an idea for later. |
+| **Raspberry Pi** | Not suitable as a server: the Pi 5 has **no** hardware video encoder, the Pi 4 only H.264 up to 1080p and too little CPU for browser + video. **As a player at the TV** it works from 0.23: the Pi plays the finished stream via HDMI – see [Raspberry Pi as player](PLAYER.md). |
 
 Per TV: about 1 GB RAM and one CPU core for the browser; disk 10 GB. The TV's browser must play **H.265** for 4K
 (most smart TVs from about 2018); Full HD output with H.264 is possible as well.
@@ -51,6 +51,6 @@ Empfohlenes Minimum ist ein Mini-PC mit **Intel N100/N95** (H.265 in 4K per Hard
 Grafik ab der 7. Generation läuft gut, auch ein QNAP-/Synology-NAS mit Intel-Celeron (z. B. J4125). Ohne nutzbare Grafik
 gibt es einen Notbetrieb (H.264 Full HD per CPU, etwa ein Kern je zuschauendem Fernseher). Nur x86 (Intel/AMD), kein ARM.
 **Raspberry Pi** eignet sich nicht als Server: Der Pi 5 hat keinen Video-Encoder, der Pi 4 nur H.264 bis 1080p und zu
-wenig CPU für Browser und Video. Je Fernseher etwa 1 GB RAM und ein Kern; der Fernseher-Browser muss für 4K H.265 können.
+wenig CPU für Browser und Video. **Als Player am Fernseher** geht er ab 0.23 – siehe [Raspberry Pi als Player](PLAYER.md#deutsch-raspberry-pi-als-player). Je Fernseher etwa 1 GB RAM und ein Kern; der Fernseher-Browser muss für 4K H.265 können.
 Erfahrung des Autors: Core i5-7500T mit HD 630 unter Proxmox, LXC mit 4 Kernen/3 GB, 4K-Stream mit Live-Video und Ton
 bei etwa **10–11 W** CPU-Paket, im Leerlauf etwa 1,2 W.

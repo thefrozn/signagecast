@@ -86,7 +86,7 @@ chown -R signagecast:signagecast /etc/signagecast /var/lib/signagecast
 
 echo "== Programm"
 rm -rf /opt/signagecast.neu && mkdir -p /opt/signagecast.neu
-cp -r "$QUELLE/app" "$QUELLE/www" "$QUELLE/render" "$QUELLE/werkzeug" "$QUELLE/VERSION" /opt/signagecast.neu/
+cp -r "$QUELLE/app" "$QUELLE/www" "$QUELLE/render" "$QUELLE/werkzeug" "$QUELLE/player" "$QUELLE/VERSION" /opt/signagecast.neu/
 mkdir -p /opt/signagecast.neu/cockpit && cp -r "$QUELLE/cockpit/signagecast" /opt/signagecast.neu/cockpit/   # für die Rückkehr
 chown -R root:root /opt/signagecast.neu && chmod -R a+rX,go-w /opt/signagecast.neu
 chmod 755 /opt/signagecast.neu/render/tv-render.sh /opt/signagecast.neu/werkzeug/aktualisieren.sh
