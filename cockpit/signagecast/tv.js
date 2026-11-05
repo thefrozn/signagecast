@@ -51,7 +51,7 @@ const TEXTE = {
           ort: "Wo steht der Fernseher? Der Ort bestimmt Wetter, Sonnenzeiten und Warnungen.", ha: "Home Assistant verbinden (optional) – für Werte aus dem Haus. Die Anleitung steht danach unter Einstellungen → Home Assistant.",
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
-    pl: { titel: "Raspberry Pi als Player", text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
+    pl: { titel: "Raspberry Pi als Player", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
           experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen.",
@@ -301,7 +301,7 @@ const TEXTE = {
           ort: "Where is the TV? The place sets weather, sun times and warnings.", ha: "Connect Home Assistant (optional) – for values from your home. The guide is under Settings → Home Assistant afterwards.",
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
-    pl: { titel: "Raspberry Pi as player", text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
+    pl: { titel: "Raspberry Pi as player", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
           experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models.",
@@ -621,7 +621,8 @@ async function aktion(knopf, fn, okText) {
 }
 const schalter = (name, an) => `<label class="schalter"><input type="checkbox" name="${esc(name)}" ${an ? "checked" : ""}><span></span></label>`;
 const dauer = (s) => { const t = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return (t ? t + " d " : "") + h + " h " + m + " min"; };
-const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "–";
+const ORT = () => E.sprache === "en" ? "en-GB" : "de-DE";   // Zeitformat nach Sprache der Verwaltung, 24 h (seit 0.23.2)
+const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString(ORT(), { hour: "2-digit", minute: "2-digit" }) : "–";
 
 let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
 
@@ -961,11 +962,13 @@ async function playerSeite(inhalt) {
   };
   const karte = (g) => {
     const b = g.bericht || {}, v = b.video || {};
-    const zeit = (ts) => ts ? new Date(ts * 1000).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
+    const ort = ORT();
+    const zeit = (ts) => ts ? new Date(ts * 1000).toLocaleString(ort, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
+    const uhr = (e) => e.ts ? new Date(e.ts * 1000).toLocaleTimeString(ort, { hour: "2-digit", minute: "2-digit" }) : e.zeit;
     const status = g.online ? `<span class="gut">● ${esc(T.pl.online)}</span> <span class="leise">${esc(T.pl.seit(zeit(g.seit)))}</span>`
       : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
       : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
-    const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? ` „${b.ssid}“` : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
+    const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? " " + T.pl.zitat(b.ssid) : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
     const zeilen = g.zuletzt ? [[T.pl.modell, b.modell], [T.pl.ip, g.ip], [T.pl.netz, netz],
       [T.pl.hdmi, b.hdmi ? (b.tv_name || "HDMI") + (b.ausgang ? ` (${b.ausgang})` : "") : T.pl.keinHdmi],
       [T.pl.video, v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
@@ -976,7 +979,7 @@ async function playerSeite(inhalt) {
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
       ${g.wlan_offen ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
       ${g.befehle.length ? `<p class="leise">${esc(T.pl.wartet(g.befehle.map((a) => T.pl.b[a] || a).join(", ")))}</p>` : ""}
-      ${g.ergebnisse.length ? `<p class="leise">${esc(T.pl.ergebnis)}: ${g.ergebnisse.slice(0, 3).map((e) => `${esc(e.zeit)} ${esc(T.pl.b[e.art] || (e.art === "wlan" ? T.pl.wlan : e.art))} ${e.ok
+      ${g.ergebnisse.length ? `<p class="leise">${esc(T.pl.ergebnis)}: ${g.ergebnisse.slice(0, 3).map((e) => `${esc(uhr(e))} ${esc(T.pl.b[e.art] || (e.art === "wlan" ? T.pl.wlan : e.art))} ${e.ok
         ? `<span class="gut">${esc(T.pl.ok)}</span>` : `<span class="schlecht">${esc(T.pl.fehlgeschlagen)}</span>${e.hinweis ? " (" + esc(e.hinweis) + ")" : ""}`}`).join(" · ")}</p>` : ""}
       ${g.bild ? `<p><img src="" data-bild="${g.id}" alt="${esc(T.pl.bildAlt(zeit(g.bild)))}" title="${esc(T.pl.bildAlt(zeit(g.bild)))}" class="pl-bild"></p>` : ""}
       ${zeilen.length ? `<div class="tabelle-rahmen"><table class="tabelle">${zeilen.map(([k, w]) => `<tr><td class="leise">${esc(k)}</td><td>${esc(w ?? "–")}</td></tr>`).join("")}</table></div>` : ""}
@@ -1209,7 +1212,7 @@ async function vorschau() {
     const daten = await dienstBinaer.get("/api/vorschau.jpg", { tv }, { "X-SignageCast": "1" });
     const url = URL.createObjectURL(new Blob([daten], { type: "image/jpeg" }));
     img.onload = () => URL.revokeObjectURL(url);
-    img.src = url; img.style.display = ""; txt.textContent = new Date().toLocaleTimeString();
+    img.src = url; img.style.display = ""; txt.textContent = new Date().toLocaleTimeString(ORT());
   } catch (_) { img.style.display = "none"; txt.textContent = T.keineVorschau; }
 }
 

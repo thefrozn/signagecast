@@ -262,7 +262,7 @@ def ergebnisse_merken(g, liste):
     if not isinstance(liste, list):
         return
     neu = [{"art": str(e.get("art", ""))[:20], "ok": bool(e.get("ok")), "hinweis": str(e.get("hinweis") or "")[:200],
-            "zeit": time.strftime("%H:%M")} for e in liste[:10] if isinstance(e, dict)]
+            "zeit": time.strftime("%H:%M"), "ts": int(time.time())} for e in liste[:10] if isinstance(e, dict)]   # ts: Verwaltung formatiert selbst (seit 0.23.2)
     if neu:
         ergebnisse[g["id"]] = (neu + ergebnisse.get(g["id"], []))[:10]
 

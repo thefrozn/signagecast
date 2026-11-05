@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.23.2 (2026-11-05)
+- Raspberry Pi player: the Wi-Fi name is quoted as usual in the admin language (English “Office” instead of the German
+  „Office“).
+- Times in the admin follow the admin language and always use 24 hours (before: player page partly in the browser's
+  format, e.g. “since 03:52 PM” next to “Last: 15:52”; also the overview's pause time and the preview time).
+
 ## v0.23.1 (2026-11-05)
 - Raspberry Pi player: “Download player image” failed with “HTTP Error 415” – the request to GitHub's release list
   sent the wrong Accept header.

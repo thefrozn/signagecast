@@ -519,6 +519,7 @@ class Player023(unittest.TestCase):
         a = PL.melden(g, {"wlan_rev": 1, "ergebnisse": [{"art": "wlan", "ok": True}]}, "", None, None)
         self.assertIsNone(a["wlan"])
         self.assertEqual(PL.ergebnisse[g["id"]][0]["art"], "wlan")
+        self.assertAlmostEqual(PL.ergebnisse[g["id"]][0]["ts"], time.time(), delta=5)   # Zeitstempel für das Browserformat (0.23.2)
         self.assertNotIn("schluessel", json.dumps(PL.liste(lambda g: [])))
         self.assertNotIn(PL.daten["wlan"][0]["psk"], json.dumps(PL.liste(lambda g: [])))
 
