@@ -199,6 +199,31 @@ class EinstellungenUndLayouts(unittest.TestCase):
         finally:
             E.PFAD = alt; os.remove(f.name)
 
+    def test_kodierung_je_fernseher(self):
+        t = E.pruefen({})["fernseher"][0]
+        self.assertEqual((t["encoder"], t["preset"], t["tune"], t["bframes"]), ("auto", "veryfast", "zerolatency", 0))
+        t = E.pruefen({"fernseher": [{"id": "tv", "encoder": "nvenc", "preset": "medium", "tune": "keins", "bframes": 2}]})["fernseher"][0]
+        self.assertEqual((t["encoder"], t["preset"], t["tune"], t["bframes"]), ("nvenc", "medium", "keins", 2))
+        t = E.pruefen({"fernseher": [{"id": "tv", "encoder": "amf", "preset": "slow", "tune": "film"}]})["fernseher"][0]
+        self.assertEqual((t["encoder"], t["preset"], t["tune"]), ("auto", "veryfast", "zerolatency"))
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"fernseher": [{"id": "tv", "bframes": 5}]})
+
+    def test_video_args(self):
+        import hardware as HW
+        self.assertIn("libx264 -preset fast -pix_fmt yuv420p -bf 1", HW.video_args("software", "h264", 1920, 1080, "fast", "keins", 1))
+        self.assertIn("-tune zerolatency", HW.video_args("software", "h264", 1920, 1080))
+        v = HW.video_args("vaapi", "h265", 3840, 2160, "medium", "keins", 2)
+        self.assertIn("scale_vaapi=w=3840:h=2160", v)
+        self.assertIn("hevc_vaapi -profile:v main -bf 2", v)
+        self.assertNotIn("preset", v)
+        self.assertIn("h264_qsv -profile:v high -preset faster -async_depth 1 -bf 0", HW.video_args("qsv", "h264", 3840, 2160))
+        n = HW.video_args("nvenc", "h265", 1920, 1080, "ultrafast", "zerolatency", 0)
+        self.assertIn("hevc_nvenc -profile:v main -preset p1 -tune ull", n)
+        for enc in HW.ENCODER[1:]:            # keine Zeichen, die die .env-Datei (sh) stören
+            for pr in HW.PRESETS:
+                self.assertNotRegex(HW.video_args(enc, "h264", 1920, 1080, pr, "keins", 4), r"[\"'$`\\;]")
+
     def test_codec_je_fernseher(self):
         self.assertEqual(E.pruefen({})["fernseher"][0]["codec"], "auto")
         t = E.pruefen({"fernseher": [{"id": "tv", "codec": "h264"}]})["fernseher"][0]

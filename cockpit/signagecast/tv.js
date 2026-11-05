@@ -149,6 +149,22 @@ const TEXTE = {
     videoAktiv: "Live-Videos zeigen", takt: "Minuten je Stream", nurTag: "nur Streams, wo vor Ort Tag ist",
     sonne: "Mindest-Sonnenhöhe (Grad)", mindeststufe: "Mindestqualität", schlecht: "so lange darunter, dann weiter (s)",
     grenze: "Strikes bis ein Stream nicht mehr läuft", sperre: "nach Strike überspringen für (Stunden)",
+    kod: { titel: "Kodierung (für Fortgeschrittene)", encoder: "Encoder", preset: "Preset", tune: "Tune", bframes: "B-Frames",
+      text: "Normalerweise passt „Automatisch“. Eine Änderung startet den Stream dieses Fernsehers neu (ein paar Sekunden schwarz); SignageCast probiert sie vorher kurz aus und bleibt bei „Automatisch“, wenn sie hier nicht läuft. Danach unter System → Leistungstest prüfen, ob die Kodierung mithält.",
+      art: { auto: "Automatisch (empfohlen)", vaapi: "Intel/AMD-Grafik (VAAPI)", qsv: "Intel Quick Sync (QSV)", nvenc: "NVIDIA NVENC (experimentell)", software: "Software (libx264)" },
+      info: { auto: "Nimmt die Grafikeinheit per VAAPI, ohne nutzbare Grafik Software.",
+        vaapi: "Video-Einheit der Intel- oder AMD-Grafik über die offene Schnittstelle VAAPI – sparsam, 4K, H.264 und H.265. Kennt kein Preset und kein Tune.",
+        qsv: "Intels eigener Weg zur selben Video-Einheit (Quick Sync über oneVPL), mit Presets. Braucht Intel-Grafik ab der 11./12. Generation (z. B. N100, Core ab Tiger Lake); bei älterer Intel-Grafik VAAPI nehmen.",
+        nvenc: "Video-Einheit einer NVIDIA-Grafikkarte. Experimentell und ungetestet: Karte und NVIDIA-Treiber müssen im Container verfügbar sein (/dev/nvidia*, bei Docker --gpus all) – das richtet SignageCast nicht selbst ein.",
+        software: "Der Prozessor kodiert H.264 (libx264): geht überall, kostet aber etwa 1–2 Kerne je Fernseher; immer Full HD und höchstens 8 Mbit/s." },
+      grund: { keine_grafik: "keine Grafik (/dev/dri) gefunden", qsv_alt: "braucht Intel-Grafik ab der 11./12. Generation", keine_nvidia: "keine NVIDIA-Karte gefunden" },
+      presetInfo: "Wie gründlich der Encoder rechnet: ultrafast ist am schnellsten, medium liefert bei gleicher Bitrate das schönste Bild, braucht aber deutlich mehr Rechenzeit – schafft der Rechner es nicht, ruckelt das Bild. Quick Sync und NVENC bekommen die passende eigene Stufe.",
+      tuneArt: { zerolatency: "zerolatency (empfohlen)", keins: "keins" },
+      tuneInfo: "zerolatency trimmt den Encoder auf geringe Verzögerung (kein Vorausschauen, jedes Bild sofort raus) – für Live-Bilder empfohlen, kostet etwas Bildqualität. „keins“ schaut einige Bilder voraus: etwas schöner, aber träger.",
+      bfInfo: "B-Frames sind Zwischenbilder, die auch auf spätere Bilder verweisen: etwa 5–15 % weniger Daten, aber mehr Verzögerung, und manche Fernseher-Browser ruckeln damit. 0 ist für Live-Streams die sichere Wahl.",
+      ohne: "VAAPI kennt kein Preset und kein Tune – die Felder wirken nur bei Software, Quick Sync und NVENC.",
+      fehler: (enc, g) => `Die Einstellung läuft hier nicht (${enc}: ${g}) – dieser Fernseher nutzt deshalb „Automatisch“.`,
+      aktiv: "Derzeit aktiv", std: "Standard", standard: "Zurück auf Standard" },
     codec: "Codec", codecArt: { auto: "Automatisch (empfohlen)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatisch: 4K als H.265 (halbe Datenmenge, können fast alle 4K-Fernseher), Full HD als H.264 (läuft auf praktisch jedem Fernseher, Browser und Player). H.264 wählen, wenn ein Gerät ruckelt oder kein Bild zeigt – z. B. ältere Fernseher, Firefox; H.265 braucht bei gleicher Qualität etwa 30–40 % weniger Bitrate.",
     kategorien: "Kategorien", streamTechnik: "Videostream", aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
@@ -403,6 +419,22 @@ const TEXTE = {
     videoAktiv: "Show live videos", takt: "Minutes per stream", nurTag: "only streams where it is daytime",
     sonne: "Minimum sun elevation (degrees)", mindeststufe: "Minimum quality", schlecht: "below it for this long, then skip (s)",
     grenze: "Strikes until a stream stops playing", sperre: "after a strike skip for (hours)",
+    kod: { titel: "Encoding (advanced)", encoder: "Encoder", preset: "Preset", tune: "Tune", bframes: "B-frames",
+      text: "“Automatic” is normally right. A change restarts this TV's stream (black for a few seconds); SignageCast tries it briefly first and stays with “Automatic” if it does not work here. Afterwards check under System → Performance whether encoding keeps up.",
+      art: { auto: "Automatic (recommended)", vaapi: "Intel/AMD graphics (VAAPI)", qsv: "Intel Quick Sync (QSV)", nvenc: "NVIDIA NVENC (experimental)", software: "Software (libx264)" },
+      info: { auto: "Uses the graphics unit via VAAPI, software without usable graphics.",
+        vaapi: "Video unit of Intel or AMD graphics via the open VAAPI interface – efficient, 4K, H.264 and H.265. Has no preset and no tune.",
+        qsv: "Intel's own way to the same video unit (Quick Sync via oneVPL), with presets. Needs Intel graphics of the 11th/12th generation or newer (e.g. N100, Core from Tiger Lake); with older Intel graphics use VAAPI.",
+        nvenc: "Video unit of an NVIDIA graphics card. Experimental and untested: card and NVIDIA driver must be available in the container (/dev/nvidia*, Docker --gpus all) – SignageCast does not set this up itself.",
+        software: "The processor encodes H.264 (libx264): works everywhere but costs about 1–2 cores per TV; always Full HD and at most 8 Mbit/s." },
+      grund: { keine_grafik: "no graphics (/dev/dri) found", qsv_alt: "needs Intel graphics of the 11th/12th generation or newer", keine_nvidia: "no NVIDIA card found" },
+      presetInfo: "How thoroughly the encoder works: ultrafast is the fastest, medium gives the nicest picture at the same bitrate but needs much more computing time – if the computer cannot keep up, the picture stutters. Quick Sync and NVENC get their matching own level.",
+      tuneArt: { zerolatency: "zerolatency (recommended)", keins: "none" },
+      tuneInfo: "zerolatency tunes the encoder for low delay (no look-ahead, every frame out at once) – recommended for live pictures, costs a little quality. “none” looks a few frames ahead: slightly nicer but slower to react.",
+      bfInfo: "B-frames are in-between frames that also refer to later frames: about 5–15 % less data, but more delay, and some TV browsers stutter with them. 0 is the safe choice for live streams.",
+      ohne: "VAAPI has no preset and no tune – the fields only apply to software, Quick Sync and NVENC.",
+      fehler: (enc, g) => `The setting does not work here (${enc}: ${g}) – this TV therefore uses “Automatic”.`,
+      aktiv: "Currently active", std: "default", standard: "Back to default" },
     codec: "Codec", codecArt: { auto: "Automatic (recommended)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatic: 4K as H.265 (half the data, supported by almost all 4K TVs), Full HD as H.264 (plays on practically every TV, browser and player). Choose H.264 if a device stutters or shows no picture – e.g. older TVs, Firefox; H.265 needs about 30–40 % less bitrate for the same quality.",
     kategorien: "Categories", streamTechnik: "Video stream", aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
@@ -764,7 +796,7 @@ async function leistungSeite(inhalt) {
     const s = erg.system, z = (w, ok) => `<td class="${ok ? "gut" : "schlecht"}">${w ?? "–"}</td>`;
     $("#ltErg").innerHTML = `<p class="leise">${esc(erg.zeit)}</p><div class="tabelle-rahmen"><table class="tabelle">
       <tr><th></th><th>${esc(T.lt.seite)}</th><th>${esc(T.lt.kodierung)}</th><th>${esc(T.lt.tempo)}</th><th>${esc(T.lt.verloren)}</th><th>${esc(T.lt.cpuKette)}</th></tr>
-      ${erg.fernseher.map((t) => `<tr><td><b>${esc(t.name)}</b><br><span class="leise">${t.aufloesung === 2160 ? "4K" : "Full HD"} · ${t.codec === "h265" ? "H.265" : "H.264"} · ${t.bitrate_mbit} Mbit/s</span></td>
+      ${erg.fernseher.map((t) => `<tr><td><b>${esc(t.name)}</b><br><span class="leise">${t.aufloesung === 2160 ? "4K" : "Full HD"} · ${t.codec === "h265" ? "H.265" : "H.264"} · ${ENC_KURZ[t.encoder] || ""} · ${t.bitrate_mbit} Mbit/s</span></td>
         ${t.laeuft ? z(t.fps_seite, (t.fps_seite ?? 25) >= 22) + z(t.fps_kodierung, (t.fps_kodierung ?? 25) >= 24) + z(t.tempo != null ? t.tempo + "×" : null, (t.tempo ?? 1) >= 0.97)
           + z((t.verworfen ?? 0) + (t.doppelt ?? 0), (t.verworfen ?? 0) + (t.doppelt ?? 0) <= erg.dauer_s * 2) + `<td>${t.cpu_kerne ?? "–"}</td>`
           : `<td colspan="5" class="leise">${esc(T.lt.aus)}</td>`}</tr>`).join("")}</table></div>
@@ -1256,8 +1288,46 @@ function zeitZeile(z) {
       ${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === z.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
     <button class="knopf gefahr" name="zweg">✕</button></div>`;
 }
+// Seit 0.22: Kodierung je Fernseher (Encoder, Preset, Tune, B-Frames) – was hier nicht geht, ist ausgegraut
+const ENC_KURZ = { vaapi: "VAAPI", qsv: "QSV", nvenc: "NVENC", software: "Software" };
+function kodierungTeil(t, sta) {
+  const verf = ((sta.kodierung || {}).encoder) || {};
+  const ts = (sta.fernseher || []).find((x) => x.id === t.id) || {};
+  const grund = (g) => T.kod.grund[g] || g;
+  const f = ts.kodier_fehler;
+  return `<h3>${esc(T.kod.titel)}</h3><p class="leise">${esc(T.kod.text)}</p>
+    ${f ? `<p class="warn">${esc(T.kod.fehler(T.kod.art[f.encoder] || f.encoder, grund(f.grund)))}</p>` : ""}
+    ${ts.encoder ? `<p class="leise">${esc(T.kod.aktiv)}: <b>${esc(T.kod.art[ts.encoder] || ts.encoder)}</b></p>` : ""}
+    <div class="zeile"><label>${esc(T.kod.encoder)}</label><select name="encoder">${Object.keys(T.kod.art).map((x) => {
+      const v = verf[x], nicht = x !== "auto" && v && !v.ok;
+      return `<option value="${x}" ${x === (t.encoder || "auto") ? "selected" : ""} ${nicht && x !== t.encoder ? "disabled" : ""}>${esc(T.kod.art[x])}${nicht ? " – " + esc(grund(v.grund)) : ""}</option>`;
+    }).join("")}</select></div>
+    <p class="leise" name="encInfo"></p>
+    <div class="zeile"><label>${esc(T.kod.preset)}</label><select name="preset">${["ultrafast", "superfast", "veryfast", "fast", "medium"].map((x) =>
+      `<option value="${x}" ${x === (t.preset || "veryfast") ? "selected" : ""}>${x}${x === "veryfast" ? ` (${esc(T.kod.std)})` : ""}</option>`).join("")}</select></div>
+    <p class="leise">${esc(T.kod.presetInfo)}</p>
+    <div class="zeile"><label>${esc(T.kod.tune)}</label><select name="tune">${Object.keys(T.kod.tuneArt).map((x) =>
+      `<option value="${x}" ${x === (t.tune || "zerolatency") ? "selected" : ""}>${esc(T.kod.tuneArt[x])}</option>`).join("")}</select></div>
+    <p class="leise">${esc(T.kod.tuneInfo)}</p><p class="leise" name="ohneInfo"></p>
+    <div class="zeile"><label>${esc(T.kod.bframes)}</label><input type="number" name="bframes" min="0" max="4" value="${t.bframes || 0}" style="width:70px"></div>
+    <p class="leise">${esc(T.kod.bfInfo)}</p>
+    <div class="zeile"><button class="knopf" name="kodStandard">${esc(T.kod.standard)}</button></div>`;
+}
+function kodierungAnbinden(k, sta) {
+  const w = (n) => k.querySelector(`[name=${n}]`);
+  const auto = ((sta.kodierung || {}).art) === "software" ? "software" : "vaapi";
+  const zeigen = () => {
+    const enc = w("encoder").value, wirk = enc === "auto" ? auto : enc;
+    w("encInfo").textContent = T.kod.info[enc];
+    w("preset").disabled = w("tune").disabled = wirk === "vaapi";
+    w("ohneInfo").textContent = wirk === "vaapi" ? T.kod.ohne : "";
+  };
+  w("encoder").onchange = zeigen; zeigen();
+  w("kodStandard").onclick = () => { w("encoder").value = "auto"; w("preset").value = "veryfast"; w("tune").value = "zerolatency"; w("bframes").value = 0; zeigen(); };
+}
 async function fernseherSeite(inhalt) {
   const st = await holen("/api/ha/einrichtung");
+  let sta = await holen("/api/status").catch(() => ({}));
   const ip = st.eigene_ip || location.hostname;
   const zeichnen = () => {
     inhalt.innerHTML = `<p class="leise">${esc(T.fernseherText)} ${esc(T.tvHinweis)}</p><div id="tvListe"></div>
@@ -1291,13 +1361,14 @@ async function fernseherSeite(inhalt) {
         <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
         ${KATEGORIEN.map((x) => `<div class="zeile"><label>${esc(T.kat[x] || x)}</label>${schalter("kat_" + x, !t.kategorien_aus.includes(x))}</div>`).join("")}</details>
         <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}, ${t.bitrate_mbit} Mbit/s, ${
-          (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}</summary>
+          (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}${
+          t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</summary>
         <div class="zeile"><label>${esc(T.aufloesung)}</label><select name="aufloesung"><option value="2160" ${t.aufloesung === 2160 ? "selected" : ""}>4K (3840×2160)</option>
           <option value="1080" ${t.aufloesung === 1080 ? "selected" : ""}>Full HD (1920×1080)</option></select></div>
         <div class="zeile"><label>${esc(T.bitrate)}</label><input type="number" name="bitrate_mbit" min="2" max="40" value="${t.bitrate_mbit}"></div>
         <div class="zeile"><label>${esc(T.codec)}</label><select name="codec">${Object.keys(T.codecArt).map((k) =>
           `<option value="${k}" ${k === (t.codec || "auto") ? "selected" : ""}>${esc(T.codecArt[k])}</option>`).join("")}</select></div>
-        <p class="leise">${esc(T.codecText)}</p></details>
+        <p class="leise">${esc(T.codecText)}</p>${kodierungTeil(t, sta)}</details>
         ${E.fernseher.length > 1 ? `<div class="zeile"><button class="knopf gefahr" name="weg">${esc(T.fernseherWeg)}</button></div>` : ""}</div>`);
       const zeitenAnbinden = () => k.querySelectorAll("[name=zweg]").forEach((b) => { b.onclick = () => b.closest(".zeile").remove(); });
       zeitenAnbinden();
@@ -1306,6 +1377,7 @@ async function fernseherSeite(inhalt) {
       k.querySelector("[name=ton]").onchange = senderSichtbar; senderSichtbar();
       const alleSichtbar = () => { k.querySelector("[name=alleTeil]").style.display = k.querySelector("[name=video_quelle]").value === "gemischt" ? "" : "none"; };
       k.querySelector("[name=video_quelle]").onchange = alleSichtbar; alleSichtbar();
+      kodierungAnbinden(k, sta);
       k.querySelector("[name=lautstaerke]").oninput = (e) => { k.querySelector("[name=lw]").textContent = e.target.value + " %"; };
       for (const [n, an] of [["schAus", false], ["schAn", true]])
         k.querySelector(`[name=${n}]`).onclick = (ev) => aktion(ev.target, () => senden("/api/fernseher/schalten", { tv: t.id, an }), T.schaltenOk);
@@ -1320,6 +1392,7 @@ async function fernseherSeite(inhalt) {
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
                kategorien_aus: KATEGORIEN.filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
                bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
+               encoder: w("encoder").value, preset: w("preset").value, tune: w("tune").value, bframes: Number(w("bframes").value) || 0,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),
                karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
                             layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
@@ -1330,10 +1403,15 @@ async function fernseherSeite(inhalt) {
       const alt = lesen();
       let n = 2; while (alt.some((t) => t.id === "tv" + n)) n++;
       E.fernseher = [...alt, { id: "tv" + n, name: T.weitererTv + " " + n, video: true, ton: "aus", radio_sender: "", lautstaerke: 70,
-                                kategorien_aus: [], aufloesung: 2160, bitrate_mbit: 16, codec: "auto" }];
+                                kategorien_aus: [], aufloesung: 2160, bitrate_mbit: 16, codec: "auto",
+                                encoder: "auto", preset: "veryfast", tune: "zerolatency", bframes: 0 }];
       zeichnen();
     };
-    $("#ok").onclick = async (e) => { await speichernE({ fernseher: lesen() }, e.target); zeichnen(); };
+    $("#ok").onclick = async (e) => {
+      await speichernE({ fernseher: lesen() }, e.target);
+      sta = await holen("/api/status").catch(() => sta);     // Ergebnis der Probe-Kodierung anzeigen
+      zeichnen();
+    };
   };
   zeichnen();
 }

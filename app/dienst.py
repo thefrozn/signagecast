@@ -40,7 +40,7 @@ PROJEKT = "thefrozn/signagecast"            # GitHub: Projektseite, Fehlermeldun
 CONTAINER = os.environ.get("SC_BETRIEB") == "container"     # Docker/Podman statt LXC
 START = time.time()
 
-zustand = {"einstellungen": E.laden(), "ha_teil": {"wetter": {}, "vorhersage": [], "werte": {}},
+zustand = {"einstellungen": E.laden(), "kodier_fehler": {}, "probe": {}, "ha_teil": {"wetter": {}, "vorhersage": [], "werte": {}},
            "vorhersage": [], "vh_zeit": 0, "kalender": {}, "wache": {}, "cpu": None, "ha_fehler": None}
 BILDER = os.path.join(DATEN, "bilder")
 met = W.MetWetter()
@@ -1256,7 +1256,8 @@ def fernseher_status(t):
             "aktuell": {"video_id": w["id"], "name": next((x["name"] for x in streams.liste if x["video_id"] == w["id"]), w["id"])}
             if w else None, "ton": t["ton"], "sender": sender if t["ton"] == "radio" else None, "video": t["video"],
             "layout": L.aktuelles_layout(t, einst()["layouts"], time.strftime("%H:%M"))["name"],
-            "radio_neu_verbunden": zustand.get("radio_neu", {}).get(t["id"], 0)}
+            "radio_neu_verbunden": zustand.get("radio_neu", {}).get(t["id"], 0),
+            "encoder": encoder_fuer(t), "kodier_fehler": zustand["kodier_fehler"].get(t["id"])}
 
 
 def eigene_ip():
@@ -1311,11 +1312,50 @@ def braucht_ton(t, e):
 
 
 def codec_fuer(t):
-    """Tatsächlicher Codec eines Fernsehers: ohne Grafik immer H.264; „auto“ = H.265 bei 4K, H.264 bei Full HD."""
-    software = (zustand.get("kodierung") or {}).get("art") == "software"
-    if software:
+    """Tatsächlicher Codec eines Fernsehers: in Software immer H.264; „auto“ = H.265 bei 4K, H.264 bei Full HD."""
+    if encoder_fuer(t) == "software":
         return "h264"
     return t["codec"] if t["codec"] != "auto" else ("h265" if t["aufloesung"] == 2160 else "h264")
+
+
+def encoder_fuer(t):
+    """Tatsächlicher Encoder: der gewählte, wenn er auf diesem Rechner geht und seine Probe bestanden hat – sonst
+    automatisch (VAAPI, ohne nutzbare Grafik Software). Solange die Erkennung noch läuft: VAAPI wie bisher."""
+    k = zustand.get("kodierung") or {}
+    auto = "software" if k.get("art") == "software" else "vaapi"
+    w = t.get("encoder", "auto")
+    if w == "auto" or not ((k.get("encoder") or {}).get(w) or {}).get("ok") or t["id"] in zustand["kodier_fehler"]:
+        return auto
+    return w
+
+
+def video_fuer(t):
+    """(Encoder, Ausgabegröße, ffmpeg-Argumente) eines Fernsehers. Weicht etwas vom bewährten Standard ab (anderer
+    Encoder, Preset, Tune oder B-Frames), wird es einmal probekodiert; geht der Encoder hier nicht oder scheitert die
+    Probe, gilt „Automatisch“ und der Grund steht beim Fernseher (zustand["kodier_fehler"])."""
+    k, fehler = zustand.get("kodierung"), zustand["kodier_fehler"]
+    fehler.pop(t["id"], None)
+
+    def standard():
+        enc = encoder_fuer(t)
+        ow, oh = (3840, 2160) if t["aufloesung"] == 2160 and enc != "software" else (1920, 1080)
+        return enc, (ow, oh), HW.video_args(enc, codec_fuer(t), ow, oh)
+    w = t.get("encoder", "auto")
+    if not k or (w == "auto" and t["preset"] == "veryfast" and t["tune"] == "zerolatency" and not t["bframes"]):
+        return standard()
+    if w != "auto" and not (k.get("encoder") or {}).get(w, {}).get("ok"):
+        fehler[t["id"]] = {"encoder": w, "grund": (k.get("encoder") or {}).get(w, {}).get("grund") or k.get("grund") or "unbekannt"}
+        return standard()
+    enc = encoder_fuer(t)
+    ow, oh = (3840, 2160) if t["aufloesung"] == 2160 and enc != "software" else (1920, 1080)
+    args = HW.video_args(enc, codec_fuer(t), ow, oh, t["preset"], t["tune"], t["bframes"])
+    if args not in zustand["probe"]:
+        zustand["probe"][args] = HW.probe(args)
+    ok, grund = zustand["probe"][args]
+    if ok:
+        return enc, (ow, oh), args
+    fehler[t["id"]] = {"encoder": enc, "grund": grund}
+    return standard()
 
 
 # ---------- Leistungstest (seit 0.18) ----------
@@ -1377,7 +1417,7 @@ def leistung_test(dauer=10):
            "fernseher": []}
     for t in e["fernseher"]:
         z = {"id": t["id"], "name": t["name"], "laeuft": t in laufend, "aufloesung": t["aufloesung"],
-             "bitrate_mbit": t["bitrate_mbit"], "codec": codec_fuer(t), "ton": braucht_ton(t, e)}
+             "bitrate_mbit": t["bitrate_mbit"], "codec": codec_fuer(t), "encoder": encoder_fuer(t), "ton": braucht_ton(t, e)}
         if z["laeuft"]:
             br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 60]
             if br:
@@ -1447,16 +1487,20 @@ def empfehlen(erg):
 def render_schreiben(e):
     """Je Fernseher die Werte für tv-render.sh (wirken beim nächsten Start seiner Kette) und die MediaMTX-Pfade
     (MediaMTX lädt die Datei bei Änderung selbst neu)."""
-    pfade = ""
+    pfade, geaendert = "", []
     for t in e["fernseher"]:
-        k = zustand.get("kodierung") or {}
-        software = k.get("art") == "software"           # ohne nutzbare Grafik: H.264 in Full HD per CPU
-        aus = "3840 2160" if t["aufloesung"] == 2160 and not software else "1920 1080"
-        codec = codec_fuer(t)
-        schreib_wenn_anders(os.path.join(DATEN, f"render-{t['id']}.env"),
-                            f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{aus}\"\nBITRATE={t['bitrate_mbit']}\n"
-                            f"KODIERUNG={'software' if software else 'vaapi'}\nCODEC={codec}\n"
-                            f"TON={'live' if braucht_ton(t, e) else 'stille'}\n")
+        enc, (ow, oh), video = video_fuer(t)            # Software: H.264 in Full HD per CPU
+        pfad = os.path.join(DATEN, f"render-{t['id']}.env")
+        try:
+            vorher = re.search(r"^VIDEO=.*$", open(pfad).read(), re.M)
+        except OSError:
+            vorher = None
+        neu = f'VIDEO="{video}"'
+        if vorher and vorher.group(0) != neu:
+            geaendert.append(t["id"])
+        schreib_wenn_anders(pfad, f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{ow} {oh}\"\n"
+                                  f"BITRATE={t['bitrate_mbit']}\nKODIERUNG={'software' if enc == 'software' else 'vaapi'}\n"
+                                  f"CODEC={codec_fuer(t)}\n{neu}\nTON={'live' if braucht_ton(t, e) else 'stille'}\n")
         pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
                   f"    runOnDemandStartTimeout: 40s\n    runOnDemandCloseAfter: {e['stream']['abschalten_s']}s\n")
     # Kameras (Datenquellen der Art „video“, RTSP/HLS): MediaMTX holt sie nur, solange jemand schaut; lesen darf sie
@@ -1471,6 +1515,7 @@ def render_schreiben(e):
             schreib_wenn_anders(MEDIAMTX_YML, vorlage.replace("{PFADE}", pfade.rstrip("\n")))
     except OSError:
         pass
+    return geaendert
 
 
 def kette_neu_starten(tv_id):
@@ -2096,7 +2141,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return {}
         if p == "/api/einstellungen":
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
-            render_schreiben(einst())
+            for tv_id in render_schreiben(einst()):          # neue Kodierung: laufende Kette neu (kurz schwarz)
+                kette_neu_starten(tv_id)
             neu_liste.set()
             einspieler_neu.set()
             fotograf.neu.set()

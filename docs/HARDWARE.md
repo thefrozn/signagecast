@@ -20,10 +20,11 @@ encoding (H.265/HEVC in 4K via VAAPI); the CPU mainly runs the browser, which de
 | | Recommendation |
 |---|---|
 | **Minimum (recommended)** | Mini PC with **Intel N100 / N95** (Alder Lake-N): H.264 and H.265 encoding in hardware up to 4K, 6–10 W, inexpensive |
-| **Good** | Any Intel CPU with integrated graphics from the **7th generation** (Kaby Lake) on, e.g. Core i5-7500T |
+| **Good** | Any Intel CPU with integrated graphics from the **7th generation** (Kaby Lake) on, e.g. Core i5-7500T – via VAAPI; the encoder *Intel Quick Sync (QSV)* needs the 11th/12th generation or newer (N100 etc.) |
 | **Works** | Intel 6th generation (Skylake): H.265 only 8 bit |
 | **Without usable graphics** | Software fallback: H.264 in Full HD on the CPU (about one more core while someone is watching) |
 | **AMD graphics** | VAAPI drivers are installed, but untested so far |
+| **NVIDIA graphics card** | Experimental from 0.22: encoder *NVIDIA NVENC* per TV, if card and driver are passed into the container (`/dev/nvidia*`, Docker `--gpus all`) – untested |
 | **Raspberry Pi** | Not suitable as a server: the Pi 5 has **no** hardware video encoder, the Pi 4 only H.264 up to 1080p and too little CPU for browser + video. A “player mode” (Pi at the TV showing the page directly via HDMI, no encoding) is an idea for later. |
 
 Per TV: about 1 GB RAM and one CPU core for the browser; disk 10 GB. The TV's browser must play **H.265** for 4K

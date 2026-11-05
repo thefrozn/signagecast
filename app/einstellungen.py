@@ -2,6 +2,7 @@
 # Datei: /etc/signagecast/einstellungen.json (Benutzer signagecast, Rechte 600). Unbekannte Schlüssel werden verworfen,
 # fehlende mit Standardwerten ergänzt – so übersteht die Datei auch Updates mit neuen Optionen.
 import copy, json, os, re
+import hardware as HW
 import layouts as L
 import quellen as Q
 from meldung import Meldung
@@ -19,7 +20,8 @@ STANDARD = {
     # Jeder Fernseher ist eine eigene Ausgabe mit eigener Adresse http://<IP>:8888/<id> und eigener Render-Kette
     "fernseher": [
         {"id": "tv", "nr": 0, "name": "TV", "layout": "standard", "zeitplan": [], "video": True, "ton": "aus", "radio_sender": "", "lautstaerke": 70,
-         "kategorien_aus": [], "aufloesung": 2160, "bitrate_mbit": 16, "codec": "auto"},
+         "kategorien_aus": [], "aufloesung": 2160, "bitrate_mbit": 16, "codec": "auto",
+         "encoder": "auto", "preset": "veryfast", "tune": "zerolatency", "bframes": 0},
     ],
     "radio": {
         "sender": [],                     # [{"id": "s1a2b3", "name": "…", "url": "https://…"}] – für alle Fernseher
@@ -230,6 +232,11 @@ def pruefen(e):
                           "aufloesung": aufl, "bitrate_mbit": _zahl(t.get("bitrate_mbit", alt.get("bitrate_mbit", 16)), 2, 40, int),
                           # seit 0.18: auto = H.265 bei 4K, H.264 bei Full HD (läuft auf praktisch jedem Gerät)
                           "codec": t.get("codec", alt.get("codec")) if t.get("codec", alt.get("codec")) in ("auto", "h264", "h265") else "auto",
+                          # seit 0.22: Kodierung für Fortgeschrittene (Werte siehe hardware.py)
+                          "encoder": t.get("encoder") if t.get("encoder") in HW.ENCODER else "auto",
+                          "preset": t.get("preset") if t.get("preset") in HW.PRESETS else "veryfast",
+                          "tune": t.get("tune") if t.get("tune") in HW.TUNES else "zerolatency",
+                          "bframes": _zahl(t.get("bframes", 0), 0, 4, int),
                           "nr": t.get("nr") if isinstance(t.get("nr"), int) and 0 <= t.get("nr") < 8 else None,
                           "layout": t.get("layout") if t.get("layout") in layout_ids else s["layouts"][0]["id"],
                           "zeitplan": _zeitplan(t.get("zeitplan"), layout_ids),

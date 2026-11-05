@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8 PYTHONUNBUFFERED=1 \
 
 RUN sed -i "s/^Components:.*/Components: main contrib non-free non-free-firmware/" /etc/apt/sources.list.d/debian.sources \
  && apt-get update \
- && apt-get install -y --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free mesa-va-drivers \
+ && apt-get install -y --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free libmfx-gen1.2 mesa-va-drivers \
       pulseaudio pulseaudio-utils fonts-roboto-unhinted fonts-dejavu-core fonts-open-sans fonts-lato fonts-montserrat \
       fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji \
       python3 python3-pyzipper curl ca-certificates procps tini tzdata poppler-utils \

@@ -5,12 +5,12 @@
 # Tierton) in einen eigenen virtuellen Tonkanal (PulseAudio-Null-Sink); ffmpeg nimmt Bild und Ton auf, die
 # Grafikeinheit (VAAPI) rechnet auf die Ausgabegröße hoch und kodiert H.265, der Ton wird AAC. Ohne nutzbare Grafik
 # (KODIERUNG=software, erkennt der Datendienst) kodiert die CPU H.264 in Full HD.
-# Werte je Fernseher (Bildschirm, DevTools-Port, Größe, Bitrate) aus /var/lib/signagecast/render-<id>.env (Datendienst).
+# Werte je Fernseher (Bildschirm, DevTools-Port, Größe, Bitrate, Kodierung) aus /var/lib/signagecast/render-<id>.env (Datendienst).
 set -u
 TV=${MTX_PATH:-tv}
 case "$TV" in *[!a-z0-9]*|"") echo "ungültige Kennung"; exit 1;; esac
 DATEN=/var/lib/signagecast
-DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265; TON=live
+DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265; TON=live; VIDEO=""
 [ -r "$DATEN/render-$TV.env" ] && . "$DATEN/render-$TV.env"
 OW=${AUSGABE% *}; OH=${AUSGABE#* }
 W=1920; H=1080                                   # Chromium zeichnet in Full HD (in 4K wäre er überlastet)
@@ -66,14 +66,16 @@ PULSE_SINK=$SINK LANG=de_DE.UTF-8 LANGUAGE=de DISPLAY=$DISP setsid chromium --la
 echo "$CR" >> "$PIDS"
 sleep 12   # Seite und Videos laden lassen
 
-if [ "$KODIERUNG" = software ]; then
-  # Notbetrieb ohne Grafik: H.264 Full HD per CPU (ca. 1–2 Kerne), höchstens 8 Mbit/s
-  [ "$BITRATE" -gt 8 ] && BITRATE=8
-  VIDEO="-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p"
-else
-  # H.265 (4K, kleiner) oder H.264 (läuft auf praktisch jedem Fernseher/Browser) – beides über die Grafikeinheit
-  if [ "$CODEC" = h264 ]; then ENC="h264_vaapi -profile:v high"; else ENC="hevc_vaapi -profile:v main"; fi
-  VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v $ENC"
+# Bild-Argumente für ffmpeg (Encoder, Preset, Tune, B-Frames) stellt seit 0.22 der Datendienst zusammen und
+# probekodiert sie vorher (app/hardware.py) – hier nur der bewährte Standard, falls die .env sie noch nicht enthält.
+[ "$KODIERUNG" = software ] && [ "$BITRATE" -gt 8 ] && BITRATE=8   # Software (CPU): höchstens 8 Mbit/s
+if [ -z "${VIDEO:-}" ]; then
+  if [ "$KODIERUNG" = software ]; then
+    VIDEO="-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -bf 0"
+  else
+    if [ "$CODEC" = h264 ]; then ENC="h264_vaapi -profile:v high"; else ENC="hevc_vaapi -profile:v main"; fi
+    VIDEO="-vaapi_device /dev/dri/renderD128 -vf hwupload,scale_vaapi=w=${OW}:h=${OH}:format=nv12 -c:v $ENC -bf 0"
+  fi
 fi
 # Ton: nur wenn auf diesem Fernseher Ton laufen kann (TON=live) aus PulseAudio – ein Echtzeit-Toneingang lässt ffmpeg
 # bei x11grab viele Bilder doppeln (Ruckeln); ohne Ton daher eine stille Spur (HLS-Player erwarten eine Tonspur).
@@ -90,7 +92,7 @@ if [ "$TON" = stille ]; then
   # Ohne Ton: ein Prozess mit stiller Spur (anullsrc bremst die Bildaufnahme nicht)
   setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
     -video_size ${W}x${H} -i $DISP -thread_queue_size 512 $TONEINGANG \
-    $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
+    $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 \
     -c:a aac -b:a 128k -ac 2 \
     -f rtsp -rtsp_transport tcp "$R/$TV" & FF=$!
 else
@@ -98,7 +100,7 @@ else
   # Bildaufnahme aus (gemessen: bis 90 % doppelte Bilder). A: nur Bild, B: Bild von A + Ton.
   setsid ffmpeg -hide_banner -loglevel error -nostats -stats_period 2 -progress "$FIFO" -thread_queue_size 512 -f x11grab -draw_mouse 0 -framerate 25 \
     -video_size ${W}x${H} -i $DISP -an \
-    $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 -bf 0 \
+    $VIDEO -b:v ${BITRATE}M -maxrate $((BITRATE * 5 / 4))M -bufsize $((BITRATE * 2))M -g 50 \
     -f rtsp -rtsp_transport tcp "$R/x_bild_$TV" & FF=$!
   sleep 3
   # B: fertiges Bild von A (über MediaMTX) + Ton aus PulseAudio -> Stream. Bremst ffmpeg hier den Bildeingang,

@@ -132,6 +132,22 @@ night stays on. Switching on works only if Home Assistant can do it (Samsung and
 integration; a smart plug works with TVs that start on power). After switching on, the TV must open the SignageCast
 address by itself (start page or autostart of its browser).
 
+### Choose the encoder (advanced)
+TVs → **Video stream** → **Encoding (advanced)**, per TV. Normally leave everything on *Automatic*. Every option has an
+explanation in the admin; in short:
+
+| Setting | Values | Meaning |
+|---|---|---|
+| **Encoder** | Automatic · Intel/AMD graphics (VAAPI) · Intel Quick Sync (QSV) · NVIDIA NVENC (experimental) · Software (libx264) | Automatic = VAAPI, without usable graphics software. QSV needs Intel graphics of the 11th/12th generation or newer (e.g. N100); NVENC needs an NVIDIA card with driver passed into the container – untested. Software: H.264, Full HD, at most 8 Mbit/s, about 1–2 cores per TV. |
+| **Preset** | ultrafast · superfast · **veryfast** · fast · medium | Slower = nicer picture at the same bitrate, but more computing time. Software uses the names directly, QSV and NVENC get their matching level (NVENC p1–p5). VAAPI has no presets. |
+| **Tune** | **zerolatency** · none | zerolatency = low delay (recommended for live pictures). VAAPI ignores it. |
+| **B-frames** | **0**–4 | Save about 5–15 % data but add delay; some TV browsers stutter. 0 is the safe choice. |
+
+Encoders that do not work on this computer are greyed out with the reason. Before a changed setting is used,
+SignageCast encodes one second as a test; if that fails, the TV stays on *Automatic* and the TV page says why. Saving
+restarts the stream of that TV (a few seconds black). Then check **System → Performance**: a speed below 1.0× means the
+setting is too heavy (measured on an i5-7500T: software *medium* without tune ran at only 0.73× real time).
+
 ### Get notified when something breaks
 Settings → Notifications. Channels (any combination):
 
@@ -197,4 +213,8 @@ Test-Knopf je Kanal.
 Seit 0.21: **PDF** als Baustein (bis 50 Seiten, blättert nach der Uhr), **Zeitraum** je Baustein
 („ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Einstellungen → Durchsage-Pult; im Pult für Zugänge mit
 dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernseher über Home Assistant schalten**
-(Fernseher → „Über HA schalten“: bei „schwarz“ aus, danach wieder an – nur beim Wechsel). Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.
+(Fernseher → „Über HA schalten“: bei „schwarz“ aus, danach wieder an – nur beim Wechsel).
+Seit 0.22: **Kodierung je Fernseher** (Fernseher → Videostream → „Kodierung (für Fortgeschrittene)“): Encoder
+(Automatisch, VAAPI, Intel Quick Sync ab 11./12. Generation, NVIDIA NVENC experimentell, Software libx264), Preset
+(ultrafast bis medium, Standard veryfast), Tune (zerolatency oder keins) und B-Frames (0–4, Standard 0) – mit Erklärung
+je Feld; was hier nicht geht, ist ausgegraut, jede Änderung wird vorher kurz probekodiert, sonst bleibt „Automatisch“. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.

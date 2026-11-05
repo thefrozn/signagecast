@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.22.0 (2026-11-05)
+- **Encoding per TV (advanced):** TVs → Video stream → *Encoding (advanced)*: encoder (Automatic, Intel/AMD graphics
+  via VAAPI, Intel Quick Sync, NVIDIA NVENC – experimental, untested –, software libx264), preset (ultrafast …
+  medium, default veryfast), tune (zerolatency or none) and B-frames (0–4, default 0), each with an explanation.
+  Encoders that do not work on this computer are greyed out with the reason; a changed setting is test-encoded for one
+  second first and the TV stays on *Automatic* (with a note) if it fails. Saving restarts the stream of that TV. The
+  performance test shows the encoder per TV.
+- New package `libmfx-gen1.2` (Intel Quick Sync runtime for Intel graphics of the 11th/12th generation and newer).
+
 ## v0.21.2 (2026-11-05)
 - Docker/NAS: the log line with the initial admin password is now in German and English and names the right place
   to change it (System → Access); the installer points to Settings → Home Assistant.
