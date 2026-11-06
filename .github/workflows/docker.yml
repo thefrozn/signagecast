@@ -35,3 +35,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # SBOM (SPDX, alle Pakete im Image) und Herkunftsnachweis als Attestierung am Image (seit 0.30);
+          # ansehen: docker buildx imagetools inspect ghcr.io/thefrozn/signagecast:<version> --format "{{ json .SBOM }}"
+          sbom: true
+          provenance: mode=max

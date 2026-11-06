@@ -94,6 +94,9 @@ while [ $i -lt 32 ]; do                 # 32 Blöcke à 512 Byte, jeder mit eige
   printf '%-511s\n' "$MARKE-$(printf %04d $i)" >> "$B/signagecast.json"
   i=$((i + 1))
 done
+# Paketliste für die SBOM (seit 0.30) – direkt aus der dpkg-Datenbank des Images
+dpkg-query --admindir="$A/root/var/lib/dpkg" -W -f '${Package}\t${Version}\t${Architecture}\t${source:Package}\n' > "$A/pakete.tsv"
+echo "   $(wc -l < "$A/pakete.tsv") Pakete im Image"
 sync
 umount -R "$A/root"
 e2fsck -fy "${LOOP}p2" >/dev/null || true
@@ -133,9 +136,11 @@ mkdir -p "$AUS"
 N=signagecast-player-v$V.img.xz
 GROESSE=$(stat -c %s "$IMG")
 xz -T0 -6 -c "$IMG" > "$AUS/$N"
-python3 - "$AUS" "$N" "$V" "$GROESSE" "$OFFSET" "$MARKE" "$(basename "$URL")" <<'PY'
+SB=signagecast-player-v$V.cdx.json
+python3 "$HIER/../werkzeug/sbom.py" pi --version "$V" --dpkg "$A/pakete.tsv" --basis "$(basename "$URL")" > "$AUS/$SB"
+python3 - "$AUS" "$N" "$V" "$GROESSE" "$OFFSET" "$MARKE" "$(basename "$URL")" "$SB" <<'PY'
 import hashlib, json, os, sys, time
-aus, n, v, groesse, offset, marke, basis = sys.argv[1:]
+aus, n, v, groesse, offset, marke, basis, sb = sys.argv[1:]
 h = hashlib.sha256()
 with open(os.path.join(aus, n), "rb") as f:
     for teil in iter(lambda: f.read(1 << 20), b""):
@@ -143,7 +148,9 @@ with open(os.path.join(aus, n), "rb") as f:
 meta = {"art": "signagecast-player-image", "version": v, "datei": n, "sha256": h.hexdigest(),
         "xz_groesse": os.path.getsize(os.path.join(aus, n)), "groesse": int(groesse),
         "platzhalter": {"offset": int(offset), "laenge": 16384, "marke": marke}, "basis": basis,
-        "erstellt": time.strftime("%Y-%m-%d")}
+        "erstellt": time.strftime("%Y-%m-%d"),
+        # SBOM des Images (seit 0.30): ihre Prüfsumme steht hier, die .json wird signiert
+        "sbom": {"datei": sb, "sha256": hashlib.sha256(open(os.path.join(aus, sb), "rb").read()).hexdigest()}}
 json.dump(meta, open(os.path.join(aus, f"signagecast-player-v{v}.json"), "w"), indent=1)
 print(json.dumps(meta, indent=1))
 PY

@@ -44,6 +44,13 @@ within a maintenance window and only while nobody is watching. Default: notify o
   SignageCast – a checksum alone would not help if the GitHub account were taken over.
   Public key: `RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD`
   (check manually: `minisign -Vm signagecast-vX.Y.Z.tar.gz -P <key>`).
+- **Software bill of materials (SBOM, from v0.30.0):** every release carries `signagecast-vX.Y.Z.cdx.json`
+  (CycloneDX 1.5: the bundled third-party components with checksums, MediaMTX and the Debian packages the
+  installation adds), listed in `SHA256SUMS` and signed like the package. The Raspberry Pi image has its own SBOM with
+  every package and version (`signagecast-player-vX.Y.Z.cdx.json`; its checksum is part of the signed image
+  description). The container image on GHCR carries an SPDX SBOM and provenance as build attestations
+  (`docker buildx imagetools inspect ghcr.io/thefrozn/signagecast:X.Y.Z --format "{{ json .SBOM }}"`). Feed them to
+  a scanner such as Grype or Trivy, e.g. `grype sbom:signagecast-player-vX.Y.Z.cdx.json`.
 - **Safe update:** settings and data are backed up first; the previous version is kept. If SignageCast does not run
   within a minute after the update, it returns to the previous version automatically.
 - **How it works:** the admin page runs without root rights. It only drops a request file with one word (`pruefen`,
@@ -72,4 +79,6 @@ Container (H.264 nötig). Webseiten live nur, wo die Seite das Einbetten erlaubt
 nur wenn niemand zuschaut; Rückkehr zur vorigen Version, automatisch bei Fehlern) und „Sicherung“ (ZIP, mit Zugangsdaten
 nur AES-256 mit starkem Passwort). Ab v0.13.0 sind alle Releases mit minisign **signiert**; Updates installieren nur
 Pakete mit gültiger Signatur (öffentlicher Schlüssel `RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD`).
+Ab v0.30.0 hat jedes Release eine signierte **SBOM** (CycloneDX) fürs Paket und fürs Pi-Image (alle Pakete mit
+Version); das Container-Image trägt eine SPDX-SBOM als Attestierung.
 Docker/NAS: Update über ein neues Image.

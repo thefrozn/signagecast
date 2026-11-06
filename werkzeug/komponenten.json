@@ -1,0 +1,17 @@
+{
+ "_hinweis": "Fremdkomponenten von SignageCast – eine Quelle für NOTICE.md (ein Test prüft die Übereinstimmung) und die SBOM (werkzeug/sbom.py). Debian-Pakete liest sbom.py aus installieren.sh bzw. dem Pi-Image.",
+ "komponenten": [
+  {"name": "Material Design Icons", "id": "mdi", "version": "7.4.47", "lizenz": "Apache-2.0",
+   "url": "https://pictogrammers.com/library/mdi/", "purl": "pkg:npm/%40mdi/font@7.4.47",
+   "pfade": ["www/mdi", "cockpit/signagecast/mdi"]},
+  {"name": "qrcode-generator", "id": "qrcode", "version": "1.4.4", "lizenz": "MIT",
+   "url": "https://github.com/kazuhikoarase/qrcode-generator", "purl": "pkg:npm/qrcode-generator@1.4.4",
+   "pfade": ["www/qrcode.js"]},
+  {"name": "hls.js", "id": "hlsjs", "version": "1.5.20", "lizenz": "Apache-2.0",
+   "url": "https://github.com/video-dev/hls.js", "purl": "pkg:npm/hls.js@1.5.20",
+   "pfade": ["www/hls"]},
+  {"name": "MediaMTX", "id": "mediamtx", "version": "v1.21.3", "lizenz": "MIT",
+   "url": "https://github.com/bluenviron/mediamtx", "purl": "pkg:golang/github.com/bluenviron/mediamtx@v1.21.3",
+   "pfade": [], "geladen": "installieren.sh / Dockerfile laden es zur Installation (Prüfsumme geprüft)"}
+ ]
+}

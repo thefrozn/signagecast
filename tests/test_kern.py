@@ -1062,5 +1062,52 @@ class Leistung(unittest.TestCase):
         self.assertNotIn("}, 2000);", js[js.index("durchsagenHolen") - 300:])
 
 
+
+class Sbom(unittest.TestCase):
+    """Seit 0.30: SBOM (CycloneDX) aus werkzeug/komponenten.json – muss zu NOTICE.md und den Installationsskripten passen."""
+    BASIS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+    def lesen(self, *p):
+        return open(os.path.join(self.BASIS, *p), encoding="utf-8").read()
+
+    def test_komponenten_wie_notice_und_skripte(self):
+        k = {x["id"]: x for x in json.loads(self.lesen("werkzeug", "komponenten.json"))["komponenten"]}
+        notice = self.lesen("NOTICE.md")
+        for x in k.values():
+            self.assertIn(x["version"], notice, x["name"])
+            for p in x["pfade"]:
+                self.assertTrue(os.path.exists(os.path.join(self.BASIS, p)), p)
+        mtx = k["mediamtx"]["version"]
+        self.assertIn(f"MTX_VERSION={mtx}", self.lesen("installieren.sh"))
+        self.assertIn(f"ARG MTX_VERSION={mtx}", self.lesen("Dockerfile"))
+        self.assertIn(f'"{k["hlsjs"]["version"]}"', self.lesen("www", "hls", "hls.light.min.js"))
+        self.assertIn(f'v={k["mdi"]["version"]}', self.lesen("www", "mdi", "css", "materialdesignicons.min.css"))
+
+    def test_paket_sbom(self):
+        sys.path.insert(0, os.path.join(self.BASIS, "werkzeug"))
+        import sbom
+        b = sbom.paket("9.9.9", None)
+        self.assertEqual((b["bomFormat"], b["specVersion"]), ("CycloneDX", "1.5"))
+        namen = {c["name"] for c in b["components"]}
+        for n in ("MediaMTX", "hls.js", "chromium", "ffmpeg", "cockpit-ws"):
+            self.assertIn(n, namen)
+        self.assertTrue(all(c.get("hashes") for c in b["components"] if c["bom-ref"] in ("mdi", "qrcode", "hlsjs")))
+        self.assertEqual(len({c["bom-ref"] for c in b["components"]}), len(b["components"]))
+        self.assertEqual(sbom.paket("9.9.9", None)["serialNumber"], b["serialNumber"])        # wiederholbar
+
+    def test_pi_sbom(self):
+        sys.path.insert(0, os.path.join(self.BASIS, "werkzeug"))
+        import sbom
+        with tempfile.NamedTemporaryFile("w", suffix=".tsv", delete=False) as f:
+            f.write("mpv\t0.35.1-4\tarm64\t\nlibc6\t2.36-9+rpt2\tarm64\tglibc\nlibc6\t2.36-9+rpt2\tarm64\tglibc\n")
+        b = sbom.pi("9.9.9", f.name, "raspios.img.xz")
+        os.unlink(f.name)
+        self.assertEqual([c["name"] for c in b["components"]], ["libc6", "mpv"])
+        self.assertEqual(b["components"][0]["purl"], "pkg:deb/debian/libc6@2.36-9+rpt2?arch=arm64&distro=debian-13")
+
+    def test_player_quelle_ignoriert_sbom(self):
+        self.assertIn('not n.endswith(".cdx.json")', self.lesen("app", "player.py"))
+
+
 if __name__ == "__main__":
     unittest.main()

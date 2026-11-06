@@ -33,6 +33,14 @@ if [ "$TROCKEN" = "--player" ]; then
   minisign -Vqm "$P/$M" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel"
   gh release upload "$TAG" "$P/$M.minisig" --clobber
   echo "   ok: $M signiert"
+  # SBOM des Images (seit 0.30): Prüfsumme steht in der .json – erst prüfen, dann signieren
+  S="signagecast-player-$TAG.cdx.json"
+  gh release download "$TAG" -p "$S" -D "$P" --clobber >/dev/null 2>&1 || fehler "$S nicht im Release"
+  python3 -c 'import hashlib,json,sys; m=json.load(open(sys.argv[1])); assert m["sbom"]["sha256"]==hashlib.sha256(open(sys.argv[2],"rb").read()).hexdigest()' "$P/$M" "$P/$S" \
+    || fehler "$S passt nicht zur Prüfsumme in $M"
+  minisign -Sqm "$P/$S" -s "$SCHLUESSEL_DATEI" -t "SignageCast Player $TAG SBOM"
+  gh release upload "$TAG" "$P/$S.minisig" --clobber
+  echo "   ok: $S signiert"
   exit 0
 fi
 
@@ -63,9 +71,15 @@ A="signagecast-$TAG.tar.gz"
 
 echo "== Paket, Prüfsumme, Signatur"
 git archive --format=tar.gz --prefix="signagecast-$TAG/" -o "$ARBEIT/$A" HEAD
-(cd "$ARBEIT" && sha256sum "$A" > SHA256SUMS)
-minisign -Sqm "$ARBEIT/$A" -s "$SCHLUESSEL_DATEI" -t "SignageCast $TAG"
-minisign -Vqm "$ARBEIT/$A" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel im Programm"
+# SBOM (seit 0.30, CycloneDX): Fremdkomponenten, MediaMTX, Debian-Pakete; Zeitstempel = Commit (wiederholbar)
+B="signagecast-$TAG.cdx.json"
+SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) python3 werkzeug/sbom.py paket --version "$V" --datei "$ARBEIT/$A" > "$ARBEIT/$B" \
+  || fehler "SBOM"
+(cd "$ARBEIT" && sha256sum "$A" "$B" > SHA256SUMS)
+for f in "$A" "$B"; do
+  minisign -Sqm "$ARBEIT/$f" -s "$SCHLUESSEL_DATEI" -t "SignageCast $TAG"
+  minisign -Vqm "$ARBEIT/$f" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel im Programm"
+done
 sed -n "/^## $TAG /,/^## v/p" CHANGELOG.md | sed '1d;$d' > "$ARBEIT/notizen.md"
 cat "$ARBEIT/SHA256SUMS"
 
@@ -77,12 +91,12 @@ fi
 echo "== Veröffentlichen"
 git tag -a "$TAG" -m "SignageCast $TAG"
 git push -q origin "$TAG"
-gh release create "$TAG" "$ARBEIT/$A" "$ARBEIT/SHA256SUMS" "$ARBEIT/$A.minisig" --title "SignageCast $TAG" --notes-file "$ARBEIT/notizen.md"
+gh release create "$TAG" "$ARBEIT/$A" "$ARBEIT/SHA256SUMS" "$ARBEIT/$A.minisig" "$ARBEIT/$B" "$ARBEIT/$B.minisig" --title "SignageCast $TAG" --notes-file "$ARBEIT/notizen.md"
 
 echo "== Gegenprobe (von GitHub laden)"
 P="$ARBEIT/probe"; mkdir "$P"
 for _ in 1 2 3 4 5; do gh release download "$TAG" -D "$P" --clobber >/dev/null 2>&1 && break; sleep 3; done
 (cd "$P" && sha256sum -c SHA256SUMS >/dev/null) || fehler "Prüfsumme der hochgeladenen Datei falsch"
-minisign -Vqm "$P/$A" -P "$OEFFENTLICH" -x "$P/$A.minisig" || fehler "Signatur der hochgeladenen Datei falsch"
+for f in "$A" "$B"; do minisign -Vqm "$P/$f" -P "$OEFFENTLICH" -x "$P/$f.minisig" || fehler "Signatur von $f falsch"; done
 echo "   ok: https://github.com/thefrozn/signagecast/releases/tag/$TAG"
 echo "   Player-Image baut GitHub Actions (~20 min); danach: ./release.sh $TAG --player"

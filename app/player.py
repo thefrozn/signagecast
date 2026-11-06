@@ -474,7 +474,8 @@ def _holen(url, ziel=None, fortschritt=None):
 def _quelle(version):
     """(Version, {Name: Adresse}) des neuesten Release mit Player-Image – zuerst das zur eigenen Version."""
     if QUELLE:
-        meta = next((n for n in sorted(os.listdir(QUELLE)) if re.fullmatch(r"signagecast-player-v.+\.json", n)), None)
+        meta = next((n for n in sorted(os.listdir(QUELLE)) if re.fullmatch(r"signagecast-player-v.+\.json", n)
+                     and not n.endswith(".cdx.json")), None)          # seit 0.30 liegt die SBOM daneben
         if not meta:
             raise Fehler("pi_kein_image")
         v = meta[len("signagecast-player-v"):-5]

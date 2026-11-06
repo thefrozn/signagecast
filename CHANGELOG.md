@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.30.0 (2026-11-06)
+- **Software bill of materials (SBOM):** every release now carries `signagecast-vX.Y.Z.cdx.json` (CycloneDX 1.5) –
+  bundled third-party components with checksums (Material Design Icons, qrcode-generator, hls.js), MediaMTX and the
+  Debian packages the installation adds; listed in `SHA256SUMS` and signed with minisign like the package. Generated
+  by `werkzeug/sbom.py` (standard library only, repeatable) from `werkzeug/komponenten.json`; a test keeps it in line
+  with `NOTICE.md`, `installieren.sh` and the `Dockerfile`.
+- **Raspberry Pi image SBOM:** `signagecast-player-vX.Y.Z.cdx.json` lists every package of the image with version;
+  its checksum is part of the signed image description and the file itself is signed too.
+- **Container image:** SPDX SBOM and provenance (build attestations) on GHCR.
+
 ## v0.29.1 (2026-11-06)
 - **Live videos stay H.264:** the render extension now reports VP9 and AV1 as unsupported (also to
   `MediaSource.isTypeSupported` and `canPlayType`, like h264ify). Reporting them only as “not smooth” was not enough –

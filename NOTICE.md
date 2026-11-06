@@ -1,6 +1,7 @@
 # Third-party components / Fremdkomponenten
 
-SignageCast itself is licensed under the MIT License (see `LICENSE`). It contains or uses:
+SignageCast itself is licensed under the MIT License (see `LICENSE`). It contains or uses (machine-readable in
+`werkzeug/komponenten.json` and in the SBOM `signagecast-vX.Y.Z.cdx.json` of every release since v0.30.0):
 
 | Component | Where | License |
 |---|---|---|
