@@ -829,5 +829,95 @@ class Kopplung025(unittest.TestCase):
         self.assertEqual(r["kalender"], "Test")
 
 
+class Csv026(unittest.TestCase):
+    """Seit 0.26: allgemeiner CSV-Import, Datenquellen aus hochgeladenen Dateien, CSV als Termine für den Kalender."""
+    ROH = ("ORT,ORTSTEIL,STANDORT,FRAKTION,TERMIN\n"
+           "Musterstadt,Hauptstr. ,,Restmüll,Mi 07.01.2026\n"
+           "Musterstadt,Hauptstr. ,Wertstoffhof; Ringstraße 1,Problemmüll,Sa 07.03.2026\n"
+           "\n"
+           "Musterstadt,Hauptstr. ,,Papiertonne,Do 08.01.2026\n")
+
+    def test_analysieren_erkennt_und_liest_windows_csv(self):
+        import csvimport as C
+        zitiert = self.ROH.replace("Wertstoffhof; Ringstraße 1", '"Wertstoffhof; Ringstraße 1"')
+        for roh, trenner in ((self.ROH.encode("cp1252"), ","), (zitiert.replace(",", ";").encode(), ";"),
+                             (zitiert.replace(",", "\t").encode("utf-8-sig"), "tab")):
+            a = C.analysieren(roh)
+            self.assertEqual((a["optionen"]["trenner"], a["optionen"]["kopfzeile"], a["zeilen"]), (trenner, True, 3))
+            self.assertEqual([s["name"] for s in a["spalten"]], ["ORT", "ORTSTEIL", "STANDORT", "FRAKTION", "TERMIN"])
+            self.assertEqual(a["spalten"][3]["beispiele"][0], "Restmüll")
+        z = C.lesen(self.ROH.encode(), {"trenner": ",", "felder": [{"spalte": 3, "name": "Art"}, {"spalte": 4, "name": "Wann"}]})
+        self.assertEqual(z[1], {"Art": "Problemmüll", "Wann": "Sa 07.03.2026"})
+        self.assertEqual(len(C.lesen(self.ROH.encode(), {"trenner": ","})[0]), 5)          # ohne Auswahl alle Spalten
+        mit = C.lesen(b'Name;Wert\n"M\xc3\xbcller; Hans";"3"\n', {"trenner": ";"})
+        self.assertEqual(mit, [{"Name": "Müller; Hans", "Wert": "3"}])
+        ohne = C.lesen(b'a;b\n"x;y\n', {"trenner": ";", "anfuehrung": ""})
+        self.assertEqual(ohne, [{"a": '"x', "b": "y"}])
+        self.assertEqual(C.analysieren(b"1,2\n3,4\n")["spalten"][0]["name"], "Spalte 1")
+        for falsch in ({"trenner": "x"}, {"anfuehrung": "*"}, {"kodierung": "ebcdic"}, {"felder": [{"spalte": 0, "name": ""}]},
+                       {"felder": [{"spalte": 0, "name": "a"}, {"spalte": 1, "name": "a"}]}):
+            with self.assertRaises(M.Meldung):
+                C.optionen_pruefen(falsch)
+        with self.assertRaises(M.Meldung):
+            C.analysieren(b"\n \n")
+
+    def test_datum_und_zeit(self):
+        import csvimport as C
+        d = datetime.date
+        self.assertEqual([C.datum_finden(s) for s in ("Mi 07.01.2026", "2026-01-07", "7.1.26", "07/01/2026", "31.02.2026", "")],
+                         [d(2026, 1, 7)] * 4 + [None, None])
+        self.assertEqual(C.zeit_finden("Mi 07.01.2026 18:30 Uhr"), datetime.time(18, 30))
+        self.assertIsNone(C.zeit_finden("07.01.2026"))
+
+    def test_quelle_aus_datei_mit_terminen(self):
+        heute = datetime.date.today()
+        tag = lambda n: (heute + datetime.timedelta(days=n)).strftime("%a %d.%m.%Y")
+        roh = (f"FRAKTION;TERMIN;ORT\nRestmüll;{tag(-3)};\nBiotonne;{tag(5)};Hof\nPapier;{tag(1)} 07:30;\nkaputt;irgendwann;\n").encode("cp1252")
+        alt = Q.DATEIEN
+        with tempfile.TemporaryDirectory() as d:
+            Q.DATEIEN = d
+            try:
+                self.assertEqual(Q.datei_art(roh, "abfuhr.csv"), "csv")
+                self.assertEqual(Q.datei_art(b"BEGIN:VCALENDAR\r\nEND:VCALENDAR", "x.ics"), "ical")
+                h = Q.datei_ablegen(roh)
+                self.assertEqual(Q.datei_ablegen(roh), h)
+                q = Q.pruefen([{"id": "muell", "art": "csv", "herkunft": "datei", "datei": {"hash": h, "name": "abfuhr.csv"}, "url": "egal",
+                                "csv": {"trenner": ";", "felder": [{"spalte": 0, "name": "Art"}, {"spalte": 1, "name": "Datum"}, {"spalte": 2, "name": "Ort"}],
+                                        "kalender": {"datum": "Datum", "titel": "Art", "ort": "Ort"}}}])[0]
+                self.assertEqual((q["url"], q["herkunft"], q["csv"]["kalender"]["datum"]), ("", "datei", "Datum"))
+                daten, _ = Q.Quellen(lambda: {}).abrufen(q)
+                self.assertEqual(len(daten["zeilen"]), 4)
+                self.assertEqual([t["titel"] for t in daten["termine"]], ["Papier", "Biotonne"])     # vergangene fallen weg, sortiert
+                self.assertFalse(daten["termine"][0]["ganztag"])
+                self.assertEqual((daten["termine"][1]["start"], daten["termine"][1]["ort"]), ((heute + datetime.timedelta(days=5)).isoformat(), "Hof"))
+                # Kalender-Baustein zeigt CSV-Termine wie iCal
+                class Qn:
+                    stand, verlauf = {}, None
+                    daten = staticmethod(lambda qid: daten if qid == "muell" else None)
+                api, _ = Q.baustein_werte({"elemente": [{"id": "k", "typ": "kalender", "optionen": {"quelle": "muell", "tage": 3, "anzahl": 4}}]},
+                                          Qn, "de", [q])
+                self.assertEqual([t["titel"] for t in api["k"]["termine"]], ["Papier"])
+                with self.assertRaises(M.Meldung) as f:
+                    Q.csv_zerlegen(roh, dict(q["csv"], kalender={"datum": "Art"}))
+                self.assertEqual(f.exception.code, "csv_kein_datum")
+                for falsch in ({"datei": {"hash": "../etc/passwd"}}, {"art": "bild"}, {"csv": {"trenner": ";"}}):
+                    with self.assertRaises(M.Meldung):
+                        Q.pruefen([dict({"id": "muell", "art": "csv", "herkunft": "datei", "datei": {"hash": h},
+                                         "csv": {"felder": [{"spalte": 0, "name": "a"}]}}, **falsch)])
+                os.utime(os.path.join(d, h), (1, 1))
+                Q.dateien_aufraeumen({h})
+                self.assertTrue(os.path.exists(os.path.join(d, h)))
+                Q.dateien_aufraeumen(set())
+                self.assertFalse(os.path.exists(os.path.join(d, h)))
+                with self.assertRaises(M.Meldung):
+                    Q.datei_lesen(h)
+            finally:
+                Q.DATEIEN = alt
+
+    def test_alte_quellen_bleiben_gueltig(self):
+        q = Q.pruefen([{"id": "news", "art": "rss", "url": "https://example.org/rss"}])[0]
+        self.assertEqual((q["herkunft"], "datei" in q, "csv" in q), ("url", False, False))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -97,6 +97,10 @@ for pages that forbid embedding.
 ### 10. Data sources
 Your own JSON APIs, RSS/Atom feeds, pictures, iCal calendars and cameras, fetched by the container at the interval you
 choose. “View data” shows the response as a tree; a click copies the path for use in elements and placeholders.
+Instead of an address, a source can also be an uploaded file (up to 1 MB) – e.g. the waste collection calendar of your
+town as `.ics` or `.csv` when it offers no subscription address. For CSV you choose delimiter, quote character, header
+row and character set (all detected automatically), which columns to import under which name, and optionally a date
+column: the rows then appear as events in the *Calendar / waste collection* element.
 
 ![Data sources with response tree](tour/07-data-sources.jpg)
 

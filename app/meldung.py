@@ -156,6 +156,20 @@ DE = {
     "pi_koppel_voll": "Zu viele Kopplungsanfragen – in einer Stunde erneut versuchen",
     "pi_basis_alt": "Das geladene Player-Image ({v}) kann sich noch nicht koppeln – oben „Neu laden“ (ab 0.25)",
     "pi_code": "Kein Pi zeigt diesen Code – Code am Fernseher prüfen (er gilt 10 Minuten)",
+    # seit 0.26: CSV-Import und hochgeladene Dateien für Datenquellen
+    "csv_kodierung": "Unbekannter Zeichensatz",
+    "csv_trenner": "Unbekanntes Trennzeichen",
+    "csv_anfuehrung": "Unbekanntes Anführungszeichen",
+    "csv_spalte": "Ungültige Spaltennummer",
+    "csv_feldname": "Feldname fehlt oder ist doppelt: {name}",
+    "csv_keine_felder": "Bitte mindestens ein Feld wählen",
+    "csv_kaputt": "CSV nicht lesbar: {d}",
+    "csv_leer": "Keine Daten in der CSV-Datei",
+    "csv_kein_datum": "In der Spalte „{feld}“ steht kein lesbares Datum (z. B. 07.01.2026 oder 2026-01-07)",
+    "q_datei": "{id}: Datei fehlt – bitte hochladen",
+    "q_datei_art": "{id}: Diese Art kann nicht aus einer Datei kommen",
+    "q_datei_leer": "Die Datei ist leer",
+    "q_datei_fehlt": "Die hochgeladene Datei ist nicht mehr da – bitte erneut hochladen",
 }
 
 

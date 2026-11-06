@@ -25,6 +25,7 @@ import unwetter as UW                         # noqa: E402
 import benachrichtigung as BN                 # noqa: E402
 import durchsage as DS                        # noqa: E402
 import quellen as Q                           # noqa: E402
+import csvimport as CSV                       # noqa: E402
 import webbild as WB                          # noqa: E402
 import pdf as PDF                             # noqa: E402
 import player as PL                           # noqa: E402
@@ -43,6 +44,7 @@ START = time.time()
 zustand = {"einstellungen": E.laden(), "kodier_fehler": {}, "probe": {}, "ha_teil": {"wetter": {}, "vorhersage": [], "werte": {}},
            "vorhersage": [], "vh_zeit": 0, "kalender": {}, "wache": {}, "cpu": None, "ha_fehler": None}
 BILDER = os.path.join(DATEN, "bilder")
+Q.DATEIEN = os.path.join(DATEN, "quelldateien")       # hochgeladene Dateien der Datenquellen (seit 0.26)
 met = W.MetWetter()
 zeit_neu = threading.Event()
 wetter_neu = threading.Event()
@@ -1751,6 +1753,27 @@ def devport(tv_id):
     return wache.BASIS_PORT + t["nr"] if t else None
 
 
+# ---------- CSV-Import (seit 0.26) ----------
+def csv_roh(d):
+    """Rohdaten für den CSV-Import: {"daten": base64} | {"datei": hash} | {"quelle": {...}} (Adresse wird geholt)."""
+    if d.get("daten"):
+        roh = base64.b64decode(str(d["daten"]).split(",")[-1], validate=False)
+        if len(roh) > Q.MAX_DATEI:
+            raise Q.Fehler("zu_gross", mb=Q.MAX_DATEI // 1_000_000)
+        return roh
+    if d.get("datei"):
+        return Q.datei_lesen(str(d["datei"]))
+    if isinstance(d.get("quelle"), dict):
+        roh = [dict(d["quelle"], art="text", herkunft="url")]
+        Q.demaskieren(roh, einst()["quellen"])
+        return Q.holen(Q.pruefen(roh)[0])[0]
+    raise M.Meldung("csv_leer")
+
+
+def csv_analysieren(d):
+    return CSV.analysieren(csv_roh(d), d.get("optionen") if isinstance(d.get("optionen"), dict) else None)
+
+
 # ---------- Sicherung / Profil ----------
 SICHERUNGEN = os.path.join(DATEN, "sicherungen")
 MEDIEN = os.path.join(DATEN, "medien")
@@ -1786,6 +1809,9 @@ def sicherung_zip(mit_geheimnissen, passwort=None):
     for n in {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf" and x["optionen"]["datei"]}:
         for i in range(1, PDF.seiten(PDF_ORDNER, n) + 1):             # Seiten der PDFs in Layouts (seit 0.21)
             dateien[f"pdf/{n}/{i}.jpg"] = open(os.path.join(PDF_ORDNER, n, f"{i}.jpg"), "rb").read()
+    for q in einst()["quellen"]:                 # hochgeladene Dateien der Datenquellen (seit 0.26)
+        if q.get("datei") and os.path.exists(os.path.join(Q.DATEIEN, q["datei"]["hash"])):
+            dateien[f"quelldateien/{q['datei']['hash']}"] = open(os.path.join(Q.DATEIEN, q["datei"]["hash"]), "rb").read()
     if qn.verlauf:
         with qn.verlauf.sperre:
             dateien["verlauf.json"] = json.dumps(qn.verlauf.reihen).encode()
@@ -1830,6 +1856,11 @@ def sicherung_zip_einspielen(roh, passwort=None, mit_strikes=True):
         if m:
             os.makedirs(os.path.join(PDF_ORDNER, m.group(1)), exist_ok=True)
             with open(os.path.join(PDF_ORDNER, m.group(1), m.group(2) + ".jpg"), "wb") as f:
+                f.write(inhalt)
+    for name, inhalt in dateien.items():
+        if name.startswith("quelldateien/") and Q.DATEI_NAME.fullmatch(name[13:]):
+            os.makedirs(Q.DATEIEN, exist_ok=True)
+            with open(os.path.join(Q.DATEIEN, name[13:]), "wb") as f:
                 f.write(inhalt)
     if "verlauf.json" in dateien and qn.verlauf:
         reihen = json.loads(dateien["verlauf.json"])
@@ -2359,6 +2390,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/sicherung/zip":
             roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
             return {"manifest": sicherung_zip_einspielen(roh, str(d.get("passwort") or "") or None, bool(d.get("strikes")))}
+        if p == "/api/quellen/datei":            # Datei für eine Datenquelle hochladen (seit 0.26), höchstens 1 MB
+            roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
+            name = os.path.basename(str(d.get("name", "")))[:80]
+            return {"datei": {"hash": Q.datei_ablegen(roh), "name": name or "datei", "groesse": len(roh)}, "art": Q.datei_art(roh, name)}
+        if p == "/api/csv/analysieren":           # CSV-Import, allgemein (seit 0.26): Inhalt, hochgeladene Datei oder Datenquelle
+            return csv_analysieren(d)
         if p == "/api/quellen/curl":
             try:
                 return Q.aus_curl(d.get("befehl", ""))

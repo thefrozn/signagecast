@@ -31,7 +31,7 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
   placeholders like `{source:path}` in any text, and conditions on API values.
 - **Cameras, charts, calendars, web pages** – IP cameras (RTSP, HLS or MJPEG; e.g. the doorbell only when it rings),
   history charts (Home Assistant history or recorded API values), calendars from any iCal address (waste collection,
-  Google/Outlook – without Home Assistant), and web pages – embedded live where the site allows it, otherwise as a screenshot refreshed every few minutes
+  Google/Outlook – without Home Assistant) or from an uploaded .ics/.csv file (CSV import with column selection), and web pages – embedded live where the site allows it, otherwise as a screenshot refreshed every few minutes
   (zoom, crop, interval).
 - **Templates** – Standard, Video large, Video only, Info without video, *Practice – calm (waiting room)*,
   *Company – corporate design*, *Window to the world*, Night.

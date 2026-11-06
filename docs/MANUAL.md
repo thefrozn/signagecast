@@ -19,7 +19,7 @@ that video, so the TV needs no app, no login and no updates.
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
 | **TVs** | TVs · Players (Raspberry Pi) | Address, layout, schedule, carousel, sound, video source (YouTube / own media / mixed), quality; Raspberry Pi players at the TV ([PLAYER.md](PLAYER.md)) |
-| **Content** | Layouts · Data sources · Media · Clips | Layout editor and templates, JSON APIs/feeds/iCal/cameras, own pictures and videos, scheduled clips |
+| **Content** | Layouts · Data sources · Media · Clips | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips |
 | **Video & sound** | Streams · Rules · Search · Radio | Live cams, rotation and quality rules, nightly search, radio stations |
 | **Settings** | General · Home Assistant · Notifications | Language, weather, location, time source; HA address and guide; Telegram/e-mail/HA and webhook |
 | **System** | Updates · Backup (· Access in Docker) | Signed updates, maintenance window, encrypted backups, admin password |

@@ -4,10 +4,17 @@
 # Fehlern wird der Abstand bis zum nächsten Versuch verdoppelt (höchstens 1 h). Nur Python-Standardbibliothek.
 import base64, datetime, email.utils, json, os, re, shlex, threading, time, urllib.error, urllib.parse, urllib.request, zoneinfo
 import xml.etree.ElementTree as ET
+import csvimport as CSV
 import meldung
 
 MASKE = "••••"                    # so erscheinen geheime Kopfzeilen in der Verwaltung
-ARTEN = ("json", "text", "rss", "bild", "ical", "video")
+ARTEN = ("json", "text", "rss", "bild", "ical", "video", "csv")
+# Herkunft (seit 0.26): „url“ = der Dienst holt die Adresse; „datei“ = hochgeladene Datei (z. B. Abfuhrkalender als .ics
+# oder .csv, wenn die Stadt keine Abo-Adresse anbietet). Dateien liegen unter DATEIEN/<hash> (setzt dienst.py).
+HERKUNFT = ("url", "datei")
+DATEI_ARTEN = ("json", "text", "rss", "ical", "csv")
+DATEIEN = None
+DATEI_NAME = re.compile(r"[0-9a-f]{16}")
 FORMATE = ("auto", "rtsp", "hls", "mjpeg")          # Video: wie die Kamera liefert (auto = aus der Adresse)
 MAX_BYTES, MAX_BILD = 1_000_000, 5_000_000
 UA = "SignageCast (+https://github.com/thefrozn/signagecast)"
@@ -34,7 +41,16 @@ def pruefen(liste):
         if art not in ARTEN:
             raise Fehler("q_art")
         url = str(q.get("url", "")).strip()
-        if art == "video":
+        herkunft = q.get("herkunft") if q.get("herkunft") in HERKUNFT else "url"
+        datei = None
+        if herkunft == "datei":
+            if art not in DATEI_ARTEN:
+                raise Fehler("q_datei_art", id=qid)
+            d = q.get("datei") or {}
+            if not DATEI_NAME.fullmatch(str(d.get("hash", ""))):
+                raise Fehler("q_datei", id=qid)
+            datei, url = {"hash": d["hash"], "name": str(d.get("name", ""))[:80] or "datei"}, ""
+        elif art == "video":
             if not re.fullmatch(r"(rtsps?|https?)://[^\s\"']{1,1000}", url):
                 raise Fehler("q_adresse_video", id=qid)
         elif not re.fullmatch(r"https?://\S{1,1000}", url):
@@ -51,6 +67,11 @@ def pruefen(liste):
             if "\n" in wert or "\r" in wert or len(wert) > 4000:
                 raise Fehler("q_kopfwert", id=qid, name=name)
             kopf.append({"name": name, "wert": wert, "geheim": bool(k.get("geheim", False))})
+        csv_opt = None
+        if art == "csv":
+            csv_opt = CSV.optionen_pruefen(q.get("csv"), felder_pflicht=True)
+            k = (q.get("csv") or {}).get("kalender") or {}
+            csv_opt["kalender"] = {f: str(k.get(f) or "")[:60] for f in ("datum", "zeit", "titel", "ort")}
         try:
             intervall = int(q.get("intervall_s", 300))
         except (TypeError, ValueError):
@@ -58,7 +79,8 @@ def pruefen(liste):
         aus.append({"id": qid, "name": str(q.get("name", "") or qid)[:40], "art": art, "url": url, "methode": methode,
                     "kopf": kopf, "inhalt": str(q.get("inhalt", ""))[:8000] if methode == "POST" else "",
                     "intervall_s": max(30, min(86400, intervall)), "aktiv": bool(q.get("aktiv", True)),
-                    "format": q.get("format") if q.get("format") in FORMATE else "auto"})
+                    "format": q.get("format") if q.get("format") in FORMATE else "auto", "herkunft": herkunft,
+                    **({"datei": datei} if datei else {}), **({"csv": csv_opt} if csv_opt else {})})
     return aus
 
 
@@ -443,11 +465,101 @@ def zerlegen(q, roh, art):
             raise Fehler("kein_json", d=ex)
     if q["art"] == "rss":
         return rss_zerlegen(roh)
+    if q["art"] == "csv":
+        return csv_zerlegen(roh, q.get("csv") or {})
     if q["art"] == "ical":
         if "BEGIN:VCALENDAR" not in text[:4096].upper():      # z. B. Anmelde- oder Fehlerseite mit Status 200 (seit 0.25)
             raise Fehler("kein_ical", typ=art.split(";")[0] or "–")
         return ical_zerlegen(text)
     return text.strip()
+
+
+def csv_zerlegen(roh, o, tage=400):
+    """CSV (seit 0.26): {"zeilen": [{Feld: Wert}], "termine": [...]} – Termine nur, wenn eine Datumsspalte gewählt ist;
+    sie haben dieselbe Form wie bei iCal, damit der Kalender-Baustein beides zeigt (z. B. Abfuhrkalender der Stadt)."""
+    zeilen = CSV.lesen(roh, o)
+    k = o.get("kalender") or {}
+    if not k.get("datum"):
+        return {"zeilen": zeilen}
+    heute = datetime.date.today()
+    fenster = heute + datetime.timedelta(days=tage)
+    termine, lesbar = [], 0
+    for z in zeilen:
+        tag = CSV.datum_finden(z.get(k["datum"], ""))
+        if not tag:
+            continue
+        lesbar += 1
+        uhr = CSV.zeit_finden(z.get(k["zeit"], "")) if k.get("zeit") else CSV.zeit_finden(z.get(k["datum"], ""))
+        if tag < heute or tag > fenster:
+            continue
+        titel = (z.get(k["titel"], "") if k.get("titel") else "") or k["datum"]
+        t = {"titel": titel[:120], "ort": z.get(k["ort"], "")[:120] if k.get("ort") else "", "ganztag": uhr is None}
+        if uhr is None:
+            t.update(start=tag.isoformat(), ende=(tag + datetime.timedelta(days=1)).isoformat())
+        else:
+            s = datetime.datetime.combine(tag, uhr).astimezone()
+            t.update(start=s.isoformat(), ende=(s + datetime.timedelta(hours=1)).isoformat())
+        termine.append(t)
+    if zeilen and not lesbar:
+        raise Fehler("csv_kein_datum", feld=k["datum"])
+    termine.sort(key=lambda t: t["start"] if "T" in t["start"] else t["start"] + "T00:00")
+    return {"zeilen": zeilen, "termine": termine[:300]}
+
+
+# ---------- hochgeladene Dateien (seit 0.26) ----------
+MAX_DATEI = MAX_BYTES
+
+
+def datei_art(roh, name=""):
+    """Art einer hochgeladenen Datei schätzen: ical, rss, json, csv oder text."""
+    kopf = roh[:4096].decode("utf-8", errors="replace").lstrip("\ufeff \r\n\t")
+    if "BEGIN:VCALENDAR" in kopf.upper():
+        return "ical"
+    if kopf.startswith(("{", "[")):
+        return "json"
+    if re.match(r"<\?xml|<rss|<feed", kopf, re.I):
+        return "rss"
+    if name.lower().endswith((".csv", ".tsv")) or re.search(r"[,;\t|]", kopf.split("\n", 1)[0]):
+        return "csv"
+    return "text"
+
+
+def datei_ablegen(roh):
+    """Datei unter ihrem Inhalts-Hash ablegen -> Hash (gleiche Datei = gleicher Name)."""
+    import hashlib
+    if not roh:
+        raise Fehler("q_datei_leer")
+    if len(roh) > MAX_DATEI:
+        raise Fehler("zu_gross", mb=MAX_DATEI // 1_000_000)
+    h = hashlib.sha256(roh).hexdigest()[:16]
+    os.makedirs(DATEIEN, exist_ok=True)
+    with open(os.path.join(DATEIEN, h + ".tmp"), "wb") as f:
+        f.write(roh)
+    os.replace(os.path.join(DATEIEN, h + ".tmp"), os.path.join(DATEIEN, h))
+    return h
+
+
+def datei_lesen(h):
+    if not DATEI_NAME.fullmatch(str(h or "")) or not DATEIEN:
+        raise Fehler("q_datei", id="–")
+    try:
+        with open(os.path.join(DATEIEN, h), "rb") as f:
+            return f.read(MAX_DATEI + 1)
+    except OSError:
+        raise Fehler("q_datei_fehlt")
+
+
+def dateien_aufraeumen(benutzt, alter_s=86400):
+    """Hochgeladene Dateien löschen, die keine Quelle mehr benutzt (erst nach einem Tag: der Editor ist evtl. noch offen)."""
+    if not DATEIEN or not os.path.isdir(DATEIEN):
+        return
+    for n in os.listdir(DATEIEN):
+        p = os.path.join(DATEIEN, n)
+        if n not in benutzt and time.time() - os.path.getmtime(p) > alter_s:
+            try:
+                os.remove(p)
+            except OSError:
+                pass
 
 
 def _zeichensatz(art):
@@ -625,7 +737,7 @@ class Quellen:
 
     def abrufen(self, q):
         t0 = time.time()
-        roh, art = holen(q)
+        roh, art = (datei_lesen(q["datei"]["hash"]), "") if q.get("herkunft") == "datei" else holen(q)
         return zerlegen(q, roh, art), round((time.time() - t0) * 1000)
 
     def schleife(self):
@@ -658,6 +770,9 @@ class Quellen:
             if self.verlauf and time.time() - getattr(self, "_aufgeraeumt", 0) > 3600:
                 self._aufgeraeumt = time.time()
                 self.verlauf.aufraeumen({f"{q}:{p}" for q, p in self.verlauf_pfade()})
+            if time.time() - getattr(self, "_dateien_geprueft", 0) > 3600:
+                self._dateien_geprueft = time.time()
+                dateien_aufraeumen({q["datei"]["hash"] for q in quellen.values() if q.get("datei")})
             self.neu.wait(1)
             self.neu.clear()
 

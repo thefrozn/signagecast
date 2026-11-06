@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.26.0 (2026-11-06)
+- **Data sources from a file:** instead of an address, upload a file (up to 1 MB) – iCal (`.ics`), CSV, JSON, RSS or
+  text. Useful when your town only offers the waste collection calendar as a download. The type is detected; upload
+  again for new dates. Files are part of backups.
+- **CSV import:** new type *Table (CSV)*, from a file or an address. Delimiter (comma, semicolon, tab, bar, space),
+  quote character (double, single, none), header row and character set (UTF-8, Windows/Excel, ISO-8859-1) are
+  detected and can be changed; choose which columns to import and rename them; preview of the first rows. Data appear
+  as `zeilen` (list for *API list*, values for placeholders). With a **date column** (e.g. `Mi 07.01.2026`,
+  `2026-01-07`, optionally with a time) the rows become events (`termine`) for the *Calendar / waste collection*
+  element; past ones are dropped. The import is a separate module (`app/csvimport.py`, `csvimport.js`) for reuse.
+- **Removed:** the *Departures (bus & train)* element (hidden since 0.21). There is no open timetable service for
+  Germany that allows commercial use; existing elements are dropped silently when loading.
+
 ## v0.25.0 (2026-11-06)
 - **Raspberry Pi player – one image for several Pis:** *Pair a Pi* → *Download image for several Pis* (server address
   and Wi-Fi, no key). Flash it onto any number of cards; each Pi shows a 6-digit code on the TV, enter it in the admin
