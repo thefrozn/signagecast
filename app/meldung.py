@@ -74,6 +74,7 @@ DE = {
     "e_tv_doppelt": "Fernseher-Kennung doppelt: {id}",
     "e_ton": "Ton nur aus, radio oder tiere",
     "e_aufloesung": "Auflösung nur 1080 oder 2160",
+    "e_aufnahme": "Aufnahme nur 720, 1080 oder 1440",
     "e_tv_fehlt": "Mindestens ein Fernseher nötig",
     "e_zeitzone": "unbekannte Zeitzone {zz}",
     "e_stufe": "unbekannte Stufe",

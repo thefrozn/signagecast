@@ -219,6 +219,8 @@ const TEXTE = {
     codec: "Codec", codecArt: { auto: "Automatisch (empfohlen)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatisch: 4K als H.265 (halbe Datenmenge, können fast alle 4K-Fernseher), Full HD als H.264 (läuft auf praktisch jedem Fernseher, Browser und Player). H.264 wählen, wenn ein Gerät ruckelt oder kein Bild zeigt – z. B. ältere Fernseher, Firefox; H.265 braucht bei gleicher Qualität etwa 30–40 % weniger Bitrate.",
     kategorien: "Kategorien", streamTechnik: "Videostream", aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
+    aufnahme: "Aufnahme (Browser)", aufnahmeArt: { 720: "720p – spart CPU", 1080: "1080p (empfohlen)", 1440: "1440p – schärfer, braucht mehr CPU" },
+    aufnahmeText: "Größe, in der der Browser die TV-Seite zeichnet; die Grafikeinheit rechnet auf die Ausgabe um. Mehr als die Ausgabe bringt nichts. Live-Videos im Layout folgen der Aufnahme (720p holt von YouTube 720p). Eine Änderung startet den Stream kurz neu.",
     abschalten: "Abschalten ohne Zuschauer nach (s)", technikHinweis: "Ausgabe und Bitrate wirken beim nächsten Start des Streams.",
     sucheAktiv: "täglich nach neuen Streams suchen", uhrzeit: "Uhrzeit", max: "höchstens gefundene Streams",
     behalten: "Tage behalten, wenn nicht mehr gefunden", begriffe: "Suchbegriffe (je Zeile einer)",
@@ -458,7 +460,7 @@ const TEXTE = {
       upd_container: "With Docker/Podman update via the image (docker pull)",
       e_zahl: "not a number: {w}", e_bereich: "{w} is not between {lo} and {hi}", e_wert: "invalid value: {w}",
       e_objekt: "settings must be an object", e_layout: "Layout {name}: {d}", e_layout_doppelt: "duplicate layout identifier: {id}",
-      e_tv_doppelt: "duplicate TV identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160",
+      e_tv_doppelt: "duplicate TV identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160", e_aufnahme: "capture only 720, 1080 or 1440",
       e_tv_fehlt: "at least one TV is required", e_zeitzone: "unknown time zone {zz}", e_stufe: "unknown level",
       e_suchmuster: "invalid search pattern: {x}", e_ortsmuster: "invalid place pattern: {m}",
       e_ep_quelle: "Clip: unknown source", e_ep_adresse: "Clip: address missing", e_medium_art: "Media: type picture or video",
@@ -558,6 +560,8 @@ const TEXTE = {
     codec: "Codec", codecArt: { auto: "Automatic (recommended)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatic: 4K as H.265 (half the data, supported by almost all 4K TVs), Full HD as H.264 (plays on practically every TV, browser and player). Choose H.264 if a device stutters or shows no picture – e.g. older TVs, Firefox; H.265 needs about 30–40 % less bitrate for the same quality.",
     kategorien: "Categories", streamTechnik: "Video stream", aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
+    aufnahme: "Capture (browser)", aufnahmeArt: { 720: "720p – saves CPU", 1080: "1080p (recommended)", 1440: "1440p – sharper, needs more CPU" },
+    aufnahmeText: "Size in which the browser draws the TV page; the graphics unit converts it to the output. More than the output brings nothing. Live videos in the layout follow the capture (720p fetches 720p from YouTube). A change briefly restarts the stream.",
     abschalten: "Switch off without viewers after (s)", technikHinweis: "Output and bitrate apply at the next stream start.",
     sucheAktiv: "search for new streams daily", uhrzeit: "Time", max: "maximum found streams",
     behalten: "days to keep when no longer found", begriffe: "Search terms (one per line)",
@@ -1696,11 +1700,14 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.lautstaerke)}</label><input type="range" name="lautstaerke" min="0" max="100" value="${t.lautstaerke}"><span class="leise" name="lw">${t.lautstaerke} %</span></div>
         <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
         ${KATEGORIEN.map((x) => `<div class="zeile"><label>${esc(T.kat[x] || x)}</label>${schalter("kat_" + x, !t.kategorien_aus.includes(x))}</div>`).join("")}</details>
-        <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}, ${t.bitrate_mbit} Mbit/s, ${
+        <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}${(t.aufnahme || 1080) !== 1080 ? " (" + esc(T.aufnahme) + " " + t.aufnahme + "p)" : ""}, ${t.bitrate_mbit} Mbit/s, ${
           (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}${
           t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</summary>
         <div class="zeile"><label>${esc(T.aufloesung)}</label><select name="aufloesung"><option value="2160" ${t.aufloesung === 2160 ? "selected" : ""}>4K (3840×2160)</option>
           <option value="1080" ${t.aufloesung === 1080 ? "selected" : ""}>Full HD (1920×1080)</option></select></div>
+        <div class="zeile"><label>${esc(T.aufnahme)}</label><select name="aufnahme">${[720, 1080, 1440].map((h) =>
+          `<option value="${h}" ${h === (t.aufnahme || 1080) ? "selected" : ""}>${esc(T.aufnahmeArt[h])}</option>`).join("")}</select></div>
+        <p class="leise">${esc(T.aufnahmeText)}</p>
         <div class="zeile"><label>${esc(T.bitrate)}</label><input type="number" name="bitrate_mbit" min="2" max="40" value="${t.bitrate_mbit}"></div>
         <div class="zeile"><label>${esc(T.codec)}</label><select name="codec">${Object.keys(T.codecArt).map((k) =>
           `<option value="${k}" ${k === (t.codec || "auto") ? "selected" : ""}>${esc(T.codecArt[k])}</option>`).join("")}</select></div>
@@ -1727,7 +1734,7 @@ async function fernseherSeite(inhalt) {
       return { ...t, name: w("name").value, id: w("id").value.trim().toLowerCase(), video: w("video").checked, ton: w("ton").value,
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
                kategorien_aus: KATEGORIEN.filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
-               bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
+               aufnahme: Number(w("aufnahme").value), bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
                encoder: w("encoder").value, preset: w("preset").value, tune: w("tune").value, bframes: Number(w("bframes").value) || 0,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),
                karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
@@ -1739,7 +1746,7 @@ async function fernseherSeite(inhalt) {
       const alt = lesen();
       let n = 2; while (alt.some((t) => t.id === "tv" + n)) n++;
       E.fernseher = [...alt, { id: "tv" + n, name: T.weitererTv + " " + n, video: true, ton: "aus", radio_sender: "", lautstaerke: 70,
-                                kategorien_aus: [], aufloesung: 2160, bitrate_mbit: 16, codec: "auto",
+                                kategorien_aus: [], aufloesung: 1080, aufnahme: 1080, bitrate_mbit: 8, codec: "auto",
                                 encoder: "auto", preset: "veryfast", tune: "zerolatency", bframes: 0 }];
       zeichnen();
     };

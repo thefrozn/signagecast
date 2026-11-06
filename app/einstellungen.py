@@ -11,6 +11,7 @@ import sicherung as S
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
 KATEGORIEN = ["safari", "affen", "meer", "vogel", "baer", "wald", "zoo", "neu"]
+AUFNAHMEN = (720, 1080, 1440)             # Höhe der Aufnahme (Chromium zeichnet in 16:9)
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
 
 STANDARD = {
@@ -20,7 +21,7 @@ STANDARD = {
     # Jeder Fernseher ist eine eigene Ausgabe mit eigener Adresse http://<IP>:8888/<id> und eigener Render-Kette
     "fernseher": [
         {"id": "tv", "nr": 0, "name": "TV", "layout": "standard", "zeitplan": [], "video": True, "ton": "aus", "radio_sender": "", "lautstaerke": 70,
-         "kategorien_aus": [], "aufloesung": 2160, "bitrate_mbit": 16, "codec": "auto",
+         "kategorien_aus": [], "aufloesung": 1080, "aufnahme": 1080, "bitrate_mbit": 8, "codec": "auto",
          "encoder": "auto", "preset": "veryfast", "tune": "zerolatency", "bframes": 0},
     ],
     "radio": {
@@ -246,11 +247,16 @@ def pruefen(e):
             aufl = int(t.get("aufloesung", alt.get("aufloesung", 2160)))
             if aufl not in (1080, 2160):
                 raise Fehler("e_aufloesung")
+            # seit 0.29: Größe, in der Chromium die TV-Seite zeichnet (Aufnahme); die Seite bleibt 1920×1080 Punkte
+            # und wird nur feiner oder gröber gerastert – 720p spart CPU, 1440p ist schärfer und braucht mehr
+            aufn = int(t.get("aufnahme", alt.get("aufnahme", 1080)))
+            if aufn not in AUFNAHMEN:
+                raise Fehler("e_aufnahme")
             liste.append({"id": tid, "name": _text(t.get("name", tid), 40) or tid, "video": bool(t.get("video", True)),
                           "ton": ton, "radio_sender": _text(t.get("radio_sender", ""), 12, r"[a-z0-9]*"),
                           "lautstaerke": _zahl(t.get("lautstaerke", 70), 0, 100, int),
                           "kategorien_aus": [k for k in t.get("kategorien_aus", []) if k in KATEGORIEN],
-                          "aufloesung": aufl, "bitrate_mbit": _zahl(t.get("bitrate_mbit", alt.get("bitrate_mbit", 16)), 2, 40, int),
+                          "aufloesung": aufl, "aufnahme": aufn, "bitrate_mbit": _zahl(t.get("bitrate_mbit", alt.get("bitrate_mbit", 16)), 2, 40, int),
                           # seit 0.18: auto = H.265 bei 4K, H.264 bei Full HD (läuft auf praktisch jedem Gerät)
                           "codec": t.get("codec", alt.get("codec")) if t.get("codec", alt.get("codec")) in ("auto", "h264", "h265") else "auto",
                           # seit 0.22: Kodierung für Fortgeschrittene (Werte siehe hardware.py)

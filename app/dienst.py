@@ -525,7 +525,33 @@ def durchsage_senden(text, tvs, vorlesen, gong, dauer, von):
     durchsagen.insert(0, {"id": did, "text": text, "tvs": list(tvs), "bis": time.time() + dauer, "audio": audio,
                           "zeit": time.strftime("%H:%M"), "von": von, "t": time.time()})
     durchsagen_aktiv()
+    ds_melden()
     return did
+
+
+# Seit 0.29 holt die TV-Seite Durchsagen und Notfall-Vollbild per Long-Polling: die Anfrage wartet, bis sich etwas
+# ändert (höchstens 20 s) – statt alle 2 s zu fragen. Jede Änderung weckt die wartenden Anfragen.
+ds_aenderung = threading.Condition()
+
+
+def ds_melden():
+    with ds_aenderung:
+        ds_aenderung.notify_all()
+
+
+def ds_warten(tv_id, stand, max_s=20.0):
+    """Antwort für /durchsage.json; mit `stand` (Kennung der letzten Antwort) wird gewartet, bis sie sich ändert."""
+    ende = time.time() + max_s
+    while True:
+        d, a = durchsage_fuer(tv_id), alarm_fuer(tv_id)
+        jetzt = f"{d['id'] if d else '-'}.{a['id'] if a else '-'}"
+        rest = ende - time.time()
+        if not stand or stand != jetzt or rest <= 0:
+            return {"ok": True, "durchsage": d, "alarm": a, "stand": jetzt}
+        if d:                                     # rechtzeitig zum Ende der Durchsage antworten (Fenster ausblenden)
+            rest = min(rest, max(0.2, d["bis"] - time.time() + 0.2))
+        with ds_aenderung:
+            ds_aenderung.wait(rest)
 
 
 def durchsage_fuer(tv_id):
@@ -562,6 +588,7 @@ def alarm_ausloesen(text, tvs, von):
         json.dump(a, f, ensure_ascii=False)
     os.replace(tmp, ALARM)
     alarm["jetzt"] = a
+    ds_melden()
     schalten_neu.set()                           # ausgeschaltete Fernseher sofort einschalten
     print(f"Notfall-Vollbild ausgelöst von {a['von']}", flush=True)
     return a
@@ -571,6 +598,7 @@ def alarm_beenden(von):
     if alarm["jetzt"]:
         print(f"Notfall-Vollbild beendet von {str(von)[:40]}", flush=True)
     alarm["jetzt"] = None
+    ds_melden()
     try:
         os.remove(ALARM)
     except OSError:
@@ -719,6 +747,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             for x in durchsagen:
                 if x["id"] == daten.get("id") and set(x["tvs"]) & erlaubt:
                     x["bis"] = 0
+            ds_melden()
             return self.antwort(200, {"ok": True})
         if pfad == "/pult/alarm":                 # Notfall-Vollbild (seit 0.21): nur Zugänge mit dem Recht „alarm“
             if not z.get("alarm"):
@@ -1502,7 +1531,8 @@ def vorschau(tv_id):
     t = fernseher(tv_id)
     if not t or not kette_laeuft(t["id"]):
         return None
-    r = subprocess.run(["ffmpeg", "-v", "error", "-f", "x11grab", "-video_size", "1920x1080", "-i", anzeige_nr(t),
+    aw, ah = aufnahme_fuer(t)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-f", "x11grab", "-video_size", f"{aw}x{ah}", "-i", anzeige_nr(t),
                         "-frames:v", "1", "-vf", "scale=960:-1", "-f", "mjpeg", "-"], capture_output=True, timeout=15)
     return r.stdout if r.returncode == 0 and r.stdout else None
 
@@ -1550,6 +1580,15 @@ def encoder_fuer(t):
     return w
 
 
+def aufnahme_fuer(t):
+    """(Breite, Höhe), in der Chromium die TV-Seite zeichnet (seit 0.29 je Fernseher). In Software kodiert die CPU
+    genau diese Größe – dort höchstens Full HD."""
+    h = t.get("aufnahme", 1080)
+    if encoder_fuer(t) == "software":
+        h = min(h, 1080)
+    return h * 16 // 9, h
+
+
 def video_fuer(t):
     """(Encoder, Ausgabegröße, ffmpeg-Argumente) eines Fernsehers. Weicht etwas vom bewährten Standard ab (anderer
     Encoder, Preset, Tune oder B-Frames), wird es einmal probekodiert; geht der Encoder hier nicht oder scheitert die
@@ -1559,7 +1598,7 @@ def video_fuer(t):
 
     def standard():
         enc = encoder_fuer(t)
-        ow, oh = (3840, 2160) if t["aufloesung"] == 2160 and enc != "software" else (1920, 1080)
+        ow, oh = aufnahme_fuer(t) if enc == "software" else (3840, 2160) if t["aufloesung"] == 2160 else (1920, 1080)
         return enc, (ow, oh), HW.video_args(enc, codec_fuer(t), ow, oh)
     w = t.get("encoder", "auto")
     if not k or (w == "auto" and t["preset"] == "veryfast" and t["tune"] == "zerolatency" and not t["bframes"]):
@@ -1568,7 +1607,7 @@ def video_fuer(t):
         fehler[t["id"]] = {"encoder": w, "grund": (k.get("encoder") or {}).get(w, {}).get("grund") or k.get("grund") or "unbekannt"}
         return standard()
     enc = encoder_fuer(t)
-    ow, oh = (3840, 2160) if t["aufloesung"] == 2160 and enc != "software" else (1920, 1080)
+    ow, oh = aufnahme_fuer(t) if enc == "software" else (3840, 2160) if t["aufloesung"] == 2160 else (1920, 1080)
     args = HW.video_args(enc, codec_fuer(t), ow, oh, t["preset"], t["tune"], t["bframes"])
     if args not in zustand["probe"]:
         zustand["probe"][args] = HW.probe(args)
@@ -1638,6 +1677,7 @@ def leistung_test(dauer=10):
            "fernseher": []}
     for t in e["fernseher"]:
         z = {"id": t["id"], "name": t["name"], "laeuft": t in laufend, "aufloesung": t["aufloesung"],
+             "aufnahme": aufnahme_fuer(t)[1],
              "bitrate_mbit": t["bitrate_mbit"], "codec": codec_fuer(t), "encoder": encoder_fuer(t), "ton": braucht_ton(t, e)}
         if z["laeuft"]:
             br = [x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 60]
@@ -1712,14 +1752,20 @@ def render_schreiben(e):
     for t in e["fernseher"]:
         enc, (ow, oh), video = video_fuer(t)            # Software: H.264 in Full HD per CPU
         pfad = os.path.join(DATEN, f"render-{t['id']}.env")
+        aw, ah = aufnahme_fuer(t)
         try:
-            vorher = re.search(r"^VIDEO=.*$", open(pfad).read(), re.M)
+            alt = open(pfad).read()
         except OSError:
-            vorher = None
+            alt = None
         neu = f'VIDEO="{video}"'
-        if vorher and vorher.group(0) != neu:
-            geaendert.append(t["id"])
+        # neue Kodierung oder Aufnahmegröße: Kette neu starten (Xvfb und Chromium haben die Größe beim Start bekommen)
+        if alt:
+            v_alt = re.search(r"^VIDEO=.*$", alt, re.M)
+            a_alt = re.search(r'^AUFNAHME="(.*)"$', alt, re.M)
+            if (v_alt and v_alt.group(0) != neu) or (a_alt.group(1) if a_alt else "1920 1080") != f"{aw} {ah}":
+                geaendert.append(t["id"])
         schreib_wenn_anders(pfad, f"DISP={anzeige_nr(t)}\nDEVPORT={wache.BASIS_PORT + t['nr']}\nAUSGABE=\"{ow} {oh}\"\n"
+                                  f"AUFNAHME=\"{aw} {ah}\"\n"
                                   f"BITRATE={t['bitrate_mbit']}\nKODIERUNG={'software' if enc == 'software' else 'vaapi'}\n"
                                   f"CODEC={codec_fuer(t)}\n{neu}\nTON={'live' if braucht_ton(t, e) else 'stille'}\n")
         pfade += (f"  {t['id']}:\n    runOnDemand: /opt/signagecast/render/tv-render.sh\n    runOnDemandRestart: yes\n"
@@ -2101,9 +2147,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         p = urllib.parse.urlparse(self.path)
-        if p.path == "/durchsage.json":               # leichter Abruf alle 2 s – Durchsagen sollen schnell erscheinen
-            tv = (urllib.parse.parse_qs(p.query).get("tv") or [""])[0]
-            return self.antwort(200, {"ok": True, "durchsage": durchsage_fuer(tv), "alarm": alarm_fuer(tv)})
+        if p.path == "/durchsage.json":               # Long-Polling (seit 0.29): wartet mit ?stand= auf eine Änderung
+            qs = urllib.parse.parse_qs(p.query)
+            return self.antwort(200, ds_warten((qs.get("tv") or [""])[0], (qs.get("stand") or [""])[0][:40]))
         if p.path == "/daten.json":
             tv = (urllib.parse.parse_qs(p.query).get("tv") or [None])[0]
             return self.antwort(200, tv_daten(tv))

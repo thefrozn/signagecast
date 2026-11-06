@@ -7,7 +7,7 @@
 | Part | Where | Task |
 |---|---|---|
 | Data service `signagecast` | `/opt/signagecast/app/`, only 127.0.0.1:8080 | TV page, Home Assistant values, stream list, search, quality watch, API for the admin |
-| Render chain | `/opt/signagecast/render/tv-render.sh` | Xvfb + Chromium (Full HD) → ffmpeg → Intel GPU (upscale, H.265) + AAC → MediaMTX |
+| Render chain | `/opt/signagecast/render/tv-render.sh` | Xvfb + Chromium (capture size per TV, default Full HD) → ffmpeg → Intel GPU (scale, H.264/H.265) + AAC → MediaMTX |
 | MediaMTX `signagecast-mediamtx` | `/opt/mediamtx`, port 8888 | HLS stream, starts rendering on demand |
 | Admin | `/usr/share/cockpit/signagecast`, port 9090 | Cockpit extension (Docker/Podman: same page served by `app/verwaltung.py` with its own login) |
 | Settings / data | `/etc/signagecast/`, `/var/lib/signagecast/` | backup and restore in the admin |

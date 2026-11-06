@@ -138,6 +138,14 @@ From 0.23 (experimental): **TVs → Players (Raspberry Pi)** creates a ready SD 
 and manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
 [Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
 
+### Output and capture size
+TVs → **Video stream**, per TV:
+
+| Setting | Values | Meaning |
+|---|---|---|
+| **Output** | **Full HD** (default since 0.29) · 4K | Size of the stream the TV receives. The page is drawn at the capture size anyway – a 4K TV upscales Full HD itself, so Full HD saves bitrate and graphics work without visible loss in most cases. 4K needs a TV that plays H.265. |
+| **Capture (browser)** | 720p · **1080p** · 1440p | Size in which the browser draws the TV page (the layout stays 1920 × 1080 points and is only rasterised coarser or finer). 720p saves CPU and fetches live videos in 720p; 1440p is sharper for text on a 4K output but needs clearly more CPU. More than the output brings nothing. A change briefly restarts the stream. |
+
 ### Choose the encoder (advanced)
 TVs → **Video stream** → **Encoding (advanced)**, per TV. Normally leave everything on *Automatic*. Every option has an
 explanation in the admin; in short:
@@ -226,4 +234,7 @@ dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernse
 Seit 0.22: **Kodierung je Fernseher** (Fernseher → Videostream → „Kodierung (für Fortgeschrittene)“): Encoder
 (Automatisch, VAAPI, Intel Quick Sync ab 11./12. Generation, NVIDIA NVENC experimentell, Software libx264), Preset
 (ultrafast bis medium, Standard veryfast), Tune (zerolatency oder keins) und B-Frames (0–4, Standard 0) – mit Erklärung
-je Feld; was hier nicht geht, ist ausgegraut, jede Änderung wird vorher kurz probekodiert, sonst bleibt „Automatisch“. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.
+je Feld; was hier nicht geht, ist ausgegraut, jede Änderung wird vorher kurz probekodiert, sonst bleibt „Automatisch“.
+Seit 0.29: **Ausgabe** Standard Full HD (ein 4K-Fernseher rechnet selbst hoch; spart Bitrate) und **Aufnahme (Browser)** je
+Fernseher: 720p (spart CPU, Live-Videos in 720p), 1080p (Standard) oder 1440p (schärfer, deutlich mehr CPU) – das Layout
+bleibt 1920 × 1080 Punkte. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.

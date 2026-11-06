@@ -707,10 +707,18 @@ window.addEventListener("durchsage-ende", () => { if (radio.dataset.vorher) radi
 
 const start = Date.now();
 laden(); setInterval(laden, 15000);
-setInterval(async () => {                         // Durchsagen schnell abholen (nur lokal, sehr klein)
-  try { const r = await (await fetch("/durchsage.json?tv=" + encodeURIComponent(TV), { cache: "no-store" })).json(); if (r.ok) { durchsage(r.durchsage); alarmZeigen(r.alarm); } }
-  catch (_) { /* nächster Versuch */ }
-}, 2000);
+// Durchsagen und Notfall-Vollbild per Long-Polling (seit 0.29): der Datendienst antwortet, sobald sich etwas ändert
+// (sonst nach 20 s) – sofort sichtbar, ohne alle 2 s zu fragen. Bei einem Fehler 2 s warten.
+(async function durchsagenHolen() {
+  let stand = "";
+  for (;;) {
+    try {
+      const r = await (await fetch("/durchsage.json?tv=" + encodeURIComponent(TV) + "&stand=" + encodeURIComponent(stand), { cache: "no-store" })).json();
+      if (r.ok) { durchsage(r.durchsage); alarmZeigen(r.alarm); stand = r.stand || ""; }
+      if (!r.stand) await new Promise((w) => setTimeout(w, 2000));     // älterer Datendienst ohne Long-Polling
+    } catch (_) { stand = ""; await new Promise((w) => setTimeout(w, 2000)); }
+  }
+})();
 setInterval(uhr, 1000);
 // Speicher frei halten: alle 6 h einmal neu laden
 setInterval(() => { if (new Date().getSeconds() < 5 && Date.now() - start > 6 * 3600 * 1000) location.reload(); }, 1000);

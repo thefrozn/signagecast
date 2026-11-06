@@ -10,10 +10,20 @@ set -u
 TV=${MTX_PATH:-tv}
 case "$TV" in *[!a-z0-9]*|"") echo "ungültige Kennung"; exit 1;; esac
 DATEN=/var/lib/signagecast
-DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265; TON=live; VIDEO=""
+DISP=:99; DEVPORT=9222; AUSGABE="3840 2160"; AUFNAHME="1920 1080"; BITRATE=16; KODIERUNG=vaapi; CODEC=h265; TON=live; VIDEO=""
+GPU=an
 [ -r "$DATEN/render-$TV.env" ] && . "$DATEN/render-$TV.env"
 OW=${AUSGABE% *}; OH=${AUSGABE#* }
-W=1920; H=1080                                   # Chromium zeichnet in Full HD (in 4K wäre er überlastet)
+# Aufnahme (seit 0.29 je Fernseher 720p/1080p/1440p): Xvfb und Chromium in dieser Größe. Die TV-Seite bleibt
+# 1920×1080 Punkte; der Zoom (Gerätefaktor) rastert sie gröber oder feiner. 4K ist für Chromium per CPU zu viel.
+# --window-size zählt in Punkten (nicht Pixeln) – daher immer 1920,1080.
+W=${AUFNAHME% *}; H=${AUFNAHME#* }
+case "$W$H" in *[!0-9]*|"") W=1920; H=1080;; esac
+FAKTOR=$(awk "BEGIN { printf \"%.6g\", $H / 1080 }")
+# Grafik in Chromium: ohne echte Grafikeinheit emuliert Chromium OpenGL per CPU (llvmpipe). Gemessen 2026-11-06
+# (3 Runden je Variante, i5-7500T): mit Emulation im Mittel 97 % eines Kerns, mit --disable-gpu (GPU=aus) 105 % bei
+# gleicher Leistungsaufnahme – daher bleibt die Emulation Standard; GPU=aus nur zum Vergleichen.
+[ "$GPU" = aus ] && GPUARG="--disable-gpu" || GPUARG=""
 PROFIL=$DATEN/chromium-$TV
 ERW=/opt/signagecast/render/h264-fluessig
 # Docker gibt /dev/shm nur 64 MB – zu wenig für Chromium; dann nimmt er /tmp
@@ -59,8 +69,10 @@ sleep 1
 PULSE_SINK=$SINK LANG=de_DE.UTF-8 LANGUAGE=de DISPLAY=$DISP setsid chromium --lang=de-DE --accept-lang=de-DE,de,en \
   --kiosk --no-sandbox --noerrdialogs --disable-infobars --no-first-run --disable-session-crashed-bubble \
   --disable-features=Translate,TranslateUI,MediaRouter,DisableLoadExtensionCommandLineSwitch --disable-translate \
-  --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --force-device-scale-factor=1 \
-  --window-position=0,0 --window-size=${W},${H} --user-data-dir="$PROFIL" \
+  --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --force-device-scale-factor=$FAKTOR \
+  --disable-background-networking --disable-component-update --disable-sync --disable-default-apps \
+  --disable-domain-reliability $GPUARG \
+  --window-position=0,0 --window-size=1920,1080 --user-data-dir="$PROFIL" \
   --remote-debugging-port=$DEVPORT --remote-debugging-address=127.0.0.1 --load-extension="$ERW" $SHM \
   "http://127.0.0.1:8080/?tv=$TV" >/dev/null 2>&1 & CR=$!
 echo "$CR" >> "$PIDS"

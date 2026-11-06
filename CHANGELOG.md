@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.29.0 (2026-11-06)
+Performance release – stability, security and performance rank equally in SignageCast.
+- **Capture size per TV:** TVs → Video stream → *Capture (browser)*: 720p, 1080p (default) or 1440p. The browser draws
+  the TV page in this size (the layout stays 1920 × 1080 points); the graphics unit converts it to the output. 720p
+  saves CPU and fetches live videos in 720p, 1440p is sharper for text on 4K output. A change restarts the stream.
+- **Full HD is the new default output** for new installations and new TVs (8 Mbit/s, H.264). The browser draws in
+  1080p anyway – a 4K TV upscales itself, Full HD saves bitrate and graphics work. Existing TVs keep their setting.
+- **Live videos as H.264 in capture size:** the render extension reports VP9/AV1 as “not smooth” (the CPU decodes them
+  far more expensively than H.264) and H.264 only up to the capture height.
+- Measured, not changed: drawing without the browser's OpenGL emulation (`--disable-gpu`) used about 8 % more CPU at
+  the same power draw (3 rounds each, i5-7500T) – the emulation stays; `GPU=aus` in `tv-render.sh` only for comparisons.
+- **Browser background services off** in the render chain (background networking, component updates, sync,
+  default apps, domain reliability) – less CPU and network traffic.
+- **Announcements and emergency screen by long polling:** the TV page no longer asks every 2 s; the request waits until
+  something changes (at most 20 s) – still shown at once, about 90 % fewer requests.
+- **Measuring tool** `werkzeug/leistung_messen.py`: CPU and memory (PSS) of the render chains, MediaMTX and the
+  service, frame rate and duplicated/lost frames per TV; `--vergleich` compares with an earlier measurement and returns
+  1 when it got worse. Every release is measured with it before publishing.
+- README: section *Principles* (rock-stable, secure, light).
+
 ## v0.28.1 (2026-11-06)
 - **TV page reloads after an update:** the page compares the version reported by the service and reloads at once when it
   changes – before, new display features only appeared after the page's 6-hour reload. Static files (`seite.js`,

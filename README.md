@@ -4,7 +4,7 @@
 
 SignageCast shows clock, weather (MET Norway) and – optionally – any values from **Home Assistant** together with a large window of
 **live nature and wildlife cams** (YouTube) – always where it is currently daytime. Everything is rendered in a small
-Linux container and sent to the TV as a **4K video stream**; the TV only has to open one address in its browser.
+Linux container and sent to the TV as a **video stream** (Full HD or 4K); the TV only has to open one address in its browser.
 You design the screen in a **drag-and-drop editor** and manage everything in the browser, also from your phone.
 
 Made for the living room, waiting rooms of practices and company receptions. Free and open source (MIT).
@@ -82,6 +82,18 @@ Then open the admin – **https://&lt;IP&gt;:9090** (Proxmox/Debian, user `tvadm
 (Docker/NAS, password in the container log) – follow the short assistant and open **http://&lt;IP&gt;:8888/tv** on the TV.
 Ports, logins and updates per way: [installation](docs/INSTALL.md).
 
+## Principles
+
+Three goals rank equally – none is traded for another:
+
+- **Rock-stable:** a screen runs for months without anyone looking after it. Every part restarts itself, updates roll
+  back automatically when SignageCast does not run afterwards, and a broken data source never blacks out the TV.
+- **Secure:** signed releases, secrets never leave the server in clear text, nothing listens that does not have to,
+  no cloud services or accounts needed.
+- **Light:** it runs on a small mini PC. Chains only run while someone watches, the graphics unit encodes, the browser
+  draws only as much as needed (capture size per TV), and every release is measured – CPU, memory and lost frames –
+  before it is published (`werkzeug/leistung_messen.py`).
+
 ## Thanks
 
 Special thanks to **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** by boschkundendienst – a
@@ -114,6 +126,9 @@ N100), ohne Grafik läuft ein Notbetrieb in Full HD – siehe [Hardware](docs/HA
 
 **Mehr:** [Bildschirm-Tour](docs/TOUR.md) · [Handbuch & FAQ](docs/MANUAL.md) · [Technik, Updates, Sicherheit](docs/HOW-IT-WORKS.md)
 (alle Seiten englisch mit deutscher Kurzfassung, die NAS-Anleitungen komplett auch auf Deutsch).
+
+**Grundsätze:** Stabilität, Sicherheit und geringer Verbrauch sind gleich wichtig – keins wird für ein anderes
+geopfert. Jede Version wird vor dem Veröffentlichen gemessen (CPU, Arbeitsspeicher, verlorene Bilder).
 
 **Danke** an **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** von boschkundendienst – das
 Raspberry-Pi-Signage-Projekt war die Inspiration für die Überlegungen hinter SignageCast (selbst betrieben, im Browser

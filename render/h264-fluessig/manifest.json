@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TV-Render: H.264 flüssig",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Meldet der YouTube-Einbettung H.264 bis 1080p als flüssig abspielbar (Render-Container ohne Hardware-Dekodierung, spielt es trotzdem ohne Bildverlust). Projekt SignageCast",
   "content_scripts": [{
     "matches": ["https://www.youtube-nocookie.com/*", "https://www.youtube.com/*"],

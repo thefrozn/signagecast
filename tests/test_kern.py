@@ -1033,5 +1033,31 @@ class NeuLaden0281(unittest.TestCase):
         self.assertIn('super().send_header("Cache-Control", "no-cache")', py)
 
 
+
+class Leistung(unittest.TestCase):
+    """Seit 0.29: Aufnahmegröße je Fernseher, Standard Full HD, Durchsagen per Long-Polling, Chromium ohne llvmpipe."""
+
+    def test_aufnahme_und_standard(self):
+        t = E.pruefen({})["fernseher"][0]
+        self.assertEqual((t["aufloesung"], t["aufnahme"], t["bitrate_mbit"]), (1080, 1080, 8))
+        self.assertEqual(E.pruefen({"fernseher": [{"id": "tv", "aufnahme": 720}]})["fernseher"][0]["aufnahme"], 720)
+        with self.assertRaises(E.Fehler) as f:
+            E.pruefen({"fernseher": [{"id": "tv", "aufnahme": 2160}]})
+        self.assertEqual(f.exception.code, "e_aufnahme")
+        self.assertIn("e_aufnahme", M.DE)
+
+    def test_render_skript(self):
+        basis = os.path.join(os.path.dirname(__file__), "..")
+        sh = open(os.path.join(basis, "render", "tv-render.sh"), encoding="utf-8").read()
+        for x in ('W=${AUFNAHME% *}', "--force-device-scale-factor=$FAKTOR", 'GPU=an', "--disable-background-networking"):
+            self.assertIn(x, sh)
+        py = open(os.path.join(basis, "app", "dienst.py"), encoding="utf-8").read()
+        self.assertIn('f"AUFNAHME=\\"{aw} {ah}\\"\\n"', py)
+        self.assertIn("ds_melden()", py[py.index("def alarm_beenden"):py.index("def alarm_fuer")])
+        js = open(os.path.join(basis, "www", "seite.js"), encoding="utf-8").read()
+        self.assertIn('"&stand="', js)
+        self.assertNotIn("}, 2000);", js[js.index("durchsagenHolen") - 300:])
+
+
 if __name__ == "__main__":
     unittest.main()
