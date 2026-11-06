@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- Calendar element, icons only: the labels below the icons (e.g. *Tomorrow* twice) no longer run into each other – the
+  text shrinks to fit its icon and the icons get spacing.
+- Screenshot tour renewed with 0.29 (new: waste icons on the TV, CSV import with row filter, capture size).
+
 ## v0.29.0 (2026-11-06)
 Performance release – stability, security and performance rank equally in SignageCast.
 - **Capture size per TV:** TVs → Video stream → *Capture (browser)*: 720p, 1080p (default) or 1440p. The browser draws

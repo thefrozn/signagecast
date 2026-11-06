@@ -1,8 +1,9 @@
 # SignageCast – screenshot tour
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
-installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show versions
-0.17–0.23 with the six areas Overview, TVs, Content, Video & sound, Settings and System.
+installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
+0.29 (layout editor, players and docker login from 0.20–0.23) with the six areas Overview, TVs, Content, Video & sound,
+Settings and System.
 
 [← README](../README.md) · [installation](INSTALL.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
@@ -15,6 +16,12 @@ A live wildlife cam from wherever it is daytime right now, with clock, weather f
 The bar below mixes your own data: the Rhine water level and the Bitcoin price from public APIs, and a countdown.
 
 ![TV with live cam, weather and own data](tour/01-tv-living-room.jpg)
+
+The same TV with the *Calendar / waste collection* element as **icons only** in the top right corner: residual waste
+and recycling are collected tomorrow (example data from a CSV file). The icons appear three days before the pickup and
+disappear afterwards by themselves.
+
+![TV with waste collection icons in the corner](tour/01a-tv-waste-icons.jpg)
 
 ### 2. Data dashboard
 A second TV with a layout built only from data sources: API value, gauge as bar and traffic light, a 24-hour chart
@@ -55,7 +62,8 @@ synchronised”), video encoding (graphics unit or software fallback), Home Assi
 
 ### 7. TVs
 Each TV has its own address, layout, optional schedule (other layout or black at certain times), sound (radio or the
-original sound of the cams), volume, categories and video settings (4K/Full HD, bitrate).
+original sound of the cams), volume, categories and video settings: output Full HD (default) or 4K, the **capture
+size** the browser draws in (720p saves CPU, 1440p is sharper), bitrate and codec.
 
 ![TV settings](tour/05-tvs.jpg)
 
@@ -106,6 +114,11 @@ corner when residual waste is collected in the next days (rules *title contains 
 template).
 
 ![Data sources with response tree](tour/07-data-sources.jpg)
+
+A waste calendar from a CSV file: delimiter and character set detected, columns ticked, a row filter (*DISTRICT is
+empty* – drops bulky and hazardous waste dates of other districts) and the date and title column for the calendar.
+
+![CSV import with row filter and calendar columns](tour/07a-csv-import.jpg)
 
 ### 11. Import from curl
 Paste a `curl` command from an API guide – address, method and headers are filled in, `Authorization` is marked as a
@@ -194,7 +207,9 @@ Die Verwaltung ist seit 0.17 in sechs Bereiche gegliedert (Übersicht mit „Zu 
 Video & Ton, Einstellungen, System). Neu seit 0.17–0.19: Layouts-Übersicht mit Kacheln, Ebenen im Editor,
 Leistungstest mit Empfehlungen und das Durchsage-Pult. Neu seit 0.20–0.23: Empfangs-Layout mit PDF, Webseite als
 Bildschirmfoto und Hinweis mit Zeitraum, das rote Notfall-Vollbild, die Kodierung je Fernseher und die Seite
-„Player (Raspberry Pi)“ mit einem simulierten Pi (am echten Gerät noch nicht getestet). Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
+„Player (Raspberry Pi)“ mit einem simulierten Pi (am echten Gerät noch nicht getestet). Neu seit 0.26–0.29 (Bilder
+mit 0.29 neu aufgenommen): Müllabfuhr als Symbole oben rechts auf dem Fernseher, CSV-Import mit Zeilenfilter und
+Termin-Spalten sowie Ausgabe (Standard Full HD) und Aufnahmegröße je Fernseher. Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
 sowie ein reines Daten-Layout (Diagramm mit echten Pegelwerten, Feiertage per iCal, Feed, QR-Code). Danach die
 Verwaltung: SignageCast als Menüpunkt in Cockpit, Übersicht mit „Zu erledigen“, Fernseher, Layout-Editor mit Pfad-Auswahl, Datenquellen
 mit Antwort-Baum und curl-Import, Streams, Radio, Einspieler mit Puffer, Verbindung mit Zeitquelle, Updates

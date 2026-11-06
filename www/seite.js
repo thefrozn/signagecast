@@ -268,8 +268,11 @@ function fuellen() {
           if (o.nur_mit_terminen && !sym.length) sichtbar = false;
           const n = Math.max(sym.length, 1);
           const gr = Math.max(8, Math.min(d.clientHeight * (o.wann ? 0.62 : 0.85), d.clientWidth / n * 0.8));
-          d.innerHTML = `<div class="symbole">${sym.map((s) => `<div class="symbol" title="${esc(s.titel)}"><span class="mdi ${esc(s.icon)}" style="font-size:${gr}px${s.farbe ? ";color:" + s.farbe : ""}"></span>` +
-            (o.wann ? `<span class="wann" style="font-size:${Math.max(8, gr * 0.28)}px">${esc(s.wann)}</span>` : "") + "</div>").join("")}</div>`;
+          // Beschriftung so klein, dass sie in ihren Platz passt (sonst laufen z. B. zweimal „Morgen“ ineinander)
+          const lang = Math.max(1, ...sym.map((s) => (s.wann || "").length));
+          const wg = Math.max(8, Math.min(gr * 0.28, (d.clientWidth / n) * 0.9 / (lang * 0.55)));
+          d.innerHTML = `<div class="symbole" style="gap:${Math.round(gr * 0.2)}px">${sym.map((s) => `<div class="symbol" title="${esc(s.titel)}"><span class="mdi ${esc(s.icon)}" style="font-size:${gr}px${s.farbe ? ";color:" + s.farbe : ""}"></span>` +
+            (o.wann ? `<span class="wann" style="font-size:${wg}px">${esc(s.wann)}</span>` : "") + "</div>").join("")}</div>`;
           break;
         }
         const zeilen = termine.length + (o.titel ? 1 : 0) || 1;
