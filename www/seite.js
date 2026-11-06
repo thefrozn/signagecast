@@ -38,7 +38,7 @@ const zahl = (w, nachkomma) => {
 const stellen = (einheit, wert) => (!einheit || einheit === "W" || einheit === "%" ? 0 : Math.abs(Number(wert)) >= 100 ? 0 : 1);
 
 const TV = new URLSearchParams(location.search).get("tv") || "tv";
-let daten = null, layoutJson = "", bausteine = [], player = null;
+let daten = null, layoutJson = "", bausteine = [], player = null, seitenVersion = "";
 const meldungen = {};                         // entity -> {wert, seit}
 
 // ---------- Fläche aus dem Layout bauen ----------
@@ -619,6 +619,11 @@ async function laden() {
     const r = await fetch("/daten.json?tv=" + encodeURIComponent(TV), { cache: "no-store" });
     const d = await r.json();
     if (!d || !d.ok) return;
+    // seit 0.28.1: nach einem Update (andere Version im Dienst) sofort mit dem neuen Code neu laden
+    if (d.version) {
+      if (!seitenVersion) seitenVersion = d.version;
+      else if (d.version !== seitenVersion) { location.reload(); return; }
+    }
     daten = d;
     T = TEXTE[d.sprache] || TEXTE.de;
     document.documentElement.lang = d.sprache || "de";

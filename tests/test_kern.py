@@ -1020,5 +1020,18 @@ class KalenderSymbole028(unittest.TestCase):
             self.assertIn("." + icon + ":", css, icon)       # alle Vorschläge gibt es in der eingebauten Schrift
 
 
+
+class NeuLaden0281(unittest.TestCase):
+    """Seit 0.28.1: TV-Seite lädt nach einem Update neu; statische Dateien mit Cache-Control: no-cache."""
+
+    def test_seite_vergleicht_version(self):
+        basis = os.path.join(os.path.dirname(__file__), "..")
+        js = open(os.path.join(basis, "www", "seite.js"), encoding="utf-8").read()
+        self.assertIn("d.version !== seitenVersion", js)
+        py = open(os.path.join(basis, "app", "dienst.py"), encoding="utf-8").read()
+        self.assertIn("version=VERSION,", py[py.index("def tv_daten"):])
+        self.assertIn('super().send_header("Cache-Control", "no-cache")', py)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1229,6 +1229,7 @@ def tv_daten(tv_id):
     st = e["standort"]
     tz = L.tageszeit(sonnenhoehe(st["breite"], st["laenge"]), sonnenhoehe(st["breite"], st["laenge"], time.time() + 600))
     return dict(teil, ok=True, ha_ok=zustand["ha_fehler"] is None, zeit=int(time.time()), sprache=e["sprache"] or "en", tageszeit=tz,
+                version=VERSION,                  # seit 0.28.1: TV-Seite lädt nach einem Update neu
                 einspieler=eins if hat_video else [],
                 zeit_abweichung_ms=round((zt.get("abweichung_s") or 0) * 1000) if zt.get("korrektur") else 0,
                 zeitzone=wirksame_zeitzone(),
@@ -2064,6 +2065,19 @@ class Bearbeiter(SimpleHTTPRequestHandler):
 
     def log_message(self, *a):
         pass
+
+    # Statische Dateien (seite.js, stil.css …) ohne Cache-Control würde Chromium heuristisch zwischenspeichern – nach einem
+    # Update liefe die TV-Seite dann mit altem Code weiter. Seit 0.28.1: immer nachfragen (no-cache, meist 304).
+    def send_header(self, k, v):
+        if k.lower() == "cache-control":
+            self._cache_gesetzt = True
+        super().send_header(k, v)
+
+    def end_headers(self):
+        if not getattr(self, "_cache_gesetzt", False):
+            super().send_header("Cache-Control", "no-cache")
+        self._cache_gesetzt = False
+        super().end_headers()
 
     def antwort(self, code, obj, typ="application/json; charset=utf-8"):
         b = obj if isinstance(obj, bytes) else json.dumps(obj, ensure_ascii=False).encode()

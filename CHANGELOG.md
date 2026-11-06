@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.28.1 (2026-11-06)
+- **TV page reloads after an update:** the page compares the version reported by the service and reloads at once when it
+  changes – before, new display features only appeared after the page's 6-hour reload. Static files (`seite.js`,
+  `stil.css` …) are now sent with `Cache-Control: no-cache`, so the browser always checks for the new version (usually a
+  quick 304). Takes effect from the next update after 0.28.1.
+
 ## v0.28.0 (2026-11-06)
 - **Calendar element – icons only:** new display *icons only*. Each upcoming event becomes one icon, chosen by rules
   *title contains … → icon and colour* (first match wins, case-insensitive); the same icon appears once (earliest date),
