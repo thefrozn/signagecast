@@ -535,10 +535,10 @@ async function layoutSeite(inhalt) {
       if (k === "symbole") {
         const S = SYM_TEXTE[E.sprache] || SYM_TEXTE.de;
         return `<h3>${lab}</h3><p class="leise">${esc(S.hilfe)}</p><datalist id="symVorschlag">${SYM_VORSCHLAG.map((s) => `<option value="${s}">`).join("")}</datalist>
-          <div id="symListe">${(w || []).map((r, i) => `<div class="zeile" data-i="${i}">
-          <input type="text" name="sText" value="${esc(r.text)}" placeholder="${esc(S.text)}" aria-label="${esc(S.text)}" style="width:110px">
-          <input type="text" name="sIcon" list="symVorschlag" value="${esc(r.icon)}" placeholder="mdi-…" aria-label="${esc(S.icon)}" spellcheck="false" style="width:170px">
-          <span class="icon mdi ${esc(r.icon)}" style="${r.farbe ? "color:" + esc(r.farbe) : ""}"></span>
+          <div id="symListe">${(w || []).map((r, i) => `<div class="zeile symregel" data-i="${i}">
+          <input type="text" name="sText" value="${esc(r.text)}" placeholder="${esc(S.text)}" aria-label="${esc(S.text)}">
+          <input type="text" name="sIcon" list="symVorschlag" value="${esc(r.icon)}" placeholder="mdi-…" aria-label="${esc(S.icon)}" spellcheck="false">
+          <span class="icon mdi ${esc(r.icon)}"></span>
           <input type="color" name="sFarbe" value="${esc(r.farbe || "#ffffff")}" aria-label="${esc(S.farbe)}">
           <button class="knopf gefahr" name="sWeg" title="${esc(S.weg)}">✕</button></div>`).join("")}</div>
           <div class="zeile"><button class="knopf" id="symPlus">${esc(S.neu)}</button><button class="knopf" id="symVorlage">${esc(S.vorlage)}</button></div>`;
@@ -597,7 +597,7 @@ async function layoutSeite(inhalt) {
         o[k] = inp.type === "checkbox" ? inp.checked : inp.type === "number" ? Number(inp.value) : inp.value;
         if (k === "pfad") o[k] = o[k].trim();
       }
-      if (o.symbole) o.symbole = [...ziel.querySelectorAll("#symListe .zeile")].map((z) => ({ text: z.querySelector("[name=sText]").value,
+      if (o.symbole && ziel.querySelector("#symListe")) o.symbole = [...ziel.querySelectorAll("#symListe .zeile")].map((z) => ({ text: z.querySelector("[name=sText]").value,
         icon: z.querySelector("[name=sIcon]").value.trim(), farbe: z.querySelector("[name=sFarbe]").value }));
       ziel.querySelectorAll("#symListe .zeile").forEach((z, i) => { const s = z.querySelector(".icon"), r = o.symbole[i];
         s.className = "icon mdi " + r.icon; s.style.color = r.farbe; });
@@ -667,7 +667,8 @@ async function layoutSeite(inhalt) {
       (p) => { ziel.querySelector("[name=b_pfad]").value = p; aendern(); }), null);
     const tf = ziel.querySelector("[name=textfarbe]");
     if (tf) tf.oninput = () => { ziel.querySelector("[name=textfarbeStd]").checked = false; };
-    // Kalender-Symbole (seit 0.28): Darstellung umschalten zeigt/versteckt die Symbol-Optionen
+    // Kalender-Symbole (seit 0.28): Darstellung umschalten zeigt/versteckt die Symbol-Optionen; Farbe der Vorschau per JS (CSP)
+    ziel.querySelectorAll("#symListe .zeile").forEach((z, i) => { z.querySelector(".icon").style.color = (o.symbole[i] || {}).farbe || ""; });
     const an = ziel.querySelector("[name=o_ansicht]");
     if (an && e.typ === "kalender") an.onchange = () => { aendern(); eigenschaftenZeichnen(); };
     const sp = ziel.querySelector("#symPlus");
