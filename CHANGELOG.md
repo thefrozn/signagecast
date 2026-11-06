@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.25.0 (2026-11-06)
+- **Raspberry Pi player – one image for several Pis:** *Pair a Pi* → *Download image for several Pis* (server address
+  and Wi-Fi, no key). Flash it onto any number of cards; each Pi shows a 6-digit code on the TV, enter it in the admin
+  with name and TV → paired. The key is negotiated with Diffie-Hellman (RFC 3526, 2048 bit) and never travels over the
+  network; the code is derived from it, so a device intercepting the exchange would show a different code. Codes are
+  valid for 10 minutes; at most 20 open and 60 new requests per hour. Needs an image from 0.25; per-screen images keep
+  working as before.
+- **Data sources – iCal:** an address that returns a web page instead of a calendar (e.g. a login or error page with
+  status 200) now shows “no iCal data” instead of silently showing no events.
+
 ## v0.24.0 (2026-11-06)
 - **Raspberry Pi player – direct mode (experimental):** per Pi under *Settings → Display*. A Pi 4/5 shows the TV page
   itself (Chromium in the kiosk shell cage, no desktop) instead of the stream – sharp text, no stream delay, and the

@@ -41,6 +41,22 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 (otherwise open `http://10.42.0.1`), choose your Wi-Fi and enter the password. Every 5 minutes the Pi tries the known
 networks again – after a power cut the router is often slower than the Pi.
 
+## One image for several Pis (pairing code, since 0.25)
+
+Instead of one image per screen you can flash **the same image onto any number of cards**:
+
+1. Under **Pair a Pi**, choose the network and click **Download image for several Pis**
+   (`signagecast-player-kopplung.img.gz` – server address and Wi-Fi, but no key).
+2. Flash it as above, Pi to the TV, power on. After the start the TV shows **“Code: 123 456”**.
+3. In the admin under **Pair a Pi** enter the code, a name and the TV → **Pair**. A few seconds later the Pi shows the
+   picture; from then on it is an ordinary player (settings, buttons, *Download image again*).
+
+The admin shows how many Pis are currently showing a code (model and IP, never the code). A code is valid for 10
+minutes, then the Pi shows a new one. Security: the Pi and the server negotiate the key with Diffie-Hellman (RFC 3526,
+2048 bit); the code is derived from it. Someone in the network who intercepts the exchange would get a different code –
+so only the Pi whose code you read off the TV gets paired, and the key never travels over the network. At most 20
+open and 60 new requests per hour. Pairing needs an image from 0.25 on.
+
 ## In the admin
 
 - **Status** per Pi: online/offline, model, IP, Wi-Fi and signal, screen name, video (codec, resolution, hardware
@@ -143,6 +159,22 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 **SignageCast-<Name>** und zeigt auf dem Fernseher einen **QR-Code**. Mit dem Handy scannen – die Einrichtungsseite
 öffnet sich von selbst (sonst `http://10.42.0.1` aufrufen) –, WLAN wählen, Passwort eingeben. Alle 5 Minuten versucht
 der Pi die bekannten WLANs erneut – nach einem Stromausfall ist der Router oft langsamer als der Pi.
+
+## Ein Image für mehrere Pis (Kopplungscode, seit 0.25)
+
+Statt eines Images je Bildschirm kannst du **dasselbe Image auf beliebig viele Karten** schreiben:
+
+1. Unter **Pi koppeln** das Netzwerk wählen und **Image für mehrere Pis herunterladen** klicken
+   (`signagecast-player-kopplung.img.gz` – Server-Adresse und WLAN, aber kein Schlüssel).
+2. Wie oben flashen, Pi an den Fernseher, Strom an. Nach dem Start zeigt der Fernseher **„Code: 123 456“**.
+3. In der Verwaltung unter **Pi koppeln** Code, Name und Fernseher eingeben → **Koppeln**. Wenige Sekunden später zeigt
+   der Pi das Bild; danach ist er ein ganz normaler Player (Einstellungen, Knöpfe, *Image erneut herunterladen*).
+
+Die Verwaltung zeigt, wie viele Pis gerade einen Code anzeigen (Modell und IP, nie den Code). Ein Code gilt 10 Minuten,
+dann zeigt der Pi einen neuen. Sicherheit: Pi und Server handeln den Schlüssel per Diffie-Hellman aus (RFC 3526,
+2048 Bit), der Code ist daraus abgeleitet. Wer sich im Netz dazwischenschiebt, bekäme einen anderen Code – gekoppelt
+wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht nie übers Netz. Höchstens 20 offene und
+60 neue Anfragen je Stunde. Die Kopplung braucht ein Image ab 0.25.
 
 ## In der Verwaltung
 

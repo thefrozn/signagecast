@@ -41,7 +41,7 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 - **Clips at fixed times** – e.g. the German news *tagesschau in 100 Sekunden* on the hour and half hour.
 - **Several TVs** – each with its own address, layout, schedule, sound and categories.
 - **Raspberry Pi as player** (experimental) – create a ready SD card image per screen in the admin (Wi-Fi included,
-  hotspot with QR code if it finds no network), then manage all Pis centrally: status, screenshot, TV on/off via
+  hotspot with QR code if it finds no network) or one image for many Pis that pair with a code on the TV, then manage all Pis centrally: status, screenshot, TV on/off via
   HDMI-CEC, rotation, Wi-Fi change with fallback, updates; optional *direct mode* (Pi 4/5 shows the page itself, no
   encoding on the server) – see [PLAYER.md](docs/PLAYER.md).
 - **Messages and notifications** – official severe weather warnings of the DWD (Germany) as a layout element; short

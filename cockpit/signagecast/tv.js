@@ -58,6 +58,10 @@ const TEXTE = {
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
+          koppeln: "Pi koppeln (ein Image für mehrere Pis)", koppelnText: "Ein Image für beliebig viele Pis: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jeder Pi zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Fernseher wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
+          sammelImage: "Image für mehrere Pis herunterladen", code: "Code vom Fernseher", codePlatz: "123 456", koppelnKnopf: "Koppeln",
+          gekoppelt: "Gekoppelt – der Pi startet in wenigen Sekunden.", wartend: (n) => n === 1 ? "1 Pi zeigt gerade einen Code" : `${n} Pis zeigen gerade einen Code`,
+          keinerWartet: "Gerade zeigt kein Pi einen Code.",
           neu: "Player hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Fernseher", keinTv: "– noch keiner –", modell: "Modell",
           m: { pi45: "Pi 5, Pi 4 oder Pi 400", pi3: "Pi 3 oder Zero 2 W" }, netz: "Netzwerk", kabel: "LAN-Kabel", wlan: "WLAN",
           wlanGesp: "Gespeichertes WLAN", wlanNeu: "neues WLAN eingeben", ssid: "WLAN-Name (SSID)", pw: "WLAN-Passwort", merken: "WLAN in der Verwaltung speichern (für weitere Pis)",
@@ -72,7 +76,7 @@ const TEXTE = {
           liste: "Player", keine: "Noch kein Player.", online: "online", offline: "offline", nieGesehen: "hat sich noch nie gemeldet",
           zuletzt: (z) => `zuletzt ${z}`, seit: (z) => `seit ${z}`, ip: "IP", netzArt: { kabel: "Kabel", wlan: "WLAN", hotspot: "Hotspot (Einrichtung)", keins: "kein Netz" },
           temp: "Temperatur", version: "Player", hdmi: "Bildschirm", keinHdmi: "kein Bildschirm erkannt", video: "Video",
-          zustand: { start: "startet", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
+          zustand: { start: "startet", koppeln: "wartet auf Kopplung", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
                      stream_fehler: "Stream-Fehler", gesperrt: "entfernt", unbekannt: "dem Server unbekannt", direkt: "zeigt die Seite direkt", direkt_start: "Browser startet …" },
           drehung: "Drehung", aufloesung: "Ausgabe", a: { auto: "wie der Fernseher meldet", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Lautstärke (%)", cec: "Fernseher nach Zeitplan ein- und ausschalten (HDMI-CEC)", cecText: "Wenn das Layout „schwarz“ ist (Zeitplan des Fernsehers), schaltet der Pi den Fernseher per HDMI aus und danach wieder ein. Am Fernseher muss CEC an sein (Samsung „Anynet+“, LG „SimpLink“, Sony „Bravia Sync“).",
@@ -314,6 +318,10 @@ const TEXTE = {
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
+          koppeln: "Pair a Pi (one image for several Pis)", koppelnText: "One image for any number of Pis: it contains the server address and Wi-Fi, but no key yet. At startup each Pi shows a 6-digit code on the TV – enter it here, choose name and TV, done. The key is negotiated securely and never travels over the network.",
+          sammelImage: "Download image for several Pis", code: "Code from the TV", codePlatz: "123 456", koppelnKnopf: "Pair",
+          gekoppelt: "Paired – the Pi starts in a few seconds.", wartend: (n) => n === 1 ? "1 Pi is showing a code" : `${n} Pis are showing a code`,
+          keinerWartet: "No Pi is showing a code right now.",
           neu: "Add player", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the TV", keinTv: "– none yet –", modell: "Model",
           m: { pi45: "Pi 5, Pi 4 or Pi 400", pi3: "Pi 3 or Zero 2 W" }, netz: "Network", kabel: "LAN cable", wlan: "Wi-Fi",
           wlanGesp: "Saved Wi-Fi", wlanNeu: "enter new Wi-Fi", ssid: "Wi-Fi name (SSID)", pw: "Wi-Fi password", merken: "Save the Wi-Fi in the admin (for more Pis)",
@@ -328,7 +336,7 @@ const TEXTE = {
           liste: "Players", keine: "No player yet.", online: "online", offline: "offline", nieGesehen: "has never reported",
           zuletzt: (z) => `last seen ${z}`, seit: (z) => `since ${z}`, ip: "IP", netzArt: { kabel: "cable", wlan: "Wi-Fi", hotspot: "hotspot (setup)", keins: "no network" },
           temp: "Temperature", version: "Player", hdmi: "Screen", keinHdmi: "no screen detected", video: "Video",
-          zustand: { start: "starting", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
+          zustand: { start: "starting", koppeln: "waiting for pairing", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
                      stream_fehler: "stream error", gesperrt: "removed", unbekannt: "unknown to the server", direkt: "shows the page directly", direkt_start: "browser starting …" },
           drehung: "Rotation", aufloesung: "Output", a: { auto: "as the TV reports", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Volume (%)", cec: "Switch the TV on and off by schedule (HDMI-CEC)", cecText: "When the layout is “black” (schedule of the TV), the Pi switches the TV off via HDMI and on again later. CEC must be enabled on the TV (Samsung “Anynet+”, LG “SimpLink”, Sony “Bravia Sync”).",
@@ -428,6 +436,7 @@ const TEXTE = {
       curl_lesbar: "curl command not readable: {d}", curl_wert: "curl: value missing after {opt}", curl_adresse: "curl: no address found",
       nur_http: "only http/https", http: "HTTP {code} {grund}", nicht_erreichbar: "not reachable: {d}",
       zu_gross: "response larger than {mb} MB", kein_bild: "not a picture (Content-Type {typ})", kein_json: "not valid JSON: {d}",
+      kein_ical: "no iCal data (Content-Type {typ}) – check the address, it often returns a login or error page",
       kein_feed: "not a valid feed: {d}",
       kam_http: "Camera: HTTP {code} {grund}", kam_nicht_erreichbar: "Camera not reachable: {d}", kein_mjpeg: "not MJPEG (Content-Type {typ})",
       kam_zeit: "Camera does not answer (25 s)", kam_fehler: "Camera: {d}",
@@ -485,6 +494,9 @@ const TEXTE = {
       pi_pruefsumme: "Checksum of the player image wrong – please download again", pi_platz: "Not enough disk space – about {mb} MB needed",
       pi_konfig_gross: "Too much data for the device file", pi_link_alt: "Download link expired – click “Download image” again",
       pi_platzhalter: "Player image damaged – please download again",
+      pi_koppel_ungueltig: "Invalid pairing request", pi_koppel_voll: "Too many pairing requests – try again in an hour",
+      pi_basis_alt: "The downloaded player image ({v}) cannot pair yet – click “Download again” above (0.25 or later)",
+      pi_code: "No Pi shows this code – check the code on the TV (it is valid for 10 minutes)",
     },
     haFehler: { nicht_erreichbar: "HA not reachable", kein_trusted: "HA offers no login via trusted networks for this address (trusted_networks missing or IP not listed)",
                 kein_benutzer: "trusted_networks: no user assigned to this IP", abgelehnt: "Login rejected", http: "HA answered with an error" }, ha: "Home Assistant", verbunden: "connected", getrennt: "not connected",
@@ -929,6 +941,8 @@ async function playerSeite(inhalt) {
     const f = b.phase === "fehler" ? `<span class="schlecht">${esc(T.pl.basisFehler)}: ${esc(meldungText(b, b.fehler))}</span> ` : "";
     return f + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>` : esc(T.pl.basisFehlt));
   };
+  const wartendText = () => (P.wartend || []).length
+    ? T.pl.wartend(P.wartend.length) + ": " + P.wartend.map((w) => [w.modell, w.ip].filter(Boolean).join(" · ")).join(", ") : T.pl.keinerWartet;
   const zeichnen = () => {
     const bereit = !!P.basis.vorhanden;
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pl.titel)}</h2><p>${esc(T.pl.text)}</p>
@@ -951,7 +965,26 @@ async function playerSeite(inhalt) {
           <div class="zeile"><button class="knopf" id="plServerOk">${esc(T.speichern)}</button></div>
           ${P.wlan.length ? `<h3>${esc(T.pl.gespeicherte)}</h3>${P.wlan.map((s) => `<div class="zeile"><span>${esc(s)}</span>
             <button class="knopf klein" data-vergessen="${esc(s)}">${esc(T.pl.vergessen)}</button></div>`).join("")}` : ""}</details></div>
+      <div class="karte" id="plKop"><h2>${esc(T.pl.koppeln)}</h2><p class="leise">${esc(T.pl.koppelnText)}</p>
+        ${plNetz("s", P.wlan, true)}
+        <div class="zeile"><button class="knopf" id="plSammel" ${bereit ? "" : "disabled"}>${esc(T.pl.sammelImage)}</button></div>
+        <p id="plWartend" class="leise">${wartendText()}</p>
+        <div class="zeile"><label>${esc(T.pl.code)}</label><input type="text" id="plCode" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="${esc(T.pl.codePlatz)}"></div>
+        <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" id="plKName" maxlength="40" placeholder="${esc(T.pl.namePlatz)}"></div>
+        <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plKTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
+        <div class="zeile"><button class="knopf haupt" id="plKoppeln">${esc(T.pl.koppelnKnopf)}</button></div></div>
       <h2>${esc(T.pl.liste)}</h2><div id="plListe"></div>`;
+    const netzSammel = plNetzAnbinden($("#plKop"), "s");
+    $("#plSammel").onclick = (e) => aktion(e.target, async () => {
+      const d = await senden("/api/player/sammel-image", { wlan: netzSammel(), server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+      plHerunterladen(d.kennung, d.datei);
+      $("#plSchritte").hidden = false;
+    }, T.pl.laedtHerunter);
+    $("#plKoppeln").onclick = (e) => aktion(e.target, async () => {
+      await senden("/api/player/koppeln", { code: $("#plCode").value, name: $("#plKName").value, tv: $("#plKTv").value });
+      $("#plCode").value = ""; $("#plKName").value = "";
+      P = await holen("/api/player"); $("#plWartend").textContent = wartendText(); listeZeichnen();
+    }, T.pl.gekoppelt);
     const netzNeu = plNetzAnbinden($("#plNeu"), "n");
     $("#plBasisLaden").onclick = (e) => aktion(e.target, async () => { await senden("/api/player/basis-laden"); P.basis.phase = "laedt"; zeichnen(); beobachten(); }, null);
     $("#plErstellen").onclick = (e) => aktion(e.target, async () => {
@@ -1067,6 +1100,8 @@ async function playerSeite(inhalt) {
         $("#plBasis").innerHTML = basisText();
         if (alt === "laedt" && P.basis.phase !== "laedt") zeichnen();
       }
+      const w = $("#plWartend");
+      if (w) w.textContent = wartendText();
       if (!inhalt.querySelector("#plListe :focus, #plListe details[open], #plListe pre:not([hidden]), #plListe .geaendert")) listeZeichnen();
     }, P.basis.phase === "laedt" ? 2000 : 10000);
   };

@@ -24,6 +24,7 @@ DE = {
     "kein_bild": "kein Bild (Content-Type {typ})",
     "kein_json": "kein gültiges JSON: {d}",
     "kein_feed": "kein gültiger Feed: {d}",
+    "kein_ical": "keine iCal-Daten (Content-Type {typ}) – Adresse prüfen, oft liefert sie eine Anmelde- oder Fehlerseite",
     # Kameras
     "kam_http": "Kamera: HTTP {code} {grund}",
     "kam_nicht_erreichbar": "Kamera nicht erreichbar: {d}",
@@ -155,6 +156,10 @@ DE = {
     "pi_konfig_gross": "Zu viele Angaben für die Gerätedatei",
     "pi_link_alt": "Download-Link abgelaufen – bitte erneut auf „Image herunterladen“ klicken",
     "pi_platzhalter": "Player-Image beschädigt – bitte erneut laden",
+    "pi_koppel_ungueltig": "Ungültige Kopplungsanfrage",
+    "pi_koppel_voll": "Zu viele Kopplungsanfragen – in einer Stunde erneut versuchen",
+    "pi_basis_alt": "Das geladene Player-Image ({v}) kann sich noch nicht koppeln – oben „Neu laden“ (ab 0.25)",
+    "pi_code": "Kein Pi zeigt diesen Code – Code am Fernseher prüfen (er gilt 10 Minuten)",
 }
 
 

@@ -453,6 +453,27 @@ class Player023(unittest.TestCase):
         with self.assertRaises(M.Meldung):                           # Link nur einmal
             PL.image_schreiben(k, aus.append, "de", "")
 
+    def test_sammel_image(self):
+        """Image für mehrere Pis (0.25): ohne Schlüssel, mit Kopplung – nur aus einem Grundimage ab 0.25."""
+        import gzip
+        PL, img = self.PL, self.grundimage()
+        with self.assertRaises(M.Meldung) as f:                      # Grundimage zu alt: dessen Agent kann nicht koppeln
+            PL.herunterladen_vorbereiten("", None, "http://192.168.1.20:8890")
+        self.assertEqual(f.exception.code, "pi_basis_alt")
+        m = json.load(open(os.path.join(PL.GRUND, "meta.json")))
+        m["version"] = "0.25.0"
+        json.dump(m, open(os.path.join(PL.GRUND, "meta.json"), "w"))
+        k = PL.herunterladen_vorbereiten("", {"ssid": "Heim", "passwort": "geheim123"}, "http://192.168.1.20:8890")
+        aus = []
+        PL.image_schreiben(k, aus.append, "en", "Europe/Berlin")
+        neu = gzip.decompress(b"".join(aus))
+        konf = json.loads(neu[3 << 20:(3 << 20) + 16384])
+        self.assertTrue(konf["kopplung"])
+        self.assertNotIn("schluessel", konf)
+        self.assertNotIn("id", konf)
+        self.assertEqual((konf["server"], konf["hostname"], konf["sprache"]), ("http://192.168.1.20:8890", "sc-player", "en"))
+        self.assertEqual(PL.daten["geraete"], [])                     # kein Gerät angelegt
+
     def test_psk_wie_wpa_supplicant(self):
         # wpa_passphrase "IEEE" "password" (Testvektor IEEE 802.11i)
         self.assertEqual(self.PL.psk("IEEE", "password"), "f42c6fc52df0ebef9ebb4b90b38a5f902e83fe1b135a70e23aed762e9710a12e")
@@ -666,6 +687,164 @@ class Direktmodus024(unittest.TestCase):
             self.assertFalse(p.direkt_gewuenscht(time.time()))    # Pi 3: nie direkt
         finally:
             agent.Browser.verfuegbar, agent.modell = alt_v, alt_m
+
+
+class Kopplung025(unittest.TestCase):
+    """Image für mehrere Pis: DH-Kopplung per Code, Grenzen, Sammel-Image; iCal-Prüfung."""
+    def setUp(self):
+        import player as PL
+        self.PL, d = PL, tempfile.mkdtemp()
+        PL.DATEI, PL.ORDNER, PL.GRUND = os.path.join(d, "player.json"), os.path.join(d, "p"), os.path.join(d, "p", "basis")
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+        PL.stand.clear()
+        PL.kopplungen.clear()
+        PL.koppel_zeiten.clear()
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        self.agent, self.ordner = agent, d
+
+    def test_gruppe_wie_agent(self):
+        self.assertEqual(self.PL.DH_P, self.agent.DH_P)
+        self.assertEqual(self.PL.DH_P.bit_length(), 2048)
+        self.assertEqual(pow(2, (self.PL.DH_P - 1) // 2, self.PL.DH_P), 1)
+
+    def test_agent_koppelt_sich(self):
+        """Agent und Server ganz durch: Code am Fernseher, Eingabe in der Verwaltung, signierte Antwort, Gerätedatei."""
+        PL, agent = self.PL, self.agent
+        import types
+
+        class Netz:                                    # statt HTTP: direkt an die Server-Funktionen
+            def __init__(self, k):
+                self.k = k
+
+            def basis(self):
+                return "http://x:8890"
+
+            def offen(self, pfad, d, zeit=20):
+                if pfad == "/player/koppeln":
+                    return 200, json.dumps(PL.koppel_anfrage(d, "192.0.2.7")).encode(), {}
+                code, antwort, g = PL.koppel_status(d["kennung"])
+                roh = json.dumps(antwort).encode()
+                return code, roh, {"X-Signatur": PL.signatur(g, d["zeit"], roh)} if g else {}
+
+        class Bild:
+            def __init__(self):
+                self.zeilen = []
+
+            def zeigen(self, zeilen, qr=None):
+                self.zeilen = zeilen
+
+        kdatei = os.path.join(self.ordner, "signagecast.json")
+        k = json.loads(PL.konfig(None, [], "http://x:8890", "de", "Europe/Berlin"))
+        self.assertNotIn("schluessel", k)
+        self.assertTrue(k["kopplung"])
+        alt = agent.KONFIG, agent.modell, agent.schreiben_sicher, agent.lauf
+        agent.KONFIG, agent.modell = kdatei, lambda: "Raspberry Pi 4 Model B Rev 1.5"
+        agent.schreiben_sicher = lambda pfad, inhalt: open(pfad, "w").write(inhalt)
+        agent.lauf = lambda *a, **kw: (0, "")
+        try:
+            open(kdatei, "w").write(json.dumps(k))
+            k2 = agent.konfig_laden()
+            self.assertTrue(k2 and k2["kopplung"])
+            p = types.SimpleNamespace(k=k2, t=agent.TEXTE["de"], server=Netz(k2), anzeige=Bild(), kopplung=None, koppel_pause=0,
+                                      zustand="", zustand_text="", letzte_meldung=1)
+            p.koppel_start = types.MethodType(agent.Player.koppel_start, p)
+            jetzt = time.time()
+            agent.Player.koppel_schritt(p, jetzt)
+            code = p.kopplung["code"]
+            self.assertEqual(p.anzeige.zeilen[0], f"Code: {code[:3]} {code[3:]}")
+            self.assertEqual(len(PL.wartend()), 1)
+            self.assertNotIn(code, json.dumps(PL.wartend()))
+            falsch = f"{(int(code) + 1) % 1_000_000:06d}"
+            with self.assertRaises(M.Meldung) as f:
+                PL.koppeln(falsch, {"name": "Flur", "tv": "tv"}, {"tv"})
+            self.assertEqual(f.exception.code, "pi_code")
+            agent.Player.koppel_schritt(p, jetzt + 6)          # noch nicht eingegeben
+            self.assertFalse(p.k.get("schluessel"))
+            g = PL.koppeln(code[:3] + " " + code[3:], {"name": "Flur", "tv": "tv"}, {"tv"})
+            self.assertEqual(g["modell"], "pi45")
+            self.assertEqual(PL.wartend(), [])
+            agent.Player.koppel_schritt(p, jetzt + 12)
+            self.assertEqual((p.k["id"], p.k["schluessel"], p.k["name"], p.k["hostname"]), (g["id"], g["schluessel"], "Flur", "sc-flur"))
+            self.assertNotIn("kopplung", p.k)
+            gespeichert = json.load(open(kdatei))
+            self.assertEqual(gespeichert["schluessel"], g["schluessel"])
+            self.assertIsNotNone(agent.konfig_laden())
+            # gekoppelter Pi meldet sich ganz normal signiert
+            kopf = {"X-Geraet": g["id"], "X-Zeit": str(int(time.time()))}
+            kopf["X-Signatur"] = __import__("hmac").new(bytes.fromhex(p.k["schluessel"]), f"POST\n/player/melden\n{kopf['X-Zeit']}\n".encode() + b"{}", "sha256").hexdigest()
+            self.assertEqual(PL.pruefen(kopf, "/player/melden", b"{}")[1], 200)
+            with self.assertRaises(M.Meldung):                 # Code nur einmal verwendbar
+                PL.koppeln(code, {"name": "Noch einer", "tv": "tv"}, {"tv"})
+        finally:
+            agent.KONFIG, agent.modell, agent.schreiben_sicher, agent.lauf = alt
+
+    def test_falsche_signatur_wird_ignoriert(self):
+        PL, agent = self.PL, self.agent
+        import types
+        a = 12345678901234567890
+        a_pub = pow(2, a, PL.DH_P)
+        r = PL.koppel_anfrage({"a": format(a_pub, "x"), "modell": "Raspberry Pi 3 Model B Rev 1.2"}, "192.0.2.8")
+        code, schl = agent.dh_ableiten(a, int(r["b"], 16), a_pub, int(r["b"], 16))
+        g = PL.koppeln(code, {"name": "Küche"}, set())
+        self.assertEqual((g["schluessel"], g["modell"]), (schl, "pi3"))
+        status, antwort, gg = PL.koppel_status(r["kennung"])
+        self.assertEqual((status, antwort["id"]), (200, g["id"]))
+        self.assertEqual(PL.koppel_status("unbekannt")[0], 404)
+
+        class Netz:
+            def basis(self):
+                return "http://x:8890"
+
+            def offen(self, pfad, d, zeit=20):
+                return 200, json.dumps({"ok": True, "id": "deadbeef", "name": "Falle"}).encode(), {"X-Signatur": "0" * 64}
+
+        p = types.SimpleNamespace(k={"kopplung": True, "server": "http://x:8890"}, t=agent.TEXTE["en"], server=Netz(),
+                                  anzeige=types.SimpleNamespace(zeigen=lambda *a, **k: None), zustand="", zustand_text="", koppel_pause=0,
+                                  kopplung={"kennung": "k", "code": "123456", "schluessel": "11" * 32, "bis": time.time() + 500, "gefragt": 0})
+        alt = agent.modell
+        agent.modell = lambda: "Pi"
+        try:
+            agent.Player.koppel_schritt(p, time.time())
+        finally:
+            agent.modell = alt
+        self.assertNotIn("schluessel", p.k)                    # gefälschte Antwort: nichts übernommen
+
+    def test_grenzen(self):
+        PL = self.PL
+        for x in ("", "zz", "1", format(PL.DH_P - 1, "x"), format(PL.DH_P, "x")):
+            with self.assertRaises(M.Meldung):
+                PL.koppel_anfrage({"a": x}, "192.0.2.1")
+        ausserhalb = next(x for x in range(3, 200) if pow(x, (PL.DH_P - 1) // 2, PL.DH_P) != 1)
+        with self.assertRaises(M.Meldung):                     # nicht aus der Untergruppe
+            PL.koppel_anfrage({"a": format(ausserhalb, "x")}, "192.0.2.1")
+        a_pub = format(pow(2, 99991, PL.DH_P), "x")
+        PL.koppel_anfrage({"a": a_pub}, "192.0.2.1")
+        PL.koppel_anfrage({"a": a_pub}, "192.0.2.1")           # derselbe Pi fragt neu: alte Anfrage ersetzt
+        self.assertEqual(len(PL.wartend()), 1)
+        for i in range(2, PL.KOPPEL_OFFEN + 1):
+            PL.koppel_anfrage({"a": a_pub}, f"192.0.2.{i}")
+        with self.assertRaises(M.Meldung) as f:
+            PL.koppel_anfrage({"a": a_pub}, "192.0.2.250")
+        self.assertEqual(f.exception.code, "pi_koppel_voll")
+        for v in PL.kopplungen.values():                       # abgelaufen: Platz wird frei
+            v["bis"] = 0
+        PL.koppel_anfrage({"a": a_pub}, "192.0.2.250")
+        PL.koppel_zeiten[:] = [time.time()] * PL.KOPPEL_STUNDE  # Grenze je Stunde
+        with self.assertRaises(M.Meldung):
+            PL.koppel_anfrage({"a": a_pub}, "192.0.2.251")
+        self.assertEqual(PL.dateiname(None), "signagecast-player-kopplung.img.gz")
+        k1 = json.loads(PL.konfig(None, [], "http://x:8890", "en", ""))
+        k2 = json.loads(PL.konfig(None, [], "http://x:8890", "en", ""))
+        self.assertEqual(k1["hotspot_pw"], k2["hotspot_pw"])     # ein Hotspot-Passwort für das Sammel-Image
+
+    def test_ical_statt_html(self):
+        with self.assertRaises(M.Meldung) as f:
+            Q.zerlegen({"art": "ical"}, b"<!DOCTYPE html><html><title>Login</title></html>", "text/html; charset=utf-8")
+        self.assertEqual(f.exception.code, "kein_ical")
+        r = Q.zerlegen({"art": "ical"}, "\ufeffBEGIN:VCALENDAR\r\nX-WR-CALNAME:Test\r\nEND:VCALENDAR\r\n".encode(), "text/calendar")
+        self.assertEqual(r["kalender"], "Test")
 
 
 if __name__ == "__main__":

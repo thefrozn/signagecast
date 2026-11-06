@@ -7,6 +7,9 @@
 # nur für die Seite seines eigenen Fernsehers (Weiterleitung an den Datendienst, ohne /api/).
 # Image je Gerät: ein Grundimage (GitHub-Release, signiert) wird einmal geladen; beim Herunterladen schreibt die
 # Verwaltung die Gerätedatei in den Platzhalter auf der Boot-Partition (bekannter Versatz) und packt neu – ohne mounten.
+# Kopplung (seit 0.25): Ein Image für mehrere Pis enthält Server und WLAN, aber keinen Schlüssel. Der Pi handelt ihn mit
+# dem Server per Diffie-Hellman aus und zeigt einen daraus abgeleiteten 6-stelligen Code; erst die Eingabe dieses Codes
+# in der Verwaltung macht aus der Anfrage ein Gerät. Wer sich im Netz dazwischenschiebt, hätte einen anderen Code.
 import hashlib, hmac, json, lzma, os, re, secrets, shutil, subprocess, threading, time, urllib.request, zlib
 
 from streams import DATEN
@@ -36,10 +39,31 @@ sperre = threading.Lock()
 stand = {}            # id -> {"zeit", "bericht", "ip"} (letzte Meldung, nur im Speicher)
 befehle = {}          # id -> [{"id", "art", "zeit"}] noch nicht abgeholt
 ergebnisse = {}       # id -> [{"art", "ok", "hinweis", "zeit"}] (die letzten 10)
-einmal = {}           # Download-Kennung -> {"id", "netze", "server", "bis"}
+einmal = {}           # Download-Kennung -> {"id" ("" = Image für mehrere Pis), "netze", "server", "bis"}
+kopplungen = {}       # Anfrage-Kennung -> {"code", "schluessel", "bis", "ip", "modell", "geraet"} (nur im Speicher)
+koppel_zeiten = []    # Zeitpunkte neuer Kopplungsanfragen der letzten Stunde (Grenze gegen Durchprobieren)
 direkt_abruf = {}     # id -> Zeit des letzten Abrufs von daten.json im Direktmodus (zeigt: die Seite lebt)
 kameras_erlaubt = {}  # TV-Kennung -> {"cam_<id>", …} aus der letzten daten.json (nur diese Kamera-Streams gibt der Zugang frei)
 basis_stand = {"phase": "", "geladen": 0, "gesamt": 0, "fehler": "", "code": "", "p": {}, "version": ""}
+
+
+# Diffie-Hellman für die Kopplung: RFC 3526, 2048-Bit-Gruppe 14, Erzeuger 2 (wie im Agent; nur Standardbibliothek)
+DH_P = int("FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DD"
+           "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F2411"
+           "7C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D"
+           "670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497C"
+           "EA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF", 16)
+KOPPEL_S = 600                                         # so lange gilt ein Code; danach fragt der Pi neu
+KOPPEL_OFFEN = 20                                      # höchstens so viele offene Anfragen
+KOPPEL_STUNDE = 60                                     # höchstens so viele neue Anfragen je Stunde
+
+
+def dh_ableiten(geheim, fremd, a_pub, b_pub):
+    """(Code, Geräte-Schlüssel) aus dem gemeinsamen DH-Wert – Pi und Server rechnen dasselbe."""
+    s = pow(fremd, geheim, DH_P)
+    k = hashlib.sha256(b"signagecast-kopplung\n" + b"\n".join(format(x, "x").encode() for x in (s, a_pub, b_pub))).digest()
+    code = int.from_bytes(hmac.new(k, b"code", "sha256").digest()[:8], "big") % 1_000_000
+    return f"{code:06d}", hmac.new(k, b"geraet", "sha256").hexdigest()
 
 
 def _leer():
@@ -134,9 +158,10 @@ def _felder(g, d, tvs):
         g["anzeige_modus"] = "stream"
 
 
-def neu(d, tvs):
-    """Neues Gerät anlegen. Gibt das Gerät zurück; das Image dazu kommt über herunterladen_vorbereiten()."""
-    g = {"id": secrets.token_hex(4), "schluessel": secrets.token_hex(32), "erstellt": time.strftime("%Y-%m-%d %H:%M"),
+def neu(d, tvs, schluessel=None):
+    """Neues Gerät anlegen. Gibt das Gerät zurück; das Image dazu kommt über herunterladen_vorbereiten() – oder der
+    Schlüssel aus einer Kopplung."""
+    g = {"id": secrets.token_hex(4), "schluessel": schluessel or secrets.token_hex(32), "erstellt": time.strftime("%Y-%m-%d %H:%M"),
          "name": "", "tv": "", "modell": "pi45", "aufloesung": "auto", "drehung": 0, "lautstaerke": 100, "cec_zeitplan": False,
          "schreibschutz": True, "systemupdate": "woechentlich", "hwdec": "auto", "anzeige_modus": "stream", "wlan_rev": 0, "wlan_soll": None,
          "hotspot_pw": "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz23456789") for _ in range(10))}
@@ -222,6 +247,74 @@ def einstellen(d):
                 raise Fehler("pi_port")
             daten["stream_port"] = p
         speichern(daten)
+
+
+# ---------- Kopplung (seit 0.25) ----------
+def _koppel_aufraeumen(jetzt):
+    for k in [k for k, v in kopplungen.items() if v["bis"] < jetzt]:
+        del kopplungen[k]
+    koppel_zeiten[:] = [z for z in koppel_zeiten if z > jetzt - 3600]
+
+
+def koppel_anfrage(d, ip):
+    """Pi ohne Schlüssel meldet sich mit seinem DH-Wert; Antwort: eigener DH-Wert und Kennung zum Nachfragen."""
+    try:
+        a_pub = int(str(d.get("a", "")), 16)
+    except ValueError:
+        raise Fehler("pi_koppel_ungueltig") from None
+    if not 2 <= a_pub <= DH_P - 2 or pow(a_pub, (DH_P - 1) // 2, DH_P) != 1:     # nur Werte aus der Untergruppe
+        raise Fehler("pi_koppel_ungueltig")
+    jetzt = time.time()
+    with sperre:
+        _koppel_aufraeumen(jetzt)
+        for k in [k for k, v in kopplungen.items() if v["ip"] == ip and not v["geraet"]]:
+            del kopplungen[k]                     # derselbe Pi fragt neu (Neustart, Code abgelaufen): alte Anfrage weg
+        if len(kopplungen) >= KOPPEL_OFFEN or len(koppel_zeiten) >= KOPPEL_STUNDE:
+            raise Fehler("pi_koppel_voll")
+        koppel_zeiten.append(jetzt)
+    b = secrets.randbits(320)
+    b_pub = pow(2, b, DH_P)
+    code, schluessel = dh_ableiten(b, a_pub, a_pub, b_pub)
+    kennung = secrets.token_hex(16)
+    with sperre:
+        kopplungen[kennung] = {"code": code, "schluessel": schluessel, "bis": jetzt + KOPPEL_S, "ip": ip, "geraet": "",
+                               "modell": str(d.get("modell", ""))[:80], "zeit": jetzt}
+    return {"kennung": kennung, "b": format(b_pub, "x"), "gueltig": KOPPEL_S}
+
+
+def koppel_status(kennung):
+    """(HTTP-Code, Antwort, Gerät): 202 = Code noch nicht eingegeben, 404 = abgelaufen, 200 = gekoppelt (signiert)."""
+    with sperre:
+        _koppel_aufraeumen(time.time())
+        e = kopplungen.get(kennung)
+        g = geraet(e["geraet"]) if e and e["geraet"] else None
+    if not e:
+        return 404, {"ok": False}, None
+    if not g:
+        return 202, {"ok": True, "warten": True}, None
+    return 200, {"ok": True, "id": g["id"], "name": g["name"], "hostname": hostname(g)}, g
+
+
+def koppeln(code, d, tvs):
+    """Code aus der Verwaltung: passende Anfrage suchen und daraus ein Gerät machen."""
+    code = re.sub(r"\D", "", str(code or ""))
+    with sperre:
+        _koppel_aufraeumen(time.time())
+        e = next((v for v in kopplungen.values() if len(code) == 6 and hmac.compare_digest(v["code"], code) and not v["geraet"]), None)
+    if not e:
+        raise Fehler("pi_code")
+    modell = "pi3" if re.search(r"Pi 3|Zero 2", e["modell"]) else "pi45"
+    g = neu(dict(d, modell=modell), tvs, schluessel=e["schluessel"])
+    with sperre:
+        e["geraet"], e["bis"] = g["id"], time.time() + KOPPEL_S       # der Pi holt das Ergebnis in den nächsten Sekunden ab
+    return g
+
+
+def wartend():
+    """Pis, die gerade einen Code zeigen (für die Verwaltung: Modell, IP und Zeit – nie der Code)."""
+    with sperre:
+        _koppel_aufraeumen(time.time())
+        return [{"modell": v["modell"], "ip": v["ip"], "seit": int(v["zeit"])} for v in kopplungen.values() if not v["geraet"]]
 
 
 # ---------- Anfragen der Player ----------
@@ -451,15 +544,31 @@ def basis_info():
 
 
 # ---------- Image je Gerät ----------
+def hostname(g):
+    return ("sc-" + (re.sub(r"[^a-z0-9]+", "-", g["name"].lower()).strip("-")[:20] or g["id"])).strip("-")
+
+
+def sammel_hotspot_pw():
+    with sperre:
+        if not daten.get("sammel_hotspot_pw"):
+            daten["sammel_hotspot_pw"] = "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz23456789") for _ in range(10))
+            speichern(daten)
+        return daten["sammel_hotspot_pw"]
+
+
 def konfig(g, netze, server, sprache, zeitzone):
-    """Gerätedatei für die Boot-Partition – genau PLATZ Byte (JSON, Rest Leerzeichen)."""
-    host = "sc-" + (re.sub(r"[^a-z0-9]+", "-", g["name"].lower()).strip("-")[:20] or g["id"])
-    k = {"art": "signagecast-player", "v": 1, "id": g["id"], "schluessel": g["schluessel"], "name": g["name"], "server": server,
+    """Gerätedatei für die Boot-Partition – genau PLATZ Byte (JSON, Rest Leerzeichen). g = None: Image für mehrere Pis
+    (ohne Schlüssel – der Pi koppelt sich per Code)."""
+    k = {"art": "signagecast-player", "v": 1, "server": server,
          "sprache": sprache if sprache in ("de", "en") else "de", "zeitzone": zeitzone or "", "land": LAENDER.get(zeitzone, "DE"),
-         "hostname": host.strip("-"), "wlan": netze, "wlan_rev": g.get("wlan_rev", 0), "hotspot_pw": g["hotspot_pw"],
-         "schreibschutz": g["schreibschutz"],
-         "anzeige": {"lautstaerke": g["lautstaerke"], "drehung": g["drehung"], "hwdec": g["hwdec"],
-                     "modus": {"1080": "1920x1080", "2160": "3840x2160", "720": "1280x720"}.get(g["aufloesung"], "preferred")}}
+         "wlan": netze}
+    if g:
+        k.update(id=g["id"], schluessel=g["schluessel"], name=g["name"], hostname=hostname(g), wlan_rev=g.get("wlan_rev", 0),
+                 hotspot_pw=g["hotspot_pw"], schreibschutz=g["schreibschutz"],
+                 anzeige={"lautstaerke": g["lautstaerke"], "drehung": g["drehung"], "hwdec": g["hwdec"],
+                          "modus": {"1080": "1920x1080", "2160": "3840x2160", "720": "1280x720"}.get(g["aufloesung"], "preferred")})
+    else:
+        k.update(kopplung=True, name="", hostname="sc-player", wlan_rev=0, hotspot_pw=sammel_hotspot_pw(), schreibschutz=True)
     roh = json.dumps(k, ensure_ascii=False, indent=1).encode()
     if len(roh) > PLATZ - 1:
         raise Fehler("pi_konfig_gross")
@@ -467,12 +576,15 @@ def konfig(g, netze, server, sprache, zeitzone):
 
 
 def herunterladen_vorbereiten(gid, w, server):
-    """Einmal-Kennung (30 min) für den Download; das WLAN lebt nur bis dahin im Speicher, wenn es nicht gespeichert wird."""
-    g = geraet(gid)
-    if not g:
+    """Einmal-Kennung (30 min) für den Download; das WLAN lebt nur bis dahin im Speicher, wenn es nicht gespeichert wird.
+    gid = "": Image für mehrere Pis (Kopplung per Code)."""
+    if gid and not geraet(gid):
         raise Fehler("pi_unbekannt")
-    if not basis_meta():
+    meta = basis_meta()
+    if not meta:
         raise Fehler("pi_kein_image")
+    if not gid and _version(meta.get("version")) < (0, 25):       # erst der Agent ab 0.25 kann sich koppeln
+        raise Fehler("pi_basis_alt", v=meta.get("version") or "?")
     netz, merken = wlan_aus_anfrage(w)
     if merken:
         wlan_merken(netz)
@@ -488,7 +600,16 @@ def herunterladen_vorbereiten(gid, w, server):
     return kennung
 
 
+def _version(v):
+    try:
+        return tuple(int(x) for x in str(v).split(".")[:3])
+    except ValueError:
+        return (0,)
+
+
 def dateiname(g):
+    if not g:
+        return "signagecast-player-kopplung.img.gz"
     return "signagecast-player-" + (re.sub(r"[^a-z0-9]+", "-", g["name"].lower()).strip("-") or g["id"]) + ".img.gz"
 
 
@@ -497,8 +618,8 @@ def image_schreiben(kennung, schreiben, sprache, zeitzone):
     e = einmal.get(kennung)
     if not e or e["bis"] < time.time():
         raise Fehler("pi_link_alt")
-    g, meta = geraet(e["id"]), basis_meta()
-    if not g or not meta:
+    g, meta = geraet(e["id"]) if e["id"] else None, basis_meta()
+    if (e["id"] and not g) or not meta:
         raise Fehler("pi_kein_image")
     neu = konfig(g, e["netze"], e["server"], sprache, zeitzone)
     off, marke = meta["platzhalter"]["offset"], meta["platzhalter"]["marke"].encode() + b"-0000"

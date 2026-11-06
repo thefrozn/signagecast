@@ -827,8 +827,35 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         finally:
             c.close()
 
+    def koppeln(self, pfad, roh):
+        """Pi ohne Schlüssel (Image für mehrere Pis, seit 0.25): DH-Wert austauschen, dann nachfragen, ob sein Code
+        in der Verwaltung eingegeben wurde. Die Antwort „gekoppelt“ ist mit dem ausgehandelten Schlüssel signiert."""
+        try:
+            d = json.loads(roh or b"{}")
+            d = d if isinstance(d, dict) else {}
+        except ValueError:
+            d = {}
+        g = None
+        if pfad == "/player/koppeln":
+            try:
+                code, antwort = 200, PL.koppel_anfrage(d, self.client_address[0])
+            except M.Meldung as f:
+                code, antwort = (429 if f.code == "pi_koppel_voll" else 400), {"ok": False, "code": f.code}
+        elif pfad == "/player/koppeln/status":
+            code, antwort, g = PL.koppel_status(str(d.get("kennung", ""))[:64])
+        else:
+            return self.antwort(404, {"ok": False})
+        roh_a = json.dumps(antwort).encode()
+        self.send_response(code); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(roh_a)))
+        self.send_header("X-Server-Zeit", str(int(time.time())))
+        if g:
+            self.send_header("X-Signatur", PL.signatur(g, str(d.get("zeit", ""))[:64], roh_a))
+        self.end_headers(); self.wfile.write(roh_a)
+
     def player(self, pfad, roh):
         """Raspberry-Pi-Player (seit 0.23): signierte Meldungen, Bildschirmfotos, Protokolle, Agent-Update."""
+        if pfad.startswith("/player/koppeln"):
+            return self.koppeln(pfad, roh)
         g, code, zeit = PL.pruefen(self.headers, pfad, roh)
         if not g:
             if code in (403, 404):
@@ -2129,7 +2156,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
-                                      "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER})
+                                      "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend()})
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(bild|protokoll)", pfad)
         if m:
             try:
@@ -2140,8 +2167,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/player/image":            # Image je Gerät als Datenstrom (.img.gz, ohne Länge, endet mit der Verbindung)
             kennung = (q.get("t") or [""])[0]
             e = PL.einmal.get(kennung)
-            g = PL.geraet(e["id"]) if e else None
-            if not g or not PL.basis_meta():
+            g = PL.geraet(e["id"]) if e and e["id"] else None
+            if not e or (e["id"] and not g) or not PL.basis_meta():
                 return self.antwort(404, {"ok": False, "fehler": str(M.Meldung("pi_link_alt"))})
             self.send_response(200)
             self.send_header("Content-Type", "application/gzip")
@@ -2497,6 +2524,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         tvs = {t["id"] for t in einst()["fernseher"]}
         if p == "/api/player/neu":
             return {"geraet": PL.neu(d, tvs)["id"]}
+        if p == "/api/player/koppeln":                # Code vom Fernseher eingeben (seit 0.25)
+            return {"geraet": PL.koppeln(d.get("code"), {"name": d.get("name", ""), "tv": d.get("tv", "")}, tvs)["id"]}
+        if p == "/api/player/sammel-image":           # Image für mehrere Pis, ohne Schlüssel (seit 0.25)
+            kennung = PL.herunterladen_vorbereiten("", d.get("wlan"), str(d.get("server") or player_server()))
+            return {"kennung": kennung, "datei": PL.dateiname(None)}
         if p == "/api/player/basis-laden":
             threading.Thread(target=PL.basis_laden, args=(VERSION,), daemon=True).start()
             return {}

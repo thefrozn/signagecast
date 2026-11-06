@@ -444,6 +444,8 @@ def zerlegen(q, roh, art):
     if q["art"] == "rss":
         return rss_zerlegen(roh)
     if q["art"] == "ical":
+        if "BEGIN:VCALENDAR" not in text[:4096].upper():      # z. B. Anmelde- oder Fehlerseite mit Status 200 (seit 0.25)
+            raise Fehler("kein_ical", typ=art.split(";")[0] or "–")
         return ical_zerlegen(text)
     return text.strip()
 

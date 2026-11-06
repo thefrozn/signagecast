@@ -7,11 +7,13 @@
 # dem Schreibschutz (overlayroot): das System selbst bleibt unverändert, Stromausfälle schaden der Karte nicht.
 # Direktmodus (seit 0.24, Pi 4/5): Statt des Streams zeigt Chromium im Kiosk-Rahmen cage die TV-Seite selbst; Hinweise
 # (Start, Hotspot, Fehler) zeigt weiter mpv. Macht der Browser dreimal in 10 min Probleme, nimmt der Pi eine Stunde den Stream.
+# Kopplung (seit 0.25): Ein Image für mehrere Pis hat keinen Schlüssel. Der Pi handelt ihn per Diffie-Hellman mit dem
+# Server aus und zeigt einen 6-stelligen Code, den man in der Verwaltung eingibt; der Schlüssel geht nie übers Netz.
 # Nur Python-Standardbibliothek; läuft als root (WLAN, CEC, Neustart), mpv und Chromium als Benutzer „signage“.
-import hashlib, hmac, json, os, re, shutil, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import hashlib, hmac, json, os, re, secrets, shutil, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.1"
+VERSION = "1.2"
 BOOT = "/boot/firmware"
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
 AGENT_BOOT = BOOT + "/signagecast/agent.py"       # vom Server aktualisiert; start.sh nimmt ihn vor dem eingebauten
@@ -20,6 +22,12 @@ SOCK = LAUF + "/mpv.sock"
 HOTSPOT_IP = "10.42.0.1"                          # NetworkManager „shared“
 START = time.time()
 STANDARD_ANZEIGE = {"lautstaerke": 100, "drehung": 0, "modus": "preferred", "hwdec": "auto"}
+# Diffie-Hellman für die Kopplung: RFC 3526, 2048-Bit-Gruppe 14, Erzeuger 2 (wie app/player.py)
+DH_P = int("FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DD"
+           "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F2411"
+           "7C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D"
+           "670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497C"
+           "EA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF", 16)
 
 TEXTE = {
     "de": {"start": "SignageCast startet …", "verbinde": "Verbinde mit dem Server …", "kein_server": "Server nicht erreichbar",
@@ -32,7 +40,9 @@ TEXTE = {
            "wlan2": "2. Die Einrichtungsseite öffnet sich – sonst http://10.42.0.1 aufrufen",
            "wlan3": "3. WLAN auswählen und Passwort eingeben", "wlan_fehler": "„{ssid}“: Verbindung fehlgeschlagen – Passwort prüfen",
            "wlan_versuch": "Verbinde mit WLAN „{ssid}“ …", "suche": "Suche bekannte WLANs …", "update": "Systemupdate läuft – bitte nicht ausschalten …",
-           "neustart": "Starte neu …", "direkt": "Lade die Seite …", "seite_titel": "SignageCast – WLAN einrichten", "netz": "WLAN", "anderes": "anderes WLAN (Name eingeben)",
+           "neustart": "Starte neu …", "direkt": "Lade die Seite …", "code": "Code: {code}",
+           "koppeln1": "In der SignageCast-Verwaltung unter Fernseher → Player → „Pi koppeln“ diesen Code eingeben.",
+           "koppeln2": "Der Code gilt 10 Minuten, danach erscheint ein neuer.", "gekoppelt": "Gekoppelt – starte …", "seite_titel": "SignageCast – WLAN einrichten", "netz": "WLAN", "anderes": "anderes WLAN (Name eingeben)",
            "passwort": "Passwort", "speichern": "Verbinden", "fertig": "Der Player verbindet sich jetzt. Erscheint der QR-Code in einer Minute "
            "wieder auf dem Fernseher, war das Passwort falsch.", "name": "Name des WLANs"},
     "en": {"start": "SignageCast is starting …", "verbinde": "Connecting to the server …", "kein_server": "Server not reachable",
@@ -45,7 +55,9 @@ TEXTE = {
            "wlan2": "2. The setup page opens – otherwise open http://10.42.0.1",
            "wlan3": "3. Choose your Wi-Fi and enter its password", "wlan_fehler": "“{ssid}”: connection failed – check the password",
            "wlan_versuch": "Connecting to Wi-Fi “{ssid}” …", "suche": "Looking for known Wi-Fi networks …", "update": "System update running – do not switch off …",
-           "neustart": "Restarting …", "direkt": "Loading the page …", "seite_titel": "SignageCast – set up Wi-Fi", "netz": "Wi-Fi", "anderes": "other Wi-Fi (enter name)",
+           "neustart": "Restarting …", "direkt": "Loading the page …", "code": "Code: {code}",
+           "koppeln1": "In the SignageCast admin under TVs → Players → “Pair a Pi”, enter this code.",
+           "koppeln2": "The code is valid for 10 minutes, then a new one appears.", "gekoppelt": "Paired – starting …", "seite_titel": "SignageCast – set up Wi-Fi", "netz": "Wi-Fi", "anderes": "other Wi-Fi (enter name)",
            "passwort": "Password", "speichern": "Connect", "fertig": "The player is connecting now. If the QR code appears on the TV again "
            "within a minute, the password was wrong.", "name": "Wi-Fi name"},
 }
@@ -81,7 +93,17 @@ def konfig_laden():
         k = json.loads(lesen(KONFIG) or "{}")
     except ValueError:
         return None
-    return k if isinstance(k, dict) and k.get("art") == "signagecast-player" and k.get("id") and k.get("schluessel") else None
+    if not isinstance(k, dict) or k.get("art") != "signagecast-player":
+        return None
+    return k if (k.get("id") and k.get("schluessel")) or (k.get("kopplung") and k.get("server")) else None
+
+
+def dh_ableiten(geheim, fremd, a_pub, b_pub):
+    """(Code, Geräte-Schlüssel) aus dem gemeinsamen DH-Wert – wie app/player.py."""
+    s = pow(fremd, geheim, DH_P)
+    k = hashlib.sha256(b"signagecast-kopplung\n" + b"\n".join(format(x, "x").encode() for x in (s, a_pub, b_pub))).digest()
+    code = int.from_bytes(hmac.new(k, b"code", "sha256").digest()[:8], "big") % 1_000_000
+    return f"{code:06d}", hmac.new(k, b"geraet", "sha256").hexdigest()
 
 
 def boot_beschreibbar():
@@ -617,6 +639,17 @@ class Server:
         return code, inhalt
 
 
+    def offen(self, pfad, daten, zeit=20):
+        """Unsignierte Anfrage (nur Kopplung): (Code, Inhalt, Kopf)."""
+        anf = urllib.request.Request(self.basis() + pfad, data=json.dumps(daten).encode(), method="POST", headers={
+            "Content-Type": "application/json", "User-Agent": f"SignageCast-Player/{VERSION}"})
+        try:
+            with urllib.request.urlopen(anf, timeout=zeit) as r:
+                return r.status, r.read(), r.headers
+        except urllib.error.HTTPError as f:
+            return f.code, f.read(), f.headers
+
+
 # ---------- Hotspot und Einrichtungsseite ----------
 class Hotspot:
     def __init__(self, player):
@@ -624,7 +657,7 @@ class Hotspot:
 
     def ssid(self):
         name = re.sub(r"[^A-Za-z0-9-]", "", self.p.k.get("name", "")).strip("-")[:16]
-        return "SignageCast-" + (name or self.p.k["id"][:6])
+        return "SignageCast-" + (name or (self.p.k.get("id") or lesen("/etc/machine-id") or "player")[:6])
 
     def starten(self):
         if self.aktiv:
@@ -737,6 +770,7 @@ class Player:
         self.wlan_rev = k.get("wlan_rev", 0)
         self.offline_seit = time.time()
         self.letzte_meldung, self.wlan_laeuft, self.versuche, self.erkennen_bis, self.hotspot_seit = 0, False, 0, 0, 0
+        self.kopplung, self.koppel_pause = None, 0     # laufende Kopplung (Image für mehrere Pis)
 
     # --- Einrichtung beim Start ---
     def einrichten(self):
@@ -975,7 +1009,7 @@ class Player:
     def schritt(self):
         jetzt = time.time()
         intervall = max(5, min(120, int(self.soll.get("intervall", 15))))
-        if jetzt - self.letzte_meldung >= intervall or (self.ergebnisse and jetzt - self.kontakt < 60):
+        if self.k.get("schluessel") and (jetzt - self.letzte_meldung >= intervall or (self.ergebnisse and jetzt - self.kontakt < 60)):
             self.letzte_meldung = jetzt
             if self.melden_versuch():
                 self.einstellungen_anwenden()
@@ -1011,6 +1045,8 @@ class Player:
                     self.hotspot.starten()
                     self.hotspot_seit = time.time()
             return
+        if not self.k.get("schluessel"):
+            return self.koppel_schritt(jetzt)
         if self.erkennen_bis > jetzt:
             self.anzeige.zeigen([self.k.get("name", ""), f"{modell()} · {netz()[3]}", self.k["id"]])
             return
@@ -1050,6 +1086,71 @@ class Player:
             self.anzeige.neu_laden()
         if self.versuche > 3:
             self.anzeige.befehl("osd-overlay", 1, "ass-events", "{\\an2\\fs34\\bord2}" + self.t["kein_stream"], 1920, 1080, warten=False)
+
+    # --- Kopplung (Image für mehrere Pis) ---
+    def koppel_schritt(self, jetzt):
+        self.zustand = "koppeln"
+        kp = self.kopplung
+        if not kp or jetzt > kp["bis"]:
+            if jetzt < self.koppel_pause:
+                return
+            try:
+                kp = self.kopplung = self.koppel_start(jetzt)
+            except (OSError, ValueError, KeyError) as f:
+                self.kopplung, self.koppel_pause = None, jetzt + 30
+                self.zustand_text = str(f)[:120]
+                self.anzeige.zeigen([self.t["verbinde"] if jetzt - START < 90 else self.t["kein_server"], self.server.basis(), self.zustand_text])
+                return
+        self.anzeige.zeigen([self.t["code"].format(code=kp["code"][:3] + " " + kp["code"][3:]), self.t["koppeln1"], self.t["koppeln2"],
+                             f"{modell()} · {netz()[3] or ''}"])
+        if jetzt - kp["gefragt"] < 5:
+            return
+        kp["gefragt"] = jetzt
+        nonce = secrets.token_hex(16)
+        try:
+            code, inhalt, kopf = self.server.offen("/player/koppeln/status", {"kennung": kp["kennung"], "zeit": nonce})
+        except OSError as f:
+            self.zustand_text = str(f)[:120]
+            return
+        if code == 404:                    # abgelaufen oder Server neu gestartet: neuer Code
+            self.kopplung = None
+            return
+        if code != 200:
+            return
+        erwartet = hmac.new(bytes.fromhex(kp["schluessel"]), f"antwort\n{nonce}\n".encode() + inhalt, "sha256").hexdigest()
+        if not hmac.compare_digest(erwartet, kopf.get("X-Signatur", "")):
+            log("Kopplung: Antwort ohne gültige Signatur")
+            return
+        d = json.loads(inhalt)
+        if not re.fullmatch(r"[0-9a-f]{8}", str(d.get("id", ""))):
+            return
+        self.k.update(id=d["id"], schluessel=kp["schluessel"], name=str(d.get("name", ""))[:40],
+                      hostname=str(d.get("hostname") or self.k.get("hostname") or "sc-player")[:30])
+        self.k.pop("kopplung", None)
+        konfig_speichern(self.k)
+        log(f"Gekoppelt als {d['id']} „{self.k['name']}“")
+        if re.fullmatch(r"[a-z0-9-]{1,30}", self.k["hostname"]):
+            lauf("hostnamectl", "set-hostname", self.k["hostname"])
+        self.server, self.kopplung, self.zustand, self.zustand_text, self.letzte_meldung = Server(self.k), None, "start", "", 0
+        self.anzeige.zeigen([self.t["gekoppelt"], self.k["name"]])
+
+    def koppel_start(self, jetzt):
+        """DH-Wert schicken, Antwort des Servers verrechnen: Code für den Bildschirm, Schlüssel für später."""
+        a = secrets.randbits(320)
+        a_pub = pow(2, a, DH_P)
+        code, inhalt, _ = self.server.offen("/player/koppeln", {"a": format(a_pub, "x"), "modell": modell(), "version": VERSION})
+        if code == 429:
+            raise ValueError("zu viele Kopplungsanfragen – später erneut")
+        if code != 200:
+            raise ValueError(f"Kopplung: HTTP {code}")
+        d = json.loads(inhalt)
+        b_pub = int(str(d["b"]), 16)
+        if not 2 <= b_pub <= DH_P - 2:
+            raise ValueError("Kopplung: ungültige Antwort")
+        c, schluessel = dh_ableiten(a, b_pub, a_pub, b_pub)
+        gueltig = max(60, min(3600, int(d.get("gueltig") or 600)))
+        log(f"Kopplung: Code {c} angezeigt")
+        return {"kennung": str(d["kennung"])[:64], "code": c, "schluessel": schluessel, "bis": jetzt + gueltig - 15, "gefragt": 0}
 
     # --- Direktmodus ---
     def direkt_gewuenscht(self, jetzt):
