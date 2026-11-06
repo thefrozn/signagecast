@@ -101,7 +101,9 @@ Instead of an address, a source can also be an uploaded file (up to 1 MB) – e.
 town as `.ics` or `.csv` when it offers no subscription address. For CSV you choose delimiter, quote character, header
 row and character set (all detected automatically), which columns to import under which name, optional row filters
 (e.g. *LOCATION is empty* or *TYPE does not contain bulky waste*) and optionally a date column: the rows then appear as
-events in the *Calendar / waste collection* element.
+events in the *Calendar / waste collection* element. That element can also show icons only – e.g. a bin in the top
+corner when residual waste is collected in the next days (rules *title contains … → icon and colour*, with a waste
+template).
 
 ![Data sources with response tree](tour/07-data-sources.jpg)
 

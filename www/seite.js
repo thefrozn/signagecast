@@ -247,9 +247,33 @@ function fuellen() {
         const termine = (aus_ical || (daten.kalender || {})[o.entity] || []).slice(0, o.anzahl);
         // seit 0.26.1: ohne anstehende Termine (im Zeitraum „Tage“) ganz ausblenden – z. B. Müllabfuhr nur 3 Tage vorher
         sichtbar = sichtbar && (termine.length > 0 || !o.nur_mit_terminen);
+        const heute = new Date(); heute.setHours(0, 0, 0, 0);
+        const wannText = (t) => {
+          const s = new Date(t.start); const tag = new Date(s); tag.setHours(0, 0, 0, 0);
+          const diff = Math.round((tag - heute) / 86400000);
+          return diff === 0 ? T.heute : diff === 1 ? T.morgen : s.toLocaleDateString(T.locale, { weekday: "short" });
+        };
+        if (o.ansicht === "symbole") {
+          // seit 0.28: je Termin ein Symbol (erste Regel, deren Text im Titel steht), gleiches Symbol nur einmal (frühester Termin)
+          const regeln = o.symbole || [], gesehen = new Set(), sym = [];
+          for (const t of termine) {
+            const titel = String(t.titel || "").toLocaleLowerCase();
+            const r = regeln.find((x) => titel.includes(String(x.text).toLocaleLowerCase()));
+            const icon = r ? r.icon : o.ohne_symbol;
+            if (!icon) continue;
+            const farbe = r ? r.farbe : "";
+            if (gesehen.has(icon + farbe)) continue;
+            gesehen.add(icon + farbe); sym.push({ icon, farbe, wann: wannText(t), titel: t.titel });
+          }
+          if (o.nur_mit_terminen && !sym.length) sichtbar = false;
+          const n = Math.max(sym.length, 1);
+          const gr = Math.max(8, Math.min(d.clientHeight * (o.wann ? 0.62 : 0.85), d.clientWidth / n * 0.8));
+          d.innerHTML = `<div class="symbole">${sym.map((s) => `<div class="symbol" title="${esc(s.titel)}"><span class="mdi ${esc(s.icon)}" style="font-size:${gr}px${s.farbe ? ";color:" + s.farbe : ""}"></span>` +
+            (o.wann ? `<span class="wann" style="font-size:${Math.max(8, gr * 0.28)}px">${esc(s.wann)}</span>` : "") + "</div>").join("")}</div>`;
+          break;
+        }
         const zeilen = termine.length + (o.titel ? 1 : 0) || 1;
         d.style.fontSize = Math.min(d.clientHeight / zeilen * 0.5, 34) + "px";
-        const heute = new Date(); heute.setHours(0, 0, 0, 0);
         d.innerHTML = (o.titel ? `<div class="titel">${esc(o.titel)}</div>` : "") + (termine.length ? termine.map((t) => {
           const s = new Date(t.start); const tag = new Date(s); tag.setHours(0, 0, 0, 0);
           const diff = Math.round((tag - heute) / 86400000);

@@ -87,6 +87,14 @@ def _pdf(w):
     if w and not re.fullmatch(r"[0-9a-f]{16}", w):
         raise Meldung("l_pdf")
     return w
+def _symbole(w):
+    """Kalender als Symbole (seit 0.28): Regeln „Titel enthält …“ -> Symbol und Farbe, die erste passende gilt."""
+    aus = []
+    for r in (w if isinstance(w, list) else [])[:12]:
+        if not isinstance(r, dict) or not str(r.get("text", "")).strip():
+            continue
+        aus.append({"text": str(r["text"]).strip()[:40], "icon": _icon(r.get("icon") or "mdi-calendar"), "farbe": _farbe(r.get("farbe"))})
+    return aus
 def _raeume(w):
     return [{"name": str(r.get("name", ""))[:30], "entity": _ent()(r.get("entity"))} for r in (w or [])[:8] if r.get("entity")]
 
@@ -106,7 +114,10 @@ TYPEN = {
     "logo":       {"bild": (_bild, "")},
     "kamera":     {"entity": (_ent(["camera"]), ""), "intervall": (_zahl(1, 60), 2)},
     "kalender":   {"entity": (_ent(["calendar"]), ""), "quelle": (_qid, ""), "anzahl": (_zahl(1, 10), 4), "tage": (_zahl(1, 60), 14), "nur_mit_terminen": (_b, False),
-                   "titel": (_t(40), "")},                                   # quelle = iCal-Datenquelle statt HA (seit 0.10)
+                   "titel": (_t(40), ""),
+                   # seit 0.28: nur Symbole (z. B. Mülltonne), Regeln je Termin; ohne passende Regel: ohne_symbol ("" = weglassen)
+                   "ansicht": (_wahl("liste", "symbole"), "liste"), "symbole": (_symbole, []),
+                   "ohne_symbol": (_icon_leer, "mdi-calendar"), "wann": (_b, True)},                                   # quelle = iCal-Datenquelle statt HA (seit 0.10)
     "meldung":    {"entity": (_ent(["input_text", "sensor", "text"]), ""), "dauer": (_zahl(3, 600), 20)},
     "flaeche":    {"farbe": (_farbe, "#f0f0f0"), "deckkraft": (_zahl(0, 100), 100)},
     # eigene Datenquellen (seit 0.9); Platzhalter {pfad} bzw. {quelle:pfad}
@@ -212,6 +223,8 @@ def pruefe_layout(l):
             raise Meldung("l_baustein_id", id=repr(eid))
         ids.add(eid)
         mw, mh = MINDEST.get(typ, (1, 1))
+        if typ == "kalender" and (e.get("optionen") or {}).get("ansicht") == "symbole":
+            mw, mh = 1, 1                    # seit 0.28: einzelnes Symbol in der Ecke
         w = max(mw, min(SPALTEN, int(e.get("w", 4))))
         h = max(mh, min(ZEILEN, int(e.get("h", 2))))
         x = max(0, min(SPALTEN - w, int(e.get("x", 0))))

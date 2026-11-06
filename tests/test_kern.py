@@ -980,5 +980,45 @@ class CsvFilter027(unittest.TestCase):
             self.assertIn(s, js)
 
 
+
+class KalenderSymbole028(unittest.TestCase):
+    """Seit 0.28: Kalender-Baustein als reine Symbole (z. B. Mülltonne), Regeln „Titel enthält“ -> Symbol/Farbe."""
+
+    def el(self, **o):
+        return L.pruefe_layout({"id": "ab", "elemente": [{"id": "m", "typ": "kalender", "x": 46, "y": 0, "w": 2, "h": 2, "optionen": o}]})["elemente"][0]
+
+    def test_standard_bleibt_liste(self):
+        e = self.el(quelle="muell")
+        self.assertEqual((e["optionen"]["ansicht"], e["optionen"]["symbole"], e["optionen"]["ohne_symbol"], e["optionen"]["wann"]),
+                         ("liste", [], "mdi-calendar", True))
+        self.assertEqual((e["w"], e["h"]), (6, 3))                 # Liste: Mindestgröße wie bisher
+
+    def test_symbole_pruefen(self):
+        e = self.el(quelle="muell", ansicht="symbole", ohne_symbol="", symbole=[
+            {"text": " Rest ", "icon": "mdi-trash-can", "farbe": "#9e9e9e"}, {"text": "", "icon": "mdi-leaf"},
+            {"text": "Bio", "icon": "", "farbe": ""}])
+        self.assertEqual(e["optionen"]["symbole"], [{"text": "Rest", "icon": "mdi-trash-can", "farbe": "#9e9e9e"},
+                                                     {"text": "Bio", "icon": "mdi-calendar", "farbe": ""}])
+        self.assertEqual(e["optionen"]["ohne_symbol"], "")
+        self.assertEqual((e["x"], e["w"], e["h"]), (46, 2, 2))   # Symbol darf klein in die Ecke
+        for falsch in ({"ansicht": "kacheln"}, {"symbole": [{"text": "x", "icon": "fa-trash"}]}, {"symbole": [{"text": "x", "farbe": "rot"}]}):
+            with self.assertRaises(Exception):
+                self.el(**falsch)
+        self.assertEqual(len(self.el(symbole=[{"text": str(i)} for i in range(20)])["optionen"]["symbole"]), 12)
+
+    def test_seite_und_verwaltung(self):
+        basis = os.path.join(os.path.dirname(__file__), "..")
+        js = open(os.path.join(basis, "www", "seite.js"), encoding="utf-8").read()
+        for s in ('o.ansicht === "symbole"', "gesehen.has(icon + farbe)", "o.ohne_symbol"):
+            self.assertIn(s, js)
+        lj = open(os.path.join(basis, "cockpit", "signagecast", "layout.js"), encoding="utf-8").read()
+        for s in ("symListe", "symVorlage", "SYM_VORSCHLAG", 'ansicht: ["liste", "symbole"]'):
+            self.assertIn(s, lj)
+        css = open(os.path.join(basis, "www", "mdi", "css", "materialdesignicons.min.css"), encoding="utf-8").read()
+        import re
+        for icon in re.findall(r'"(mdi-[a-z0-9-]+)"', lj[lj.index("SYM_VORSCHLAG"):lj.index("const QUELL_ARTEN")]):
+            self.assertIn("." + icon + ":", css, icon)       # alle Vorschläge gibt es in der eingebauten Schrift
+
+
 if __name__ == "__main__":
     unittest.main()

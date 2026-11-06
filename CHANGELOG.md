@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.28.0 (2026-11-06)
+- **Calendar element – icons only:** new display *icons only*. Each upcoming event becomes one icon, chosen by rules
+  *title contains … → icon and colour* (first match wins, case-insensitive); the same icon appears once (earliest date),
+  optionally with *Today*, *Tomorrow* or the weekday below. Events without a matching rule get a default icon or are left
+  out. *Insert waste template* adds residual (bin), organic (leaf), paper (newspaper), recycling, bulky and hazardous
+  waste. In this display the element may be as small as one grid cell – e.g. a bin in the top right corner, shown
+  together with *Days* and *only show when events are due*.
+
 ## v0.27.0 (2026-11-06)
 - **CSV import – row filter:** only import rows that match all rules. Rules per field: *contains*, *does not contain*,
   *equals*, *does not equal*, *is empty*, *is not empty* (case-insensitive). The import shows how many rows match and
