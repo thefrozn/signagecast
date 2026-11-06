@@ -122,17 +122,13 @@ DE = {
     "d_stimme_fehlt": "Stimme noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult)",
     "d_stimme": "unbekannte Stimme",
     "bn_kanal": "unbekannter Kanal",
-    # seit 0.21: PDF, Abfahrten, Zeitraum, Notfall-Vollbild, Fernseher schalten
+    # seit 0.21: PDF, Zeitraum, Notfall-Vollbild, Fernseher schalten
     "l_pdf": "ungültiges PDF",
-    "l_haltestelle": "ungültige Haltestelle",
     "l_zeitraum": "Zeitraum: Datum als JJJJ-MM-TT, optional mit Uhrzeit",
     "pdf_art": "Keine PDF-Datei",
     "pdf_werkzeug": "pdftoppm fehlt (Paket poppler-utils) – bitte SignageCast aktualisieren",
     "pdf_zeit": "Umwandeln dauert länger als {s} s – bitte ein kleineres PDF nehmen",
     "pdf_kaputt": "PDF nicht lesbar: {d}",
-    "ab_http": "Fahrplan-Dienst antwortet {code}",
-    "ab_nicht_erreichbar": "Fahrplan-Dienst nicht erreichbar: {d}",
-    "ab_antwort": "Fahrplan-Dienst: unerwartete Antwort",
     "al_text": "Text für das Notfall-Vollbild fehlt",
     "sch_entitaet": "Für diesen Fernseher ist keine Entität zum Schalten eingetragen",
     "sch_an_nicht": "Home Assistant kann {e} nicht einschalten – das Gerät bietet es nicht an (Samsung/LG oft nur mit Wake-on-LAN)",

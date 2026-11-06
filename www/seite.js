@@ -17,16 +17,14 @@ const TEXTE = {
           "windy": "Windig", "windy-variant": "Windig, bewölkt" },
         feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes", wetterQuelle: "Wetterdaten: MET Norway",
         heute: "Heute", morgen: "Morgen", keineTermine: "Keine Termine", locale: "de-DE",
-        bis: "bis", keineWarnung: "Keine Unwetterwarnung", dwd: "Quelle: Deutscher Wetterdienst",
-        jetzt: "jetzt", min: "min", gleis: "Gl.", faelltAus: "fällt aus", keineAbfahrten: "Keine Abfahrten", alarm: "Notfall" },
+        bis: "bis", keineWarnung: "Keine Unwetterwarnung", dwd: "Quelle: Deutscher Wetterdienst", alarm: "Notfall" },
   en: { lage: { "clear-night": "Clear night", "cloudy": "Cloudy", "exceptional": "Exceptional", "fog": "Fog", "hail": "Hail",
           "lightning": "Thunderstorm", "lightning-rainy": "Thunderstorm, rain", "partlycloudy": "Partly cloudy",
           "pouring": "Pouring", "rainy": "Rainy", "snowy": "Snowy", "snowy-rainy": "Sleet", "sunny": "Sunny",
           "windy": "Windy", "windy-variant": "Windy, cloudy" },
         feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway",
         heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB",
-        bis: "until", keineWarnung: "No weather warning", dwd: "Source: Deutscher Wetterdienst",
-        jetzt: "now", min: "min", gleis: "Pl.", faelltAus: "cancelled", keineAbfahrten: "No departures", alarm: "Emergency" },
+        bis: "until", keineWarnung: "No weather warning", dwd: "Source: Deutscher Wetterdienst", alarm: "Emergency" },
 };
 const FAKTOR = { uhr: 0.82, temperatur: 0.72, datum: 0.5, wetterlage: 0.6, feuchte: 0.5, wind: 0.5, sender: 0.5, text: 0.55, meldung: 0.42, countdown: 0.55 };
 let T = TEXTE.de;
@@ -54,7 +52,7 @@ function bauen(layout) {
   const th = layout.thema || {};
   f.className = (th.schema || "dunkel") + (layout.hintergrund.art === "wetter" && layout.hintergrund.abdunkeln ? " abdunkeln" : "");
   f.style.setProperty("--akzent", th.akzent || "#3d8cd0");
-  // Schrift auf der Akzentfarbe (Linien der Abfahrten): dunkel auf hellem Akzent, sonst weiß
+  // Schrift auf der Akzentfarbe: dunkel auf hellem Akzent, sonst weiß
   const ak = /^#([0-9a-f]{6})$/i.exec(th.akzent || "") ? parseInt(th.akzent.slice(1), 16) : 0x3d8cd0;
   f.style.setProperty("--akzent-text", (0.299 * (ak >> 16) + 0.587 * (ak >> 8 & 255) + 0.114 * (ak & 255)) > 160 ? "#111" : "#fff");
   f.style.setProperty("--schrift", th.schrift || "Roboto");
@@ -95,7 +93,6 @@ function bauen(layout) {
     if (e.typ === "diagramm") d.innerHTML = `<div class="kopf"><span class="name">${esc(e.optionen.name)}</span><span class="wert"></span></div><div class="kurve"></div>`;
     if (e.typ === "webcam") d.classList.add(e.optionen.anpassung === "einpassen" ? "einpassen" : "fuellen");
     if (e.typ === "pdf") { d.innerHTML = `<img alt="">`; d.classList.add(e.optionen.anpassung === "fuellen" ? "fuellen" : "einpassen"); }
-    if (e.typ === "abfahrten") d.innerHTML = (e.optionen.titel && e.optionen.name ? `<div class="titel">${esc(e.optionen.name)}</div>` : "") + `<div class="zeilen"></div>`;
     if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
@@ -385,13 +382,6 @@ function fuellen() {
         if (sichtbar) pdfSeite(b);
         break;
       }
-      case "abfahrten": {
-        const a = (daten.abfahrten || {})[e.id] || { liste: [] };
-        const neu = JSON.stringify(a.liste) + Math.floor(jetztMs() / 30000);       // Minuten-Angaben laufend erneuern
-        sichtbar = sichtbar && !!o.haltestelle;
-        if (sichtbar && neu !== b.apiText) { b.apiText = neu; abfahrtenZeichnen(b, a); }
-        break;
-      }
       case "meldung": {
         const s = wert(o.entity);
         const m = meldungen[o.entity];
@@ -522,23 +512,6 @@ function pdfSeite(b) {
   const neu = new Image();
   neu.onload = () => { if (b.pdfUrl === url) b.d.querySelector("img").src = url; };
   neu.src = url;
-}
-
-// Abfahrten (seit 0.21): Zeit (in Minuten oder Uhrzeit), Linie, Ziel, Gleis, Verspätung
-function abfahrtenZeichnen(b, a) {
-  const o = b.e.optionen, d = b.d, z = d.querySelector(".zeilen");
-  const jetzt = jetztMs() / 1000;
-  const zeit = (t) => new Date(t * 1000).toLocaleTimeString(T.locale, { hour: "2-digit", minute: "2-digit", ...(ZEIT.zone ? { timeZone: ZEIT.zone } : {}) });
-  z.innerHTML = a.liste.length ? a.liste.map((x) => {
-    const rest = Math.round((x.zeit - jetzt) / 60);
-    const wann = o.minuten && rest < 60 ? (rest <= 0 ? T.jetzt : `${rest} ${T.min}`) : zeit(x.zeit);
-    const plus = x.ausfall ? `<span class="plus">${esc(T.faelltAus)}</span>` : x.plus > 0 ? `<span class="plus">+${x.plus}</span>` : "";
-    return `<div class="zeile${x.ausfall ? " ausfall" : ""}"><span class="wann">${esc(wann)}</span><span class="linie">${esc(x.linie)}</span>` +
-           `<span class="ziel">${esc(x.ziel)}</span>${plus}<span class="gleis">${x.gleis ? esc(/^\d/.test(x.gleis) ? T.gleis + " " + x.gleis : x.gleis) : ""}</span></div>`;
-  }).join("") : `<div class="zeile leer">${esc(T.keineAbfahrten)}</div>`;
-  const n = Math.max(1, a.liste.length) + (d.querySelector(".titel") ? 1.3 : 0);
-  d.style.fontSize = Math.min(d.clientHeight / n * 0.55, 44) + "px";
-  for (let i = 0; i < 15 && d.scrollHeight > d.clientHeight + 1; i++) d.style.fontSize = parseFloat(d.style.fontSize) * 0.92 + "px";
 }
 
 // Countdown: Rest bis zum Ziel in Tagen/Stunden/Minuten/Sekunden nach der Vorlage, danach der Ende-Text

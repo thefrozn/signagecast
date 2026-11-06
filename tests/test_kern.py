@@ -306,7 +306,7 @@ class Webbild(unittest.TestCase):
 
 
 class Neu021(unittest.TestCase):
-    """Seit 0.21: PDF, Abfahrten, Zeitraum, Notfall-Vollbild, Fernseher über HA schalten."""
+    """Seit 0.21: PDF, Zeitraum, Notfall-Vollbild, Fernseher über HA schalten."""
 
     def test_zeitraum(self):
         el = {"id": "z", "typ": "text", "ab": "2026-12-23", "bis": "2027-01-02"}
@@ -325,14 +325,13 @@ class Neu021(unittest.TestCase):
         with self.assertRaises(ValueError):
             L.pruefe_layout({"id": "ab", "elemente": [dict(el, ab="23.12.2026")]})
 
-    def test_pdf_und_abfahrten_pruefen(self):
+    def test_pdf_pruefen(self):
         l = L.pruefe_layout({"id": "ab", "elemente": [{"id": "p", "typ": "pdf", "optionen": {"datei": "0123456789abcdef", "sekunden": 20}},
-                                                      {"id": "a", "typ": "abfahrten", "optionen": {"haltestelle": "8011160", "name": "Berlin Hbf"}}]})
+                                                      {"id": "a", "typ": "abfahrten", "optionen": {"haltestelle": "8011160"}}]})
         self.assertEqual(l["elemente"][0]["optionen"]["sekunden"], 20)
-        self.assertEqual(l["elemente"][1]["optionen"]["anzahl"], 6)
-        for falsch in ({"id": "p", "typ": "pdf", "optionen": {"datei": "../x"}}, {"id": "a", "typ": "abfahrten", "optionen": {"haltestelle": "a b"}}):
-            with self.assertRaises(ValueError):
-                L.pruefe_layout({"id": "ab", "elemente": [falsch]})
+        self.assertEqual(len(l["elemente"]), 1)              # Abfahrten seit 0.26 ausgebaut: alte Bausteine fallen still weg
+        with self.assertRaises(ValueError):
+            L.pruefe_layout({"id": "ab", "elemente": [{"id": "p", "typ": "pdf", "optionen": {"datei": "../x"}}]})
 
     def test_pdf_erkennen_und_aufraeumen(self):
         import pdf as PDF
@@ -353,23 +352,6 @@ class Neu021(unittest.TestCase):
             with self.assertRaises(M.Meldung) as f:
                 PDF.umwandeln(falsch, d)
             self.assertEqual(f.exception.code, "pdf_art")
-
-    def test_abfahrten_aufbereiten(self):
-        import abfahrten as AB
-        jetzt = 1_800_000_000
-        iso = lambda s: __import__("datetime").datetime.fromtimestamp(jetzt + s, __import__("datetime").timezone.utc).isoformat()
-        roh = {"departures": [
-            {"when": iso(600), "plannedWhen": iso(480), "delay": 120, "line": {"name": "RE 3", "product": "regional"},
-             "direction": "München Hbf", "platform": "4"},
-            {"when": None, "plannedWhen": iso(300), "cancelled": True, "line": {"name": "Bus 6"}, "direction": "Klinikum"},
-            {"when": iso(-600), "plannedWhen": iso(-600), "line": {"name": "alt"}, "direction": "weg"}]}
-        liste = AB.aufbereiten(roh, jetzt)
-        self.assertEqual([x["linie"] for x in liste], ["Bus 6", "RE 3"])
-        self.assertEqual((liste[1]["plus"], liste[1]["gleis"], liste[0]["ausfall"]), (2, "4", True))
-        a = AB.Abfahrten(lambda: [])
-        a.daten[(AB.DIENST, "8000309")] = {"liste": liste, "zeit": jetzt, "fehler": None}
-        self.assertEqual([x["linie"] for x in a.fuer({"haltestelle": "8000309", "anzahl": 5, "vorlauf_min": 6}, jetzt)["liste"]], ["RE 3"])
-        self.assertEqual(len(a.fuer({"haltestelle": "8000309", "anzahl": 1, "vorlauf_min": 0}, jetzt)["liste"]), 1)
 
     def test_alarm_und_schalten_einstellungen(self):
         e = E.pruefen({"fernseher": [{"id": "tv", "ha_schalten": "media_player.wohnzimmer"}],

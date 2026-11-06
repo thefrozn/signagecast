@@ -27,7 +27,6 @@ import durchsage as DS                        # noqa: E402
 import quellen as Q                           # noqa: E402
 import webbild as WB                          # noqa: E402
 import pdf as PDF                             # noqa: E402
-import abfahrten as AB                        # noqa: E402
 import player as PL                           # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -1142,10 +1141,6 @@ def pdf_schleife():
         time.sleep(3600)
 
 
-# ---------- Abfahrten (seit 0.21) ----------
-abfahrten = AB.Abfahrten(lambda: [x["optionen"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "abfahrten"])
-
-
 # ---------- Fernseher über HA schalten (seit 0.21) ----------
 # Beginnt im Zeitplan „schwarz“, wird der Fernseher ausgeschaltet; endet es (oder kommt ein Notfall-Vollbild), wird er
 # eingeschaltet. Nur beim Wechsel – wer nachts von Hand einschaltet, wird nicht gleich wieder ausgeschaltet.
@@ -1240,7 +1235,6 @@ def tv_daten(tv_id):
                 webbild={x["id"]: fotograf.bild(a) for x in layout.get("elemente", []) if (a := webbild_auftrag(x))},
                 pdf={x["id"]: {"datei": x["optionen"]["datei"], "seiten": PDF.seiten(PDF_ORDNER, x["optionen"]["datei"])}
                      for x in layout.get("elemente", []) if x["typ"] == "pdf" and x["optionen"]["datei"]},
-                abfahrten={x["id"]: abfahrten.fuer(x["optionen"]) for x in layout.get("elemente", []) if x["typ"] == "abfahrten"},
                 jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M"), alarm=alarm_fuer(t["id"]),
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
                 unwetter=(zustand.get("unwetter") or {}).get("liste", []),
@@ -2144,11 +2138,6 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/alarm":
             return self.antwort(200, {"ok": True, "jetzt": alarm["jetzt"], "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
                                       "schalten": schalten_stand})
-        if pfad == "/api/abfahrten/suche":
-            try:
-                return self.antwort(200, {"ok": True, "haltestellen": AB.suchen((q.get("q") or [""])[0], (q.get("dienst") or [""])[0])})
-            except M.Meldung as f:
-                return self.antwort(200, dict({"ok": False, "fehler": str(f)}, **M.als_dict(f)))
         if pfad == "/api/leistung":
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
@@ -2586,7 +2575,7 @@ def main():
     for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
-                 pdf_schleife, abfahrten.schleife, schalten_schleife, player_schleife):
+                 pdf_schleife, schalten_schleife, player_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

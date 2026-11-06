@@ -176,14 +176,3 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-pdf img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .typ-pdf.fuellen img { object-fit: cover; }
 
-/* Abfahrten (seit 0.21) */
-.baustein.typ-abfahrten { flex-direction: column; align-items: stretch; justify-content: flex-start; }
-.typ-abfahrten .titel { font-weight: 600; margin-bottom: .3em; opacity: .9; }
-.typ-abfahrten .zeilen { width: 100%; }
-.typ-abfahrten .zeile { display: flex; align-items: baseline; gap: .6em; padding: .12em 0; white-space: nowrap; }
-.typ-abfahrten .wann { min-width: 3.6em; font-variant-numeric: tabular-nums; font-weight: 600; }
-.typ-abfahrten .linie { min-width: 3em; padding: 0 .35em; border-radius: .25em; background: var(--akzent); color: var(--akzent-text, #fff); text-align: center; font-weight: 600; text-shadow: none; }
-.typ-abfahrten .ziel { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-.typ-abfahrten .plus { color: #ff6b5b; font-weight: 600; }
-.typ-abfahrten .gleis { opacity: .75; font-size: .85em; }
-.typ-abfahrten .ausfall .wann, .typ-abfahrten .ausfall .ziel { text-decoration: line-through; opacity: .6; }
