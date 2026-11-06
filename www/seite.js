@@ -245,6 +245,8 @@ function fuellen() {
       case "kalender": {
         const aus_ical = o.quelle ? ((daten.api || {})[e.id] || {}).termine : null;
         const termine = (aus_ical || (daten.kalender || {})[o.entity] || []).slice(0, o.anzahl);
+        // seit 0.26.1: ohne anstehende Termine (im Zeitraum „Tage“) ganz ausblenden – z. B. Müllabfuhr nur 3 Tage vorher
+        sichtbar = sichtbar && (termine.length > 0 || !o.nur_mit_terminen);
         const zeilen = termine.length + (o.titel ? 1 : 0) || 1;
         d.style.fontSize = Math.min(d.clientHeight / zeilen * 0.5, 34) + "px";
         const heute = new Date(); heute.setHours(0, 0, 0, 0);

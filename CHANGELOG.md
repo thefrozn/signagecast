@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.26.1 (2026-11-06)
+- **Calendar element – only when events are due:** new option *only show when events are due in this period*. The
+  element is hidden while there is no event within *Days* – e.g. with 3 days the waste collection appears three days
+  before the pickup, stays until the pickup day and disappears afterwards.
+
 ## v0.26.0 (2026-11-06)
 - **Data sources from a file:** instead of an address, upload a file (up to 1 MB) – iCal (`.ics`), CSV, JSON, RSS or
   text. Useful when your town only offers the waste collection calendar as a download. The type is detected; upload

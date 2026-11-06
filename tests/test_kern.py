@@ -914,6 +914,14 @@ class Csv026(unittest.TestCase):
             finally:
                 Q.DATEIEN = alt
 
+    def test_kalender_nur_mit_terminen(self):                      # seit 0.26.1
+        el = {"id": "k", "typ": "kalender", "optionen": {"quelle": "muell", "tage": 3}}
+        self.assertFalse(L.pruefe_layout({"id": "ab", "elemente": [el]})["elemente"][0]["optionen"]["nur_mit_terminen"])
+        el["optionen"]["nur_mit_terminen"] = True
+        self.assertTrue(L.pruefe_layout({"id": "ab", "elemente": [el]})["elemente"][0]["optionen"]["nur_mit_terminen"])
+        js = open(os.path.join(os.path.dirname(__file__), "..", "www", "seite.js"), encoding="utf-8").read()
+        self.assertIn("termine.length > 0 || !o.nur_mit_terminen", js)
+
     def test_alte_quellen_bleiben_gueltig(self):
         q = Q.pruefen([{"id": "news", "art": "rss", "url": "https://example.org/rss"}])[0]
         self.assertEqual((q["herkunft"], "datei" in q, "csv" in q), ("url", False, False))

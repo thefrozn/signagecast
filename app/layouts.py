@@ -105,7 +105,7 @@ TYPEN = {
     "text":       {"text": (_t(300), ""), "laufband": (_b, False)},
     "logo":       {"bild": (_bild, "")},
     "kamera":     {"entity": (_ent(["camera"]), ""), "intervall": (_zahl(1, 60), 2)},
-    "kalender":   {"entity": (_ent(["calendar"]), ""), "quelle": (_qid, ""), "anzahl": (_zahl(1, 10), 4), "tage": (_zahl(1, 60), 14),
+    "kalender":   {"entity": (_ent(["calendar"]), ""), "quelle": (_qid, ""), "anzahl": (_zahl(1, 10), 4), "tage": (_zahl(1, 60), 14), "nur_mit_terminen": (_b, False),
                    "titel": (_t(40), "")},                                   # quelle = iCal-Datenquelle statt HA (seit 0.10)
     "meldung":    {"entity": (_ent(["input_text", "sensor", "text"]), ""), "dauer": (_zahl(3, 600), 20)},
     "flaeche":    {"farbe": (_farbe, "#f0f0f0"), "deckkraft": (_zahl(0, 100), 100)},
