@@ -1054,6 +1054,9 @@ class Leistung(unittest.TestCase):
         py = open(os.path.join(basis, "app", "dienst.py"), encoding="utf-8").read()
         self.assertIn('f"AUFNAHME=\\"{aw} {ah}\\"\\n"', py)
         self.assertIn("ds_melden()", py[py.index("def alarm_beenden"):py.index("def alarm_fuer")])
+        erw = open(os.path.join(basis, "render", "h264-fluessig", "inhalt.js"), encoding="utf-8").read()
+        for x in ("MediaSource.isTypeSupported = ", "canPlayType = ", "av01"):
+            self.assertIn(x, erw)                     # seit 0.29.1: VP9/AV1 gar nicht anbieten
         js = open(os.path.join(basis, "www", "seite.js"), encoding="utf-8").read()
         self.assertIn('"&stand="', js)
         self.assertNotIn("}, 2000);", js[js.index("durchsagenHolen") - 300:])

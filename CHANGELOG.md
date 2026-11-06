@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## v0.29.1 (2026-11-06)
+- **Live videos stay H.264:** the render extension now reports VP9 and AV1 as unsupported (also to
+  `MediaSource.isTypeSupported` and `canPlayType`, like h264ify). Reporting them only as “not smooth” was not enough –
+  YouTube still picked AV1 or VP9 for some streams, and decoding AV1 in software cost about 40 % more CPU (measured
+  1080p: ~160 % instead of ~113 % of one core).
 - Calendar element, icons only: the labels below the icons (e.g. *Tomorrow* twice) no longer run into each other – the
   text shrinks to fit its icon and the icons get spacing.
 - Screenshot tour renewed with 0.29 (new: waste icons on the TV, CSV import with row filter, capture size).
