@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.27.0 (2026-11-06)
+- **CSV import – row filter:** only import rows that match all rules. Rules per field: *contains*, *does not contain*,
+  *equals*, *does not equal*, *is empty*, *is not empty* (case-insensitive). The import shows how many rows match and
+  previews only those. Applies to calendar events too – e.g. a town waste calendar that also lists bulky-waste and
+  hazardous-waste dates for other districts: keep only rows whose location column is empty. Part of the reusable
+  CSV import module (`app/csvimport.py`, `csvimport.js`); existing sources keep working unchanged.
+
 ## v0.26.1 (2026-11-06)
 - **Calendar element – only when events are due:** new option *only show when events are due in this period*. The
   element is hidden while there is no event within *Days* – e.g. with 3 days the waste collection appears three days

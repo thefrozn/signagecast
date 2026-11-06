@@ -499,6 +499,7 @@ const TEXTE = {
       csv_kodierung: "Unknown character set", csv_trenner: "Unknown delimiter", csv_anfuehrung: "Unknown quote character",
       csv_spalte: "Invalid column number", csv_feldname: "Field name missing or duplicate: {name}", csv_keine_felder: "Please choose at least one field",
       csv_kaputt: "CSV not readable: {d}", csv_leer: "No data in the CSV file",
+      csv_filter: "Invalid filter rule (field {name} selected?)",
       csv_kein_datum: "Column “{feld}” contains no readable date (e.g. 07.01.2026 or 2026-01-07)",
       q_datei: "{id}: file missing – please upload it", q_datei_art: "{id}: this type cannot come from a file",
       q_datei_leer: "The file is empty", q_datei_fehlt: "The uploaded file is gone – please upload it again",

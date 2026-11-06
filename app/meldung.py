@@ -165,6 +165,7 @@ DE = {
     "csv_keine_felder": "Bitte mindestens ein Feld wählen",
     "csv_kaputt": "CSV nicht lesbar: {d}",
     "csv_leer": "Keine Daten in der CSV-Datei",
+    "csv_filter": "Ungültige Filterregel (Feld {name} gewählt?)",
     "csv_kein_datum": "In der Spalte „{feld}“ steht kein lesbares Datum (z. B. 07.01.2026 oder 2026-01-07)",
     "q_datei": "{id}: Datei fehlt – bitte hochladen",
     "q_datei_art": "{id}: Diese Art kann nicht aus einer Datei kommen",

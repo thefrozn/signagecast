@@ -4,6 +4,8 @@
 #                                     ist), Spalten mit Beispielwerten und eine Vorschau liefern
 #   2. Die Verwaltung lässt wählen, welche Spalten übernommen werden und wie sie heißen (optionen["felder"])
 #   3. lesen(roh, optionen)        -> Liste von Zeilen als {Feldname: Wert}
+#      Optional (seit 0.27) optionen["filter"]: Regeln [{feld, regel, wert}], die alle zutreffen müssen – nur diese Zeilen
+#      werden übernommen (z. B. „STANDORT ist leer“, „FRAKTION enthält nicht Sperrmüll“).
 # Dazu Hilfen für Datum/Uhrzeit in freier Schreibweise („Mi 07.01.2026“, „2026-01-07 18:30“). Nur Standardbibliothek.
 import csv, datetime, io, re
 from meldung import Meldung
@@ -12,6 +14,8 @@ TRENNER = {",": ",", ";": ";", "tab": "\t", "|": "|", " ": " "}          # Kennu
 ANFUEHRUNG = {'"': '"', "'": "'", "": None}                                # "" = ohne Anführungszeichen
 KODIERUNGEN = ("auto", "utf-8", "cp1252", "latin-1")
 MAX_SPALTEN, MAX_ZEILEN, MAX_FELD = 100, 5000, 2000
+REGELN = ("enthaelt", "enthaelt_nicht", "gleich", "ungleich", "leer", "nicht_leer")   # Zeilenfilter (seit 0.27)
+MAX_FILTER = 10
 
 
 def dekodieren(roh, kodierung="auto"):
@@ -81,7 +85,32 @@ def optionen_pruefen(o, felder_pflicht=False):
         felder.append({"spalte": spalte, "name": name})
     if felder_pflicht and not felder:
         raise Meldung("csv_keine_felder")
-    return {"trenner": trenner, "anfuehrung": anf, "kopfzeile": bool(o.get("kopfzeile", True)), "kodierung": kod, "felder": felder}
+    return {"trenner": trenner, "anfuehrung": anf, "kopfzeile": bool(o.get("kopfzeile", True)), "kodierung": kod, "felder": felder,
+            "filter": filter_pruefen(o.get("filter"), namen if felder else None)}
+
+
+def filter_pruefen(regeln, namen=None):
+    """Zeilenfilter vereinheitlichen: [{feld, regel, wert}]; namen = erlaubte Feldnamen (None = nicht prüfen)."""
+    aus = []
+    for r in (regeln if isinstance(regeln, list) else [])[:MAX_FILTER]:
+        if not isinstance(r, dict):
+            raise Meldung("csv_filter", name="?")
+        feld, regel = str(r.get("feld", "")).strip()[:60], r.get("regel", "enthaelt")
+        if not feld or regel not in REGELN or (namen is not None and feld not in namen):
+            raise Meldung("csv_filter", name=repr(feld))
+        aus.append({"feld": feld, "regel": regel, "wert": "" if regel in ("leer", "nicht_leer") else str(r.get("wert", ""))[:200]})
+    return aus
+
+
+def passt(zeile, regeln):
+    """Trifft jede Regel auf die Zeile ({Feldname: Wert}) zu? Vergleiche ohne Groß-/Kleinschreibung und Leerraum am Rand."""
+    for r in regeln:
+        w, s = str(zeile.get(r["feld"], "")).strip().casefold(), r["wert"].strip().casefold()
+        ok = {"enthaelt": s in w, "enthaelt_nicht": s not in w, "gleich": w == s, "ungleich": w != s,
+              "leer": not w, "nicht_leer": bool(w)}[r["regel"]]
+        if not ok:
+            return False
+    return True
 
 
 def _zeilen(text, o):
@@ -121,15 +150,22 @@ def analysieren(roh, optionen=None):
     vorgabe = optionen if isinstance(optionen, dict) else {}
     text, kod = dekodieren(roh, vorgabe.get("kodierung", "auto"))
     geschaetzt = erkennen(text)
-    o = optionen_pruefen(dict(geschaetzt, **{k: v for k, v in vorgabe.items() if v not in (None, "auto") and k != "felder"},
+    o = optionen_pruefen(dict(geschaetzt, **{k: v for k, v in vorgabe.items() if v not in (None, "auto") and k not in ("felder", "filter")},
                               felder=vorgabe.get("felder") or []))
     zeilen = _zeilen(text, o)
     if not zeilen:
         raise Meldung("csv_leer")
     namen, daten = _kopf(zeilen, o)
     spalten = [{"nr": i, "name": n, "beispiele": [z[i] for z in daten if i < len(z) and z[i]][:3]} for i, n in enumerate(namen)]
-    return {"optionen": o, "erkannt": geschaetzt, "kodierung": kod, "spalten": spalten, "zeilen": len(daten),
-            "abgeschnitten": len(zeilen) > MAX_ZEILEN, "vorschau": daten[:5]}
+    aus = {"optionen": o, "erkannt": geschaetzt, "kodierung": kod, "spalten": spalten, "zeilen": len(daten),
+           "abgeschnitten": len(zeilen) > MAX_ZEILEN, "vorschau": daten[:5]}
+    # Zeilenfilter (seit 0.27): Regeln mit Feldern, die es (noch) nicht gibt, zählen hier nicht – die Auswahl kann sich ändern
+    felder = o["felder"] or [{"spalte": i, "name": n} for i, n in enumerate(namen)]
+    regeln = [r for r in filter_pruefen(vorgabe.get("filter")) if any(f["name"] == r["feld"] for f in felder)]
+    if regeln:
+        treffer = [i for i, z in enumerate(daten) if passt({f["name"]: (z[f["spalte"]] if f["spalte"] < len(z) else "") for f in felder}, regeln)]
+        aus.update(treffer=len(treffer), vorschau=[daten[i] for i in treffer[:5]])
+    return aus
 
 
 def lesen(roh, optionen):
@@ -139,7 +175,8 @@ def lesen(roh, optionen):
     zeilen = _zeilen(text, o)
     namen, daten = _kopf(zeilen, o)
     felder = o["felder"] or [{"spalte": i, "name": n} for i, n in enumerate(namen)]
-    return [{f["name"]: (z[f["spalte"]] if f["spalte"] < len(z) else "") for f in felder} for z in daten[:MAX_ZEILEN]]
+    aus = [{f["name"]: (z[f["spalte"]] if f["spalte"] < len(z) else "") for f in felder} for z in daten[:MAX_ZEILEN]]
+    return [z for z in aus if passt(z, o["filter"])] if o["filter"] else aus
 
 
 # ---------- Datum und Uhrzeit in freier Schreibweise ----------

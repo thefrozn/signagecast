@@ -927,5 +927,58 @@ class Csv026(unittest.TestCase):
         self.assertEqual((q["herkunft"], "datei" in q, "csv" in q), ("url", False, False))
 
 
+
+class CsvFilter027(unittest.TestCase):
+    """Seit 0.27: Zeilenfilter im CSV-Import (alle Regeln müssen zutreffen), auch für die Termine des Kalenders."""
+    ROH = Csv026.ROH
+
+    def test_regeln(self):
+        import csvimport as C
+        z = {"STANDORT": " ", "FRAKTION": "Restmüll"}
+        self.assertTrue(C.passt(z, [{"feld": "STANDORT", "regel": "leer", "wert": ""}]))
+        self.assertTrue(C.passt(z, [{"feld": "FRAKTION", "regel": "enthaelt", "wert": "rest"}]))
+        self.assertFalse(C.passt(z, [{"feld": "FRAKTION", "regel": "enthaelt_nicht", "wert": "MÜLL"}]))
+        self.assertTrue(C.passt(z, [{"feld": "FRAKTION", "regel": "gleich", "wert": " restmüll "},
+                                    {"feld": "STANDORT", "regel": "ungleich", "wert": "x"}]))
+        self.assertFalse(C.passt(z, [{"feld": "STANDORT", "regel": "nicht_leer", "wert": ""}]))
+        with self.assertRaises(Exception):
+            C.filter_pruefen([{"feld": "FRAKTION", "regel": "ungefähr"}])
+        with self.assertRaises(Exception):
+            C.optionen_pruefen({"felder": [{"spalte": 3, "name": "FRAKTION"}], "filter": [{"feld": "ORT", "regel": "leer"}]})
+        self.assertEqual(C.filter_pruefen([{"feld": "A", "regel": "leer", "wert": "weg"}])[0]["wert"], "")
+
+    def test_lesen_und_analysieren_mit_filter(self):
+        import csvimport as C
+        o = {"trenner": ",", "anfuehrung": '"', "kopfzeile": True, "kodierung": "auto",
+             "felder": [{"spalte": 2, "name": "STANDORT"}, {"spalte": 3, "name": "FRAKTION"}, {"spalte": 4, "name": "TERMIN"}],
+             "filter": [{"feld": "STANDORT", "regel": "leer", "wert": ""}]}
+        self.assertEqual([z["FRAKTION"] for z in C.lesen(self.ROH.encode(), o)], ["Restmüll", "Papiertonne"])
+        a = C.analysieren(self.ROH.encode(), o)
+        self.assertEqual((a["zeilen"], a["treffer"], len(a["vorschau"])), (3, 2, 2))
+        a = C.analysieren(self.ROH.encode(), dict(o, filter=[{"feld": "GIBTSNICHT", "regel": "leer"}]))
+        self.assertNotIn("treffer", a)                       # unbekanntes Feld zählt in der Vorschau nicht
+        self.assertNotIn("treffer", C.analysieren(self.ROH.encode(), {}))
+
+    def test_termine_gefiltert(self):
+        import datetime
+        heute = datetime.date.today()
+        roh = "".join(f"Musterstadt,{'Wertstoffhof' if i % 2 else ''},{'Sperrmüll' if i % 2 else 'Restmüll'},"
+                      f"{(heute + datetime.timedelta(days=i)).strftime('%d.%m.%Y')}\n" for i in range(1, 5))
+        o = {"trenner": ",", "anfuehrung": '"', "kopfzeile": False, "kodierung": "auto",
+             "felder": [{"spalte": 1, "name": "STANDORT"}, {"spalte": 2, "name": "FRAKTION"}, {"spalte": 3, "name": "TERMIN"}],
+             "filter": [{"feld": "STANDORT", "regel": "leer"}], "kalender": {"datum": "TERMIN", "titel": "FRAKTION"}}
+        q = Q.pruefen([{"id": "muell", "art": "csv", "herkunft": "datei", "datei": {"hash": "0123456789abcdef", "name": "a.csv"}, "csv": o}])[0]
+        self.assertEqual(q["csv"]["filter"], [{"feld": "STANDORT", "regel": "leer", "wert": ""}])
+        d = Q.csv_zerlegen(roh.encode(), q["csv"])
+        self.assertEqual([t["titel"] for t in d["termine"]], ["Restmüll", "Restmüll"])
+        self.assertEqual(Q.pruefen([{"id": "alt", "art": "csv", "herkunft": "datei", "datei": {"hash": "0123456789abcdef", "name": "a.csv"},
+                                     "csv": dict(o, filter=None)}])[0]["csv"]["filter"], [])
+
+    def test_verwaltung_hat_filter(self):
+        js = open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", "csvimport.js"), encoding="utf-8").read()
+        for s in ("cFNeu", "cFFeld", "cFRegel", "cFWert", "filterBereinigen", "enthaelt_nicht"):
+            self.assertIn(s, js)
+
+
 if __name__ == "__main__":
     unittest.main()
