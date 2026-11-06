@@ -131,7 +131,7 @@ const TEXTE = {
     playlist: "Playlist einfügen (M3U/PLS)", playlistText: "Inhalt einer .m3u- oder .pls-Datei hier einfügen oder die Datei auswählen – jeder Eintrag wird ein eigener Sender (Name aus #EXTINF).",
     playlistUebernehmen: "Sender übernehmen", playlistPruefen: "Prüfe die Einträge …",
     playlistErgebnis: (n, d) => `${n} Sender übernommen${d ? `, ${d} schon vorhanden` : ""}.`,
-    ortSuche: "Ort suchen (z. B. Weiden i.d. OPf.)", ortGesetzt: "Standort gespeichert", zeigenAuf: "„Jetzt zeigen“ auf",
+    ortSuche: "Ort suchen (z. B. Köln)", ortGesetzt: "Standort gespeichert", zeigenAuf: "„Jetzt zeigen“ auf",
     alleTv: "allen Fernsehern", tonAnzeige: "Ton",
     epText: "Zu festen Minuten unterbricht ein Beitrag die Rotation im Videofenster und läuft ganz durch – z. B. „tagesschau in 100 Sekunden“ zur vollen und halben Stunde. Mit Ton ist das Radio solange stumm.",
     epNeu: "Einspieler hinzufügen", epQuelle: "Quelle", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (immer die aktuelle Ausgabe)", video: "Video-Adresse (MP4)", youtube: "YouTube-Video oder Kanal (neuestes Video)" },
