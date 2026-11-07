@@ -22,6 +22,7 @@ MAX_PRUEFUNGEN = 6           # höchstens so viele YouTube-Prüfungen je Durchla
 ALLGEMEIN_FENSTER_S = 10 * 60  # Strikes aus demselben Grund in diesem Fenster nimmt eine allgemeine Störung zurück
 ALLGEMEIN_GUT_S = 60          # so lange misst die Wache am Stück einen guten Stream -> Störung vorbei
 ALLGEMEIN_GUELTIG_S = 15 * 60  # der Player meldet die Störung alle 5 min erneut; ohne Meldung gilt sie als vorbei
+THEMA_MAX = 8                 # seit 0.32: so viele gefundene Streams je Thema (zählen nicht zu „max“)
 MAX_GEFUNDEN_GESAMT = 80     # harte Obergrenze gefundener Streams (die Einstellung „max“ zählt nur Streams mit Tag)
 PAUSE_BEI_429_S = 3600       # YouTube sagt "zu viele Anfragen": eine Stunde gar nicht fragen
 HOEHEN = [(2160, "hd2160"), (1440, "hd1440"), (1080, "hd1080"), (720, "hd720"), (480, "large"), (360, "medium"),
@@ -673,15 +674,20 @@ class Streams:
     def ueberzaehlig(streams, max_tag, v, jetzt=None):
         """Gefundene Streams, die raus müssen (seit 0.31): „max“ zählt nur Streams, an deren Ort gerade Tag ist –
         Nacht und „Ort unbekannt“ belegen keinen Platz. Insgesamt höchstens MAX_GEFUNDEN_GESAMT; darüber gehen zuerst
-        die ohne Ort, dann die am längsten nicht mehr gefundenen. Geschützte und übernommene zählen nie mit."""
+        die ohne Ort, dann die am längsten nicht mehr gefundenen. Geschützte und übernommene zählen nie mit.
+        Seit 0.32 zählen Themen-Streams nicht mit: je Thema höchstens THEMA_MAX (die zuletzt gefundenen bleiben)."""
         jetzt = time.time() if jetzt is None else jetzt
         entdeckt = sorted((k for k, s in streams.items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")),
-                          key=lambda k: (streams[k].get("breite") is not None or ohne_tag(streams[k]), streams[k].get("zuletzt_gefunden", "")),
-                          reverse=True)                      # Weltraum hat absichtlich keinen Ort – nicht zuerst raus
-        raus, tag, behalten = [], 0, 0
+                          key=lambda k: (streams[k].get("breite") is not None, streams[k].get("zuletzt_gefunden", "")), reverse=True)
+        raus, tag, behalten, je_thema = [], 0, 0, {}
         for k in entdeckt:
             s = streams[k]
-            ist_tag = ohne_tag(s) or s.get("breite") is not None and (not v["nur_tag"] or
+            if s.get("kategorie") in THEMEN:
+                je_thema[s["kategorie"]] = je_thema.get(s["kategorie"], 0) + 1
+                if je_thema[s["kategorie"]] > THEMA_MAX:
+                    raus.append(k)
+                continue
+            ist_tag = s.get("breite") is not None and (not v["nur_tag"] or
                                                        sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"])
             if (ist_tag and tag >= max_tag) or behalten >= MAX_GEFUNDEN_GESAMT:
                 raus.append(k)
@@ -733,7 +739,7 @@ class Streams:
                     continue                      # höchstens 2 vom selben Ort je Thema (sonst 6× Times Square)
                 orte[o] = orte.get(o, 0) + (o is not None)
                 kat[vid] = k
-                if sum(1 for x in kat.values() if x == k) >= 8:
+                if sum(1 for x in kat.values() if x == k) >= THEMA_MAX:
                     break
         neu_ids += list(kat)
 
