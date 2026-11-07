@@ -1320,7 +1320,12 @@ class Themen032(unittest.TestCase):
         d = self.s.alle()["streams"]
         self.assertEqual(d["aaaaaaaaaaa"]["kategorie"], "stadt")
         self.assertIsNotNone(d["aaaaaaaaaaa"]["breite"])                               # Ort aus der Liste der Einstellungen
-        self.assertEqual(self.s.ort("Maho Beach St Maarten LIVE"), (18.04, -63.12))     # Themen-Orte danach
+        self.assertEqual(self.s.ort("Maho Beach St Maarten LIVE"), (18.04, -63.12))     # genaue Orte
+        self.assertEqual(self.s.ort("Los Angeles Live Cam · Venice Beach"), (34.01, -118.49))
+        self.assertEqual(self.s.ort("Mount Etna Volcano, Sicily, Italy"), (37.75, 14.99))
+        self.assertIsNone(self.s.ort("Beach Live Stream on a small island"))
+        for titel in ("Ocean Ambience 4K Waves Sounds", "The Wedge Raw Footage | loop", "Maria's Store Cam6 Davao City"):
+            self.assertTrue(ST.THEMEN_AUSSCHLUSS.search(titel), titel)
         self.assertNotIn("bbbbbbbbbbb", d)                                             # Musik aussortiert
         self.assertEqual(d["ccccccccccc"]["kategorie"], "weltraum")
         self.assertEqual(d["ddddddddddd"]["kategorie"], "neu")

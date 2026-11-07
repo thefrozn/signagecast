@@ -56,16 +56,19 @@ THEMEN = {
 THEMEN_AUSSCHLUSS = re.compile(r"radio|music|song|lofi|sleep|relax|asmr|\bgame|gaming|minecraft|roblox|simulator|\bsim\b|"
                                r"msfs|cartoon|kids|news|stock|crypto|compilation|archive|documentary|movie|episode|"
                                r"meditation|ambient|screensaver|nature sounds|\bbar\b|church|hunting|\batc\b|scanner|"
-                               r"police|ukraine|\bwar\b|model railway|modellbahn|gta|replay|highlights", re.I)
-# Orte für Themen-Streams, die die Liste in den Einstellungen nicht kennt (nach ihr geprüft)
+                               r"police|ukraine|\bwar\b|model railway|modellbahn|gta|replay|highlights|ambien|sounds\b|\bloop\b|footage|"
+                               r"\bstore\b|\bshop\b|food|display", re.I)
+# Genaue Orte (vor allem für Themen-Streams) – vor der groben Liste der Einstellungen geprüft
 THEMEN_ORTE = [
+    (r"los angeles|venice beach|santa monica|malibu", 34.01, -118.49),
     (r"maho|st\.? ?maarten|sint maarten|saint martin", 18.04, -63.12),
     (r"times square|manhattan|new york|nyc|brooklyn", 40.76, -73.99),
     (r"las vegas", 36.17, -115.14),
     (r"dubai|abu dhabi", 25.2, 55.27),
     (r"jerusalem|tel aviv|israel", 31.78, 35.22),
     (r"istanbul|turkey|türkei", 41.01, 28.98),
-    (r"iceland|island|reykjavik|reykjavík", 64.13, -21.9),
+    (r"iceland|reykjav|isländ", 64.13, -21.9),
+    (r"philippines|philippinen|manila|davao|cebu|mayon", 12.9, 122.5),
     (r"mexico|méxico|cancun|cancún|tulum", 21.16, -86.85),
     (r"rio de janeiro|copacabana", -22.97, -43.18),
     (r"cape town|kapstadt", -33.92, 18.42),
@@ -456,15 +459,15 @@ class Streams:
 
     # ---------- Ort aus dem Titel ----------
     def ort(self, titel):
+        for muster, b, l in THEMEN_ORTE:                   # genaue Orte zuerst (seit 0.32)
+            if re.search(muster, titel, re.I):
+                return b, l
         for o in self.e()["suche"]["orte"]:
             try:
                 if re.search(o["muster"], titel, re.I):
                     return o["breite"], o["laenge"]
             except re.error:
                 continue
-        for muster, b, l in THEMEN_ORTE:
-            if re.search(muster, titel, re.I):
-                return b, l
         return None
 
     # ---------- Zustand je Stream (seit 0.31) ----------
