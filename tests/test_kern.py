@@ -1334,6 +1334,14 @@ class Themen032(unittest.TestCase):
         self.assertEqual(d["ddddddddddd"]["kategorie"], "neu")
         self.assertFalse(any(b in gefragt for b in ST.THEMEN["bahn"]["begriffe"]))     # ausgeschaltet: keine Anfragen
 
+    def test_weltraum_nicht_zuerst_raus(self):
+        heute = time.strftime("%Y-%m-%d")
+        st = {"ccccccccccc": {"kategorie": "weltraum", "breite": None, "herkunft": "entdeckt", "zuletzt_gefunden": heute},
+              "ddddddddddd": {"kategorie": "neu", "breite": 0.0, "laenge": 0.0, "herkunft": "entdeckt",
+                              "zuletzt_gefunden": "2026-01-01"}}
+        v = dict(self.e["video"], nur_tag=False)                                       # beide zählen als Tag
+        self.assertEqual(ST.Streams.ueberzaehlig(st, 1, v), ["ddddddddddd"])          # der länger nicht gefundene geht
+
     def test_weltraum_ohne_ort_und_nacht(self):
         jetzt = time.time()
         ST.schreib(ST.STREAMS, {"streams": {"ccccccccccc": {"art": "video", "name": "ISS", "kategorie": "weltraum",

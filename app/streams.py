@@ -676,7 +676,8 @@ class Streams:
         die ohne Ort, dann die am längsten nicht mehr gefundenen. Geschützte und übernommene zählen nie mit."""
         jetzt = time.time() if jetzt is None else jetzt
         entdeckt = sorted((k for k, s in streams.items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")),
-                          key=lambda k: (streams[k].get("breite") is not None, streams[k].get("zuletzt_gefunden", "")), reverse=True)
+                          key=lambda k: (streams[k].get("breite") is not None or ohne_tag(streams[k]), streams[k].get("zuletzt_gefunden", "")),
+                          reverse=True)                      # Weltraum hat absichtlich keinen Ort – nicht zuerst raus
         raus, tag, behalten = [], 0, 0
         for k in entdeckt:
             s = streams[k]
