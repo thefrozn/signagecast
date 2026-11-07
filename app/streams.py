@@ -76,6 +76,7 @@ THEMEN_ORTE = [
     (r"rio de janeiro|copacabana", -22.97, -43.18),
     (r"cape town|kapstadt", -33.92, 18.42),
     (r"niagara", 43.08, -79.07),
+    (r"kilauea|kīlauea|mauna loa|halema", 19.42, -155.29),
     (r"yellowstone|old faithful", 44.46, -110.83),
     (r"etna|sicily|sizilien", 37.75, 14.99),
     (r"venice|venezia|venedig", 45.43, 12.33),
