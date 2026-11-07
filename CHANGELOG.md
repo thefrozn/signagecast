@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.31.1 (2026-11-07)
 - **Minimum quality shown as resolution:** the setting and the TV overview show 360p, 720p, 1080p … instead of
   YouTube's internal names (medium, hd720, hd1080 …). Stored values are unchanged.
 - **General failures no longer use up the stream list:** if 3 different streams fail for the same reason within
