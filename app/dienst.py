@@ -1271,7 +1271,7 @@ def tv_daten(tv_id):
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
                 unwetter=(zustand.get("unwetter") or {}).get("liste", []),
                 meldung_extern=meldung_fuer(t["id"]),
-                durchsage=durchsage_fuer(t["id"]), streams=liste, vorrang=vr if liste else None, versatz=t["nr"],
+                durchsage=durchsage_fuer(t["id"]), streams=liste, allgemein=streams.allgemein_aktiv(), vorrang=vr if liste else None, versatz=t["nr"],
                 ton=t["ton"], lautstaerke=t["lautstaerke"],
                 radio={"name": sender["name"], "anzeigen": e["radio"]["anzeigen"],
                        # mit Puffer über den Datendienst (siehe radio_weiterleiten), sonst direkt

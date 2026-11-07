@@ -1254,6 +1254,17 @@ class Allgemein0311(unittest.TestCase):
         self.assertTrue(self.s.allgemein_melden("aufloesung", ende=True))
         self.assertIsNone(self.s.allgemein_aktiv())
 
+    def test_wache_beendet(self):
+        self.s.allgemein_melden("aufloesung")
+        m = {"id": "aaaaaaaaaaa", "zustand": 1, "stufe": "medium"}
+        self.s.wache_melden(m, None)
+        self.assertIsNotNone(self.s.allgemein_aktiv())               # 360p: weiter gestört
+        self.s.wache_melden(dict(m, stufe="hd1080"), None)
+        self.assertIsNotNone(self.s.allgemein_aktiv())               # gut, aber noch keine Minute
+        self.s.allgemein["gut_seit"] -= ST.ALLGEMEIN_GUT_S
+        self.s.wache_melden(dict(m, stufe="hd1080"), None)
+        self.assertIsNone(self.s.allgemein_aktiv())
+
     def test_ohne_meldung_vorbei(self):
         self.s.allgemein_melden("puffert")
         self.s.allgemein["zeit"] -= ST.ALLGEMEIN_GUELTIG_S + 1

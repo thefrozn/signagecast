@@ -61,6 +61,8 @@ class LivePlayer {
     this.streams = Array.isArray(d.streams) ? d.streams : [];
     this.vorrang = d.vorrang && d.vorrang.bis * 1000 > Date.now() ? d.vorrang : null;
     if (d.regeln) this.regeln = d.regeln;
+    // Störung, die der Datendienst kennt (z. B. vor einem Neustart der Seite gemeldet), übernehmen
+    if (d.allgemein && !this.allgemein) this.allgemein = { grund: d.allgemein.grund, gemeldet: Date.now() };
     this.versatz = d.versatz || 0;
     this.einspielerListe = Array.isArray(d.einspieler) ? d.einspieler : [];
     this.medien = Array.isArray(d.medien) ? d.medien : [];

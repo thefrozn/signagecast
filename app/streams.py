@@ -20,6 +20,7 @@ VOR_MAX = 10                 # höchstens so viele Vorabprüfungen je 5 min (zus
 NACHLAUF_S = 15 * 60         # wird ein angekündigter Stream dunkel, darf er noch so lange laufen (kein falsches „Nächstes“)
 MAX_PRUEFUNGEN = 6           # höchstens so viele YouTube-Prüfungen je Durchlauf (alle 5 min)
 ALLGEMEIN_FENSTER_S = 10 * 60  # Strikes aus demselben Grund in diesem Fenster nimmt eine allgemeine Störung zurück
+ALLGEMEIN_GUT_S = 60          # so lange misst die Wache am Stück einen guten Stream -> Störung vorbei
 ALLGEMEIN_GUELTIG_S = 15 * 60  # der Player meldet die Störung alle 5 min erneut; ohne Meldung gilt sie als vorbei
 MAX_GEFUNDEN_GESAMT = 80     # harte Obergrenze gefundener Streams (die Einstellung „max“ zählt nur Streams mit Tag)
 PAUSE_BEI_429_S = 3600       # YouTube sagt "zu viele Anfragen": eine Stunde gar nicht fragen
@@ -331,6 +332,20 @@ class Streams:
                     schreib(STRIKES, d)
         return True
 
+    def _allgemein_ende_pruefen(self, m):
+        """Allgemeine Störung auch ohne Meldung des Players beenden (er kann neu gestartet sein und nichts mehr davon
+        wissen): misst die Wache ALLGEMEIN_GUT_S am Stück einen laufenden Stream – bei „aufloesung“ mit Mindeststufe."""
+        a = self.allgemein
+        if not a:
+            return
+        stufe, mindest = m.get("stufe"), self.e()["video"]["mindeststufe"]
+        gut = m.get("zustand") == 1 and (a["grund"] != "aufloesung"
+                                         or (stufe in STUFEN and STUFEN.index(stufe) >= STUFEN.index(mindest)))
+        if not gut:
+            a.pop("gut_seit", None)
+        elif time.time() - a.setdefault("gut_seit", time.time()) >= ALLGEMEIN_GUT_S:
+            self.allgemein = None
+
     def allgemein_aktiv(self):
         a = self.allgemein
         return {"grund": a["grund"], "seit": a["seit"]} if a and time.time() - a["zeit"] < ALLGEMEIN_GUELTIG_S else None
@@ -361,6 +376,7 @@ class Streams:
         """Messung der Wache (alle 10 s) in die Qualitätsübersicht einrechnen."""
         if not ID.fullmatch(m.get("id", "")):
             return
+        self._allgemein_ende_pruefen(m)
         gut = set(STUFEN[STUFEN.index("hd720"):])
         with sperre:
             d = self.qualitaet()
