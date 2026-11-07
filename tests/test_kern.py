@@ -1218,5 +1218,49 @@ class Streamliste(unittest.TestCase):
             ST.time.time = alt
 
 
+class Allgemein0311(unittest.TestCase):
+    """Seit 0.31.1: allgemeine Störung – Strikes der Serie zurücknehmen, währenddessen keine neuen."""
+
+    def setUp(self):
+        self.e = E.pruefen({})
+        self.s = ST.Streams(lambda: self.e)
+        ST.schreib(ST.STREAMS, {"streams": {}, "abgelehnt": []})
+        ST.schreib(ST.STRIKES, {"ccccccccccc": {"strikes": 1, "gruende": ["2026-10-01 10:00 puffert"]}})
+
+    def test_serie_zuruecknehmen(self):
+        for v in ("aaaaaaaaaaa", "bbbbbbbbbbb"):
+            self.assertTrue(self.s.strike(v, "aufloesung"))
+        self.assertTrue(self.s.strike("ddddddddddd", "puffert"))
+        self.assertFalse(self.s.allgemein_melden("quatsch"))
+        self.assertTrue(self.s.allgemein_melden("aufloesung"))
+        st = self.s.strikes()
+        for v in ("aaaaaaaaaaa", "bbbbbbbbbbb"):
+            self.assertEqual(st[v]["strikes"], 0)
+            self.assertNotIn("zeit", st[v])                            # keine Pause mehr
+            self.assertTrue(st[v]["gruende"][-1].endswith("aufloesung (allgemein)"))
+        self.assertEqual(st["ddddddddddd"]["strikes"], 1)               # anderer Grund bleibt
+        self.assertEqual(st["ccccccccccc"]["strikes"], 1)               # alter Strike bleibt
+        self.assertEqual(self.s.allgemein_aktiv()["grund"], "aufloesung")
+        # währenddessen zählt derselbe Grund nicht, ein anderer schon
+        self.s.strike("eeeeeeeeeee", "aufloesung")
+        self.s.strike("fffffffffff", "steht")
+        st = self.s.strikes()
+        self.assertEqual(st["eeeeeeeeeee"]["strikes"], 0)
+        self.assertTrue(st["eeeeeeeeeee"]["gruende"][-1].endswith("(allgemein)"))
+        self.assertEqual(st["fffffffffff"]["strikes"], 1)
+        # erneute Meldung nimmt nichts doppelt zurück
+        self.s.allgemein_melden("aufloesung")
+        self.assertEqual(self.s.strikes()["ddddddddddd"]["strikes"], 1)
+        self.assertTrue(self.s.allgemein_melden("aufloesung", ende=True))
+        self.assertIsNone(self.s.allgemein_aktiv())
+
+    def test_ohne_meldung_vorbei(self):
+        self.s.allgemein_melden("puffert")
+        self.s.allgemein["zeit"] -= ST.ALLGEMEIN_GUELTIG_S + 1
+        self.assertIsNone(self.s.allgemein_aktiv())
+        self.s.strike("aaaaaaaaaaa", "puffert")
+        self.assertEqual(self.s.strikes()["aaaaaaaaaaa"]["strikes"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

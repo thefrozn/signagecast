@@ -3,6 +3,11 @@
 ## Unreleased
 - **Minimum quality shown as resolution:** the setting and the TV overview show 360p, 720p, 1080p … instead of
   YouTube's internal names (medium, hd720, hd1080 …). Stored values are unchanged.
+- **General failures no longer use up the stream list:** if 3 different streams fail for the same reason within
+  10 minutes, it is not the streams' fault (e.g. YouTube delivers only 360p everywhere, as seen on 2026-11-07 – a TV
+  then skipped every 20 s and paused 27 streams). The TV now stops giving strikes, the data service takes back the
+  strikes and pauses of that series, and *To do* in the overview shows a warning. With *resolution too low* the stream
+  keeps playing instead of skipping. It ends as soon as a stream runs fine again for a minute.
 
 ## v0.31.0 (2026-11-07)
 - **Night list instead of lost places:** every stream now has a state – ready, night (with “daylight in …”), not live,

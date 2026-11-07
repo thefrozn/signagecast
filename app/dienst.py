@@ -1493,6 +1493,7 @@ def status():
         "stream": {"zuschauer": zuschauer(), "adresse_port": HLS_PORT},
         "benachrichtigung": melder.letzte,
         "sicherung_auto": zustand.get("sicherung_auto"),
+        "allgemein": streams.allgemein_aktiv(),
         "doppelt_hoch": [t["name"] for t in e["fernseher"] if dup_hoch.get(t["id"], 0) >= 3],
         "bildrate_niedrig": [t["name"] for t in e["fernseher"] if kette_laeuft(t["id"]) and (lambda br: len(br) >= 6 and
                              sum(x["fps"] for x in br) / len(br) < 20)([x for x in (zustand.get("bildrate") or {}).get(t["id"], [])
@@ -2353,12 +2354,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             d = self.koerper(420_000_000 if p == "/api/sicherung/zip" else 12_000_000)
         except Exception:
             return self.antwort(400, {"ok": False, "fehler": "ungültige Anfrage"})
-        m = re.fullmatch(r"/meldung/(strike|qualitaet|naechster)", p)
+        m = re.fullmatch(r"/meldung/(strike|qualitaet|naechster|allgemein)", p)
         if m:                                     # vom Player der TV-Seite
             vid = str(d.get("video_id", ""))
             if m.group(1) == "naechster":         # seit 0.31: angekündigte Streams vorab prüfen
                 ids = d.get("video_ids")
                 ok = isinstance(ids, list) and streams.vormerken([str(x) for x in ids[:3]])
+            elif m.group(1) == "allgemein":       # seit 0.31.1: viele Streams fallen aus demselben Grund durch
+                ok = streams.allgemein_melden(str(d.get("grund", "")), bool(d.get("ende")))
+                if ok:
+                    streams.liste_bauen()         # zurückgenommene Pausen gelten sofort
             elif m.group(1) == "strike":
                 ok = streams.strike(vid, str(d.get("grund", "")))
                 if ok:

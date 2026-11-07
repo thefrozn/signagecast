@@ -19,6 +19,8 @@ VOR_ALTER_S = 20 * 60        # angekündigte Streams (nächste/übernächste) m�
 VOR_MAX = 10                 # höchstens so viele Vorabprüfungen je 5 min (zusätzlich zu MAX_PRUEFUNGEN)
 NACHLAUF_S = 15 * 60         # wird ein angekündigter Stream dunkel, darf er noch so lange laufen (kein falsches „Nächstes“)
 MAX_PRUEFUNGEN = 6           # höchstens so viele YouTube-Prüfungen je Durchlauf (alle 5 min)
+ALLGEMEIN_FENSTER_S = 10 * 60  # Strikes aus demselben Grund in diesem Fenster nimmt eine allgemeine Störung zurück
+ALLGEMEIN_GUELTIG_S = 15 * 60  # der Player meldet die Störung alle 5 min erneut; ohne Meldung gilt sie als vorbei
 MAX_GEFUNDEN_GESAMT = 80     # harte Obergrenze gefundener Streams (die Einstellung „max“ zählt nur Streams mit Tag)
 PAUSE_BEI_429_S = 3600       # YouTube sagt "zu viele Anfragen": eine Stunde gar nicht fragen
 HOEHEN = [(2160, "hd2160"), (1440, "hd1440"), (1080, "hd1080"), (720, "hd720"), (480, "large"), (360, "medium"),
@@ -185,6 +187,7 @@ class Streams:
         self.vorgemerkt = {}                  # {video_id: zeit} – vom Player angekündigt, Vorabprüfung fällig
         self.vor_zeiten = []                  # Zeitpunkte der Vorabprüfungen (Begrenzung je 5 min)
         self.vor_wecken = threading.Event()
+        self.allgemein = None                 # {grund, seit, zeit} – allgemeine Störung, vom Player gemeldet (seit 0.31.1)
         os.makedirs(DATEN, exist_ok=True)
 
     # ---------- Daten ----------
@@ -292,12 +295,45 @@ class Streams:
         with sperre:
             d = self.strikes()
             e = d.setdefault(video, {"strikes": 0, "gruende": []})
-            if not geschuetzt:
+            a = self.allgemein_aktiv()
+            allgemein = bool(a and a["grund"] == grund)   # während einer allgemeinen Störung zählt der Strike nicht
+            if not geschuetzt and not allgemein:
                 e["strikes"] += 1
                 e["zeit"] = int(time.time())     # seit 0.31: Pause für alle Fernseher (sperre_h), siehe _basis
-            e["gruende"] = (e["gruende"] + [f"{time.strftime('%Y-%m-%d %H:%M')} {grund}" + (" (geschützt)" if geschuetzt else "")])[-10:]
+            e["gruende"] = (e["gruende"] + [f"{time.strftime('%Y-%m-%d %H:%M')} {grund}" + (" (geschützt)" if geschuetzt else " (allgemein)" if allgemein else "")])[-10:]
             schreib(STRIKES, d)
         return True
+
+    def allgemein_melden(self, grund, ende=False):
+        """Der Player meldet: mehrere Streams hintereinander fallen aus demselben Grund durch (seit 0.31.1).
+        Das liegt nicht an den Streams (z. B. liefert YouTube überall nur 360p) – die Strikes dieser Serie zählen nicht,
+        ihre Pause entfällt. ende=True: der Player hat wieder einen Stream ohne Problem."""
+        if grund not in GRUENDE:
+            return False
+        a, jetzt = self.allgemein, time.time()
+        if ende:
+            if a and a["grund"] == grund:
+                self.allgemein = None
+            return True
+        neu = not (a and a["grund"] == grund and jetzt - a["zeit"] < ALLGEMEIN_GUELTIG_S)
+        self.allgemein = {"grund": grund, "seit": time.strftime("%Y-%m-%d %H:%M") if neu else a["seit"], "zeit": jetzt}
+        if neu:
+            with sperre:
+                d, geaendert = self.strikes(), False
+                for e in d.values():
+                    g = e.get("gruende") or []
+                    if e.get("zeit", 0) >= jetzt - ALLGEMEIN_FENSTER_S and g and g[-1].endswith(" " + grund):
+                        e["strikes"] = max(0, e.get("strikes", 0) - 1)
+                        g[-1] += " (allgemein)"
+                        e.pop("zeit", None)
+                        geaendert = True
+                if geaendert:
+                    schreib(STRIKES, d)
+        return True
+
+    def allgemein_aktiv(self):
+        a = self.allgemein
+        return {"grund": a["grund"], "seit": a["seit"]} if a and time.time() - a["zeit"] < ALLGEMEIN_GUELTIG_S else None
 
     def strikes_zuruecksetzen(self, video):
         with sperre:

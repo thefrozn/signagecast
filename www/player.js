@@ -5,6 +5,10 @@
 // - Qualität: Statusmeldungen des Players (enablejsapi). Startet nicht, puffert, Bild steht, Fehler oder läuft
 //   länger als erlaubt unter der Mindeststufe (obwohl mehr angeboten wird) -> Strike, lokal überspringen, sofort weiter.
 //   Geschützte Streams werden nie wegen Auflösung übersprungen. Regeln kommen aus den Einstellungen (daten.regeln).
+// - Allgemeine Störung (seit 0.31.1): fallen 3 verschiedene Streams binnen 10 min aus demselben Grund durch, liegt es
+//   nicht an den Streams (z. B. liefert YouTube überall nur 360p). Dann keine Strikes mehr (der Datendienst nimmt die
+//   der Serie zurück); bei „aufloesung“ läuft der Stream weiter statt weiterzuschalten. Vorbei, sobald ein Stream wieder
+//   die Mindeststufe erreicht bzw. eine Minute ohne Problem läuft.
 // - Mehrere Fernseher: versatz (Nummer des Fernsehers) verschiebt die Reihenfolge, damit nicht alle dasselbe zeigen.
 // - Ton: nur bei ton = "tiere" mit Originalton (Lautstärke aus den Einstellungen), sonst stumm.
 // - Einspieler (z. B. tagesschau in 100 Sekunden): zur eingestellten Minute unterbricht der Beitrag die Rotation und läuft
@@ -25,6 +29,7 @@ function ortszeit() {
 
 const STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"];
 const PRUEFUNG = { startetNichtS: 30, puffertS: 15, stehtS: 20, startMeldenS: 30, endeVorWechselS: 20 };
+const ALLGEMEIN = { anzahl: 3, fensterS: 600, sperreS: 300, erneutS: 300, gutS: 60 };
 
 class LivePlayer {
   constructor(box, texte) {
@@ -41,6 +46,7 @@ class LivePlayer {
     this.medien = []; this.medienModus = "youtube"; this.medienAlle = 3; this.medienPos = 0; this.slotZaehler = 0; this.zaehlSlot = null;
     this.regeln = { takt_s: 180, mindeststufe: "hd720", schlecht_s: 20, sperre_s: 7200 };
     this.gesperrt = {};
+    this.serie = []; this.allgemein = null;   // letzte Strikes {id, grund, zeit}; allgemeine Störung {grund, gemeldet}
     this.fest = null; this.festSlot = null; this.id = null; this.frame = null; this.z = null;
     this.aus = false;                       // Baustein versteckt (Bedingung) -> kein Video laden, spart Rechenzeit
     this.empfang = (e) => this.nachricht(e);
@@ -281,7 +287,7 @@ class LivePlayer {
     this.id = id;
     this.z = { start: Date.now(), laeuft: false, puffer: 0, letzteZeit: null, letzteBewegung: Date.now(),
                qualitaet: null, angemeldet: false, status: null, stufe: null, startGemeldet: false, endeGemeldet: false,
-               schlechtSeit: null };
+               schlechtSeit: null, gutSeit: null };
     this.leer.style.display = id ? "none" : "flex";
     if (!id) return;
     const f = document.createElement("iframe");
@@ -333,13 +339,15 @@ class LivePlayer {
     if (z.status === 1) z.laeuft = true;
     if (z.status === 3) z.puffer += 1;
     if (!z.angemeldet) return;
+    if (this.allgemein) this.allgemeinPruefen(z, jetzt);
+    const aufl = !(this.allgemein && this.allgemein.grund === "aufloesung");   // bei allgemeiner Störung nicht weiterschalten
     if (!z.laeuft && alter > PRUEFUNG.startetNichtS) return this.strike("startet_nicht");
     if (z.puffer > PRUEFUNG.puffertS) return this.strike("puffert");
     if (z.status === 1 && (jetzt - z.letzteBewegung) / 1000 > PRUEFUNG.stehtS) return this.strike("steht");
     // Läuft unter der Mindeststufe, obwohl mehr angeboten wird – nach schlecht_s am Stück weiter
     const angebotGut = z.qualitaet && z.qualitaet.some((q) => STUFEN.includes(q) && this.gut(q));
-    if (!geschuetzt && z.laeuft && alter > 20 && z.qualitaet && !angebotGut) return this.strike("aufloesung");
-    const unter = !geschuetzt && z.status === 1 && STUFEN.includes(z.stufe) && !this.gut(z.stufe) && angebotGut;
+    if (aufl && !geschuetzt && z.laeuft && alter > 20 && z.qualitaet && !angebotGut) return this.strike("aufloesung");
+    const unter = aufl && !geschuetzt && z.status === 1 && STUFEN.includes(z.stufe) && !this.gut(z.stufe) && angebotGut;
     z.schlechtSeit = unter ? (z.schlechtSeit || jetzt) : null;
     if (unter && (jetzt - z.schlechtSeit) / 1000 > this.regeln.schlecht_s) {
       if (!z.startGemeldet) { z.startGemeldet = true; this.meldeStufe("start"); }
@@ -359,9 +367,37 @@ class LivePlayer {
     melde("qualitaet", { video_id: this.id, stufe, beste, phase });
   }
 
+  allgemeinPruefen(z, jetzt) {
+    const a = this.allgemein;
+    // Ende erst nach gutS am Stück – YouTube beginnt oft hoch und stuft dann ab (so fing es am 2026-11-07 an)
+    const gut = a.grund === "aufloesung" ? z.status === 1 && STUFEN.includes(z.stufe) && this.gut(z.stufe) : z.status === 1;
+    z.gutSeit = gut ? (z.gutSeit || jetzt) : null;
+    const ok = gut && (jetzt - z.gutSeit) / 1000 > ALLGEMEIN.gutS;
+    if (ok) { this.allgemein = null; this.serie = []; melde("allgemein", { grund: a.grund, ende: true }); }
+    else if (jetzt - a.gemeldet > ALLGEMEIN.erneutS * 1000) { a.gemeldet = jetzt; melde("allgemein", { grund: a.grund }); }
+  }
+
   strike(grund) {
     const id = this.id; if (!id) return;
-    this.gesperrt[id] = Date.now() + (this.regeln.sperre_s || 7200) * 1000;
+    const jetzt = Date.now();
+    if (!this.allgemein) {
+      this.serie = this.serie.filter((x) => jetzt - x.zeit < ALLGEMEIN.fensterS * 1000 && x.id !== id);
+      this.serie.push({ id, grund, zeit: jetzt });
+      const gleich = this.serie.filter((x) => x.grund === grund);
+      if (gleich.length >= ALLGEMEIN.anzahl) {
+        this.allgemein = { grund, gemeldet: jetzt };
+        for (const x of gleich) delete this.gesperrt[x.id];      // die Serie war nicht ihre Schuld
+        melde("allgemein", { grund });
+        if (grund === "aufloesung") return;                        // weiterlaufen lassen
+      }
+    }
+    if (this.allgemein && this.allgemein.grund === grund) {        // nur lokal kurz überspringen, kein Strike
+      this.gesperrt[id] = jetzt + ALLGEMEIN.sperreS * 1000;
+      if (this.vorrang && this.vorrang.video_id === id) this.vorrang = null;
+      this.tick();
+      return;
+    }
+    this.gesperrt[id] = jetzt + (this.regeln.sperre_s || 7200) * 1000;
     if (this.vorrang && this.vorrang.video_id === id) this.vorrang = null;
     melde("strike", { video_id: id, grund });
     this.tick();

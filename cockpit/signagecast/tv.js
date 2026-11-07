@@ -108,6 +108,7 @@ const TEXTE = {
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
             software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
             bildrate: (n) => `„${n}“ ruckelt: zu wenige Bilder/s – Leistungstest starten`,
+            allgemein: (g, seit) => `Seit ${seit} fallen alle Streams durch (${{ aufloesung: "Auflösung zu niedrig", puffert: "puffert", steht: "Bild steht", fehler: "Fehler", startet_nicht: "startet nicht" }[g] || g}) – keine Strikes, vermutlich Störung bei YouTube oder im Browser`,
             doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
     bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
@@ -375,6 +376,7 @@ const TEXTE = {
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
             software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
             bildrate: (n) => `“${n}” stutters: too few frames/s – run the performance test`,
+            allgemein: (g, seit) => `Since ${seit} all streams fail (${{ aufloesung: "resolution too low", puffert: "buffering", steht: "picture frozen", fehler: "error", startet_nicht: "does not start" }[g] || g}) – no strikes, probably a YouTube or browser problem`,
             doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
     bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
@@ -1181,6 +1183,7 @@ async function todoZeichnen(s) {
   const neu = (stufe, text, seite) => l.push({ stufe, text, seite });
   if (s.ha.url && !s.ha.ok) neu("warn", T.todo.ha, "ha");
   for (const n of s.bildrate_niedrig || []) neu("warn", T.todo.bildrate(n), "leistung");
+  if (s.allgemein) neu("warn", T.todo.allgemein(s.allgemein.grund, s.allgemein.seit.slice(11)), "streams");
   for (const n of s.doppelt_hoch || []) neu("warn", T.todo.doppelt(n), "leistung");
   for (const g of s.player || []) if (g.gesehen && !g.online) neu("warn", T.todo.player(g.name), "player");
   const sa = s.sicherung_auto || {};
