@@ -64,6 +64,8 @@ THEMEN_ORTE = [
     (r"maho|st\.? ?maarten|sint maarten|saint martin", 18.04, -63.12),
     (r"times square|manhattan|new york|nyc|brooklyn", 40.76, -73.99),
     (r"las vegas", 36.17, -115.14),
+    (r"new orleans", 29.95, -90.07),
+    (r"north sea|nordsee|sylt|wadden|wattenmeer|helgoland", 54.5, 8.0),
     (r"dubai|abu dhabi", 25.2, 55.27),
     (r"jerusalem|tel aviv|israel", 31.78, 35.22),
     (r"istanbul|turkey|türkei", 41.01, 28.98),
@@ -723,8 +725,15 @@ class Streams:
             ids = [vid for kk, liste in ergebnisse if kk == k for vid, t in liste
                    if not bekannt(vid) and vid not in neu_ids and vid not in kat
                    and wort.search(t) and not THEMEN_AUSSCHLUSS.search(t)]
-            for vid in list(dict.fromkeys(ids))[:8]:
+            orte = {}
+            for vid in dict.fromkeys(ids):
+                o = self.ort(funde[vid])
+                if o and orte.get(o, 0) >= 2:
+                    continue                      # höchstens 2 vom selben Ort je Thema (sonst 6× Times Square)
+                orte[o] = orte.get(o, 0) + (o is not None)
                 kat[vid] = k
+                if sum(1 for x in kat.values() if x == k) >= 8:
+                    break
         neu_ids += list(kat)
 
         def einbettbar(vid):

@@ -1304,6 +1304,8 @@ class Themen032(unittest.TestCase):
         ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
         gefragt = []
         treffer = {"times square live cam": [("aaaaaaaaaaa", "Times Square LIVE cam New York"),
+                                             ("eeeeeeeeeee", "Times Square crossroads live"),
+                                             ("fffffffffff", "Times Square 1560 Broadway live"),
                                              ("bbbbbbbbbbb", "lofi city beats radio")],
                    "iss live earth from space": [("ccccccccccc", "ISS Live – Earth from space")],
                    "waterhole live cam": [("ddddddddddd", "Waterhole cam Kruger")]}
@@ -1327,6 +1329,7 @@ class Themen032(unittest.TestCase):
         for titel in ("Ocean Ambience 4K Waves Sounds", "The Wedge Raw Footage | loop", "Maria's Store Cam6 Davao City"):
             self.assertTrue(ST.THEMEN_AUSSCHLUSS.search(titel), titel)
         self.assertNotIn("bbbbbbbbbbb", d)                                             # Musik aussortiert
+        self.assertEqual(sum(1 for x in "aef" if x * 11 in d), 2)                         # höchstens 2 vom selben Ort
         self.assertEqual(d["ccccccccccc"]["kategorie"], "weltraum")
         self.assertEqual(d["ddddddddddd"]["kategorie"], "neu")
         self.assertFalse(any(b in gefragt for b in ST.THEMEN["bahn"]["begriffe"]))     # ausgeschaltet: keine Anfragen

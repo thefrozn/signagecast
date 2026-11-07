@@ -4,7 +4,8 @@
 - **More than animals – eight new topics:** cities & squares, beaches & coasts, mountains & ski, harbours & ships,
   airports & planes, trains & railways, space & Earth, natural wonders. Each topic has its own search terms and title
   words; the nightly search only asks YouTube for topics that are switched on, sorts the finds into their category and
-  takes the location from the title (extra places such as Maho Beach, Times Square, Dubai, Iceland). Space (and northern
+  takes the location from the title (exact places such as Maho Beach, Times Square, Dubai, Iceland first; at most two
+  streams of the same place per topic). Space (and northern
   lights) ignore the daylight rule. Categories are grouped into *Animals* and *More topics* in the admin.
 - **New categories start switched off on existing installations:** the settings remember the categories they know
   (`kategorien_bekannt`); a category added by an update is switched off until you switch it on. New installations get
