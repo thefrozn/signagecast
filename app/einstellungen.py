@@ -10,7 +10,11 @@ import sicherung as S
 
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
-KATEGORIEN = ["safari", "affen", "meer", "vogel", "baer", "wald", "zoo", "neu"]
+TIER_KATEGORIEN = ["safari", "affen", "meer", "vogel", "baer", "wald", "zoo", "neu"]
+# Seit 0.32: Themen ohne Tiere – eigene Suche je Thema (streams.THEMEN). Neue Kategorien sind bei bestehenden
+# Installationen zunächst aus (siehe kategorien_bekannt), bei neuen an.
+THEMEN_KATEGORIEN = ["stadt", "strand", "berge", "hafen", "flug", "bahn", "weltraum", "natur"]
+KATEGORIEN = TIER_KATEGORIEN + THEMEN_KATEGORIEN
 AUFNAHMEN = (720, 1080, 1440)             # Höhe der Aufnahme (Chromium zeichnet in 16:9)
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
 
@@ -77,6 +81,7 @@ STANDARD = {
         "strike_grenze": 3,               # ab so vielen Strikes nicht mehr zeigen
         "sperre_h": 2,                    # nach einem Strike so lange überspringen
         "kategorien_aus": [],             # abgeschaltete Kategorien
+        "kategorien_bekannt": list(KATEGORIEN),   # seit 0.32: was es beim letzten Speichern gab – Neues startet aus
     },
     "suche": {
         "aktiv": True,
@@ -339,6 +344,12 @@ def pruefen(e):
     if "strike_grenze" in v: sv["strike_grenze"] = _zahl(v["strike_grenze"], 1, 20, int)
     if "sperre_h" in v: sv["sperre_h"] = _zahl(v["sperre_h"], 0, 72)
     if "kategorien_aus" in v: sv["kategorien_aus"] = [k for k in v["kategorien_aus"] if k in KATEGORIEN]
+    # Neue Kategorien bei bestehenden Installationen aus: Einstellungen von vor 0.32 kennen nur die Tier-Kategorien.
+    # Ganz neue Installation (noch kein „video“) bekommt alle eingeschaltet.
+    if "video" in e:
+        bekannt = v.get("kategorien_bekannt") if isinstance(v.get("kategorien_bekannt"), list) else TIER_KATEGORIEN
+        sv["kategorien_aus"] += [k for k in KATEGORIEN if k not in bekannt and k not in sv["kategorien_aus"]]
+    sv["kategorien_bekannt"] = list(KATEGORIEN)
     su = e.get("suche", {})
     ss = s["suche"]
     if "aktiv" in su: ss["aktiv"] = bool(su["aktiv"])

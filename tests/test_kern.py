@@ -1282,5 +1282,58 @@ class OhneGlobalenVideoschalter0311(unittest.TestCase):
         self.assertEqual([t["video"] for t in s["fernseher"]], [True])
 
 
+class Themen032(unittest.TestCase):
+    """Seit 0.32: Themen ohne Tiere – neu bei bestehenden Installationen aus, eigene Suche, Weltraum ohne Tag/Nacht."""
+
+    def setUp(self):
+        self.e = E.pruefen({})
+        self.s = ST.Streams(lambda: self.e)
+
+    def test_neue_kategorien_bei_alter_installation_aus(self):
+        self.assertEqual(E.pruefen({})["video"]["kategorien_aus"], [])                 # neue Installation: alles an
+        alt = E.pruefen({"video": {"takt_min": 3, "kategorien_aus": ["affen"]}})      # von vor 0.32
+        self.assertEqual(alt["video"]["kategorien_aus"], ["affen"] + E.THEMEN_KATEGORIEN)
+        alt["video"]["kategorien_aus"].remove("stadt")                                # Nutzer schaltet Städte ein
+        self.assertNotIn("stadt", E.pruefen(alt)["video"]["kategorien_aus"])           # bleibt an
+        self.assertEqual(set(ST.THEMEN), set(E.THEMEN_KATEGORIEN))
+
+    def test_suche_je_thema(self):
+        self.e["video"]["kategorien_aus"] = ["bahn"]
+        ST.schreib(ST.STREAMS, {"streams": {}, "abgelehnt": []})
+        ST.schreib(ST.STRIKES, {})
+        ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
+        gefragt = []
+        treffer = {"times square live cam": [("aaaaaaaaaaa", "Times Square LIVE cam New York"),
+                                             ("bbbbbbbbbbb", "lofi city beats radio")],
+                   "iss live earth from space": [("ccccccccccc", "ISS Live – Earth from space")],
+                   "waterhole live cam": [("ddddddddddd", "Waterhole cam Kruger")]}
+        def suche(b):
+            gefragt.append(b)
+            return treffer.get(b, [])
+        self.s._suche = suche
+        alt = ST.oembed
+        try:
+            ST.oembed = lambda vid: True
+            self.s.suchen()
+        finally:
+            ST.oembed = alt
+        d = self.s.alle()["streams"]
+        self.assertEqual(d["aaaaaaaaaaa"]["kategorie"], "stadt")
+        self.assertIsNotNone(d["aaaaaaaaaaa"]["breite"])                               # Ort aus der Liste der Einstellungen
+        self.assertEqual(self.s.ort("Maho Beach St Maarten LIVE"), (18.04, -63.12))     # Themen-Orte danach
+        self.assertNotIn("bbbbbbbbbbb", d)                                             # Musik aussortiert
+        self.assertEqual(d["ccccccccccc"]["kategorie"], "weltraum")
+        self.assertEqual(d["ddddddddddd"]["kategorie"], "neu")
+        self.assertFalse(any(b in gefragt for b in ST.THEMEN["bahn"]["begriffe"]))     # ausgeschaltet: keine Anfragen
+
+    def test_weltraum_ohne_ort_und_nacht(self):
+        jetzt = time.time()
+        ST.schreib(ST.STREAMS, {"streams": {"ccccccccccc": {"art": "video", "name": "ISS", "kategorie": "weltraum",
+                                                            "breite": None, "laenge": None, "aktiv": True}}, "abgelehnt": []})
+        ST.schreib(ST.CACHE, {"quellen": {"ccccccccccc": {"video_id": "ccccccccccc", "live": True, "hoehe": 1080, "geprueft": jetzt}}})
+        ST.schreib(ST.STRIKES, {})
+        self.assertEqual([x["video_id"] for x in self.s.liste_bauen()], ["ccccccccccc"])
+
+
 if __name__ == "__main__":
     unittest.main()

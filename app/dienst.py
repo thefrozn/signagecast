@@ -2230,7 +2230,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/status":
             return self.antwort(200, status())
         if pfad == "/api/einstellungen":
-            return self.antwort(200, {"einstellungen": einst_aussen(), "kategorien": E.KATEGORIEN, "stufen": E.STUFEN,
+            return self.antwort(200, {"einstellungen": einst_aussen(), "kategorien": E.KATEGORIEN, "kategorien_themen": E.THEMEN_KATEGORIEN, "stufen": E.STUFEN,
                                       "bausteine": {t: {k: std for k, (_, std) in o.items()} for t, o in L.TYPEN.items()},
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,

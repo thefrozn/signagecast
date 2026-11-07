@@ -11,6 +11,7 @@ header { position: sticky; top: 0; z-index: 2; background: var(--karte); border-
 h1 { margin: 0 0 8px; font-size: 20px; }
 h2 { font-size: 17px; margin: 0 0 10px; }
 h3 { font-size: 15px; margin: 14px 0 6px; }
+h4 { font-size: 13px; margin: 12px 0 4px; color: var(--leise); text-transform: uppercase; letter-spacing: .04em; }
 nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
 nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px 10px; font: inherit; white-space: nowrap;
   border-bottom: 3px solid transparent; cursor: pointer; }

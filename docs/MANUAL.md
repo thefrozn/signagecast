@@ -30,6 +30,14 @@ location and (optionally) Home Assistant and shows the TV address.
 
 ## 3. Typical tasks
 
+### More than animals: cities, beaches, space …
+Live videos → Rotation & quality → *Categories (for all TVs)* → **More topics**: cities & squares, beaches & coasts,
+mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders. Each topic has
+its own nightly search (only while it is switched on), sorts what it finds into its category and takes the location
+from the title (daylight rule as for animals; space and northern lights ignore it). On an update new categories start
+**switched off**, so your rotation does not change until you switch them on. Per TV you can switch categories off again
+under TVs → Live video → Categories.
+
 ### Show something different at night
 TVs → *Schedule*: add a time range with another layout or “black”. A schedule always wins over the carousel.
 
@@ -223,6 +231,8 @@ It is never shown again. Create a new one and update the senders.
 
 Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Player – fertiges Image je Bildschirm mit WLAN,
 zentrale Verwaltung; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
+
+Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Rotation & Qualität → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten

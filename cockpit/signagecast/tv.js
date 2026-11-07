@@ -278,7 +278,10 @@ const TEXTE = {
       "Streamliste (mit Schutz-, Sperr- und Fundliste), Strikes, hochgeladene Bilder und den Verlauf der Diagramme – alles für eine neue Installation. Alte .json-Sicherungen und Profile lassen sich weiter einspielen.",
     wirklichEinspielen: "Einstellungen und Streamliste werden ersetzt. Fortfahren?",
     kat: { safari: "Safari Afrika", affen: "Affen", meer: "Unterwasser & Meer", vogel: "Vögel", baer: "Bären, Wölfe, Eisbären",
-           wald: "Wald & Wildtiere", zoo: "Zoo & Exoten", neu: "Neu gefunden" },
+           wald: "Wald & Wildtiere", zoo: "Zoo & Exoten", neu: "Neu gefunden",
+           stadt: "Städte & Plätze", strand: "Strände & Küsten", berge: "Berge & Ski", hafen: "Häfen & Schiffe",
+           flug: "Flughäfen & Flugzeuge", bahn: "Züge & Bahn", weltraum: "Weltraum & Erde", natur: "Naturschauspiele" },
+    katGruppe: { tiere: "Tiere", themen: "Weitere Themen" },
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
@@ -626,7 +629,10 @@ const TEXTE = {
       "(with protected, rejected and found streams), strikes, uploaded pictures and the chart history – everything for a new installation. Old .json backups and profiles can still be restored.",
     wirklichEinspielen: "Settings and stream list will be replaced. Continue?",
     kat: { safari: "Safari Africa", affen: "Apes & monkeys", meer: "Underwater & sea", vogel: "Birds", baer: "Bears, wolves, polar bears",
-           wald: "Forest & wildlife", zoo: "Zoo & exotic", neu: "Newly found" },
+           wald: "Forest & wildlife", zoo: "Zoo & exotic", neu: "Newly found",
+           stadt: "Cities & squares", strand: "Beaches & coasts", berge: "Mountains & ski", hafen: "Harbours & ships",
+           flug: "Airports & planes", bahn: "Trains & railways", weltraum: "Space & Earth", natur: "Natural wonders" },
+    katGruppe: { tiere: "Animals", themen: "More topics" },
     aufgabe: { streamliste: "Check stream list", suche: "Search new streams", wache: "Measure quality" },
   },
 };
@@ -672,11 +678,15 @@ const dauer = (s) => { const t = Math.floor(s / 86400), h = Math.floor(s % 86400
 const ORT = () => E.sprache === "en" ? "en-GB" : "de-DE";   // Zeitformat nach Sprache der Verwaltung, 24 h (seit 0.23.2)
 const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString(ORT(), { hour: "2-digit", minute: "2-digit" }) : "–";
 
-let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
+let E = null, KATEGORIEN = [], KAT_THEMEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
 // YouTube-Qualitätsstufen als Auflösung anzeigen (intern bleiben die YouTube-Namen)
 const STUFE_P = { tiny: "144p", small: "240p", medium: "360p", large: "480p", hd720: "720p", hd1080: "1080p",
                   hd1440: "1440p", hd2160: "2160p", highres: "4320p" };
 const stufeText = (x) => STUFE_P[x] || x;
+// Kategorie-Schalter in zwei Gruppen (seit 0.32): Tiere und weitere Themen
+const katSchalter = (prefix, aus, h = "h4") => [["tiere", KATEGORIEN.filter((k) => !KAT_THEMEN.includes(k))], ["themen", KAT_THEMEN]]
+  .filter(([, ks]) => ks.length).map(([g, ks]) => `<${h}>${esc(T.katGruppe[g])}</${h}>` +
+    ks.map((k) => `<div class="zeile"><label>${esc(T.kat[k] || k)}</label>${schalter(prefix + k, !aus.includes(k))}</div>`).join("")).join("");
 
 // ---------- Nicht gespeicherte Änderungen (seit 0.17) ----------
 // Eine Eingabe markiert ihre Karte; ein erfolgreicher Speichern-Knopf hebt die Markierung seiner Karte auf
@@ -779,7 +789,7 @@ function hinweiseZeichnen() {
 
 async function einstellungenLaden() {
   const d = await holen("/api/einstellungen");
-  E = d.einstellungen; KATEGORIEN = d.kategorien; STUFEN = d.stufen;
+  E = d.einstellungen; KATEGORIEN = d.kategorien; KAT_THEMEN = d.kategorien_themen || []; STUFEN = d.stufen;
   if (!E.sprache) {                         // Neuinstallation: Sprache aus dem Browser übernehmen und merken
     E.sprache = (cockpit.language || navigator.language || "en").startsWith("de") ? "de" : "en";
     try { await senden("/api/einstellungen", { sprache: E.sprache }); } catch (_) { /* nächstes Mal */ }
@@ -1475,7 +1485,7 @@ async function video(inhalt) {
       <div class="zeile"><label>${esc(T.grenze)}</label>${zahlFeld("grenze", v.strike_grenze, 1, 20)}</div>
       <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div></details>
       <h3>${esc(T.kategorienAlle)}</h3>
-      ${KATEGORIEN.map((k) => `<div class="zeile"><label>${esc(T.kat[k] || k)}</label>${schalter("kat_" + k, !v.kategorien_aus.includes(k))}</div>`).join("")}</div>
+      ${katSchalter("kat_", v.kategorien_aus)}</div>
     <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
   const n = (id) => Number($("#" + id).value);
   $("#ok").onclick = (e) => speichernE({
@@ -1763,7 +1773,7 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" style="width:70px"></span></div>
         <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
-        ${KATEGORIEN.map((x) => `<div class="zeile"><label>${esc(T.kat[x] || x)}</label>${schalter("kat_" + x, !t.kategorien_aus.includes(x))}</div>`).join("")}</details>
+        ${katSchalter("kat_", t.kategorien_aus)}</details>
         <h3>${esc(T.abschnitt.ton)}</h3>
         <div class="zeile"><label>${esc(T.ton)}</label><select name="ton">${Object.keys(T.tonArt).map((x) => `<option value="${x}" ${x === t.ton ? "selected" : ""}>${esc(T.tonArt[x])}</option>`).join("")}</select></div>
         <div class="zeile" name="senderZeile"><label>${esc(T.sender)}</label><select name="radio_sender" class="breit"><option value="">${esc(T.keinSender)}</option>

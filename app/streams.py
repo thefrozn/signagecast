@@ -28,6 +28,63 @@ HOEHEN = [(2160, "hd2160"), (1440, "hd1440"), (1080, "hd1080"), (720, "hd720"), 
           (240, "small"), (1, "tiny")]
 GRUENDE = {"aufloesung", "puffert", "steht", "fehler", "startet_nicht"}
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
+# Seit 0.32: Themen ohne Tiere. Je Thema eigene Suchbegriffe und Pflichtwörter im Titel; gesucht wird nur, wenn das
+# Thema eingeschaltet ist (keine unnötigen Anfragen). ohne_tag: Tag/Nacht am Ort gilt nicht (ganzes Thema oder Titel).
+THEMEN = {
+    "stadt": {"begriffe": ["city live cam", "times square live cam", "shibuya crossing live cam", "old town square live cam",
+                           "piazza live webcam", "city skyline live cam"],
+              "woerter": r"city|square|plaza|piazza|platz|crossing|downtown|street|skyline|old town|altstadt|harbourfront"},
+    "strand": {"begriffe": ["beach live cam", "surf live cam", "island beach live cam", "pier live cam"],
+               "woerter": r"beach|strand|surf|shore|coast|küste|playa|pier|lagoon|bay\b"},
+    "berge": {"begriffe": ["mountain live cam", "alps live webcam", "ski resort live cam", "summit live cam"],
+              "woerter": r"mountain|alps|alpen|\bberg|ski|summit|gipfel|peak|glacier|gletscher|valley|zugspitze|matterhorn|jungfrau"},
+    "hafen": {"begriffe": ["harbor live cam ships", "port live cam ship traffic", "panama canal live cam", "ferry live cam"],
+              "woerter": r"\bport\b|harbou?r|hafen|ship|schiff|canal|kanal|vessel|ferry|fähre|cruise|container|lock\b|schleuse"},
+    "flug": {"begriffe": ["airport live cam", "plane spotting live", "runway live cam"],
+             "woerter": r"airport|flughafen|plane|runway|landing|spotting|aviation|aircraft|flugzeug"},
+    "bahn": {"begriffe": ["train live cam", "railway live cam", "railcam live"],
+             "woerter": r"train|railway|railroad|\brail|bahn|\bzug\b|railcam|locomotive|station"},
+    "weltraum": {"begriffe": ["iss live earth from space", "nasa live stream earth", "space station live"],
+                 "woerter": r"\biss\b|space station|nasa|earth from space|from space|weltraum|orbit", "ohne_tag": True},
+    "natur": {"begriffe": ["volcano live cam", "northern lights live cam", "waterfall live cam", "niagara falls live cam",
+                           "geyser live cam"],
+              "woerter": r"volcano|vulkan|aurora|northern lights|nordlicht|waterfall|wasserfall|falls\b|geyser|geysir|eruption",
+              "ohne_tag_titel": r"aurora|northern lights|nordlicht"},
+}
+# Für Themen: Musik, Spiele, Nachrichten, Aufzeichnungen u. Ä. aussortieren (die Tier-Ausschlüsse wie „city“, „beach“,
+# „airport“ gelten hier nicht)
+THEMEN_AUSSCHLUSS = re.compile(r"radio|music|song|lofi|sleep|relax|asmr|\bgame|gaming|minecraft|roblox|simulator|\bsim\b|"
+                               r"msfs|cartoon|kids|news|stock|crypto|compilation|archive|documentary|movie|episode|"
+                               r"meditation|ambient|screensaver|nature sounds|\bbar\b|church|hunting|\batc\b|scanner|"
+                               r"police|ukraine|\bwar\b|model railway|modellbahn|gta|replay|highlights", re.I)
+# Orte für Themen-Streams, die die Liste in den Einstellungen nicht kennt (nach ihr geprüft)
+THEMEN_ORTE = [
+    (r"maho|st\.? ?maarten|sint maarten|saint martin", 18.04, -63.12),
+    (r"times square|manhattan|new york|nyc|brooklyn", 40.76, -73.99),
+    (r"las vegas", 36.17, -115.14),
+    (r"dubai|abu dhabi", 25.2, 55.27),
+    (r"jerusalem|tel aviv|israel", 31.78, 35.22),
+    (r"istanbul|turkey|türkei", 41.01, 28.98),
+    (r"iceland|island|reykjavik|reykjavík", 64.13, -21.9),
+    (r"mexico|méxico|cancun|cancún|tulum", 21.16, -86.85),
+    (r"rio de janeiro|copacabana", -22.97, -43.18),
+    (r"cape town|kapstadt", -33.92, 18.42),
+    (r"niagara", 43.08, -79.07),
+    (r"yellowstone|old faithful", 44.46, -110.83),
+    (r"etna|sicily|sizilien", 37.75, 14.99),
+    (r"venice|venezia|venedig", 45.43, 12.33),
+    (r"prague|praha|prag", 50.09, 14.42),
+    (r"paris", 48.86, 2.35),
+    (r"london", 51.51, -0.13),
+    (r"tromsø|tromso|lofoten|abisko|lapland|lappland", 69.0, 19.0),
+]
+
+
+def ohne_tag(s):
+    """Tag/Nacht am Ort gilt nicht: am Stream vermerkt (z. B. Nordlicht) oder für das ganze Thema (Weltraum)."""
+    return bool(s.get("ohne_tag") or THEMEN.get(s.get("kategorie"), {}).get("ohne_tag"))
+
+
 ID = re.compile(r"[\w-]{11}")
 KANAL = re.compile(r"UC[\w-]{22}")
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
@@ -405,6 +462,9 @@ class Streams:
                     return o["breite"], o["laenge"]
             except re.error:
                 continue
+        for muster, b, l in THEMEN_ORTE:
+            if re.search(muster, titel, re.I):
+                return b, l
         return None
 
     # ---------- Zustand je Stream (seit 0.31) ----------
@@ -421,6 +481,8 @@ class Streams:
             return "inaktiv", a
         if s.get("kategorie") in v["kategorien_aus"]:
             return "kategorie_aus", a
+        if ohne_tag(s):
+            return self._basis(s, x, e, st, jetzt), a      # seit 0.32: z. B. Weltraum – Tag/Nacht am Ort gilt nicht
         if s.get("breite") is None:
             return "ohne_ort", a                           # Ort unbekannt: Tag/Nacht nicht bestimmbar
         basis = self._basis(s, x, e, st, jetzt)
@@ -456,10 +518,10 @@ class Streams:
         v = e["video"]
         plan = []
         for sid, s in d["streams"].items():
-            if not s.get("aktiv", True) or s.get("kategorie") in v["kategorien_aus"] or s.get("breite") is None:
+            if not s.get("aktiv", True) or s.get("kategorie") in v["kategorien_aus"] or (s.get("breite") is None and not ohne_tag(s)):
                 continue
             alt = jetzt - qc.get(sid, {}).get("geprueft", 0)
-            if not v["nur_tag"] or sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"]:
+            if not v["nur_tag"] or ohne_tag(s) or sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"]:
                 if alt > PRUEF_ALTER_S:
                     plan.append((2, -alt, sid, s))
                 continue
@@ -613,7 +675,7 @@ class Streams:
         raus, tag, behalten = [], 0, 0
         for k in entdeckt:
             s = streams[k]
-            ist_tag = s.get("breite") is not None and (not v["nur_tag"] or
+            ist_tag = ohne_tag(s) or s.get("breite") is not None and (not v["nur_tag"] or
                                                        sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"])
             if (ist_tag and tag >= max_tag) or behalten >= MAX_GEFUNDEN_GESAMT:
                 raus.append(k)
@@ -633,18 +695,34 @@ class Streams:
         nein = re.compile("|".join(su["ausschluss"]) or "^$", re.I)
         d = self.alle()
         st = self.strikes()
+        # Seit 0.32 zusätzlich je eingeschaltetem Thema; Tier-Treffer haben Vorrang
+        themen = [k for k in THEMEN if k not in v["kategorien_aus"]]
+        auftraege = [(b, None) for b in su["begriffe"]] + [(b, k) for k in themen for b in THEMEN[k]["begriffe"]]
         try:
             with ThreadPoolExecutor(max_workers=2) as pool:
-                funde = {vid: t for l in pool.map(self._suche, su["begriffe"]) for vid, t in l}
+                ergebnisse = list(pool.map(lambda a: (a[1], self._suche(a[0])), auftraege))
         except Gesperrt:
             cache["pause_bis"] = time.time() + PAUSE_BEI_429_S
             schreib(CACHE, cache)
             self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "pause": True, "neu": []}
             return self.status["suche"]
         heute = time.strftime("%Y-%m-%d")
-        neu_ids = [vid for vid, t in funde.items() if vid not in d["streams"] and vid not in d["abgelehnt"]
-                   and tier.search(t) and not nein.search(t)
-                   and st.get(vid, {}).get("strikes", 0) < v["strike_grenze"]][:30]
+        funde, kat = {}, {}
+        for k, liste in ergebnisse:
+            for vid, t in liste:
+                funde.setdefault(vid, t)
+        bekannt = lambda vid: vid in d["streams"] or vid in d["abgelehnt"] or st.get(vid, {}).get("strikes", 0) >= v["strike_grenze"]
+        neu_ids = [vid for k, liste in ergebnisse if k is None for vid, t in liste
+                   if not bekannt(vid) and tier.search(t) and not nein.search(t)]
+        neu_ids = list(dict.fromkeys(neu_ids))[:30]
+        for k in themen:
+            wort = re.compile(THEMEN[k]["woerter"], re.I)
+            ids = [vid for kk, liste in ergebnisse if kk == k for vid, t in liste
+                   if not bekannt(vid) and vid not in neu_ids and vid not in kat
+                   and wort.search(t) and not THEMEN_AUSSCHLUSS.search(t)]
+            for vid in list(dict.fromkeys(ids))[:8]:
+                kat[vid] = k
+        neu_ids += list(kat)
 
         def einbettbar(vid):
             try:
@@ -660,10 +738,14 @@ class Streams:
                 if vid in d["streams"] or vid in d["abgelehnt"]:
                     continue                      # inzwischen anders bekannt (z. B. Profil eingespielt) – nie überschreiben
                 o = self.ort(funde[vid])
+                k = kat.get(vid, "neu")
+                th = THEMEN.get(k, {})
                 d["streams"][vid] = {"art": "video", "name": self.kurzname(funde[vid]), "titel": funde[vid][:160],
-                                     "kategorie": "neu", "breite": o[0] if o else None, "laenge": o[1] if o else None,
+                                     "kategorie": k, "breite": o[0] if o else None, "laenge": o[1] if o else None,
                                      "aktiv": True, "geschuetzt": False, "herkunft": "entdeckt", "seit": heute,
                                      "zuletzt_gefunden": heute}
+                if th.get("ohne_tag") or (th.get("ohne_tag_titel") and re.search(th["ohne_tag_titel"], funde[vid], re.I)):
+                    d["streams"][vid]["ohne_tag"] = True
                 neu.append(d["streams"][vid]["name"])
             for vid in funde:
                 if vid in d["streams"] and d["streams"][vid].get("herkunft") == "entdeckt":

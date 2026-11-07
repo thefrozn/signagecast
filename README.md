@@ -19,7 +19,8 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 
 ## Features
 
-- **Live window to the world** – fixed and automatically discovered YouTube live streams (safari, sea, birds, bears …),
+- **Live window to the world** – fixed and automatically discovered YouTube live streams (safari, sea, birds, bears …;
+  since 0.32 also cities, beaches, mountains, harbours, airports, trains, space and natural wonders – switch on what you like),
   rotating every few minutes, only where it is daytime. Bad streams (not starting, buffering, frozen, low resolution) are
   skipped automatically; favourites can be protected, unwanted ones rejected.
 - **Layout editor** – drag, resize and configure elements on a 48 × 27 grid: clock, date, weather, forecast, rooms, tiles
