@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.31.0 (2026-11-07)
+- **Night list instead of lost places:** every stream now has a state – ready, night (with “daylight in …”), not live,
+  resolution too low, paused after strike, blocked, location unknown, not checked yet, inactive. Night streams stay out
+  of the rotation but are kept and checked now and then (every 6 h), so dead ones do not only show up in the morning.
+  Streams where daylight starts within 30 minutes are checked first, so they are ready at sunrise.
+- **Found streams: the limit counts only streams in daylight.** Night streams and streams without a location no longer
+  use up places of *maximum found streams*; a hard limit of 80 found streams applies (location unknown goes first).
+- **Next stream checked in advance:** the TV reports its next and the one after; the data service checks them on
+  YouTube right away (live, embeddable, offered resolution – read from the same page, no extra request), independent
+  of the switch. If one fails, the TV announces another one long before the switch instead of skipping after it.
+  Pre-checks are limited to 10 per 5 minutes on top of the regular 6; HTTP 429 still pauses everything for an hour.
+- **Quality before playing:** streams that offer less than the minimum resolution are not put into the rotation
+  (protected streams still are). A strike now pauses the stream for all TVs for the configured time.
+- **The announcement holds:** “Next: …” only shows checked streams, and the announced stream is the one that comes –
+  also if it got dark there a few minutes before (up to 15 min).
+- **Admin – Streams:** filter by state (with counts, click to filter) and origin (fixed / found), besides text and
+  category; the browser remembers the filter. Cards show the state, “daylight in …” and the offered resolution.
+
 ## v0.30.0 (2026-11-06)
 - **Software bill of materials (SBOM):** every release now carries `signagecast-vX.Y.Z.cdx.json` (CycloneDX 1.5) –
   bundled third-party components with checksums (Material Design Icons, qrcode-generator, hls.js), MediaMTX and the

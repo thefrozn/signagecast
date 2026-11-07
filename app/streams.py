@@ -12,9 +12,17 @@ STRIKES = os.path.join(DATEN, "strikes.json")       # {video_id: {"strikes": n, 
 QUALITAET = os.path.join(DATEN, "qualitaet.json")   # {video_id: {...}} – Meldungen des Players und der Wache
 CACHE = os.path.join(DATEN, "cache.json")           # {"quellen": {id: {"video_id", "live", "geprueft"}}, "pause_bis": t}
 
-PRUEF_ALTER_S = 2 * 3600     # ein Stream wird höchstens alle 2 h bei YouTube geprüft
+PRUEF_ALTER_S = 2 * 3600     # ein Stream am Tag wird höchstens alle 2 h bei YouTube geprüft
+NACHT_PRUEF_S = 6 * 3600     # Nachtstreams ab und an (alle 6 h), damit tote Streams nicht erst morgens auffallen
+VOR_HELL_S = 30 * 60         # wird es am Ort in 30 min hell: vorher prüfen, damit er zum Sonnenaufgang bereit ist
+VOR_ALTER_S = 20 * 60        # angekündigte Streams (nächste/übernächste) müssen höchstens 20 min alt geprüft sein
+VOR_MAX = 10                 # höchstens so viele Vorabprüfungen je 5 min (zusätzlich zu MAX_PRUEFUNGEN)
+NACHLAUF_S = 15 * 60         # wird ein angekündigter Stream dunkel, darf er noch so lange laufen (kein falsches „Nächstes“)
 MAX_PRUEFUNGEN = 6           # höchstens so viele YouTube-Prüfungen je Durchlauf (alle 5 min)
+MAX_GEFUNDEN_GESAMT = 80     # harte Obergrenze gefundener Streams (die Einstellung „max“ zählt nur Streams mit Tag)
 PAUSE_BEI_429_S = 3600       # YouTube sagt "zu viele Anfragen": eine Stunde gar nicht fragen
+HOEHEN = [(2160, "hd2160"), (1440, "hd1440"), (1080, "hd1080"), (720, "hd720"), (480, "large"), (360, "medium"),
+          (240, "small"), (1, "tiny")]
 GRUENDE = {"aufloesung", "puffert", "steht", "fehler", "startet_nicht"}
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
 ID = re.compile(r"[\w-]{11}")
@@ -23,6 +31,7 @@ UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/1
       "Accept-Language": "de-DE,de;q=0.9,en;q=0.8", "Cookie": "CONSENT=YES+1"}
 
 sperre = threading.RLock()
+cache_sperre = threading.Lock()     # Lesen-Ändern-Schreiben von cache.json (Durchlauf und Vorabprüfung laufen parallel)
 
 
 class Gesperrt(Exception):
@@ -67,6 +76,39 @@ def sonnenhoehe(breite, laenge, t=None):
     return math.degrees(math.asin(math.sin(b) * math.sin(dekl) + math.cos(b) * math.cos(dekl) * math.cos(sw)))
 
 
+def hell_ab(breite, laenge, min_hoehe, jetzt=None):
+    """Zeitpunkt, ab dem die Sonne am Ort über min_hoehe steht (jetzt, wenn schon); None, wenn nicht in 36 h (Polarnacht)."""
+    jetzt = time.time() if jetzt is None else jetzt
+    if sonnenhoehe(breite, laenge, jetzt) >= min_hoehe:
+        return jetzt
+    for i in range(1, 36 * 6 + 1):                # in 10-min-Schritten suchen, dann auf die Minute genau
+        t = jetzt + i * 600
+        if sonnenhoehe(breite, laenge, t) >= min_hoehe:
+            for m in range(9, 0, -1):
+                if sonnenhoehe(breite, laenge, t - m * 60) >= min_hoehe:
+                    return t - m * 60
+            return t
+    return None
+
+
+def stufe_aus_hoehe(h):
+    return next((s for grenze, s in HOEHEN if h and h >= grenze), None)
+
+
+def angebotene_hoehe(seite):
+    """Größte angebotene Bildhöhe aus ytInitialPlayerResponse (streamingData) der Videoseite; None, wenn nicht lesbar."""
+    i = seite.find("ytInitialPlayerResponse = ")
+    if i < 0:
+        return None
+    try:
+        d, _ = json.JSONDecoder().raw_decode(seite, i + len("ytInitialPlayerResponse = "))
+        f = (d.get("streamingData") or {}).get("adaptiveFormats") or []
+        h = [x["height"] for x in f if isinstance(x, dict) and isinstance(x.get("height"), int)]
+        return max(h) if h else None
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
 def oembed(video):
     """Titel und Kanal, wenn das Einbetten erlaubt ist (oEmbed 200), sonst None."""
     try:
@@ -78,15 +120,17 @@ def oembed(video):
         return None
 
 
-def ist_live_und_einbettbar(video):
+def seite_pruefen(video):
+    """Live und einbettbar? Dazu die größte angebotene Bildhöhe – aus derselben Seite, keine weitere Abfrage."""
     try:
-        if '"isLiveNow":true' not in lade("https://www.youtube.com/watch?v=" + video):
-            return False
-        return oembed(video) is not None
+        seite = lade("https://www.youtube.com/watch?v=" + video)
+        if '"isLiveNow":true' not in seite:
+            return {"live": False, "hoehe": None}
+        return {"live": oembed(video) is not None, "hoehe": angebotene_hoehe(seite)}
     except Gesperrt:
         raise
     except Exception:
-        return False
+        return {"live": False, "hoehe": None}
 
 
 def aktuelles_video(art, ident):
@@ -137,6 +181,10 @@ class Streams:
         self.liste = []                       # aktuelle Rotationsliste [{video_id, name, kategorie, geschuetzt}]
         self.status = {"zeit": None, "geprueft": 0, "suche": None}
         self.vorrang = None                   # {"video_id", "name", "bis"} – "Jetzt zeigen" aus der Verwaltung
+        self.zustaende = {}                   # {stream_id: {zustand, video_id, hell_ab, nachlauf}} – aus liste_bauen
+        self.vorgemerkt = {}                  # {video_id: zeit} – vom Player angekündigt, Vorabprüfung fällig
+        self.vor_zeiten = []                  # Zeitpunkte der Vorabprüfungen (Begrenzung je 5 min)
+        self.vor_wecken = threading.Event()
         os.makedirs(DATEN, exist_ok=True)
 
     # ---------- Daten ----------
@@ -157,12 +205,15 @@ class Streams:
     def uebersicht(self):
         """Für die Verwaltung: jeder Stream mit Strikes, Qualität, Tag/Nacht und ob er gerade in der Liste ist."""
         d, st, qu, ca = self.alle(), self.strikes(), self.qualitaet(), lies(CACHE, {"quellen": {}})
-        e = self.e()
+        e, jetzt = self.e(), time.time()
         in_liste = {x["video_id"] for x in self.liste}
-        aus = []
+        aus, zaehler = [], {}
         for sid, s in d["streams"].items():
+            z, a = self._zustand(sid, s, e, ca.get("quellen", {}), st, jetzt)
+            zaehler[z] = zaehler.get(z, 0) + 1
             vid = ca["quellen"].get(sid, {}).get("video_id") or (sid if s.get("art") == "video" else None)
             q = qu.get(vid or "", {})
+            h = ca["quellen"].get(sid, {}).get("hoehe")
             aus.append(dict(s, id=sid, video_id=vid,
                             strikes=st.get(vid or "", {}).get("strikes", 0),
                             strike_gruende=st.get(vid or "", {}).get("gruende", [])[-3:],
@@ -170,11 +221,14 @@ class Streams:
                             geprueft=ca["quellen"].get(sid, {}).get("geprueft"),
                             tag=sonnenhoehe(s["breite"], s["laenge"]) >= e["video"]["min_sonnenhoehe"]
                             if s.get("breite") is not None else None,
-                            in_rotation=vid in in_liste,
+                            in_rotation=vid in in_liste, zustand=z, hell_ab=a["hell_ab"], nachlauf=a["nachlauf"],
+                            angeboten=stufe_aus_hoehe(h), angeboten_hoehe=h,
+                            pause_bis=(st.get(vid or "", {}).get("zeit", 0) + e["video"]["sperre_h"] * 3600) if z == "pause" else None,
                             qualitaet={k: q.get(k) for k in ("anteil_720p_plus", "verloren_prozent", "codecs",
                                                               "proben", "beste_angeboten", "zuletzt")}))
         return {"streams": sorted(aus, key=lambda x: (x.get("herkunft") != "fest", x.get("kategorie", ""), x.get("name", ""))),
-                "abgelehnt": d.get("abgelehnt", []), "pause_bis": ca.get("pause_bis", 0)}
+                "abgelehnt": d.get("abgelehnt", []), "pause_bis": ca.get("pause_bis", 0), "zaehler": zaehler,
+                "vorab": self.status.get("vorab")}
 
     def aendern(self, sid, felder):
         with sperre:
@@ -240,6 +294,7 @@ class Streams:
             e = d.setdefault(video, {"strikes": 0, "gruende": []})
             if not geschuetzt:
                 e["strikes"] += 1
+                e["zeit"] = int(time.time())     # seit 0.31: Pause für alle Fernseher (sperre_h), siehe _basis
             e["gruende"] = (e["gruende"] + [f"{time.strftime('%Y-%m-%d %H:%M')} {grund}" + (" (geschützt)" if geschuetzt else "")])[-10:]
             schreib(STRIKES, d)
         return True
@@ -300,64 +355,169 @@ class Streams:
                 continue
         return None
 
+    # ---------- Zustand je Stream (seit 0.31) ----------
+    def _zustand(self, sid, s, e, qc, st, jetzt):
+        """(zustand, angaben) eines Streams. zustand: inaktiv, kategorie_aus, ohne_ort, nacht, ungeprueft, nicht_live,
+        gesperrt, pause, qualitaet, bereit. angaben: video_id, hell_ab, nachlauf (gerade dunkel geworden, noch zeigbar)."""
+        v = e["video"]
+        a = {"video_id": None, "hell_ab": None, "nachlauf": False}
+        x = qc.get(sid)
+        if x is None and s.get("art", "video") == "video":
+            x = {"video_id": sid, "live": True}            # nie geprüft: feste Videos zunächst als live annehmen
+        a["video_id"] = (x or {}).get("video_id")
+        if not s.get("aktiv", True):
+            return "inaktiv", a
+        if s.get("kategorie") in v["kategorien_aus"]:
+            return "kategorie_aus", a
+        if s.get("breite") is None:
+            return "ohne_ort", a                           # Ort unbekannt: Tag/Nacht nicht bestimmbar
+        basis = self._basis(s, x, e, st, jetzt)
+        if v["nur_tag"] and sonnenhoehe(s["breite"], s["laenge"], jetzt) < v["min_sonnenhoehe"]:
+            a["hell_ab"] = hell_ab(s["breite"], s["laenge"], v["min_sonnenhoehe"], jetzt)
+            a["nachlauf"] = basis == "bereit" and sonnenhoehe(s["breite"], s["laenge"], jetzt - NACHLAUF_S) >= v["min_sonnenhoehe"]
+            return "nacht", a
+        return basis, a
+
+    def _basis(self, s, x, e, st, jetzt):
+        """Live, Strikes und Qualität – unabhängig von Tag/Nacht."""
+        v = e["video"]
+        if x is None:
+            return "ungeprueft"                            # Kanal noch nie geprüft: aktuelles Video unbekannt
+        vid = x.get("video_id")
+        if not x.get("live") or not vid:
+            return "nicht_live"
+        if s.get("geschuetzt"):
+            return "bereit"                                # geschützte nie wegen Strikes oder Auflösung aussortieren
+        k = st.get(vid, {})
+        if k.get("strikes", 0) >= v["strike_grenze"]:
+            return "gesperrt"
+        if k.get("zeit", 0) + v["sperre_h"] * 3600 > jetzt:
+            return "pause"                                 # letzter Strike noch nicht lange her (für alle Fernseher)
+        stufe = stufe_aus_hoehe(x.get("hoehe"))
+        if stufe and STUFEN.index(stufe) < STUFEN.index(v["mindeststufe"]):
+            return "qualitaet"                             # bietet weniger als die Mindeststufe an
+        return "bereit"
+
+    def _pruefplan(self, d, e, qc, jetzt):
+        """Welche Streams der Durchlauf bei YouTube prüft, nach Vorrang: (1) wird in 30 min hell, (2) Tag, älter als 2 h,
+        (3) Nacht, älter als 6 h. Innerhalb gleichen Vorrangs der am längsten nicht geprüfte zuerst."""
+        v = e["video"]
+        plan = []
+        for sid, s in d["streams"].items():
+            if not s.get("aktiv", True) or s.get("kategorie") in v["kategorien_aus"] or s.get("breite") is None:
+                continue
+            alt = jetzt - qc.get(sid, {}).get("geprueft", 0)
+            if not v["nur_tag"] or sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"]:
+                if alt > PRUEF_ALTER_S:
+                    plan.append((2, -alt, sid, s))
+                continue
+            h = hell_ab(s["breite"], s["laenge"], v["min_sonnenhoehe"], jetzt)
+            if h is not None and h - jetzt <= VOR_HELL_S and alt > VOR_HELL_S:
+                plan.append((1, -alt, sid, s))
+            elif alt > NACHT_PRUEF_S:
+                plan.append((3, -alt, sid, s))
+        return [(sid, s) for *_, sid, s in sorted(plan, key=lambda p: p[:2])]
+
+    def _pruefen(self, auftraege):
+        """auftraege [(sid, stream)] bei YouTube prüfen (höchstens 3 gleichzeitig) und ins cache.json schreiben.
+        Rückgabe: Anzahl geprüfter. Bei HTTP 429 eine Stunde Pause für alle Prüfungen und die Suche."""
+        if not auftraege:
+            return 0
+        if time.time() < lies(CACHE, {}).get("pause_bis", 0):
+            return 0
+        jetzt, erg, gesperrt = time.time(), {}, False
+
+        def pruefe(k):
+            sid, s = k
+            vid = aktuelles_video(s.get("art", "video"), sid)
+            r = seite_pruefen(vid) if vid else {"live": False, "hoehe": None}
+            return sid, {"video_id": vid, "live": bool(vid and r["live"]), "hoehe": r["hoehe"], "geprueft": jetzt}
+        try:
+            with ThreadPoolExecutor(max_workers=3) as pool:
+                for sid, x in pool.map(pruefe, auftraege):
+                    erg[sid] = x
+        except Gesperrt:
+            gesperrt = True
+        with cache_sperre:
+            cache = lies(CACHE, {"quellen": {}, "pause_bis": 0})
+            cache.setdefault("quellen", {}).update(erg)
+            if gesperrt:
+                cache["pause_bis"] = jetzt + PAUSE_BEI_429_S
+            schreib(CACHE, cache)
+        return len(erg)
+
     # ---------- Rotationsliste (alle 5 min) ----------
     def aktualisieren(self):
         e = self.e()
-        v = e["video"]
         jetzt = time.time()
-        d = self.alle()
-        st = self.strikes()
-        gesperrt = {vid for vid, x in st.items() if x.get("strikes", 0) >= v["strike_grenze"]}
-        cache = lies(CACHE, {"quellen": {}, "pause_bis": 0})
-        qc = cache.setdefault("quellen", {})
+        geprueft = self._pruefen(self._pruefplan(self.alle(), e, lies(CACHE, {"quellen": {}}).get("quellen", {}), jetzt)[:MAX_PRUEFUNGEN])
+        self.liste_bauen()
+        self.status.update(zeit=time.strftime("%Y-%m-%d %H:%M"), geprueft=geprueft, anzahl=len(self.liste),
+                           pause_bis=lies(CACHE, {}).get("pause_bis", 0))
+        return self.liste
 
-        kandidaten = []
+    def liste_bauen(self):
+        """Rotation aus den Zuständen – ohne YouTube zu fragen. In der Liste stehen nur bereite Streams und solche, die
+        gerade dunkel geworden sind (nachlauf: der Player kündigt sie nicht neu an, zeigt sie aber, wenn schon angekündigt)."""
+        e, jetzt = self.e(), time.time()
+        d, st = self.alle(), self.strikes()
+        qc = lies(CACHE, {"quellen": {}}).get("quellen", {})
+        gefunden, zust = [], {}
         for sid, s in d["streams"].items():
-            if not s.get("aktiv", True) or s.get("kategorie") in v["kategorien_aus"]:
-                continue
-            if s.get("breite") is None:
-                continue                                  # Ort unbekannt: Tag/Nacht nicht bestimmbar
-            if v["nur_tag"] and sonnenhoehe(s["breite"], s["laenge"]) < v["min_sonnenhoehe"]:
-                continue
-            kandidaten.append((sid, s))
-
-        faellig = sorted((k for k in kandidaten if jetzt - qc.get(k[0], {}).get("geprueft", 0) > PRUEF_ALTER_S),
-                         key=lambda k: qc.get(k[0], {}).get("geprueft", 0))[:MAX_PRUEFUNGEN]
-        geprueft = 0
-        if jetzt >= cache.get("pause_bis", 0):
-            def pruefe(k):
-                sid, s = k
-                vid = aktuelles_video(s.get("art", "video"), sid)
-                return sid, {"video_id": vid, "live": bool(vid and ist_live_und_einbettbar(vid)), "geprueft": jetzt}
-            try:
-                with ThreadPoolExecutor(max_workers=3) as pool:
-                    for sid, x in pool.map(pruefe, faellig):
-                        qc[sid] = x
-                        geprueft += 1
-            except Gesperrt:
-                cache["pause_bis"] = jetzt + PAUSE_BEI_429_S
-        schreib(CACHE, cache)
-
-        gefunden = []
-        for sid, s in kandidaten:
-            x = qc.get(sid)
-            if x is None:
-                if s.get("art") != "video":
-                    continue
-                x = {"video_id": sid, "live": True}       # nie geprüft: feste Videos zunächst als live annehmen
-            vid = x.get("video_id")
-            if x.get("live") and vid and (vid not in gesperrt or s.get("geschuetzt")):
-                gefunden.append({"video_id": vid, "name": s["name"], "kategorie": s.get("kategorie", "neu"),
-                                 "geschuetzt": bool(s.get("geschuetzt"))})
+            z, a = self._zustand(sid, s, e, qc, st, jetzt)
+            zust[sid] = dict(a, zustand=z)
+            if (z == "bereit" or a["nachlauf"]) and a["video_id"]:
+                gefunden.append({"video_id": a["video_id"], "name": s["name"], "kategorie": s.get("kategorie", "neu"),
+                                 "geschuetzt": bool(s.get("geschuetzt")), "nachlauf": z == "nacht",
+                                 "geprueft": int(qc.get(sid, {}).get("geprueft", 0))})
         # Abwechslung: jede Kategorie gleichmäßig über den Durchlauf verteilen
         nach_kat = {}
         for x in gefunden:
             nach_kat.setdefault(x["kategorie"], []).append(x)
-        verteilt = sorted(((i + 0.5) / len(l), k, i, x) for k, l in nach_kat.items() for i, x in enumerate(l))
+        verteilt = sorted(((i + 0.5) / len(l), k, i, x["video_id"], x) for k, l in nach_kat.items() for i, x in enumerate(l))
+        self.zustaende = zust
         self.liste = [x for *_, x in verteilt]
-        self.status.update(zeit=time.strftime("%Y-%m-%d %H:%M"), geprueft=geprueft, anzahl=len(self.liste),
-                           pause_bis=cache.get("pause_bis", 0))
         return self.liste
+
+    # ---------- Vorabprüfung angekündigter Streams (seit 0.31) ----------
+    def vormerken(self, videos):
+        """Der Player meldet seinen nächsten und übernächsten Stream. Sind sie länger als VOR_ALTER_S nicht geprüft,
+        prüft die Vorabprüfung sie sofort – unabhängig vom Wechsel. True, wenn etwas zu prüfen ist."""
+        ids = [v for v in videos if isinstance(v, str) and ID.fullmatch(v)][:3]
+        with sperre:
+            for v in ids:
+                self.vorgemerkt[v] = time.time()
+        if ids:
+            self.vor_wecken.set()
+        return bool(ids)
+
+    def vorpruefen(self):
+        """Gemerkte Streams prüfen, wenn nötig; danach die Liste neu bauen (fällt einer durch, kündigt der Player sofort
+        einen anderen an). Höchstens VOR_MAX Prüfungen je 5 min. Rückgabe: Anzahl geprüfter."""
+        jetzt = time.time()
+        with sperre:
+            ids = [v for v, t in self.vorgemerkt.items() if jetzt - t < 600]
+            self.vorgemerkt = {}
+            self.vor_zeiten = [t for t in self.vor_zeiten if jetzt - t < 300]
+            frei = VOR_MAX - len(self.vor_zeiten)
+        if not ids or frei <= 0:
+            return 0
+        d = self.alle()
+        qc = lies(CACHE, {"quellen": {}}).get("quellen", {})
+        auftraege = []
+        for sid, s in d["streams"].items():
+            x = qc.get(sid)
+            vid = (x or {}).get("video_id") or (sid if s.get("art", "video") == "video" else None)
+            if vid in ids and jetzt - (x or {}).get("geprueft", 0) > VOR_ALTER_S:
+                auftraege.append((sid, s))
+        auftraege = auftraege[:frei]
+        with sperre:
+            self.vor_zeiten += [jetzt] * len(auftraege)
+        n = self._pruefen(auftraege)
+        if n:
+            self.liste_bauen()
+            self.status["vorab"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "geprueft": n}
+        return n
 
     # ---------- Suche (täglich) ----------
     def _suche(self, begriff):
@@ -389,6 +549,26 @@ class Streams:
         t = re.sub(r"\b(LIVE|Live|live|24/7|4K|HD|powered by EXPLORE\.org|explore\.org)\b", "", t)
         t = re.split(r"\s[|–—]\s|\s-\s|\s/\s", t)[0]
         return re.sub(r"\s+", " ", t).strip(" -:,")[:55]
+
+    @staticmethod
+    def ueberzaehlig(streams, max_tag, v, jetzt=None):
+        """Gefundene Streams, die raus müssen (seit 0.31): „max“ zählt nur Streams, an deren Ort gerade Tag ist –
+        Nacht und „Ort unbekannt“ belegen keinen Platz. Insgesamt höchstens MAX_GEFUNDEN_GESAMT; darüber gehen zuerst
+        die ohne Ort, dann die am längsten nicht mehr gefundenen. Geschützte und übernommene zählen nie mit."""
+        jetzt = time.time() if jetzt is None else jetzt
+        entdeckt = sorted((k for k, s in streams.items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")),
+                          key=lambda k: (streams[k].get("breite") is not None, streams[k].get("zuletzt_gefunden", "")), reverse=True)
+        raus, tag, behalten = [], 0, 0
+        for k in entdeckt:
+            s = streams[k]
+            ist_tag = s.get("breite") is not None and (not v["nur_tag"] or
+                                                       sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"])
+            if (ist_tag and tag >= max_tag) or behalten >= MAX_GEFUNDEN_GESAMT:
+                raus.append(k)
+                continue
+            tag += ist_tag
+            behalten += 1
+        return raus
 
     def suchen(self):
         e = self.e()
@@ -441,9 +621,7 @@ class Streams:
             for vid in [k for k, s in d["streams"].items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")
                         and (s.get("zuletzt_gefunden", "") < grenze or st.get(k, {}).get("strikes", 0) >= v["strike_grenze"])]:
                 d["streams"].pop(vid)
-            entdeckt = sorted((k for k, s in d["streams"].items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")),
-                              key=lambda k: d["streams"][k].get("zuletzt_gefunden", ""), reverse=True)
-            for vid in entdeckt[su["max"]:]:
+            for vid in self.ueberzaehlig(d["streams"], su["max"], v):
                 d["streams"].pop(vid)
             self._speichern(d)
         self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "pause": False, "neu": neu,

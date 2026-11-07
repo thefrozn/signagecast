@@ -19,6 +19,10 @@ see [NOTICE.md](../NOTICE.md).
 
 - Only public YouTube pages and the **official embed player** are used; streams whose operators do not allow embedding
   are not shown. If YouTube reports too many requests, SignageCast pauses for an hour. Nothing is circumvented.
+- **Stream checks (since 0.31):** every 5 minutes up to 6 streams are checked on YouTube – first those where daylight
+  starts within 30 minutes, then daytime streams not checked for 2 hours, then night streams not checked for 6 hours.
+  Separately, each TV reports its next two streams; the data service checks them if their last check is older than
+  20 minutes (at most 10 per 5 minutes). One page request gives live state and offered resolution.
 - The small browser extension `render/h264-fluessig` tells YouTube that H.264 up to 1080p plays smoothly – Chromium in
   the container decodes without GPU and would otherwise report “not smooth”, and YouTube would deliver only 144p.
 - The admin user `tvadmin` has no administrator rights in the container.

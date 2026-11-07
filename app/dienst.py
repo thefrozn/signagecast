@@ -1400,6 +1400,18 @@ def streams_schleife():
         neu_liste.clear()
 
 
+def vorab_schleife():
+    """Vorabprüfung (seit 0.31): prüft die vom Player angekündigten Streams, sobald er sie meldet – getrennt vom
+    5-min-Durchlauf und vom Wechsel am Fernseher. Ein Strike baut die Liste ebenfalls sofort neu (Pause für alle)."""
+    while True:
+        streams.vor_wecken.wait(60)
+        streams.vor_wecken.clear()
+        try:
+            streams.vorpruefen()
+        except Exception as ex:
+            streams.status["vorab"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": str(ex)[:300]}
+
+
 def suche_schleife():
     # Nur zur eingestellten Uhrzeit suchen (nicht nachholen nach einem Neustart – die Suche fragt YouTube viel ab)
     letzte = time.strftime("%H:%M")
@@ -2341,11 +2353,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             d = self.koerper(420_000_000 if p == "/api/sicherung/zip" else 12_000_000)
         except Exception:
             return self.antwort(400, {"ok": False, "fehler": "ungültige Anfrage"})
-        m = re.fullmatch(r"/meldung/(strike|qualitaet)", p)
+        m = re.fullmatch(r"/meldung/(strike|qualitaet|naechster)", p)
         if m:                                     # vom Player der TV-Seite
             vid = str(d.get("video_id", ""))
-            if m.group(1) == "strike":
+            if m.group(1) == "naechster":         # seit 0.31: angekündigte Streams vorab prüfen
+                ids = d.get("video_ids")
+                ok = isinstance(ids, list) and streams.vormerken([str(x) for x in ids[:3]])
+            elif m.group(1) == "strike":
                 ok = streams.strike(vid, str(d.get("grund", "")))
+                if ok:
+                    streams.liste_bauen()         # Pause gilt sofort für alle Fernseher
             else:
                 ok = streams.qualitaet_melden(vid, str(d.get("stufe", "")), str(d.get("beste", "")), str(d.get("phase", "")))
             return self.antwort(200 if ok else 400, {"ok": ok})
@@ -2669,7 +2686,7 @@ def main():
     if os.environ.get("SC_VERWALTUNG_PORT"):
         import verwaltung
         threading.Thread(target=verwaltung.starten, args=(int(os.environ["SC_VERWALTUNG_PORT"]),), daemon=True).start()
-    for ziel in (ha_schleife, streams_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
+    for ziel in (ha_schleife, streams_schleife, vorab_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
                  pdf_schleife, schalten_schleife, player_schleife):

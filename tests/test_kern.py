@@ -1,15 +1,17 @@
 # Automatische Tests für SignageCast (nur Python-Standardbibliothek; pyzipper optional).
 # Aufruf im Projektordner:  python3 -m unittest discover -s tests -v
-import datetime, json, os, re, sys, tempfile, time, unittest
+import calendar, datetime, json, os, re, sys, tempfile, time, unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app"))
 os.environ.setdefault("SC_EINSTELLUNGEN", os.path.join(tempfile.mkdtemp(), "einstellungen.json"))
+os.environ.setdefault("SC_DATEN", tempfile.mkdtemp())
 import einstellungen as E   # noqa: E402
 import layouts as L         # noqa: E402
 import meldung as M         # noqa: E402
 import medien as MED        # noqa: E402
 import quellen as Q         # noqa: E402
 import sicherung as S       # noqa: E402
+import streams as ST        # noqa: E402
 
 
 class Curl(unittest.TestCase):
@@ -1107,6 +1109,113 @@ class Sbom(unittest.TestCase):
 
     def test_player_quelle_ignoriert_sbom(self):
         self.assertIn('not n.endswith(".cdx.json")', self.lesen("app", "player.py"))
+
+
+class Streamliste(unittest.TestCase):
+    """Seit 0.31: Nachtliste mit „hell ab“, Vorabprüfung, Grenze nur für Tag-Streams (ohne YouTube)."""
+    MORGEN = calendar.timegm((2026, 3, 20, 5, 0, 0))      # Äquinoktium, am Ort 0°/0° kurz vor Sonnenaufgang
+    ABEND = calendar.timegm((2026, 3, 20, 18, 5, 0))      # gerade unter 3° gesunken
+
+    def setUp(self):
+        self.e = E.pruefen({})
+        self.s = ST.Streams(lambda: self.e)
+
+    def strom(self, **k):
+        return dict({"art": "video", "name": "x", "kategorie": "neu", "breite": 0.0, "laenge": 0.0, "aktiv": True}, **k)
+
+    def test_hell_ab_minutengenau(self):
+        h = ST.hell_ab(0, 0, 3, self.MORGEN)
+        self.assertGreater(h, self.MORGEN + 3600)
+        self.assertGreaterEqual(ST.sonnenhoehe(0, 0, h), 3)
+        self.assertLess(ST.sonnenhoehe(0, 0, h - 60), 3)
+        self.assertEqual(ST.hell_ab(0, 0, 3, self.MORGEN + 6 * 3600), self.MORGEN + 6 * 3600)   # schon Tag
+        self.assertIsNone(ST.hell_ab(89.9, 0, 3, calendar.timegm((2026, 12, 21, 12, 0, 0))))   # Polarnacht
+
+    def test_angebotene_aufloesung(self):
+        seite = 'x var ytInitialPlayerResponse = {"streamingData": {"adaptiveFormats": [{"height": 480}, {"height": 1080}, ' \
+                '{"mimeType": "audio/mp4"}]}};var meta = {};'
+        self.assertEqual(ST.angebotene_hoehe(seite), 1080)
+        self.assertIsNone(ST.angebotene_hoehe("kaputt"))
+        self.assertIsNone(ST.angebotene_hoehe("ytInitialPlayerResponse = {nicht json"))
+        self.assertEqual([ST.stufe_aus_hoehe(h) for h in (2160, 1080, 720, 480, 144, None)],
+                         ["hd2160", "hd1080", "hd720", "large", "tiny", None])
+
+    def test_zustaende(self):
+        tag = self.MORGEN + 6 * 3600
+        qc = {"a": {"video_id": "a", "live": True, "hoehe": 1080, "geprueft": tag},
+              "q": {"video_id": "q", "live": True, "hoehe": 480, "geprueft": tag},
+              "n": {"video_id": "n", "live": False, "geprueft": tag}}
+        st = {"p": {"strikes": 1, "zeit": tag - 600}, "g": {"strikes": 3}}
+        z = lambda sid, s, t=tag: self.s._zustand(sid, s, self.e, qc, st, t)[0]
+        self.assertEqual(z("a", self.strom()), "bereit")
+        self.assertEqual(z("q", self.strom()), "qualitaet")
+        self.assertEqual(z("q", self.strom(geschuetzt=True)), "bereit")
+        self.assertEqual(z("n", self.strom()), "nicht_live")
+        self.assertEqual(z("p", self.strom()), "pause")
+        self.assertEqual(z("p", self.strom(), tag + 3 * 3600), "bereit")          # Pause (sperre_h 2) vorbei
+        self.assertEqual(z("g", self.strom()), "gesperrt")
+        self.assertEqual(z("a", self.strom(breite=None, laenge=None)), "ohne_ort")
+        self.assertEqual(z("k", self.strom(art="kanal")), "ungeprueft")
+        self.assertEqual(z("a", self.strom(aktiv=False)), "inaktiv")
+        zn, an = self.s._zustand("a", self.strom(), self.e, qc, st, self.MORGEN)
+        self.assertEqual((zn, an["nachlauf"]), ("nacht", False))
+        self.assertGreater(an["hell_ab"], self.MORGEN)
+        self.assertTrue(self.s._zustand("a", self.strom(), self.e, qc, st, self.ABEND)[1]["nachlauf"])
+        self.assertFalse(self.s._zustand("q", self.strom(), self.e, qc, st, self.ABEND)[1]["nachlauf"])  # war nicht bereit
+
+    def test_pruefplan_vorrang(self):
+        jetzt = calendar.timegm((2026, 3, 20, 6, 0, 0))        # 0°/0°: in ~20 min hell; 90°O: Tag; 90°W: Nacht
+        d = {"streams": {"bald": self.strom(), "tag": self.strom(laenge=90.0), "frisch": self.strom(laenge=90.0),
+                         "nacht": self.strom(laenge=-90.0), "nacht_frisch": self.strom(laenge=-90.0),
+                         "ohne": self.strom(breite=None, laenge=None)}}
+        qc = {"bald": {"geprueft": jetzt - 3600}, "tag": {"geprueft": jetzt - 3 * 3600}, "frisch": {"geprueft": jetzt - 60},
+              "nacht": {"geprueft": jetzt - 7 * 3600}, "nacht_frisch": {"geprueft": jetzt - 3600}}
+        self.assertEqual([sid for sid, _ in self.s._pruefplan(d, self.e, qc, jetzt)], ["bald", "tag", "nacht"])
+
+    def test_grenze_zaehlt_nur_tag(self):
+        tag = self.MORGEN + 6 * 3600
+        st = {f"t{i}": self.strom(herkunft="entdeckt", zuletzt_gefunden=f"2026-03-1{i}") for i in range(3)}
+        st.update({f"n{i}": self.strom(laenge=180.0, herkunft="entdeckt", zuletzt_gefunden=f"2026-03-0{i + 1}") for i in range(2)})
+        st["o"] = self.strom(breite=None, laenge=None, herkunft="entdeckt", zuletzt_gefunden="2026-03-19")
+        st["f"] = self.strom(laenge=90.0, herkunft="fest")
+        self.assertEqual(ST.Streams.ueberzaehlig(st, 2, self.e["video"], tag), ["t0"])   # Nacht/ohne Ort zählen nicht
+        alt = ST.MAX_GEFUNDEN_GESAMT
+        try:
+            ST.MAX_GEFUNDEN_GESAMT = 4
+            # 6 gefundene, höchstens 4: zuerst der ohne Ort, dann der am längsten nicht mehr gefundene
+            self.assertEqual(sorted(ST.Streams.ueberzaehlig(st, 10, self.e["video"], tag)), ["n0", "o"])
+        finally:
+            ST.MAX_GEFUNDEN_GESAMT = alt
+
+    def test_vorabpruefung(self):
+        jetzt = time.time()
+        ST.schreib(ST.STREAMS, {"streams": {"aaaaaaaaaaa": self.strom(), "bbbbbbbbbbb": self.strom()}, "abgelehnt": []})
+        ST.schreib(ST.CACHE, {"quellen": {"aaaaaaaaaaa": {"video_id": "aaaaaaaaaaa", "live": True, "geprueft": jetzt - 60},
+                                          "bbbbbbbbbbb": {"video_id": "bbbbbbbbbbb", "live": True, "geprueft": jetzt - 3600}}})
+        gesehen = []
+        self.s._pruefen = lambda a: gesehen.extend(sid for sid, _ in a) or len(a)
+        self.assertFalse(self.s.vormerken(["kaputt", 5]))
+        self.assertTrue(self.s.vormerken(["aaaaaaaaaaa", "bbbbbbbbbbb"]))
+        self.assertEqual(self.s.vorpruefen(), 1)
+        self.assertEqual(gesehen, ["bbbbbbbbbbb"])                   # frisch geprüfte nicht noch einmal
+        self.s.vor_zeiten = [time.time()] * ST.VOR_MAX                # Grenze je 5 min erreicht
+        self.s.vormerken(["bbbbbbbbbbb"])
+        self.assertEqual(self.s.vorpruefen(), 0)
+
+    def test_liste_nur_bereit_und_nachlauf(self):
+        ST.schreib(ST.STREAMS, {"streams": {"aaaaaaaaaaa": self.strom(), "bbbbbbbbbbb": self.strom(breite=None, laenge=None)},
+                                "abgelehnt": []})
+        ST.schreib(ST.CACHE, {"quellen": {"aaaaaaaaaaa": {"video_id": "aaaaaaaaaaa", "live": True, "hoehe": 1080, "geprueft": 1}}})
+        alt = ST.time.time
+        try:
+            ST.time.time = lambda: self.ABEND
+            l = self.s.liste_bauen()
+            self.assertEqual([(x["video_id"], x["nachlauf"]) for x in l], [("aaaaaaaaaaa", True)])
+            ST.time.time = lambda: self.ABEND + 3600
+            self.assertEqual(self.s.liste_bauen(), [])
+            self.assertEqual(self.s.zustaende["bbbbbbbbbbb"]["zustand"], "ohne_ort")
+        finally:
+            ST.time.time = alt
 
 
 if __name__ == "__main__":

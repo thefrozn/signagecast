@@ -193,7 +193,13 @@ A Pi is fine as the *player* that opens the stream.
 
 **Why does a live stream disappear from the list?**
 Streams that stall, deliver only low resolution or cannot be embedded get strikes and are skipped. Protect favourites
-in the Streams tab; rejected ones stay rejected.
+in the Streams tab; rejected ones stay rejected. The Streams tab shows each stream's state – filter by *night* (with
+“daylight in …”), *not live*, *resolution too low*, *paused after strike* or *location unknown* to see why. Night
+streams come back on their own at daylight; streams without a location never run until you enter it (Edit).
+
+**Why does the next stream not get skipped any more?**
+The TV tells the data service which streams come next; they are checked on YouTube in advance (live, embeddable,
+offered resolution). Only checked streams are announced, so “Next: …” is what comes.
 
 **Is anything sent to the internet?**
 Only what you configure: YouTube (official embed player), weather (MET Norway), DWD warnings, radio, your own data

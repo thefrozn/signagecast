@@ -187,10 +187,15 @@ const TEXTE = {
       "links unter „Dienste“ und „Protokolle“.",
     hinzufuegen: "Stream hinzufügen", link: "YouTube-Link oder Video-ID", name: "Name (leer = Titel)", kategorie: "Kategorie",
     breite: "Breite", laenge: "Länge", ortAuto: "leer = aus dem Titel erkennen", filter: "Suchen …", alle: "alle Kategorien",
-    nurGefundene: "nur gefundene", nurProbleme: "nur mit Strikes", aktiv: "aktiv", geschuetzt: "geschützt",
+    herkunftAlle: "fest und gefunden", nurFeste: "nur feste", nurGefundene: "nur gefundene", aktiv: "aktiv", geschuetzt: "geschützt",
+    zustandAlle: "alle", zustand: { rotation: "in Rotation", bereit: "bereit", nacht: "Nacht", nicht_live: "nicht live",
+      qualitaet: "Auflösung zu gering", pause: "Pause nach Strike", gesperrt: "gesperrt", strikes: "mit Strikes", ohne_ort: "Ort unbekannt",
+      ungeprueft: "noch nicht geprüft", inaktiv: "inaktiv", kategorie_aus: "Kategorie aus" },
+    hellIn: (d) => `hell in ${d}`, laeuftAus: "läuft aus (gerade dunkel)", pauseBis: (z) => `bis ${z}`, angebot: (p) => `Angebot ${p}`,
+    vorab: (z, n) => `Vorabprüfung ${z}: ${n} geprüft`,
     zeigen: "Jetzt zeigen", uebernehmen: "Übernehmen", bearbeiten: "Bearbeiten", entfernen: "Entfernen", ablehnen: "Ablehnen",
-    strikesWeg: "Strikes zurücksetzen", tag: "Tag", nacht: "Nacht", ortFehlt: "Ort unbekannt", inRotation: "in Rotation",
-    live: "live", nichtLive: "nicht live", gefunden: "gefunden", fest: "fest", proben: "Proben", strikes: "Strikes",
+    strikesWeg: "Strikes zurücksetzen", inRotation: "in Rotation",
+    gefunden: "gefunden", fest: "fest", proben: "Proben", strikes: "Strikes",
     abgelehnt: "Abgelehnte Streams (werden bei der Suche nie wieder aufgenommen)", freigeben: "Freigeben",
     wirklichEntfernen: "Stream wirklich entfernen?", wirklichAblehnen: "Stream entfernen und nie wieder aufnehmen?",
     zeigenOk: "Läuft gleich am Fernseher (für einen Takt)", anzahl: (n, g) => `${n} Streams, davon ${g} gerade in Rotation`,
@@ -528,10 +533,15 @@ const TEXTE = {
     aufgaben: "Scheduled tasks", systemSeiten: "Services, logs and timers of the container are in the Cockpit menu on the left.",
     hinzufuegen: "Add stream", link: "YouTube link or video ID", name: "Name (empty = title)", kategorie: "Category",
     breite: "Latitude", laenge: "Longitude", ortAuto: "empty = detect from title", filter: "Search …", alle: "all categories",
-    nurGefundene: "found only", nurProbleme: "with strikes only", aktiv: "active", geschuetzt: "protected",
+    herkunftAlle: "fixed and found", nurFeste: "fixed only", nurGefundene: "found only", aktiv: "active", geschuetzt: "protected",
+    zustandAlle: "all", zustand: { rotation: "in rotation", bereit: "ready", nacht: "night", nicht_live: "not live",
+      qualitaet: "resolution too low", pause: "paused after strike", gesperrt: "blocked", strikes: "with strikes", ohne_ort: "location unknown",
+      ungeprueft: "not checked yet", inaktiv: "inactive", kategorie_aus: "category off" },
+    hellIn: (d) => `daylight in ${d}`, laeuftAus: "ending (just got dark)", pauseBis: (z) => `until ${z}`, angebot: (p) => `offers ${p}`,
+    vorab: (z, n) => `Pre-check ${z}: ${n} checked`,
     zeigen: "Show now", uebernehmen: "Keep", bearbeiten: "Edit", entfernen: "Remove", ablehnen: "Reject",
-    strikesWeg: "Reset strikes", tag: "day", nacht: "night", ortFehlt: "location unknown", inRotation: "in rotation",
-    live: "live", nichtLive: "not live", gefunden: "found", fest: "fixed", proben: "samples", strikes: "Strikes",
+    strikesWeg: "Reset strikes", inRotation: "in rotation",
+    gefunden: "found", fest: "fixed", proben: "samples", strikes: "Strikes",
     abgelehnt: "Rejected streams (never added again by the search)", freigeben: "Allow again",
     wirklichEntfernen: "Really remove this stream?", wirklichAblehnen: "Remove this stream and never add it again?",
     zeigenOk: "Coming up on the TV (for one slot)", anzahl: (n, g) => `${n} streams, ${g} currently in rotation`,
@@ -1278,7 +1288,13 @@ async function vorschau() {
 }
 
 // ---------- Streams ----------
-let filter = { text: "", kat: "", gefunden: false, probleme: false };
+// Filter der Streamliste (seit 0.31: Zustand und Herkunft); merkt sich der Browser
+let filter = { text: "", kat: "", herkunft: "", zustand: "" };
+try { filter = Object.assign(filter, JSON.parse(localStorage.getItem("signagecast-streamfilter") || "{}")); } catch (_) { /* egal */ }
+function filterMerken() { try { localStorage.setItem("signagecast-streamfilter", JSON.stringify(filter)); } catch (_) { /* egal */ } }
+const ZUSTAENDE = ["rotation", "bereit", "nacht", "nicht_live", "qualitaet", "pause", "gesperrt", "strikes", "ohne_ort", "ungeprueft", "inaktiv", "kategorie_aus"];
+function passtZustand(s, z) { return !z || (z === "rotation" ? s.in_rotation : z === "strikes" ? s.strikes > 0 : s.zustand === z); }
+function dauerText(s) { const m = Math.max(0, Math.round(s / 60)); return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h` : `${m} min`; }
 async function streamsSeite(inhalt) {
   inhalt.innerHTML = `
     <div class="karte"><h2>${esc(T.hinzufuegen)}</h2>
@@ -1291,8 +1307,9 @@ async function streamsSeite(inhalt) {
     <div class="karte">
       <div class="zeile"><input type="text" id="fText" placeholder="${esc(T.filter)}" value="${esc(filter.text)}">
         <select id="fKat"><option value="">${esc(T.alle)}</option>${KATEGORIEN.map((k) => `<option value="${k}" ${filter.kat === k ? "selected" : ""}>${esc(T.kat[k] || k)}</option>`).join("")}</select>
-        <label><input type="checkbox" id="fGef" ${filter.gefunden ? "checked" : ""}> ${esc(T.nurGefundene)}</label>
-        <label><input type="checkbox" id="fProb" ${filter.probleme ? "checked" : ""}> ${esc(T.nurProbleme)}</label></div>
+        <select id="fHerk">${[["", T.herkunftAlle], ["fest", T.nurFeste], ["entdeckt", T.nurGefundene]].map(([w, n]) =>
+          `<option value="${w}" ${filter.herkunft === w ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
+      <div class="marken" id="fZust" role="group" aria-label="${esc(T.zustandAlle)}"></div>
       ${E.fernseher.length > 1 ? `<div class="zeile"><label>${esc(T.zeigenAuf)}</label><select id="zeigenTv"><option value="">${esc(T.alleTv)}</option>
         ${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select></div>` : ""}
       <div class="leise" id="zahl"></div></div>
@@ -1306,8 +1323,8 @@ async function streamsSeite(inhalt) {
     $("#nLink").value = ""; $("#nName").value = "";
     await streamsLaden();
   });
-  for (const [id, feld, art] of [["#fText", "text", "input"], ["#fKat", "kat", "change"], ["#fGef", "gefunden", "change"], ["#fProb", "probleme", "change"]])
-    $(id).addEventListener(art, (e) => { filter[feld] = e.target.type === "checkbox" ? e.target.checked : e.target.value; listeZeichnen(); });
+  for (const [id, feld, art] of [["#fText", "text", "input"], ["#fKat", "kat", "change"], ["#fHerk", "herkunft", "change"]])
+    $(id).addEventListener(art, (e) => { filter[feld] = e.target.value; filterMerken(); listeZeichnen(); });
   await streamsLaden();
 }
 let STREAMS = null;
@@ -1315,9 +1332,21 @@ async function streamsLaden() { STREAMS = await holen("/api/streams"); listeZeic
 function listeZeichnen() {
   const liste = $("#liste"); if (!liste || !STREAMS) return;
   const t = filter.text.toLowerCase();
-  const gezeigt = STREAMS.streams.filter((s) => (!t || (s.name + " " + (s.titel || "") + " " + s.id).toLowerCase().includes(t))
-    && (!filter.kat || s.kategorie === filter.kat) && (!filter.gefunden || s.herkunft === "entdeckt") && (!filter.probleme || s.strikes > 0));
-  $("#zahl").textContent = T.anzahl(STREAMS.streams.length, STREAMS.streams.filter((s) => s.in_rotation).length);
+  const vorauswahl = STREAMS.streams.filter((s) => (!t || (s.name + " " + (s.titel || "") + " " + s.id).toLowerCase().includes(t))
+    && (!filter.kat || s.kategorie === filter.kat) && (!filter.herkunft || s.herkunft === filter.herkunft));
+  const gezeigt = vorauswahl.filter((s) => passtZustand(s, filter.zustand));
+  // Zähler je Zustand (über Text, Kategorie und Herkunft gefiltert) – anklicken filtert, nochmal klicken hebt auf
+  const fz = $("#fZust"); fz.innerHTML = "";
+  for (const z of [""].concat(ZUSTAENDE)) {
+    const n = z ? vorauswahl.filter((s) => passtZustand(s, z)).length : vorauswahl.length;
+    if (z && !n && filter.zustand !== z) continue;
+    const b = el(`<button type="button" class="knopf klein ${filter.zustand === z ? "haupt" : ""}" aria-pressed="${filter.zustand === z}">${esc(z ? T.zustand[z] : T.zustandAlle)} ${n}</button>`);
+    b.onclick = () => { filter.zustand = filter.zustand === z ? "" : z; filterMerken(); listeZeichnen(); };
+    fz.appendChild(b);
+  }
+  const vb = STREAMS.vorab;
+  $("#zahl").textContent = T.anzahl(STREAMS.streams.length, STREAMS.streams.filter((s) => s.in_rotation).length)
+    + (vb && vb.zeit && vb.geprueft != null ? " · " + T.vorab(vb.zeit, vb.geprueft) : "");
   liste.innerHTML = "";
   for (const s of gezeigt) liste.appendChild(streamKarte(s));
   $("#abgelehnt").innerHTML = STREAMS.abgelehnt.length ? "" : "–";
@@ -1327,15 +1356,24 @@ function listeZeichnen() {
     $("#abgelehnt").appendChild(z);
   }
 }
+function zustandMarke(s) {
+  const z = s.zustand; if (!z) return "";
+  const stil = { bereit: "gut", ohne_ort: "warn", ungeprueft: "warn", qualitaet: "schlecht", pause: "warn", gesperrt: "schlecht", nicht_live: "" }[z] ?? "";
+  let text = T.zustand[z] || z;
+  if (z === "nacht" && s.nachlauf) text = T.laeuftAus;
+  else if (z === "nacht" && s.hell_ab) text += " · " + T.hellIn(dauerText(s.hell_ab - Date.now() / 1000));
+  if (z === "pause" && s.pause_bis) text += " " + T.pauseBis(new Date(s.pause_bis * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  return `<span class="marke ${stil}">${esc(text)}</span>`;
+}
 function streamKarte(s) {
   const q = s.qualitaet || {};
   const anteil = q.anteil_720p_plus != null ? Math.round(q.anteil_720p_plus * 100) : null;
   const marken = [
     `<span class="marke">${esc(T.kat[s.kategorie] || s.kategorie)}</span>`,
     `<span class="marke">${esc(s.herkunft === "entdeckt" ? T.gefunden : T.fest)}</span>`,
-    s.tag == null ? `<span class="marke warn">${esc(T.ortFehlt)}</span>` : `<span class="marke">${esc(s.tag ? T.tag : T.nacht)}</span>`,
-    s.live == null ? "" : `<span class="marke ${s.live ? "gut" : ""}">${esc(s.live ? T.live : T.nichtLive)}</span>`,
+    zustandMarke(s),
     s.in_rotation ? `<span class="marke gut">${esc(T.inRotation)}</span>` : "",
+    s.angeboten_hoehe ? `<span class="marke ${s.zustand === "qualitaet" ? "schlecht" : ""}">${esc(T.angebot(s.angeboten_hoehe + "p"))}</span>` : "",
     anteil != null ? `<span class="marke ${anteil >= 90 ? "gut" : anteil >= 50 ? "warn" : "schlecht"}">≥720p ${anteil} % · ${q.proben} ${esc(T.proben)}${q.codecs && q.codecs.length ? " · " + esc(q.codecs.map((c) => c.split(".")[0]).join("/")) : ""}</span>` : "",
     s.strikes ? `<span class="marke schlecht" title="${esc((s.strike_gruende || []).join("\n"))}">${esc(T.strikes)}: ${s.strikes}</span>` : "",
   ].join("");

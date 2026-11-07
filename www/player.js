@@ -118,31 +118,49 @@ class LivePlayer {
     const sekTag = o.h * 3600 + o.m * 60 + o.s;
     const takt = this.regeln.takt_s || 180;
     const slot = Math.floor(sekTag / takt) + this.versatz * 7, rest = takt - (sekTag % takt);
+    // frei: alles Zeigbare; wahl: was neu angekündigt werden darf – ohne „nachlauf“ (am Ort gerade dunkel geworden,
+    // läuft nur noch, wenn er schon angekündigt war). Die Liste vom Datendienst enthält nur vorab geprüfte Streams.
     const frei = this.streams.filter((s) => !(this.gesperrt[s.video_id] > jetzt));
+    const wahl = frei.filter((s) => !s.nachlauf);
     if (this.vorrang && !(this.gesperrt[this.vorrang.video_id] > jetzt)) {
       const rv = Math.max(0, Math.round((this.vorrang.bis * 1000 - jetzt) / 1000));
-      const n = frei.length ? frei[(slot + 1) % frei.length] : null;
+      const n = wahl.length ? wahl[(slot + 1) % wahl.length] : null;
+      this.vormerken(n, wahl.length > 1 ? wahl[(slot + 2) % wahl.length] : null);
       return { aktuell: { video_id: this.vorrang.video_id, name: this.vorrang.name }, naechster: n, rest: rv };
     }
-    if (!frei.length) { this.fest = null; return { aktuell: null, naechster: null, rest }; }
+    if (!wahl.length && !frei.length) { this.fest = null; return { aktuell: null, naechster: null, rest }; }
     const gesperrtJetzt = this.fest && this.gesperrt[this.fest.video_id] > jetzt;
     const verfuegbar = (x) => x && frei.find((f) => f.video_id === x.video_id);
     if (!this.fest || this.festSlot !== slot || gesperrtJetzt) {
       // Angekündigten Stream nehmen, wenn er noch verfügbar ist – sonst wie bisher nach der Position im Takt
       // (die Liste kann sich bis zum Wechsel ändern: Strike, Sperre, Nacht am Ort, neue Streams)
       const angekuendigt = this.naechsterSlot === slot - 1 && !gesperrtJetzt ? verfuegbar(this.naechsterFest) : null;
-      let i = slot % frei.length;
-      if (this.fest && frei.length > 1 && frei[i].video_id === this.fest.video_id) i = (i + 1) % frei.length;
-      this.fest = angekuendigt || frei[i]; this.festSlot = slot;
+      const aus = wahl.length ? wahl : frei;
+      let i = slot % aus.length;
+      if (this.fest && aus.length > 1 && aus[i].video_id === this.fest.video_id) i = (i + 1) % aus.length;
+      this.fest = angekuendigt || aus[i]; this.festSlot = slot;
     }
     // Nächsten einmal je Takt festlegen und so ankündigen; fällt er weg, neu wählen (Anzeige stimmt dann sofort)
     if (this.naechsterSlot !== slot || !verfuegbar(this.naechsterFest) || (this.naechsterFest && this.naechsterFest.video_id === this.fest.video_id)) {
-      const pos = frei.findIndex((s) => s.video_id === this.fest.video_id);
-      const n = frei.length > 1 ? frei[((pos >= 0 ? pos : slot) + 1) % frei.length] : null;
+      const pos = wahl.findIndex((s) => s.video_id === this.fest.video_id);
+      const n = wahl.length ? wahl[((pos >= 0 ? pos : slot) + 1) % wahl.length] : null;
       this.naechsterFest = n && n.video_id !== this.fest.video_id ? n : null;
       this.naechsterSlot = slot;
+      const u = wahl.length > 2 ? wahl[((pos >= 0 ? pos : slot) + 2) % wahl.length] : null;
+      this.vormerken(this.naechsterFest, u && u.video_id !== this.fest.video_id ? u : null);
     }
     return { aktuell: this.fest, naechster: this.naechsterFest, rest };
+  }
+
+  // Nächsten und übernächsten dem Datendienst melden (seit 0.31): er prüft sie vorab bei YouTube (live, einbettbar,
+  // angebotene Auflösung). Fällt einer durch, ist er bei der nächsten daten.json (≤ 15 s) nicht mehr in der Liste
+  // und plan() kündigt sofort einen anderen an – lange vor dem Wechsel. Nur bei Änderung melden.
+  vormerken(n, u) {
+    const ids = [n, u].filter(Boolean).map((x) => x.video_id);
+    const k = ids.join(" ");
+    if (!ids.length || k === this.gemeldet) return;
+    this.gemeldet = k;
+    melde("naechster", { video_ids: ids });
   }
 
   stoppen() {                               // Layout wird neu gebaut
