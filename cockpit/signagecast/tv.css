@@ -47,6 +47,7 @@ main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .gut { color: var(--gut); } .warn { color: var(--warn); } .schlecht { color: var(--schlecht); }
 .zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
 .zeile > label:first-child { min-width: 180px; flex: 0 0 auto; }
+.zeile > label:only-child { flex: 1 1 auto; min-width: 0; }   /* Ankreuz-Zeilen mit langem Text umbrechen (seit 0.31.1) */
 label { cursor: pointer; }
 input[type=text], input[type=number], input[type=time], input[type=url], input[type=password], select, textarea {
   font: inherit; color: var(--text); background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px;

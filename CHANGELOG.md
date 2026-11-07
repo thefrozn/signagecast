@@ -15,6 +15,7 @@
   the live video. Page addresses (`#video`, `#pult` …) stay the same.
 - **One switch for live videos:** the global *show live videos* is gone, only the switch per TV remains. If it was off,
   every TV gets its switch off on update (also when the global value is set via the API).
+- **Backup page on phones:** long checkbox texts wrap instead of widening the page.
 
 ## v0.31.0 (2026-11-07)
 - **Night list instead of lost places:** every stream now has a state – ready, night (with “daylight in …”), not live,
