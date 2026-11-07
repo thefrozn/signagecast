@@ -1273,5 +1273,14 @@ class Allgemein0311(unittest.TestCase):
         self.assertEqual(self.s.strikes()["aaaaaaaaaaa"]["strikes"], 1)
 
 
+class OhneGlobalenVideoschalter0311(unittest.TestCase):
+    def test_aus_gilt_fuer_jeden_fernseher(self):
+        s = E.pruefen({"video": {"aktiv": False}, "fernseher": [{"id": "tv", "video": True}, {"id": "tv2", "video": True}]})
+        self.assertTrue(s["video"]["aktiv"])
+        self.assertEqual([t["video"] for t in s["fernseher"]], [False, False])
+        s = E.pruefen({"fernseher": [{"id": "tv", "video": True}]})
+        self.assertEqual([t["video"] for t in s["fernseher"]], [True])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -472,6 +472,12 @@ def pruefen(e):
     sr = e.get("stream", {})
     if "abschalten_s" in sr: s["stream"]["abschalten_s"] = _zahl(sr["abschalten_s"], 10, 3600, int)
     _vorlagen_sprache(s)
+    # Seit 0.31.1 gibt es keinen Schalter „Live-Videos zeigen“ für alle mehr, nur noch je Fernseher. War er aus (oder
+    # schaltet ihn jemand über die API aus), gilt das für jeden Fernseher.
+    if not s["video"]["aktiv"]:
+        for t in s["fernseher"]:
+            t["video"] = False
+        s["video"]["aktiv"] = True
     return s
 
 

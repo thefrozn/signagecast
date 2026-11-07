@@ -14,8 +14,8 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player (Raspberry Pi)", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Regeln", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistungstest", pult: "Durchsage-Pult" },
+              video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -111,7 +111,7 @@ const TEXTE = {
             allgemein: (g, seit) => `Seit ${seit} fallen alle Streams durch (${{ aufloesung: "Auflösung zu niedrig", puffert: "puffert", steht: "Bild steht", fehler: "Fehler", startet_nicht: "startet nicht" }[g] || g}) – keine Strikes, vermutlich Störung bei YouTube oder im Browser`,
             doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
-    bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Video & Ton", einstellungen: "Einstellungen", system: "System" },
+    bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Live-Videos", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
     adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
@@ -224,7 +224,8 @@ const TEXTE = {
       aktiv: "Derzeit aktiv", std: "Standard", standard: "Zurück auf Standard" },
     codec: "Codec", codecArt: { auto: "Automatisch (empfohlen)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatisch: 4K als H.265 (halbe Datenmenge, können fast alle 4K-Fernseher), Full HD als H.264 (läuft auf praktisch jedem Fernseher, Browser und Player). H.264 wählen, wenn ein Gerät ruckelt oder kein Bild zeigt – z. B. ältere Fernseher, Firefox; H.265 braucht bei gleicher Qualität etwa 30–40 % weniger Bitrate.",
-    kategorien: "Kategorien", streamTechnik: "Videostream", aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
+    kategorien: "Kategorien", kategorienAlle: "Kategorien (für alle Fernseher)", streamTechnik: "Videostream", abschaltenTitel: "Videostream ohne Zuschauer",
+    abschnitt: { anzeige: "Anzeige", video: "Live-Video", ton: "Ton" }, aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
     aufnahme: "Aufnahme (Browser)", aufnahmeArt: { 720: "720p – spart CPU", 1080: "1080p (empfohlen)", 1440: "1440p – schärfer, braucht mehr CPU" },
     aufnahmeText: "Größe, in der der Browser die TV-Seite zeichnet; die Grafikeinheit rechnet auf die Ausgabe um. Mehr als die Ausgabe bringt nichts. Live-Videos im Layout folgen der Aufnahme (720p holt von YouTube 720p). Eine Änderung startet den Stream kurz neu.",
     abschalten: "Abschalten ohne Zuschauer nach (s)", technikHinweis: "Ausgabe und Bitrate wirken beim nächsten Start des Streams.",
@@ -282,7 +283,7 @@ const TEXTE = {
   },
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players (Raspberry Pi)", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Rules", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
+              video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
@@ -379,7 +380,7 @@ const TEXTE = {
             allgemein: (g, seit) => `Since ${seit} all streams fail (${{ aufloesung: "resolution too low", puffert: "buffering", steht: "picture frozen", fehler: "error", startet_nicht: "does not start" }[g] || g}) – no strikes, probably a YouTube or browser problem`,
             doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
-    bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Video & sound", einstellungen: "Settings", system: "System" },
+    bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Live videos", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
     adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
@@ -571,7 +572,8 @@ const TEXTE = {
       aktiv: "Currently active", std: "default", standard: "Back to default" },
     codec: "Codec", codecArt: { auto: "Automatic (recommended)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatic: 4K as H.265 (half the data, supported by almost all 4K TVs), Full HD as H.264 (plays on practically every TV, browser and player). Choose H.264 if a device stutters or shows no picture – e.g. older TVs, Firefox; H.265 needs about 30–40 % less bitrate for the same quality.",
-    kategorien: "Categories", streamTechnik: "Video stream", aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
+    kategorien: "Categories", kategorienAlle: "Categories (for all TVs)", streamTechnik: "Video stream", abschaltenTitel: "Video stream without viewers",
+    abschnitt: { anzeige: "Display", video: "Live video", ton: "Sound" }, aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
     aufnahme: "Capture (browser)", aufnahmeArt: { 720: "720p – saves CPU", 1080: "1080p (recommended)", 1440: "1440p – sharper, needs more CPU" },
     aufnahmeText: "Size in which the browser draws the TV page; the graphics unit converts it to the output. More than the output brings nothing. Live videos in the layout follow the capture (720p fetches 720p from YouTube). A change briefly restarts the stream.",
     abschalten: "Switch off without viewers after (s)", technikHinweis: "Output and bitrate apply at the next stream start.",
@@ -697,14 +699,24 @@ const ungespeichert = () => !!document.querySelector("#inhalt .karte.geaendert")
 window.addEventListener("beforeunload", (e) => { if (ungespeichert()) { e.preventDefault(); e.returnValue = ""; } });
 
 // ---------- Reiter ----------
+// Zwei Teile auf einer Seite: jeder zeichnet in seinen eigenen Kasten (seit 0.31.1)
+const zweiTeile = (a, b) => async (i) => {
+  i.innerHTML = `<div id="teilA"></div><div id="teilB"></div>`;
+  await a($("#teilA")); await b($("#teilB"));
+};
 const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
                  streams: streamsSeite, video, suche: sucheSeite, radio: radioSeite,
-                 allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"), pult: pultSeite,
-                 updates: updatesSeite, sicherung: sicherungSeite, leistung: leistungSeite, zugang: (i) => verbindung(i, "zugang") };
+                 allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
+                 pult: zweiTeile(pultSeite, webhookKarte),
+                 updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang") };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
-const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]], ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
-                  ["videoton", ["streams", "video", "suche", "radio"]], ["einstellungen", ["allgemein", "ha", "benachrichtigung", "pult"]],
-                  ["system", CONTAINER ? ["updates", "sicherung", "leistung", "zugang"] : ["updates", "sicherung", "leistung"]]];
+// Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
+// (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
+const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]],
+                  ["inhalte", ["layout", "quellen", "medien", "einspieler", "radio", "pult"]],
+                  ["videoton", ["streams", "video", "suche"]],
+                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "zugang"] : ["allgemein", "ha", "benachrichtigung"]],
+                  ["system", ["updates", "sicherung", "leistung"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
 const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || BEREICHE[0];
@@ -1451,10 +1463,9 @@ async function anzeige(inhalt) {
 
 // ---------- Video & Regeln ----------
 async function video(inhalt) {
-  const v = E.video, s = E.stream;
+  const v = E.video;
   const zahlFeld = (id, w, min, max, step) => `<input type="number" id="${id}" value="${w}" min="${min}" max="${max}" step="${step || 1}">`;
   inhalt.innerHTML = `<div class="karte">
-      <div class="zeile"><label>${esc(T.videoAktiv)}</label>${schalter("aktiv", v.aktiv)}</div>
       <div class="zeile"><label>${esc(T.takt)}</label>${zahlFeld("takt", v.takt_min, 1, 30)}</div>
       <div class="zeile"><label>${esc(T.nurTag)}</label>${schalter("nurTag", v.nur_tag)}</div>
       <div class="zeile"><label>${esc(T.sonne)}</label>${zahlFeld("sonne", v.min_sonnenhoehe, -18, 30, 0.5)}</div>
@@ -1463,17 +1474,14 @@ async function video(inhalt) {
       <div class="zeile"><label>${esc(T.schlecht)}</label>${zahlFeld("schlecht", v.schlecht_s, 5, 170)}</div>
       <div class="zeile"><label>${esc(T.grenze)}</label>${zahlFeld("grenze", v.strike_grenze, 1, 20)}</div>
       <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div></details>
-      <h3>${esc(T.kategorien)}</h3>
+      <h3>${esc(T.kategorienAlle)}</h3>
       ${KATEGORIEN.map((k) => `<div class="zeile"><label>${esc(T.kat[k] || k)}</label>${schalter("kat_" + k, !v.kategorien_aus.includes(k))}</div>`).join("")}</div>
-    <div class="karte"><h2>${esc(T.streamTechnik)}</h2>
-      <div class="zeile"><label>${esc(T.abschalten)}</label>${zahlFeld("abschalten", s.abschalten_s, 10, 3600)}</div></div>
     <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
   const n = (id) => Number($("#" + id).value);
   $("#ok").onclick = (e) => speichernE({
-    video: { aktiv: $("[name=aktiv]").checked, takt_min: n("takt"), nur_tag: $("[name=nurTag]").checked, min_sonnenhoehe: n("sonne"),
+    video: { takt_min: n("takt"), nur_tag: $("[name=nurTag]").checked, min_sonnenhoehe: n("sonne"),
              mindeststufe: $("#stufe").value, schlecht_s: n("schlecht"), strike_grenze: n("grenze"), sperre_h: n("sperre"),
              kategorien_aus: KATEGORIEN.filter((k) => !$(`[name=kat_${k}]`).checked) },
-    stream: { abschalten_s: n("abschalten") },
   }, e.target);
 }
 
@@ -1508,6 +1516,34 @@ async function sucheSeite(inhalt) {
 }
 
 // ---------- Verbindung ----------
+// Meldungen per Webhook (seit 0.31.1 bei den Durchsagen: nimmt Meldungen für die Fernseher an, schickt nichts hinaus)
+async function webhookKarte(inhalt) {
+  const info = await holen("/api/ha/einrichtung");
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
+      <div class="zeile"><label><input type="checkbox" id="whAktiv" ${E.webhook.aktiv ? "checked" : ""}> ${esc(T.whAktiv)}</label>
+        <span class="leise" id="whStand">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
+      <div class="zeile"><button class="knopf" id="whNeu">${esc(T.whNeu)}</button></div><div id="whErg"></div></div>`;
+  $("#whAktiv").onchange = (e) => speichernE({ webhook: { aktiv: e.target.checked } }, e.target);
+  $("#whNeu").onclick = (e) => {
+    if (E.webhook.token && !confirm(T.whNeuFrage)) return;
+    aktion(e.target, async () => {
+      const r = await senden("/api/webhook/neu", {});
+      E = r.einstellungen; $("#whAktiv").checked = true; $("#whStand").textContent = T.whVorhanden;
+      const host = info.eigene_ip || location.hostname;
+      const beispiel = `curl -X POST http://${host}:${r.port}/meldung \\\n  -H "Authorization: Bearer ${r.token}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"text": "Hallo", "dauer": 60, "stil": "info"}'`;
+      $("#whErg").innerHTML = `<p>${esc(T.whEinmal)}</p><pre>${esc(r.token)}</pre><p class="leise">${esc(T.whBeispiel)}</p><pre>${esc(beispiel)}</pre>`;
+    }, null);
+  };
+}
+
+// „Abschalten ohne Zuschauer“ (seit 0.31.1 unter System → Leistung)
+function abschaltenKarte(inhalt) {
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(T.abschaltenTitel)}</h2>
+      <div class="zeile"><label>${esc(T.abschalten)}</label><input type="number" id="abschalten" value="${E.stream.abschalten_s}" min="10" max="3600"></div>
+      <div class="zeile"><button class="knopf haupt" id="okAbs">${esc(T.speichern)}</button></div></div>`;
+  $("#okAbs").onclick = (e) => speichernE({ stream: { abschalten_s: Number($("#abschalten").value) } }, e.target);
+}
+
 async function verbindung(inhalt, teil = "ha") {
   const info = await holen("/api/ha/einrichtung");
   // Ohne erreichbares HA kennt der Dienst seine IP nicht: dann die Adresse aus dem Browser (bei Docker die des Hosts,
@@ -1564,10 +1600,6 @@ async function verbindung(inhalt, teil = "ha") {
       <h3>${esc(T.bnEreignisse)}</h3>
       ${Object.keys(T.bnEr).map((k) => `<div class="zeile"><label><input type="checkbox" data-er="${k}" ${B.ereignisse[k] ? "checked" : ""}> ${esc(T.bnEr[k])}</label></div>`).join("")}
       <div class="zeile"><button class="knopf haupt" id="bnOk">${esc(T.speichern)}</button></div><div id="bnLetzte" class="leise"></div></div>
-    <div class="karte" data-teil="benachrichtigung"><h2>${esc(T.whTitel)}</h2><p class="leise">${esc(T.whText)}</p>
-      <div class="zeile"><label><input type="checkbox" id="whAktiv" ${E.webhook.aktiv ? "checked" : ""}> ${esc(T.whAktiv)}</label>
-        <span class="leise" id="whStand">${esc(E.webhook.token ? T.whVorhanden : T.whKeiner)}</span></div>
-      <div class="zeile"><button class="knopf" id="whNeu">${esc(T.whNeu)}</button></div><div id="whErg"></div></div>
     <div class="karte" data-teil="ha"><h2>${esc(T.anleitung)}</h2>${T.anleitungText(info.eigene_ip).map((z) => `<p>${esc(z)}</p>`).join("")}
       <pre>${esc(yaml)}</pre><p>${esc(T.anleitungEnde)}</p></div>
     ${CONTAINER ? `<div class="karte" data-teil="zugang"><h2>${esc(T.verwaltungTitel)}</h2>
@@ -1594,17 +1626,6 @@ async function verbindung(inhalt, teil = "ha") {
     if (l.length) $("#bnLetzte").textContent = T.bnLetzte + ": " + l.slice(0, 3).map((x) => `${x.zeit} ${x.betreff}` +
       Object.entries(x.ergebnis).map(([k, f]) => ` · ${k} ${f ? "✗ " + f : "✓"}`).join("")).join(" | ");
   }).catch(() => {});
-  $("#whAktiv").onchange = (e) => speichernE({ webhook: { aktiv: e.target.checked } }, e.target);
-  $("#whNeu").onclick = (e) => {
-    if (E.webhook.token && !confirm(T.whNeuFrage)) return;
-    aktion(e.target, async () => {
-      const r = await senden("/api/webhook/neu", {});
-      E = r.einstellungen; $("#whAktiv").checked = true; $("#whStand").textContent = T.whVorhanden;
-      const host = info.eigene_ip || location.hostname;
-      const beispiel = `curl -X POST http://${host}:${r.port}/meldung \\\n  -H "Authorization: Bearer ${r.token}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"text": "Hallo", "dauer": 60, "stil": "info"}'`;
-      $("#whErg").innerHTML = `<p>${esc(T.whEinmal)}</p><pre>${esc(r.token)}</pre><p class="leise">${esc(T.whBeispiel)}</p><pre>${esc(beispiel)}</pre>`;
-    }, null);
-  };
   if (CONTAINER) $("#pwOk").onclick = (e) => aktion(e.target, async () => {
     const r = await fetch("/verwaltung/passwort", { method: "POST", credentials: "same-origin",
       headers: { "X-SignageCast": "1", "Content-Type": "application/json" },
@@ -1724,6 +1745,7 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.senderName)}</label><input type="text" name="name" value="${esc(t.name)}"></div>
         <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" style="width:140px"></div>
         <div class="zeile"><label>${esc(T.adresse)}</label><code>http://${esc(ip)}:${esc(st.stream_port || 8888)}/${esc(t.id)}</code></div>
+        <h3>${esc(T.abschnitt.anzeige)}</h3>
         <div class="zeile"><label>${esc(T.layoutWahl)}</label><select name="layout">${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === t.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
         <details ${(t.zeitplan || []).length ? "open" : ""}><summary>${esc(T.zeitplan)} (${(t.zeitplan || []).length})</summary>
           <p class="leise">${esc(T.zeitplanText)}</p><div name="zeiten">${(t.zeitplan || []).map((z) => zeitZeile(z)).join("")}</div>
@@ -1736,15 +1758,17 @@ async function fernseherSeite(inhalt) {
         <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
           <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
             <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div></details>
+        <h3>${esc(T.abschnitt.video)}</h3>
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" style="width:70px"></span></div>
+        <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
+        ${KATEGORIEN.map((x) => `<div class="zeile"><label>${esc(T.kat[x] || x)}</label>${schalter("kat_" + x, !t.kategorien_aus.includes(x))}</div>`).join("")}</details>
+        <h3>${esc(T.abschnitt.ton)}</h3>
         <div class="zeile"><label>${esc(T.ton)}</label><select name="ton">${Object.keys(T.tonArt).map((x) => `<option value="${x}" ${x === t.ton ? "selected" : ""}>${esc(T.tonArt[x])}</option>`).join("")}</select></div>
         <div class="zeile" name="senderZeile"><label>${esc(T.sender)}</label><select name="radio_sender" class="breit"><option value="">${esc(T.keinSender)}</option>
           ${E.radio.sender.map((x) => `<option value="${esc(x.id)}" ${x.id === t.radio_sender ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
         <div class="zeile"><label>${esc(T.lautstaerke)}</label><input type="range" name="lautstaerke" min="0" max="100" value="${t.lautstaerke}"><span class="leise" name="lw">${t.lautstaerke} %</span></div>
-        <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
-        ${KATEGORIEN.map((x) => `<div class="zeile"><label>${esc(T.kat[x] || x)}</label>${schalter("kat_" + x, !t.kategorien_aus.includes(x))}</div>`).join("")}</details>
         <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}${(t.aufnahme || 1080) !== 1080 ? " (" + esc(T.aufnahme) + " " + t.aufnahme + "p)" : ""}, ${t.bitrate_mbit} Mbit/s, ${
           (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}${
           t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</summary>

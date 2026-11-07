@@ -18,11 +18,11 @@ that video, so the TV needs no app, no login and no updates.
 | Area | Pages | What you do there |
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
-| **TVs** | TVs · Players (Raspberry Pi) | Address, layout, schedule, carousel, sound, video source (YouTube / own media / mixed), quality; Raspberry Pi players at the TV ([PLAYER.md](PLAYER.md)) |
-| **Content** | Layouts · Data sources · Media · Clips | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips |
-| **Video & sound** | Streams · Rules · Search · Radio | Live cams, rotation and quality rules, nightly search, radio stations |
-| **Settings** | General · Home Assistant · Notifications | Language, weather, location, time source; HA address and guide; Telegram/e-mail/HA and webhook |
-| **System** | Updates · Backup (· Access in Docker) | Signed updates, maintenance window, encrypted backups, admin password |
+| **TVs** | TVs · Players (Raspberry Pi) | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; Raspberry Pi players at the TV ([PLAYER.md](PLAYER.md)) |
+| **Content** | Layouts · Data sources · Media · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
+| **Live videos** | Streams · Rotation & quality · Search | Live cams, minutes per stream, daylight, minimum quality and strikes, categories for all TVs, nightly search |
+| **Settings** | General · Home Assistant · Notifications (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; admin password |
+| **System** | Updates · Backup · Performance | Signed updates, maintenance window, encrypted backups, performance test, switching off the stream without viewers |
 
 Every page has its own address (e.g. `…/index.html#benachrichtigung`). Unsaved changes are marked on their card;
 rarely needed options are folded under “Advanced”. On a new installation a short assistant asks for language,
@@ -47,7 +47,7 @@ the configured location (Settings → General → Location), coloured by level (
 10 minutes and only while a layout uses the element. Outside Germany there are no data.
 
 ### Put a short message on all TVs (webhook)
-Settings → Notifications → *Message via webhook* → **Create new key**. The key is shown **only once** – store it, e.g. in a password
+Content → Announcements → *Message via webhook* → **Create new key**. The key is shown **only once** – store it, e.g. in a password
 manager. Then any system in your network can send:
 
 ```sh
@@ -85,7 +85,7 @@ with `signagecast_webhook: "Bearer <key>"` in `secrets.yaml`, and in an automati
 `action: rest_command.signagecast_meldung` with `data: {text: "Doorbell", stil: warnung}`.
 
 ### Announcements from the reception
-Settings → Announcements: download a voice (Kerstin or Thorsten, once), add an account with a password and tick the
+Content → Announcements: download a voice (Kerstin or Thorsten, once), add an account with a password and tick the
 TVs it may reach. At the reception open `http://<IP>:8890/pult`, log in, choose TVs, click a template (the first “…”
 is selected – type the name), tick “read aloud” and send. The call appears in the middle of the screen and is read
 after a chime; because of the stream it takes about 6–10 seconds. Names are not stored (memory only, 2 hours).
@@ -110,7 +110,7 @@ counts: from 2026-12-23 until 2027-01-02 shows the text from the morning of 23 D
 editor marks such elements with ⏱. Combine it with a condition if needed (both must apply).
 
 ### Emergency screen
-Settings → Announcements → **Emergency screen**: enter templates (the first is used from the admin and the webhook),
+Content → Announcements → **Emergency screen**: enter templates (the first is used from the admin and the webhook),
 optionally a warning tone, then *Trigger now* (all TVs or one) and *End*. It shows the text in red across the whole
 screen above every layout – also during “black” – and stays until someone ends it, even across a restart. Panel
 accounts with **may trigger the emergency screen** get a red section in the panel. By webhook (key from “Message via
@@ -228,13 +228,13 @@ Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Me
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten
 verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtbar),
 **Unwetterwarnungen des DWD** als Layout-Baustein (Stufenfarben, nur Deutschland, Abruf alle 10 min nur bei Nutzung),
-**Meldung per Webhook** (Schlüssel unter Einstellungen → Benachrichtigungen erzeugen – wird nur einmal angezeigt –, dann
+**Meldung per Webhook** (Schlüssel unter Inhalte → Durchsagen erzeugen – wird nur einmal angezeigt –, dann
 `POST http://<IP>:8890/meldung` mit `Authorization: Bearer <Schlüssel>` und JSON `text`, `dauer`, `stil`, optional `tv`;
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,
 Test-Knopf je Kanal.
 Seit 0.21: **PDF** als Baustein (bis 50 Seiten, blättert nach der Uhr), **Zeitraum** je Baustein
-(„ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Einstellungen → Durchsage-Pult; im Pult für Zugänge mit
+(„ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Inhalte → Durchsagen; im Pult für Zugänge mit
 dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernseher über Home Assistant schalten**
 (Fernseher → „Über HA schalten“: bei „schwarz“ aus, danach wieder an – nur beim Wechsel).
 Seit 0.22: **Kodierung je Fernseher** (Fernseher → Videostream → „Kodierung (für Fortgeschrittene)“): Encoder

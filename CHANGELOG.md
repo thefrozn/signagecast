@@ -8,6 +8,13 @@
   then skipped every 20 s and paused 27 streams). The TV now stops giving strikes, the data service takes back the
   strikes and pauses of that series, and *To do* in the overview shows a warning. With *resolution too low* the stream
   keeps playing instead of skipping. It ends as soon as a stream runs fine again for a minute.
+- **Admin reorganised:** *Content* now holds radio stations and announcements (panel, emergency screen and messages via
+  webhook – the webhook receives messages, so it left *Notifications*, which only sends). *Video & sound* became
+  *Live videos* (Streams · Rotation & quality · Search). *Access* (Docker) moved to *Settings*, *switch off without
+  viewers* to *System → Performance*. Each TV card is split into Display, Live video and Sound; its categories sit with
+  the live video. Page addresses (`#video`, `#pult` …) stay the same.
+- **One switch for live videos:** the global *show live videos* is gone, only the switch per TV remains. If it was off,
+  every TV gets its switch off on update (also when the global value is set via the API).
 
 ## v0.31.0 (2026-11-07)
 - **Night list instead of lost places:** every stream now has a state – ready, night (with “daylight in …”), not live,
