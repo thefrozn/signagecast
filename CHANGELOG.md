@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **Minimum quality shown as resolution:** the setting and the TV overview show 360p, 720p, 1080p … instead of
+  YouTube's internal names (medium, hd720, hd1080 …). Stored values are unchanged.
+
 ## v0.31.0 (2026-11-07)
 - **Night list instead of lost places:** every stream now has a state – ready, night (with “daylight in …”), not live,
   resolution too low, paused after strike, blocked, location unknown, not checked yet, inactive. Night streams stay out

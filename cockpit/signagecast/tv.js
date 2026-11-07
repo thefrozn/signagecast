@@ -669,6 +669,10 @@ const ORT = () => E.sprache === "en" ? "en-GB" : "de-DE";   // Zeitformat nach S
 const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString(ORT(), { hour: "2-digit", minute: "2-digit" }) : "–";
 
 let E = null, KATEGORIEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
+// YouTube-Qualitätsstufen als Auflösung anzeigen (intern bleiben die YouTube-Namen)
+const STUFE_P = { tiny: "144p", small: "240p", medium: "360p", large: "480p", hd720: "720p", hd1080: "1080p",
+                  hd1440: "1440p", hd2160: "2160p", highres: "4320p" };
+const stufeText = (x) => STUFE_P[x] || x;
 
 // ---------- Nicht gespeicherte Änderungen (seit 0.17) ----------
 // Eine Eingabe markiert ihre Karte; ein erfolgreicher Speichern-Knopf hebt die Markierung seiner Karte auf
@@ -1230,7 +1234,7 @@ async function uebersicht(inhalt) {
       const w = t.wache;
       return `<div class="karte"><div class="leise">${esc(t.name)} · /${esc(t.id)}</div>
         <div class="wert">${t.laeuft ? `<span class="gut">${esc(T.laeuft)}</span>` : esc(T.aus)}</div>
-        <div class="leise">${t.aktuell ? esc(t.aktuell.name) : ""}${w ? ` · <b class="${/hd/.test(w.stufe) ? "gut" : "schlecht"}">${esc(w.stufe)}</b> ${esc((w.codec || "").split(".")[0])}${w.kbps ? " · " + Math.round(w.kbps / 1000) + " Mbit/s" : ""}` : ""}</div>
+        <div class="leise">${t.aktuell ? esc(t.aktuell.name) : ""}${w ? ` · <b class="${/hd/.test(w.stufe) ? "gut" : "schlecht"}">${esc(stufeText(w.stufe))}</b> ${esc((w.codec || "").split(".")[0])}${w.kbps ? " · " + Math.round(w.kbps / 1000) + " Mbit/s" : ""}` : ""}</div>
         <div class="leise">${esc(T.tonAnzeige)}: ${esc(T.tonArt[t.ton])}${t.sender ? " · ♪ " + esc(t.sender) : ""}${t.video ? "" : " · " + esc(T.videoZeigen) + ": " + esc(T.nein)}</div></div>`;
     }).join("");
     const k = [
@@ -1452,7 +1456,7 @@ async function video(inhalt) {
       <div class="zeile"><label>${esc(T.nurTag)}</label>${schalter("nurTag", v.nur_tag)}</div>
       <div class="zeile"><label>${esc(T.sonne)}</label>${zahlFeld("sonne", v.min_sonnenhoehe, -18, 30, 0.5)}</div>
       <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
-      <div class="zeile"><label>${esc(T.mindeststufe)}</label><select id="stufe">${STUFEN.map((x) => `<option ${x === v.mindeststufe ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+      <div class="zeile"><label>${esc(T.mindeststufe)}</label><select id="stufe">${STUFEN.map((x) => `<option value="${x}" ${x === v.mindeststufe ? "selected" : ""}>${esc(stufeText(x))}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(T.schlecht)}</label>${zahlFeld("schlecht", v.schlecht_s, 5, 170)}</div>
       <div class="zeile"><label>${esc(T.grenze)}</label>${zahlFeld("grenze", v.strike_grenze, 1, 20)}</div>
       <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div></details>
