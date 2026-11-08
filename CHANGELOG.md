@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.32.1 (2026-11-08)
 - **Deleting a TV cleans up after it:** its browser profile (`chromium-<id>`, often 100–300 MB) and its render settings
   (`render-<id>.env`) are removed when the settings are saved, at service start and hourly; if its render chain is still
   running, right after it has ended (usually a few seconds). Backup copies such as `chromium-tv.alt-…` are left alone.
