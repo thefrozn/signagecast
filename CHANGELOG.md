@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- **Deleting a TV cleans up after it:** its browser profile (`chromium-<id>`, often 100–300 MB) and its render settings
+  (`render-<id>.env`) are removed when the settings are saved, at service start and hourly; not while its render chain
+  is still running. Backup copies such as `chromium-tv.alt-…` are left alone.
+
 ## v0.32.0 (2026-11-08)
 - **More than animals – eight new topics:** cities & squares, beaches & coasts, mountains & ski, harbours & ships,
   airports & planes, trains & railways, space & Earth, natural wonders. Each topic has its own search terms and title

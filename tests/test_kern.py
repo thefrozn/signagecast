@@ -1354,5 +1354,20 @@ class Themen032(unittest.TestCase):
         self.assertEqual([x["video_id"] for x in self.s.liste_bauen()], ["ccccccccccc"])
 
 
+
+class FernseherReste0321(unittest.TestCase):
+    def test_reste_geloeschter_fernseher(self):
+        import dienst as D
+        alt = set(os.listdir(D.DATEN))
+        for n in ("render-tv.env", "render-weg.env", "render-laeuft.env", "kette-laeuft.pids"):
+            open(os.path.join(D.DATEN, n), "w").close()
+        for n in ("chromium-tv", "chromium-weg", "chromium-laeuft", "chromium-tv.alt-20261107"):
+            os.makedirs(os.path.join(D.DATEN, n, "Default"), exist_ok=True)
+        self.assertEqual(sorted(D.fernseher_reste_entfernen({"tv"})), ["chromium-weg", "render-weg.env"])
+        self.assertEqual(sorted(set(os.listdir(D.DATEN)) - alt),
+                         ["chromium-laeuft", "chromium-tv", "chromium-tv.alt-20261107", "kette-laeuft.pids",
+                          "render-laeuft.env", "render-tv.env"])
+
+
 if __name__ == "__main__":
     unittest.main()

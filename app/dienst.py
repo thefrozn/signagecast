@@ -5,7 +5,7 @@
 # Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
-import glob, json, os, re, secrets, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import glob, json, os, re, secrets, shutil, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -1166,9 +1166,10 @@ PDF_ORDNER = os.path.join(DATEN, "pdf")
 
 
 def pdf_schleife():
-    """Stündlich: umgewandelte PDFs entfernen, die kein Layout mehr nutzt."""
+    """Stündlich: umgewandelte PDFs entfernen, die kein Layout mehr nutzt, und Reste gelöschter Fernseher."""
     while True:
         PDF.aufraeumen(PDF_ORDNER, {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf"})
+        fernseher_reste_entfernen({t["id"] for t in einst()["fernseher"]})   # Kette lief beim Löschen noch
         time.sleep(3600)
 
 
@@ -1758,6 +1759,28 @@ def empfehlen(erg):
     return l
 
 
+def fernseher_reste_entfernen(ids):
+    """Dateien gelöschter Fernseher entfernen: render-<id>.env und das Browser-Profil chromium-<id> (seit 0.32.1).
+    Nur genaue Namen (gesicherte Profile wie chromium-tv.alt-… bleiben) und nur, wenn seine Kette nicht mehr läuft."""
+    weg = []
+    for pfad in glob.glob(os.path.join(DATEN, "render-*.env")) + glob.glob(os.path.join(DATEN, "chromium-*")):
+        name = os.path.basename(pfad)
+        tid = name[len("render-"):-len(".env")] if name.startswith("render-") else name[len("chromium-"):]
+        if not re.fullmatch(r"[a-z][a-z0-9]{0,11}", tid) or tid in ids or os.path.exists(os.path.join(DATEN, f"kette-{tid}.pids")):
+            continue
+        try:
+            if os.path.isdir(pfad) and not os.path.islink(pfad):
+                shutil.rmtree(pfad)
+            else:
+                os.remove(pfad)
+            weg.append(name)
+        except OSError as f:
+            print(f"Reste von Fernseher {tid}: {f}", flush=True)
+    if weg:
+        print("Reste gelöschter Fernseher entfernt: " + ", ".join(sorted(weg)), flush=True)
+    return weg
+
+
 def render_schreiben(e):
     """Je Fernseher die Werte für tv-render.sh (wirken beim nächsten Start seiner Kette) und die MediaMTX-Pfade
     (MediaMTX lädt die Datei bei Änderung selbst neu)."""
@@ -1789,6 +1812,7 @@ def render_schreiben(e):
         if q["art"] == "video" and q["aktiv"] and Q.video_format(q) in ("rtsp", "hls"):
             pfade += (f"  cam_{q['id']}:\n    source: {json.dumps(q['url'])}\n    sourceOnDemand: yes\n"
                       f"    sourceOnDemandStartTimeout: 15s\n    sourceOnDemandCloseAfter: 20s\n")
+    fernseher_reste_entfernen({t["id"] for t in e["fernseher"]})
     try:
         if os.path.exists(MEDIAMTX_YML):
             vorlage = open(MEDIAMTX_VORLAGE).read().replace("hlsAddress: :8888", f"hlsAddress: :{HLS_PORT}")
