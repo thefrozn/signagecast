@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.32.0 (2026-11-08)
 - **More than animals – eight new topics:** cities & squares, beaches & coasts, mountains & ski, harbours & ships,
   airports & planes, trains & railways, space & Earth, natural wonders. Each topic has its own search terms and title
   words; the nightly search only asks YouTube for topics that are switched on, sorts the finds into their category and
