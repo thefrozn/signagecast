@@ -7,7 +7,7 @@
 „paket“: Release-Paket – SignageCast selbst (Prüfsumme des Pakets), die mitgelieferten Fremdkomponenten aus
 werkzeug/komponenten.json (mit Prüfsumme ihrer Dateien), MediaMTX und die Debian-Pakete, die installieren.sh
 installiert (ohne Version – die bestimmt Debian bei der Installation).
-„pi“: Player-Image – alle Pakete des Images mit Version aus `dpkg-query -W -f '${Package}\\t${Version}\\t${Architecture}\\t${source:Package}\\n'`.
+„pi“/„pc“: Player-Image für den Raspberry Pi bzw. PC (seit 0.36) – alle Pakete des Images mit Version aus `dpkg-query -W -f '${Package}\\t${Version}\\t${Architecture}\\t${source:Package}\\n'`.
 Das Container-Image bekommt seine SBOM von GitHub (docker/build-push-action, sbom: true).
 Zeitstempel aus SOURCE_DATE_EPOCH (sonst jetzt), Seriennummer aus Inhalt – gleiche Eingaben ergeben die gleiche SBOM."""
 import argparse, hashlib, json, os, re, sys, time, uuid
@@ -91,7 +91,7 @@ def paket(version, datei):
     return bom(version, haupt, teile, f"Release-Paket {os.path.basename(datei) if datei else ''}".strip())
 
 
-def pi(version, dpkg, basis):
+def pi(version, dpkg, basis, pc=False):
     teile, gesehen = [], set()
     for z in open(dpkg, encoding="utf-8"):
         f = z.rstrip("\n").split("\t")
@@ -103,21 +103,24 @@ def pi(version, dpkg, basis):
             t["properties"] = [{"name": "signagecast:quellpaket", "value": f[3]}]
         teile.append(t)
     teile.sort(key=lambda t: t["bom-ref"])
+    if pc:                                     # PC-Player (seit 0.36): x86-64, UEFI, Debian live
+        haupt = {"name": "signagecast-pc-player", "purl": f"pkg:github/{REPO}@v{version}#pc"}
+        return bom(version, haupt, teile, f"PC-Player-Image (x86-64, UEFI) auf Basis {basis}")
     haupt = {"name": "signagecast-player", "purl": f"pkg:github/{REPO}@v{version}#player"}
     return bom(version, haupt, teile, f"Raspberry-Pi-Player-Image auf Basis {basis}")
 
 
 def main():
     ap = argparse.ArgumentParser(description="SBOM (CycloneDX 1.5) für SignageCast")
-    ap.add_argument("art", choices=("paket", "pi"))
+    ap.add_argument("art", choices=("paket", "pi", "pc"))
     ap.add_argument("--version", required=True)
     ap.add_argument("--datei", help="paket: Release-Paket (für die Prüfsumme)")
-    ap.add_argument("--dpkg", help="pi: Ausgabe von dpkg-query (TSV)")
+    ap.add_argument("--dpkg", help="pi/pc: Ausgabe von dpkg-query (TSV)")
     ap.add_argument("--basis", default="Raspberry Pi OS Lite (arm64)", help="pi: Grundimage")
     a = ap.parse_args()
-    if a.art == "pi" and not a.dpkg:
-        ap.error("pi braucht --dpkg")
-    b = paket(a.version, a.datei) if a.art == "paket" else pi(a.version, a.dpkg, a.basis)
+    if a.art in ("pi", "pc") and not a.dpkg:
+        ap.error(f"{a.art} braucht --dpkg")
+    b = paket(a.version, a.datei) if a.art == "paket" else pi(a.version, a.dpkg, a.basis, pc=a.art == "pc")
     json.dump(b, sys.stdout, indent=1, ensure_ascii=False)
     print()
 

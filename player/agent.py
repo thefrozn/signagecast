@@ -13,12 +13,17 @@
 # in signagecast.json, beim Image erstellen oder auf der Einrichtungsseite; ab Werk aus). Die Shell (root) läuft in einem
 # PTY; Ein- und Ausgabe gehen verschlüsselt über zwei signierte Anfragen, am Pi bleibt jeder Port zu. Ende nach 10 min
 # ohne Eingabe, spätestens nach 60 min; solange steht „Fernwartung aktiv“ auf dem Fernseher.
+# PC-Player (seit 1.5 / SignageCast 0.36, experimentell): derselbe Agent auf x86-64-Geräten (Debian live, UEFI). Merkmal
+# /etc/signagecast-pc; statt der Boot-Partition nimmt er die Datenpartition des Sticks (SC_BOOT, start.sh). Unterschiede:
+# Modell aus DMI, Bildschirm an jedem Anschluss (HDMI, DisplayPort, …), Ton über den angeschlossenen HDMI/DP-Ausgang,
+# Video-Dekodierung per VAAPI, Schreibschutz immer an (live), kein Systemupdate (das kommt mit einem neuen Image).
 # Nur Python-Standardbibliothek; läuft als root (WLAN, CEC, Neustart), mpv und Chromium als Benutzer „signage“.
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.4"
-BOOT = "/boot/firmware"
+VERSION = "1.5"
+PC = os.path.exists("/etc/signagecast-pc")       # PC-Player (seit 1.5)
+BOOT = os.environ.get("SC_BOOT", "/boot/firmware")
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
 AGENT_BOOT = BOOT + "/signagecast/agent.py"       # vom Server aktualisiert; start.sh nimmt ihn vor dem eingebauten
 LAUF = "/run/signagecast"
@@ -45,11 +50,11 @@ TEXTE = {
            "wlan3": "3. WLAN auswählen und Passwort eingeben", "wlan_fehler": "„{ssid}“: Verbindung fehlgeschlagen – Passwort prüfen",
            "wlan_versuch": "Verbinde mit WLAN „{ssid}“ …", "suche": "Suche bekannte WLANs …", "update": "Systemupdate läuft – bitte nicht ausschalten …",
            "neustart": "Starte neu …", "direkt": "Lade die Seite …", "code": "Code: {code}",
-           "koppeln1": "In der SignageCast-Verwaltung unter Fernseher → Player → „Pi koppeln“ diesen Code eingeben.",
+           "koppeln1": "In der SignageCast-Verwaltung unter Fernseher → Player → „Player koppeln“ diesen Code eingeben.",
            "koppeln2": "Der Code gilt 10 Minuten, danach erscheint ein neuer.", "gekoppelt": "Gekoppelt – starte …", "seite_titel": "SignageCast – WLAN einrichten", "netz": "WLAN", "anderes": "anderes WLAN (Name eingeben)",
            "passwort": "Passwort", "speichern": "Verbinden", "fertig": "Der Player verbindet sich jetzt. Erscheint der QR-Code in einer Minute "
            "wieder auf dem Fernseher, war das Passwort falsch.", "name": "Name des WLANs",
-           "fw_hinweis": "Fernwartung aktiv", "fw_titel": "Fernwartung", "fw_text": "Erlaubt ein Terminal (root) zu diesem Pi aus der "
+           "fw_hinweis": "Fernwartung aktiv", "fw_titel": "Fernwartung", "fw_text": "Erlaubt ein Terminal (root) zu diesem Player aus der "
            "SignageCast-Verwaltung. Ab Werk aus. Jede Sitzung wird protokolliert und steht solange auf dem Fernseher.",
            "fw_erlauben": "Fernwartung erlauben", "fw_speichern": "Speichern", "fw_gespeichert": "Gespeichert."},
     "en": {"start": "SignageCast is starting …", "verbinde": "Connecting to the server …", "kein_server": "Server not reachable",
@@ -63,11 +68,11 @@ TEXTE = {
            "wlan3": "3. Choose your Wi-Fi and enter its password", "wlan_fehler": "“{ssid}”: connection failed – check the password",
            "wlan_versuch": "Connecting to Wi-Fi “{ssid}” …", "suche": "Looking for known Wi-Fi networks …", "update": "System update running – do not switch off …",
            "neustart": "Restarting …", "direkt": "Loading the page …", "code": "Code: {code}",
-           "koppeln1": "In the SignageCast admin under TVs → Players → “Pair a Pi”, enter this code.",
+           "koppeln1": "In the SignageCast admin under TVs → Players → “Pair a player”, enter this code.",
            "koppeln2": "The code is valid for 10 minutes, then a new one appears.", "gekoppelt": "Paired – starting …", "seite_titel": "SignageCast – set up Wi-Fi", "netz": "Wi-Fi", "anderes": "other Wi-Fi (enter name)",
            "passwort": "Password", "speichern": "Connect", "fertig": "The player is connecting now. If the QR code appears on the TV again "
            "within a minute, the password was wrong.", "name": "Wi-Fi name",
-           "fw_hinweis": "Remote maintenance active", "fw_titel": "Remote maintenance", "fw_text": "Allows a terminal (root) to this Pi "
+           "fw_hinweis": "Remote maintenance active", "fw_titel": "Remote maintenance", "fw_text": "Allows a terminal (root) to this player "
            "from the SignageCast admin. Off by default. Every session is logged and shown on the TV while it lasts.",
            "fw_erlauben": "Allow remote maintenance", "fw_speichern": "Save", "fw_gespeichert": "Saved."},
 }
@@ -140,7 +145,25 @@ def konfig_speichern(k):
 
 # ---------- System ----------
 def modell():
+    if PC:                                      # z. B. „LENOVO ThinkCentre M720q“, „Fujitsu FUTRO S740“
+        teile = [lesen(f"/sys/class/dmi/id/{n}") for n in ("sys_vendor", "product_version", "product_name")]
+        teile = [t for t in teile if t and not re.search(r"to be filled|default string|^none$|^system", t, re.I)]
+        if len(teile) > 2 and not re.search(r"[a-z]", teile[1], re.I):
+            teile.pop(1)                        # Versionsnummer statt Name (Dell, HP)
+        return ("PC " + " ".join(dict.fromkeys(teile))).strip()[:80]
     return lesen("/proc/device-tree/model", "unbekannt")
+
+
+def temperatur():
+    """CPU-Temperatur in °C (PC: coretemp/k10temp – die ACPI-Zone zeigt oft einen festen Wert)."""
+    if PC:
+        for h in sorted(glob_liste("/sys/class/hwmon/hwmon*")):
+            if lesen(h + "/name") in ("coretemp", "k10temp", "zenpower", "cpu_thermal"):
+                w = lesen(h + "/temp1_input")
+                if w.isdigit():
+                    return round(int(w) / 1000, 1)
+    w = lesen("/sys/class/thermal/thermal_zone0/temp", "0")
+    return round(int(w) / 1000, 1) if w.lstrip("-").isdigit() else 0
 
 
 def ram_mb():
@@ -150,12 +173,14 @@ def ram_mb():
 
 
 def schreibschutz_aktiv():
+    if PC:                                      # live-System: immer schreibgeschützt (squashfs + RAM-Schicht)
+        return True
     return "overlayroot=tmpfs" in lesen("/proc/cmdline")
 
 
 def schreibschutz_setzen(an):
     """overlayroot (wie raspi-config): das Wort in cmdline.txt. Gibt True zurück, wenn sich die Datei geändert hat."""
-    if lauf("dpkg-query", "-W", "overlayroot")[0] != 0:
+    if PC or lauf("dpkg-query", "-W", "overlayroot")[0] != 0:
         return False
     pfad = BOOT + "/cmdline.txt"
     alt = lesen(pfad)
@@ -167,9 +192,17 @@ def schreibschutz_setzen(an):
     return True
 
 
+def ausgaenge():
+    """Status-Dateien der Bildschirm-Anschlüsse: Pi nur HDMI; PC alle außer Writeback (HDMI, DP, DVI, VGA, eDP, VM)."""
+    if not PC:
+        return sorted(glob_liste("/sys/class/drm/card*-HDMI-A-*/status"))
+    alle = [p for p in glob_liste("/sys/class/drm/card*-*/status") if "-Writeback-" not in p]
+    return sorted(alle, key=lambda p: ("-eDP-" in p or "-LVDS-" in p, p))    # eingebaute Bildschirme zuletzt
+
+
 def hdmi():
-    """Erster verbundener HDMI-Ausgang: (verbunden, Name aus EDID, Ausgang)."""
-    for st in sorted(glob_liste("/sys/class/drm/card*-HDMI-A-*/status")):
+    """Erster verbundener Ausgang: (verbunden, Name aus EDID, Ausgang)."""
+    for st in ausgaenge():
         if lesen(st) == "connected":
             name = ""
             try:
@@ -306,7 +339,7 @@ class Anzeige:
         o = self.optionen
         args = ["mpv", "--idle=yes", "--force-window=yes", "--fullscreen", "--no-terminal", "--config=no",
                 f"--input-ipc-server={SOCK}", "--vo=gpu", "--gpu-context=drm", "--drm-mode=" + o.get("modus", "preferred"),
-                "--hwdec=" + ("no" if o.get("hwdec") == "aus" else "drm-copy,v4l2m2m-copy,auto-copy-safe"),
+                "--hwdec=" + ("no" if o.get("hwdec") == "aus" else "vaapi,auto-safe" if PC else "drm-copy,v4l2m2m-copy,auto-copy-safe"),
                 "--cache=yes", "--demuxer-max-bytes=64MiB", "--network-timeout=15", "--keep-open=no",
                 "--image-display-duration=inf", "--osd-bar=no", "--osd-level=1", "--cursor-autohide=always",
                 "--background-color=#000000", "--screenshot-format=jpg", "--screenshot-jpeg-quality=70",
@@ -508,14 +541,15 @@ class Browser:
 
     def _ton(self):
         """ALSA: Kette „signagecast“ = Lautstärkeregler (softvol) vor dem HDMI-Gerät; Chromium spielt dorthin."""
-        m = re.match(r"alsa/hdmi:CARD=(\w+),DEV=0", hdmi_ton())
-        if not m:
+        t = ton_geraet()
+        if not t:
             return None
-        karte = m.group(1)
+        art, karte, dev = t
+        art = "hw" if art == "plughw" else art          # vor softvol kein zweites plug (die Kette hat schon eins)
         try:
             with open(BROWSER_HOME + "/.asoundrc", "w") as f:
                 f.write(f'''pcm.signagecast {{ type plug; slave.pcm "sc_lautstaerke" }}
-pcm.sc_lautstaerke {{ type softvol; slave.pcm "hdmi:CARD={karte},DEV=0"; control {{ name "SignageCast"; card {karte} }} }}
+pcm.sc_lautstaerke {{ type softvol; slave.pcm "{art}:CARD={karte},DEV={dev}"; control {{ name "SignageCast"; card {karte} }} }}
 ''')
             os.chown(BROWSER_HOME + "/.asoundrc", *benutzer_ids())
         except (OSError, KeyError):
@@ -542,6 +576,8 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "hdmi:CARD={karte},DEV=0"; control
             args.append("--alsa-output-device=signagecast")
         if optionen.get("hwdec") == "aus":
             args.append("--disable-accelerated-video-decode")
+        elif PC:                                    # VAAPI (Intel/AMD) unter Wayland – ohne passende Grafik nimmt Chromium die CPU
+            args.append("--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL,VaapiVideoDecoder")
         args.append(url)
         uid, gid = benutzer_ids()
         try:
@@ -581,8 +617,8 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "hdmi:CARD={karte},DEV=0"; control
         self.lautstaerke_setzen(o.get("lautstaerke", 100), karte)
 
     def lautstaerke_setzen(self, wert, karte=None):
-        m = re.match(r"alsa/hdmi:CARD=(\w+),DEV=0", hdmi_ton())
-        karte = karte or (m.group(1) if m else None)
+        t = ton_geraet()
+        karte = karte or (t[1] if t else None)
         if karte and wert != self.lautstaerke and lauf("amixer", "-q", "-c", karte, "sset", "SignageCast", f"{min(100, int(wert))}%")[0] == 0:
             self.lautstaerke = wert                 # der Regler entsteht erst, wenn Chromium das erste Mal Ton abspielt
 
@@ -615,12 +651,38 @@ def gruppen():
 
 
 def hdmi_ton():
-    """ALSA-Gerät des HDMI-Tons (Pi 4/5: vc4hdmi0, Pi 3: vc4hdmi)."""
+    """ALSA-Gerät des HDMI-Tons (Pi 4/5: vc4hdmi0, Pi 3: vc4hdmi; PC: der HDMI/DP-Ausgang mit Bildschirm)."""
+    if PC:
+        return pc_ton()
     for z in lesen("/proc/asound/cards").splitlines():
         m = re.match(r"\s*\d+\s+\[(\w+)\s*\]", z)
         if m and "hdmi" in m.group(1).lower():
             return f"alsa/hdmi:CARD={m.group(1)},DEV=0"
     return "auto"
+
+
+def pc_ton():
+    """PC: HDMI-/DisplayPort-Ausgänge der Soundkarten; der mit angeschlossenem Bildschirm (ELD gefüllt) zuerst."""
+    kandidaten = []
+    for z in lesen("/proc/asound/cards").splitlines():
+        m = re.match(r"\s*(\d+)\s+\[(\w+)\s*\]", z)
+        if not m:
+            continue
+        nr, karte = m.groups()
+        for pcm in sorted(glob_liste(f"/proc/asound/card{nr}/pcm*p")):
+            if not re.search(r"HDMI|DP|DisplayPort", lesen(pcm + "/info")):
+                continue
+            dev = re.search(r"pcm(\d+)p$", pcm).group(1)
+            eld = lauf("amixer", "-c", nr, "cget", f"iface=PCM,name=ELD,device={dev}")[1]
+            m2 = re.search(r"values=(\d+)", eld)
+            kandidaten.append((not (m2 and int(m2.group(1)) > 0), f"alsa/plughw:CARD={karte},DEV={dev}"))
+    return sorted(kandidaten)[0][1] if kandidaten else "auto"
+
+
+def ton_geraet():
+    """(Art, Karte, Gerät) aus hdmi_ton(), z. B. ("hdmi", "vc4hdmi0", "0") – oder None (kein HDMI-Ton gefunden)."""
+    m = re.match(r"alsa/(hdmi|plughw):CARD=(\w+),DEV=(\d+)$", hdmi_ton())
+    return m.groups() if m else None
 
 
 # ---------- Server ----------
@@ -960,6 +1022,8 @@ class Player:
         wlan_verbindungen(k.get("wlan") or [], k.get("land") or "DE")
         if schreibschutz_aktiv():          # Updates landen im RAM und wären nach dem Neustart weg – Pflege übernimmt der Server
             lauf("systemctl", "stop", "apt-daily.timer", "apt-daily-upgrade.timer")
+        if PC:
+            k.pop("pflege", None)
         if k.get("pflege") == "update" and not schreibschutz_aktiv():
             self.systemupdate()
         if schreibschutz_setzen(bool(k.get("schreibschutz", True))):
@@ -1042,7 +1106,7 @@ class Player:
         verbunden, tv_name, ausgang = hdmi()
         v = self.anzeige.video_info() if self.anzeige.url and self.anzeige.laeuft() else {}
         return {"version": VERSION, "modell": modell(), "ram_mb": ram_mb(), "netz": art, "ssid": ssid, "signal": signal, "ip": ip,
-                "temperatur": round(int(lesen("/sys/class/thermal/thermal_zone0/temp", "0") or 0) / 1000, 1),
+                "temperatur": temperatur(), "plattform": "pc" if PC else "pi",
                 "drossel": lauf("vcgencmd", "get_throttled")[1].partition("=")[2], "laufzeit": int(time.time() - START),
                 "hochgefahren": int(float(lesen("/proc/uptime", "0").split()[0])), "hdmi": verbunden, "tv_name": tv_name,
                 "ausgang": ausgang, "zustand": self.zustand, "zustand_text": self.zustand_text, "video": v,
@@ -1100,6 +1164,8 @@ class Player:
                     erg["ok"], erg["hinweis"] = cec(art == "cec_an")
                 elif art == "erkennen":
                     self.erkennen_bis = time.time() + 30
+                elif art == "systemupdate" and PC:      # live-System: Updates kommen mit einem neuen Image
+                    erg.update(ok=False, hinweis="pc_image")
                 elif art == "systemupdate":
                     self.k["pflege"] = "update"
                     konfig_speichern(self.k)
@@ -1229,7 +1295,7 @@ class Player:
         if self.browser.laeuft() and not direkt:
             self.browser.beenden()
         if not self.anzeige.laeuft() and not direkt:
-            if (hdmi()[0] or not glob_liste("/sys/class/drm/card*-HDMI-A-*")) and jetzt - self.anzeige.gestartet > 10:
+            if (hdmi()[0] or not ausgaenge()) and jetzt - self.anzeige.gestartet > 10:
                 self.anzeige.starten(self.anzeige.optionen)
             return
         online = jetzt - self.kontakt < 60
@@ -1346,7 +1412,8 @@ class Player:
         """DH-Wert schicken, Antwort des Servers verrechnen: Code für den Bildschirm, Schlüssel für später."""
         a = secrets.randbits(320)
         a_pub = pow(2, a, DH_P)
-        code, inhalt, _ = self.server.offen("/player/koppeln", {"a": format(a_pub, "x"), "modell": modell(), "version": VERSION})
+        code, inhalt, _ = self.server.offen("/player/koppeln", {"a": format(a_pub, "x"), "modell": modell(), "version": VERSION,
+                                                                 "plattform": "pc" if PC else "pi"})
         if code == 429:
             raise ValueError("zu viele Kopplungsanfragen – später erneut")
         if code != 200:
