@@ -1553,5 +1553,126 @@ class Todo035(unittest.TestCase):
         self.assertFalse(self.l.ausblenden("ha"))
 
 
+class PcPlayer036(unittest.TestCase):
+    """Seit 0.36: PC-Player (eigenes Grundimage, ISO roh oder .img.gz, Kopplung mit Plattform) und Browser-Gerät (nur Link)."""
+    def setUp(self):
+        import player as PL
+        self.PL, d = PL, tempfile.mkdtemp()
+        PL.DATEI, PL.ORDNER = os.path.join(d, "player.json"), os.path.join(d, "p")
+        PL.GRUND, PL.GRUND_PC = os.path.join(d, "p", "basis"), os.path.join(d, "p", "basis-pc")
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+        PL.stand.clear()
+        PL.direkt_abruf.clear()
+        PL.kopplungen.clear()
+        PL.koppel_zeiten.clear()
+
+    def grundimage_pc(self):
+        import lzma
+        PL, marke = self.PL, "SCPH-pc"
+        platz = b"".join((f"{marke}-{i:04d}".ljust(511) + "\n").encode() for i in range(32))
+        img = bytearray(os.urandom(1 << 20)) + bytes(2 << 20)
+        img[1 << 20:(1 << 20) + len(platz)] = platz
+        os.makedirs(PL.GRUND_PC)
+        open(os.path.join(PL.GRUND_PC, "x.iso.xz"), "wb").write(lzma.compress(bytes(img)))
+        json.dump({"art": "signagecast-pc-image", "version": "0.36.0", "datei": "x.iso.xz", "groesse": len(img),
+                   "platzhalter": {"offset": 1 << 20, "laenge": 16384, "marke": marke}}, open(os.path.join(PL.GRUND_PC, "meta.json"), "w"))
+        return bytes(img)
+
+    def test_pc_image_roh_und_gz(self):
+        import gzip
+        PL, img = self.PL, self.grundimage_pc()
+        g = PL.neu({"name": "Empfang", "tv": "tv", "modell": "pc"}, {"tv"})
+        self.assertEqual((g["modell"], g["anzeige_modus"]), ("pc", "direkt"))       # PC: Direktmodus als Standard
+        with self.assertRaises(M.Meldung):                                          # kein Pi-Grundimage nötig, aber das PC-Image
+            PL.herunterladen_vorbereiten("", None, "http://192.0.2.1:8890")          # (Sammel-Image ohne Art = Pi: fehlt)
+        k = PL.herunterladen_vorbereiten(g["id"], None, "http://192.0.2.1:8890", form="iso")
+        self.assertEqual(PL.dateiname_fuer(k), "signagecast-pc-empfang.iso")
+        aus = []
+        PL.image_schreiben(k, aus.append, "de", "Europe/Berlin")
+        roh = b"".join(aus)                                                         # ungepackt, gleiche Länge
+        self.assertEqual(len(roh), len(img))
+        self.assertEqual(roh[:1 << 20], img[:1 << 20])
+        self.assertEqual(json.loads(roh[1 << 20:(1 << 20) + 16384])["id"], g["id"])
+        k = PL.herunterladen_vorbereiten("", None, "http://192.0.2.1:8890", art="pc")
+        self.assertEqual(PL.dateiname_fuer(k), "signagecast-pc-kopplung.img.gz")
+        aus = []
+        PL.image_schreiben(k, aus.append, "de", "Europe/Berlin")
+        self.assertTrue(json.loads(gzip.decompress(b"".join(aus))[1 << 20:(1 << 20) + 16384])["kopplung"])
+        p = PL.neu({"name": "Pi", "tv": "tv"}, {"tv"})                              # Pi bleibt Pi: ohne Pi-Grundimage kein Download
+        with self.assertRaises(M.Meldung):
+            PL.herunterladen_vorbereiten(p["id"], None, "http://192.0.2.1:8890", form="iso")
+
+    def test_pc_kein_systemupdate(self):
+        PL = self.PL
+        g = PL.neu({"name": "PC", "tv": "tv", "modell": "pc"}, {"tv"})
+        PL.stand[g["id"]] = {"zeit": time.time(), "bericht": {"letztes_update": None}}
+        import unittest.mock as um
+        with um.patch("time.localtime", return_value=time.struct_time((2026, 11, 8, 3, 10, 0, 6, 312, 0))):
+            PL.wochenpflege()
+        self.assertEqual(PL.befehle.get(g["id"], []), [])
+
+    def test_koppeln_als_pc(self):
+        PL = self.PL
+        a = secrets_pub()
+        d = PL.koppel_anfrage({"a": format(a, "x"), "modell": "PC LENOVO ThinkCentre M720q", "plattform": "pc"}, "192.0.2.9")
+        code = PL.kopplungen[d["kennung"]]["code"]
+        g = PL.koppeln(code, {"name": "Empfang", "tv": "tv"}, {"tv"})
+        self.assertEqual(g["modell"], "pc")
+
+    def test_browser_geraet(self):
+        PL = self.PL
+        g = PL.neu({"name": "Smart-TV", "tv": "tv", "modell": "browser", "anzeige_modus": "stream"}, {"tv"})
+        self.assertEqual((g["modell"], g["anzeige_modus"], PL.modus_fuer(g)), ("browser", "direkt", "direkt"))
+        PL.aendern(g["id"], {"modell": "pi45"}, {"tv"})                             # bleibt ein Browser-Gerät
+        self.assertEqual(g["modell"], "browser")
+        p = PL.neu({"name": "Pi", "tv": "tv"}, {"tv"})
+        PL.aendern(p["id"], {"modell": "browser"}, {"tv"})                          # und ein Pi wird keines
+        self.assertEqual(p["modell"], "pi45")
+        self.assertFalse(PL.online(g["id"]) or PL.gesehen(g["id"]))
+        PL.direkt_abruf[g["id"]] = time.time()                                      # die Seite hat Daten geholt
+        self.assertTrue(PL.online(g["id"]) and PL.gesehen(g["id"]))
+        eintrag = next(x for x in PL.liste(lambda g: []) if x["id"] == g["id"])
+        alt = PL.anzeige_schluessel(g)
+        self.assertEqual(eintrag["link_pfad"], "/anzeige/" + alt)
+        self.assertNotIn("schluessel", eintrag)
+        self.assertIsNone(next(x for x in PL.liste(lambda g: []) if x["id"] == p["id"])["link_pfad"])
+        with self.assertRaises(M.Meldung):
+            PL.befehl(g["id"], "bild")
+        with self.assertRaises(M.Meldung):
+            PL.herunterladen_vorbereiten(g["id"], None, "http://192.0.2.1:8890")
+        PL.link_neu(g["id"])                                                        # alter Link sofort ungültig
+        self.assertIsNone(PL.geraet_fuer_anzeige(alt))
+        self.assertIs(PL.geraet_fuer_anzeige(PL.anzeige_schluessel(g)), g)
+        self.assertFalse(PL.online(g["id"]))
+        with self.assertRaises(M.Meldung):
+            PL.link_neu(p["id"])                                                    # nur für Browser-Geräte
+
+    def test_agent_pc_erkennung(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        alt = agent.PC, agent.lesen, agent.glob_liste
+        werte = {"/sys/class/dmi/id/sys_vendor": "LENOVO", "/sys/class/dmi/id/product_version": "ThinkCentre M720q",
+                 "/sys/class/dmi/id/product_name": "10T7S0A600", "/sys/class/hwmon/hwmon1/name": "coretemp",
+                 "/sys/class/hwmon/hwmon1/temp1_input": "45000", "/proc/cmdline": "boot=live quiet"}
+        try:
+            agent.PC, agent.lesen = True, lambda p, e="": werte.get(p, e)
+            agent.glob_liste = lambda m: {"/sys/class/hwmon/hwmon*": ["/sys/class/hwmon/hwmon0", "/sys/class/hwmon/hwmon1"],
+                                          "/sys/class/drm/card*-*/status": ["/sys/class/drm/card1-eDP-1/status", "/sys/class/drm/card1-DP-2/status",
+                                                                            "/sys/class/drm/card1-Writeback-1/status"]}.get(m, [])
+            self.assertEqual(agent.modell(), "PC LENOVO ThinkCentre M720q 10T7S0A600")
+            self.assertEqual(agent.temperatur(), 45.0)
+            self.assertTrue(agent.schreibschutz_aktiv())
+            self.assertFalse(agent.schreibschutz_setzen(False))
+            self.assertEqual(agent.ausgaenge(), ["/sys/class/drm/card1-DP-2/status", "/sys/class/drm/card1-eDP-1/status"])
+        finally:
+            agent.PC, agent.lesen, agent.glob_liste = alt
+
+
+def secrets_pub():
+    import player as PL, secrets
+    return pow(2, secrets.randbits(320), PL.DH_P)
+
+
 if __name__ == "__main__":
     unittest.main()

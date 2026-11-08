@@ -51,7 +51,7 @@ const TEXTE = {
           ort: "Wo steht der Fernseher? Der Ort bestimmt Wetter, Sonnenzeiten und Warnungen.", ha: "Home Assistant verbinden (optional) – für Werte aus dem Haus. Die Anleitung steht danach unter Einstellungen → Home Assistant.",
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
-    pl: { titel: "Raspberry Pi als Player", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
+    pl: { titel: "Player: Raspberry Pi, PC oder Browser", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           ram: "Arbeitsspeicher: Für den Stream reicht 1 GB (Zero 2 W: 512 MB). Für den Direktmodus mindestens 2 GB, besser 4 GB – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe; mit Schreibschutz liegt auch alles, was der Browser speichert, im Arbeitsspeicher. Schätzwerte, auf echten Pis noch nicht gemessen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
@@ -59,8 +59,8 @@ const TEXTE = {
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
-          koppeln: "Pi koppeln (ein Image für mehrere Pis)", koppelnText: "Ein Image für beliebig viele Pis: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jeder Pi zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Fernseher wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
-          sammelImage: "Image für mehrere Pis herunterladen", code: "Code vom Fernseher", codePlatz: "123 456", koppelnKnopf: "Koppeln",
+          koppeln: "Player koppeln (ein Image für mehrere Geräte)", koppelnText: "Ein Image für beliebig viele Pis oder PCs: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jedes Gerät zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Fernseher wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
+          sammelImage: "Image für mehrere Geräte herunterladen", fuer: "Für", code: "Code vom Fernseher", codePlatz: "123 456", koppelnKnopf: "Koppeln",
           gekoppelt: "Gekoppelt – der Pi startet in wenigen Sekunden.", wartend: (n) => n === 1 ? "1 Pi zeigt gerade einen Code" : `${n} Pis zeigen gerade einen Code`,
           keinerWartet: "Gerade zeigt kein Pi einen Code.",
           neu: "Player hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Fernseher", keinTv: "– noch keiner –", modell: "Modell",
@@ -118,7 +118,27 @@ const TEXTE = {
                pi_direkt_pi3: "Der Direktmodus braucht einen Pi 4 oder Pi 5 – dieser Pi zeigt den Stream.",
                pi_direkt_kein_browser: "Das Image dieses Pi hat noch keinen Browser (vor 0.24 erstellt): für den Direktmodus ein neues Image herunterladen und flashen. Bis dahin zeigt er den Stream.",
                pi_direkt_ram: "Dieser Pi hat weniger als 2 GB Arbeitsspeicher – für den Direktmodus knapp (Browser und Cache liegen mit Schreibschutz im Arbeitsspeicher). Ruckelt die Seite oder startet sie neu: Anzeige auf „Stream“ stellen oder einen Pi mit 4 GB nehmen.",
-               pi_direkt_rueckfall: "Der Browser hatte Probleme – der Pi zeigt für eine Stunde den Stream. „Player neu starten“ versucht es sofort wieder." } },
+               pi_direkt_rueckfall: "Der Browser hatte Probleme – der Player zeigt für eine Stunde den Stream. „Player neu starten“ versucht es sofort wieder.",
+               pc_kein_bildschirm: "Kein Bildschirm erkannt – Kabel prüfen (HDMI, DisplayPort) und den Bildschirm einschalten.",
+               pc_ist_pi: "Dieses Gerät meldet sich als Raspberry Pi – in den Einstellungen das Modell auf den passenden Pi stellen.",
+               pi_ist_pc: "Dieses Gerät meldet sich als PC – in den Einstellungen das Modell auf „PC“ stellen." },
+          pc: { titel: "PC als Player (seit 0.36, experimentell)",
+            text: "Ein normaler PC, Mini-PC oder Thin Client (x86-64 mit UEFI) wird zum Player: Er startet vom USB-Stick, ohne etwas auf seiner Festplatte zu ändern, und zeigt die Seite im Direktmodus selbst – gestochen scharf, ohne Verzögerung, und der Server muss für ihn nichts kodieren. Verwaltet wird er hier wie ein Pi.",
+            bedarf: "Dazu: 64-Bit-PC mit UEFI (etwa ab 2013; Secure Boot darf an bleiben), mindestens 4 GB Arbeitsspeicher, Intel- oder AMD-Grafik (NVIDIA geht, Videos aber ohne Hardware-Dekodierung), USB-Stick ab 4 GB, LAN-Kabel oder WLAN. Kein HDMI-CEC (TV ein/aus) und keine Systemupdates – neue Software kommt mit einem neuen Image.",
+            basis: "PC-Image", basisFehlt: "noch nicht geladen – einmalig etwa 1 GB",
+            format: "Format", f: { gz: "USB-Stick (.img.gz – balenaEtcher, Raspberry Pi Imager, Rufus)", iso: "ISO (.iso, ungepackt – Ventoy, CD, virtuelle Maschine)" },
+            formatText: "Beides ist dasselbe System. Vom USB-Stick merkt sich der PC Kopplung, WLAN und Updates des Players auf dem Stick; von CD oder Ventoy nur bis zum Neustart (die Einstellungen kommen ohnehin vom Server).",
+            s1: "USB-Stick mit balenaEtcher, Raspberry Pi Imager („Eigenes Image“) oder Rufus beschreiben – Rufus fragt nach dem Modus: „DD-Image“ wählen. Ventoy: die .iso einfach auf den Stick kopieren.",
+            s2: "Stick in den PC stecken, Bildschirm anschließen, einschalten und vom Stick starten (Startmenü meist mit F12, F11, F8 oder Esc; sonst im UEFI-Setup USB an die erste Stelle).",
+            s3: "Der erste Start dauert 1–2 Minuten, dann erscheint die Seite. Auf der Festplatte des PCs ändert sich nichts.",
+            s4: "Mit LAN-Kabel ist nichts weiter zu tun. Mit WLAN: Findet der PC kein Netz, öffnet er nach 2 Minuten einen Hotspot (wenn seine WLAN-Karte das kann) und zeigt einen QR-Code.",
+            live: "Live-System: läuft schreibgeschützt (Stromausfälle schaden nicht). Systemupdates gibt es nicht – für neue Software „Image erneut herunterladen“ und den Stick neu beschreiben.",
+            neustart: "PC neu starten", m: "PC (x86-64, UEFI) – experimentell" },
+          br: { m: "Browser-Gerät (nur Link, ohne Image)", titel: "Browser-Gerät",
+            text: "Für Geräte, die schon einen Browser haben: Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus Kiosk) oder einfach ein Browser im Vollbild (F11). Es gibt kein Image – du bekommst einen geheimen Link, der genau diesen Fernseher zeigt. Ohne Bildschirmfoto, Rückfall auf den Stream und Fernwartung; „online“ heißt: die Seite holt ihre Daten (alle 15 s).",
+            erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
+            neu: "Neuen Link erzeugen", neuFrage: "Neuen Link erzeugen? Der bisherige gilt dann sofort nicht mehr – Geräte damit zeigen einen Fehler, bis der neue eingetragen ist.", neuOk: "Neuer Link erstellt",
+            linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Fernseher – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
     todoAus: { tipp: "Ausblenden (dauerhaft, bis du ihn wieder einblendest)", update: "Ausblenden (bis zur nächsten Version)",
                warn: "Ausblenden (bis das Problem einmal behoben war – tritt es wieder auf, erscheint es wieder)" },
@@ -344,7 +364,7 @@ const TEXTE = {
           ort: "Where is the TV? The place sets weather, sun times and warnings.", ha: "Connect Home Assistant (optional) – for values from your home. The guide is under Settings → Home Assistant afterwards.",
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
-    pl: { titel: "Raspberry Pi as player", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
+    pl: { titel: "Players: Raspberry Pi, PC or browser", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
           ram: "Memory: 1 GB is enough for the stream (Zero 2 W: 512 MB). Direct mode needs at least 2 GB, better 4 GB – especially with videos, cameras, web pages or 4K output; with write protection everything the browser stores is kept in memory too. Estimates, not yet measured on real Pis.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
@@ -352,8 +372,8 @@ const TEXTE = {
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
-          koppeln: "Pair a Pi (one image for several Pis)", koppelnText: "One image for any number of Pis: it contains the server address and Wi-Fi, but no key yet. At startup each Pi shows a 6-digit code on the TV – enter it here, choose name and TV, done. The key is negotiated securely and never travels over the network.",
-          sammelImage: "Download image for several Pis", code: "Code from the TV", codePlatz: "123 456", koppelnKnopf: "Pair",
+          koppeln: "Pair a player (one image for several devices)", koppelnText: "One image for any number of Pis or PCs: it contains the server address and Wi-Fi, but no key yet. At startup each device shows a 6-digit code on the TV – enter it here, choose name and TV, done. The key is negotiated securely and never travels over the network.",
+          sammelImage: "Download image for several devices", fuer: "For", code: "Code from the TV", codePlatz: "123 456", koppelnKnopf: "Pair",
           gekoppelt: "Paired – the Pi starts in a few seconds.", wartend: (n) => n === 1 ? "1 Pi is showing a code" : `${n} Pis are showing a code`,
           keinerWartet: "No Pi is showing a code right now.",
           neu: "Add player", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the TV", keinTv: "– none yet –", modell: "Model",
@@ -411,7 +431,27 @@ const TEXTE = {
                pi_direkt_pi3: "Direct mode needs a Pi 4 or Pi 5 – this Pi shows the stream.",
                pi_direkt_kein_browser: "This Pi’s image has no browser yet (created before 0.24): download and flash a new image for direct mode. Until then it shows the stream.",
                pi_direkt_ram: "This Pi has less than 2 GB of memory – tight for direct mode (with write protection the browser and its cache are kept in memory). If the page stutters or restarts: set the display to “stream” or use a Pi with 4 GB.",
-               pi_direkt_rueckfall: "The browser had problems – the Pi shows the stream for one hour. “Restart player” tries again right away." } },
+               pi_direkt_rueckfall: "The browser had problems – the player shows the stream for one hour. “Restart player” tries again right away.",
+               pc_kein_bildschirm: "No screen detected – check the cable (HDMI, DisplayPort) and switch the screen on.",
+               pc_ist_pi: "This device reports as a Raspberry Pi – set the model to the matching Pi in the settings.",
+               pi_ist_pc: "This device reports as a PC – set the model to “PC” in the settings." },
+          pc: { titel: "PC as player (since 0.36, experimental)",
+            text: "An ordinary PC, mini PC or thin client (x86-64 with UEFI) becomes a player: it starts from a USB stick without changing anything on its disk and shows the page itself in direct mode – sharp, without delay, and the server encodes nothing for it. You manage it here like a Pi.",
+            bedarf: "You need: 64-bit PC with UEFI (about 2013 or newer; Secure Boot may stay on), at least 4 GB of memory, Intel or AMD graphics (NVIDIA works, but videos without hardware decoding), USB stick of 4 GB or more, LAN cable or Wi-Fi. No HDMI-CEC (TV on/off) and no system updates – new software comes with a new image.",
+            basis: "PC image", basisFehlt: "not downloaded yet – about 1 GB once",
+            format: "Format", f: { gz: "USB stick (.img.gz – balenaEtcher, Raspberry Pi Imager, Rufus)", iso: "ISO (.iso, uncompressed – Ventoy, CD, virtual machine)" },
+            formatText: "Both are the same system. From a USB stick the PC keeps pairing, Wi-Fi and player updates on the stick; from CD or Ventoy only until the next restart (the settings come from the server anyway).",
+            s1: "Write the USB stick with balenaEtcher, Raspberry Pi Imager (“Use custom”) or Rufus – when Rufus asks for the mode, choose “DD image”. Ventoy: just copy the .iso to the stick.",
+            s2: "Plug the stick into the PC, connect the screen, switch on and start from the stick (boot menu usually F12, F11, F8 or Esc; otherwise put USB first in the UEFI setup).",
+            s3: "The first start takes 1–2 minutes, then the page appears. Nothing changes on the PC’s disk.",
+            s4: "With a LAN cable there is nothing else to do. With Wi-Fi: if the PC finds no network, after 2 minutes it opens a hotspot (if its Wi-Fi card can) and shows a QR code.",
+            live: "Live system: runs write-protected (power cuts do no harm). There are no system updates – for new software use “Download image again” and rewrite the stick.",
+            neustart: "Restart PC", m: "PC (x86-64, UEFI) – experimental" },
+          br: { m: "Browser device (link only, no image)", titel: "Browser device",
+            text: "For devices that already have a browser: smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk) or just a browser in full screen (F11). There is no image – you get a secret link that shows exactly this TV. No screenshot, no fallback to the stream, no remote maintenance; “online” means: the page fetches its data (every 15 s).",
+            erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
+            neu: "Create new link", neuFrage: "Create a new link? The current one stops working immediately – devices using it show an error until the new one is entered.", neuOk: "New link created",
+            linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this TV – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
     todoTitel: "To do", todoOk: "All good.",
     todoAus: { tipp: "Hide (for good, until you show it again)", update: "Hide (until the next version)",
                warn: "Hide (until the problem was solved once – if it comes back, it shows again)" },
@@ -553,7 +593,8 @@ const TEXTE = {
       pi_platzhalter: "Player image damaged – please download again",
       pi_koppel_ungueltig: "Invalid pairing request", pi_koppel_voll: "Too many pairing requests – try again in an hour",
       pi_basis_alt: "The downloaded player image ({v}) cannot pair yet – click “Download again” above (0.25 or later)",
-      pi_code: "No Pi shows this code – check the code on the TV (it is valid for 10 minutes)",
+      pi_code: "No player shows this code – check the code on the TV (it is valid for 10 minutes)",
+      pi_browser_befehl: "A browser device has no player – it only shows the page behind its link",
       csv_kodierung: "Unknown character set", csv_trenner: "Unknown delimiter", csv_anfuehrung: "Unknown quote character",
       csv_spalte: "Invalid column number", csv_feldname: "Field name missing or duplicate: {name}", csv_keine_felder: "Please choose at least one field",
       csv_kaputt: "CSV not readable: {d}", csv_leer: "No data in the CSV file",
@@ -999,7 +1040,7 @@ function plHerunterladen(kennung, datei) {
   else {
     const opt = { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: "/api/player/image?t=" + encodeURIComponent(kennung),
                   headers: { "X-SignageCast": "1" }, binary: "raw",
-                  external: { "content-disposition": `attachment; filename="${datei}"`, "content-type": "application/gzip" } };
+                  external: { "content-disposition": `attachment; filename="${datei}"`, "content-type": datei.endsWith(".iso") ? "application/octet-stream" : "application/gzip" } };
     url = "/cockpit/channel/" + cockpit.transport.csrf_token + "?" + window.btoa(JSON.stringify(opt));
   }
   const a = document.createElement("a");
@@ -1128,29 +1169,42 @@ async function playerSeite(inhalt) {
   const tvOpt = (w) => `<option value="">${esc(T.pl.keinTv)}</option>` + E.fernseher.map((t) => `<option value="${esc(t.id)}" ${t.id === w ? "selected" : ""}>${esc(t.name)}</option>`).join("");
   const opt = (werte, w, texte) => werte.map((x) => `<option value="${esc(x)}" ${String(x) === String(w) ? "selected" : ""}>${esc(texte ? texte[x] : x)}</option>`).join("");
   const mb = (b) => Math.round(b / 1e6);
-  const basisText = () => {
-    const b = P.basis;
+  const basisText = (pc) => {
+    const b = pc ? P.basis_pc : P.basis;
     if (b.phase === "laedt") return `<span class="warn">${esc(T.pl.basisLaedt(mb(b.geladen), mb(b.gesamt) || "…"))}</span>`;
     const f = b.phase === "fehler" ? `<span class="schlecht">${esc(T.pl.basisFehler)}: ${esc(meldungText(b, b.fehler))}</span> ` : "";
-    return f + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>` : esc(T.pl.basisFehlt));
+    return f + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>` : esc(pc ? T.pl.pc.basisFehlt : T.pl.basisFehlt));
   };
+  // Modelle (seit 0.36 auch PC und Browser-Gerät); ein Browser-Gerät bleibt eines, andere werden keines
+  const MT = () => Object.assign({}, T.pl.m, { pc: T.pl.pc.m, browser: T.pl.br.m });
+  const bereitFuer = (m) => m === "browser" || !!(m === "pc" ? P.basis_pc : P.basis).vorhanden;
+  const laedt = () => P.basis.phase === "laedt" || P.basis_pc.phase === "laedt";
+  const formWahl = (id) => `<div class="zeile" data-nur-pc><label>${esc(T.pl.pc.format)}</label><select id="${id}">${opt(["gz", "iso"], "gz", T.pl.pc.f)}</select></div>
+    <p class="leise" data-nur-pc>${esc(T.pl.pc.formatText)}</p>`;
+  const schritteHtml = (pc) => { const q = pc ? T.pl.pc : T.pl; return `<h3>${esc(T.pl.schritte)}</h3><ol><li>${esc(q.s1)}</li><li>${esc(q.s2)}</li><li>${esc(q.s3)}</li><li>${esc(q.s4)}</li></ol>`; };
   const wartendText = () => (P.wartend || []).length
     ? T.pl.wartend(P.wartend.length) + ": " + P.wartend.map((w) => [w.modell, w.ip].filter(Boolean).join(" · ")).join(", ") : T.pl.keinerWartet;
   const zeichnen = () => {
     const bereit = !!P.basis.vorhanden;
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pl.titel)}</h2><p>${esc(T.pl.text)}</p>
         <p class="leise">${esc(T.pl.modelle)}</p><p class="leise">${esc(T.pl.bedarf)}</p><p class="leise warn">${esc(T.pl.experimentell)}</p>
-        <div class="zeile"><label>${esc(T.pl.basis)}</label><span id="plBasis">${basisText()}</span>
-          <button class="knopf" id="plBasisLaden" ${P.basis.phase === "laedt" ? "disabled" : ""}>${esc(bereit ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+        <div class="zeile"><label>${esc(T.pl.basis)}</label><span id="plBasis">${basisText(false)}</span>
+          <button class="knopf" id="plBasisLaden" ${laedt() ? "disabled" : ""}>${esc(bereit ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+        <h3>${esc(T.pl.pc.titel)}</h3><p>${esc(T.pl.pc.text)}</p><p class="leise">${esc(T.pl.pc.bedarf)}</p>
+        <div class="zeile"><label>${esc(T.pl.pc.basis)}</label><span id="plBasisPc">${basisText(true)}</span>
+          <button class="knopf" id="plBasisPcLaden" ${laedt() ? "disabled" : ""}>${esc(P.basis_pc.vorhanden ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+        <h3>${esc(T.pl.br.titel)}</h3><p class="leise">${esc(T.pl.br.text)}</p>
         ${P.container ? `<p class="leise">${esc(T.pl.port(P.webhook_port))}</p>` : ""}</div>
       <div class="karte" id="plNeu"><h2>${esc(T.pl.neu)}</h2>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" id="plName" maxlength="40" placeholder="${esc(T.pl.namePlatz)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
-        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3"], "pi45", T.pl.m)}</select></div><p class="leise">${esc(T.pl.ram)}</p>
-        ${plNetz("n", P.wlan, true)}
-        ${fwBox("plFw")}
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3", "pc", "browser"], "pi45", MT())}</select></div>
+        <div data-nur-image><p class="leise" data-nur-pi>${esc(T.pl.ram)}</p>
+          ${plNetz("n", P.wlan, true)}
+          ${fwBox("plFw")}
+          ${formWahl("plForm")}</div>
         <div class="zeile"><button class="knopf haupt" id="plErstellen" ${bereit ? "" : "disabled"}>${esc(T.pl.erstellen)}</button></div>
-        <div id="plSchritte" hidden><h3>${esc(T.pl.schritte)}</h3><ol><li>${esc(T.pl.s1)}</li><li>${esc(T.pl.s2)}</li><li>${esc(T.pl.s3)}</li><li>${esc(T.pl.s4)}</li></ol></div>
+        <div id="plSchritte" hidden></div>
         <details class="erweitert"><summary>${esc(T.pl.erweitert)}</summary>
           <div class="zeile"><label>${esc(T.pl.server)}</label><input type="text" id="plServer" value="${esc(P.server)}" placeholder="${esc(P.server_auto || `http://${location.hostname}:${P.webhook_port}`)}"></div>
           <p class="leise">${esc(T.pl.serverText)}</p>
@@ -1160,8 +1214,10 @@ async function playerSeite(inhalt) {
           ${P.wlan.length ? `<h3>${esc(T.pl.gespeicherte)}</h3>${P.wlan.map((s) => `<div class="zeile"><span>${esc(s)}</span>
             <button class="knopf klein" data-vergessen="${esc(s)}">${esc(T.pl.vergessen)}</button></div>`).join("")}` : ""}</details></div>
       <div class="karte" id="plKop"><h2>${esc(T.pl.koppeln)}</h2><p class="leise">${esc(T.pl.koppelnText)}</p>
+        <div class="zeile"><label>${esc(T.pl.fuer)}</label><select id="plSArt">${opt(["pi", "pc"], "pi", { pi: "Raspberry Pi", pc: T.pl.pc.m })}</select></div>
         ${plNetz("s", P.wlan, true)}
         ${fwBox("plSFw")}
+        ${formWahl("plSForm")}
         <div class="zeile"><button class="knopf" id="plSammel" ${bereit ? "" : "disabled"}>${esc(T.pl.sammelImage)}</button></div>
         <p id="plWartend" class="leise">${wartendText()}</p>
         <div class="zeile"><label>${esc(T.pl.code)}</label><input type="text" id="plCode" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="${esc(T.pl.codePlatz)}"></div>
@@ -1170,10 +1226,18 @@ async function playerSeite(inhalt) {
         <div class="zeile"><button class="knopf haupt" id="plKoppeln">${esc(T.pl.koppelnKnopf)}</button></div></div>
       <h2>${esc(T.pl.liste)}</h2><div id="plListe"></div>`;
     const netzSammel = plNetzAnbinden($("#plKop"), "s");
+    const kopSicht = () => {
+      const pc = $("#plSArt").value === "pc";
+      $("#plKop").querySelectorAll("[data-nur-pc]").forEach((x) => { x.hidden = !pc; });
+      $("#plSammel").disabled = !bereitFuer(pc ? "pc" : "pi45");
+    };
+    $("#plSArt").onchange = kopSicht; kopSicht();
     $("#plSammel").onclick = (e) => aktion(e.target, async () => {
-      const d = await senden("/api/player/sammel-image", { wlan: netzSammel(), fernwartung: $("#plSFw").checked, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+      const pc = $("#plSArt").value === "pc";
+      const d = await senden("/api/player/sammel-image", { wlan: netzSammel(), fernwartung: $("#plSFw").checked, art: pc ? "pc" : "pi", form: $("#plSForm").value,
+        server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
       plHerunterladen(d.kennung, d.datei);
-      $("#plSchritte").hidden = false;
+      $("#plSchritte").innerHTML = schritteHtml(pc); $("#plSchritte").hidden = false;
     }, T.pl.laedtHerunter);
     $("#plKoppeln").onclick = (e) => aktion(e.target, async () => {
       await senden("/api/player/koppeln", { code: $("#plCode").value, name: $("#plKName").value, tv: $("#plKTv").value });
@@ -1181,17 +1245,35 @@ async function playerSeite(inhalt) {
       P = await holen("/api/player"); $("#plWartend").textContent = wartendText(); listeZeichnen();
     }, T.pl.gekoppelt);
     const netzNeu = plNetzAnbinden($("#plNeu"), "n");
-    $("#plBasisLaden").onclick = (e) => aktion(e.target, async () => { await senden("/api/player/basis-laden"); P.basis.phase = "laedt"; zeichnen(); beobachten(); }, null);
-    $("#plErstellen").onclick = (e) => aktion(e.target, async () => {
-      const wlan = netzNeu();
-      const r = await senden("/api/player/neu", { name: $("#plName").value, tv: $("#plTv").value, modell: $("#plModell").value });
-      let d;
-      try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
-      catch (f) { await senden(`/api/player/${r.geraet}/entfernen`); throw f; }        // ohne Image kein halbes Gerät zurücklassen
-      plHerunterladen(d.kennung, d.datei);
-      $("#plSchritte").hidden = false; $("#plName").value = "";
-      P = await holen("/api/player"); listeZeichnen();
-    }, T.pl.laedtHerunter);
+    const neuSicht = () => {
+      const m = $("#plModell").value;
+      $("#plNeu").querySelector("[data-nur-image]").hidden = m === "browser";
+      $("#plNeu").querySelectorAll("[data-nur-pc]").forEach((x) => { x.hidden = m !== "pc"; });
+      $("#plNeu").querySelectorAll("[data-nur-pi]").forEach((x) => { x.hidden = m === "pc"; });
+      $("#plErstellen").textContent = m === "browser" ? T.pl.br.erstellen : T.pl.erstellen;
+      $("#plErstellen").disabled = !bereitFuer(m);
+    };
+    $("#plModell").onchange = neuSicht; neuSicht();
+    const basisLaden = (art) => (e) => aktion(e.target, async () => {
+      await senden("/api/player/basis-laden", { art }); (art === "pc" ? P.basis_pc : P.basis).phase = "laedt"; zeichnen(); beobachten(); }, null);
+    $("#plBasisLaden").onclick = basisLaden("pi");
+    $("#plBasisPcLaden").onclick = basisLaden("pc");
+    $("#plErstellen").onclick = (e) => {
+      const m = $("#plModell").value;
+      aktion(e.target, async () => {
+        const r = await senden("/api/player/neu", { name: $("#plName").value, tv: $("#plTv").value, modell: m });
+        if (m !== "browser") {
+          const wlan = netzNeu();
+          let d;
+          try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, form: $("#plForm").value, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
+          catch (f) { await senden(`/api/player/${r.geraet}/entfernen`); throw f; }        // ohne Image kein halbes Gerät zurücklassen
+          plHerunterladen(d.kennung, d.datei);
+          $("#plSchritte").innerHTML = schritteHtml(m === "pc"); $("#plSchritte").hidden = false;
+        }
+        $("#plName").value = "";
+        P = await holen("/api/player"); listeZeichnen();
+      }, m === "browser" ? null : T.pl.laedtHerunter);
+    };
     $("#plServerOk").onclick = (e) => aktion(e.target, async () => {
       await senden("/api/player/einstellungen", { server: $("#plServer").value.trim(), stream_port: Number($("#plStreamPort").value) || 0 });
       P = await holen("/api/player");
@@ -1200,7 +1282,50 @@ async function playerSeite(inhalt) {
       await senden("/api/player/wlan-vergessen", { ssid: b.dataset.vergessen }); P = await holen("/api/player"); zeichnen(); }); });
     listeZeichnen();
   };
+  const linkUrl = (g) => (P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}`) + g.link_pfad;
+  const karteBrowser = (g) => {           // Browser-Gerät (seit 0.36): nur Link, Status aus den Datenabrufen der Seite
+    const ort = ORT();
+    const zeit = (ts) => ts ? new Date(ts * 1000).toLocaleString(ort, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
+    const status = g.online ? `<span class="gut">● ${esc(T.pl.online)}</span>`
+      : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
+      : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
+    return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
+      <p class="leise">${esc(T.pl.br.titel)}</p>
+      ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
+      <div class="zeile"><label>${esc(T.pl.br.link)}</label><input type="text" readonly data-link value="${esc(linkUrl(g))}">
+        <button class="knopf" data-kopieren>${esc(T.pl.br.kopieren)}</button></div>
+      <p class="leise">${esc(T.pl.br.linkText)}</p>
+      <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
+        <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
+        <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
+        <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div>
+        <div class="zeile"><button class="knopf" data-link-neu>${esc(T.pl.br.neu)}</button>
+          <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
+  };
+  const browserAnbinden = (k, g) => {
+    k.querySelector("[data-kopieren]").onclick = async (e) => {
+      const f = k.querySelector("[data-link]");
+      f.select();
+      try { await navigator.clipboard.writeText(f.value); } catch (_) { document.execCommand("copy"); }
+      e.target.textContent = T.pl.br.kopiert;
+      setTimeout(() => { e.target.textContent = T.pl.br.kopieren; }, 2000);
+    };
+    k.querySelector("[data-speichern]").onclick = (e) => aktion(e.target, async () => {
+      await senden(`/api/player/${g.id}/aendern`, { name: k.querySelector("[name=name]").value, tv: k.querySelector("[name=tv]").value });
+      P = await holen("/api/player"); listeZeichnen();
+    });
+    k.querySelector("[data-link-neu]").onclick = (e) => {
+      if (!confirm(T.pl.br.neuFrage)) return;
+      aktion(e.target, async () => { await senden(`/api/player/${g.id}/link-neu`); P = await holen("/api/player"); listeZeichnen(); }, T.pl.br.neuOk);
+    };
+    k.querySelector("[data-entfernen]").onclick = (e) => {
+      if (!confirm(T.pl.entfernenFrage(g.name))) return;
+      aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holen("/api/player"); listeZeichnen(); });
+    };
+  };
   const karte = (g) => {
+    if (g.modell === "browser") return karteBrowser(g);
+    const pc = g.modell === "pc";
     const b = g.bericht || {}, v = b.video || {};
     const ort = ORT();
     const zeit = (ts) => ts ? new Date(ts * 1000).toLocaleString(ort, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
@@ -1223,8 +1348,9 @@ async function playerSeite(inhalt) {
         ? `<span class="gut">${esc(T.pl.ok)}</span>` : `<span class="schlecht">${esc(T.pl.fehlgeschlagen)}</span>${e.hinweis ? " (" + esc(e.hinweis) + ")" : ""}`}`).join(" · ")}</p>` : ""}
       ${g.bild ? `<p><img src="" data-bild="${g.id}" alt="${esc(T.pl.bildAlt(zeit(g.bild)))}" title="${esc(T.pl.bildAlt(zeit(g.bild)))}" class="pl-bild"></p>` : ""}
       ${zeilen.length ? `<div class="tabelle-rahmen"><table class="tabelle">${zeilen.map(([k, w]) => `<tr><td class="leise">${esc(k)}</td><td>${esc(w ?? "–")}</td></tr>`).join("")}</table></div>` : ""}
-      <div class="zeile">${["bild", "erkennen", "cec_an", "cec_aus", "player_neu", "neustart", "systemupdate", "protokoll"].map((a) =>
-        `<button class="knopf" data-befehl="${a}" title="${esc(T.pl.bText[a] || "")}">${esc(T.pl.b[a])}</button>`).join("")}
+      ${pc ? `<p class="leise">${esc(T.pl.pc.live)}</p>` : ""}
+      <div class="zeile">${["bild", "erkennen", "cec_an", "cec_aus", "player_neu", "neustart", "systemupdate", "protokoll"].filter((a) => !pc || (a !== "systemupdate" && (b.cec || !a.startsWith("cec")))).map((a) =>
+        `<button class="knopf" data-befehl="${a}" title="${esc(T.pl.bText[a] || "")}">${esc(pc && a === "neustart" ? T.pl.pc.neustart : T.pl.b[a])}</button>`).join("")}
         ${g.protokoll ? `<button class="knopf" data-protokoll>${esc(T.pl.protokollZeigen)}</button>` : ""}</div>
       ${g.online ? (g.fernwartung ? `<div class="zeile"><button class="knopf haupt" data-terminal title="${esc(T.pl.fw.knopfText)}"><span class="mdi mdi-console"></span> ${esc(T.pl.fw.knopf)}</button>
         ${g.terminal ? `<span class="warn">${esc(T.pl.fw.laeuft(zeit(g.terminal.start), g.terminal.wer))}</span>` : ""}</div>`
@@ -1235,13 +1361,13 @@ async function playerSeite(inhalt) {
       <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
-        <div class="zeile"><label>${esc(T.pl.modell)}</label><select name="modell">${opt(["pi45", "pi3"], g.modell, T.pl.m)}</select></div><p class="leise">${esc(T.pl.ram)}</p>
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select name="modell">${opt(["pi45", "pi3", "pc"], g.modell, MT())}</select></div>${pc ? "" : `<p class="leise">${esc(T.pl.ram)}</p>`}
         <div class="zeile"><label>${esc(T.pl.drehung)}</label><select name="drehung">${opt([0, 90, 180, 270], g.drehung, { 0: "0°", 90: "90°", 180: "180°", 270: "270°" })}</select></div>
         <div class="zeile"><label>${esc(T.pl.aufloesung)}</label><select name="aufloesung">${opt(["auto", "720", "1080", "2160"], g.aufloesung, T.pl.a)}</select></div>
         <div class="zeile"><label>${esc(T.pl.lautstaerke)}</label><input type="number" name="lautstaerke" min="0" max="100" value="${g.lautstaerke}"></div>
         <div class="zeile"><label><input type="checkbox" name="cec_zeitplan" ${g.cec_zeitplan ? "checked" : ""}> ${esc(T.pl.cec)}</label></div><p class="leise">${esc(T.pl.cecText)}</p>
-        <div class="zeile"><label><input type="checkbox" name="schreibschutz" ${g.schreibschutz ? "checked" : ""}> ${esc(T.pl.schreibschutz)}</label></div><p class="leise">${esc(T.pl.schreibschutzText)}</p>
-        <div class="zeile"><label>${esc(T.pl.systemupdate)}</label><select name="systemupdate">${opt(["woechentlich", "aus"], g.systemupdate, T.pl.su)}</select></div>
+        <div ${pc ? "hidden" : ""}><div class="zeile"><label><input type="checkbox" name="schreibschutz" ${g.schreibschutz ? "checked" : ""}> ${esc(T.pl.schreibschutz)}</label></div><p class="leise">${esc(T.pl.schreibschutzText)}</p>
+        <div class="zeile"><label>${esc(T.pl.systemupdate)}</label><select name="systemupdate">${opt(["woechentlich", "aus"], g.systemupdate, T.pl.su)}</select></div></div>
         <div class="zeile"><label>${esc(T.pl.hwdec)}</label><select name="hwdec">${opt(["auto", "aus"], g.hwdec, T.pl.hw)}</select></div>
         <div class="zeile" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}><label>${esc(T.pl.anzeige)}</label><select name="anzeige_modus">${opt(["stream", "direkt"], g.anzeige_modus || "stream", T.pl.am)}</select></div>
         <p class="leise" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}>${esc(T.pl.anzeigeText)}</p>
@@ -1249,7 +1375,7 @@ async function playerSeite(inhalt) {
       <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
         ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
       <details class="erweitert" data-image><summary>${esc(T.pl.imageNeu)}</summary><p class="leise">${esc(T.pl.imageNeuText)}</p>
-        ${plNetz("i" + g.id, P.wlan, true)}${fwBox("plIFw" + g.id, g.fernwartung)}<div class="zeile"><button class="knopf" data-image-laden ${P.basis.vorhanden ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
+        ${plNetz("i" + g.id, P.wlan, true)}${fwBox("plIFw" + g.id, g.fernwartung)}${pc ? formWahl("plIForm" + g.id) : ""}<div class="zeile"><button class="knopf" data-image-laden ${bereitFuer(g.modell) ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
         <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
   };
   const bilderLaden = () => inhalt.querySelectorAll("img[data-bild]").forEach(async (i) => {
@@ -1263,6 +1389,7 @@ async function playerSeite(inhalt) {
     bilderLaden();
     for (const g of P.geraete) {
       const k = ziel.querySelector(`[data-g="${g.id}"]`);
+      if (g.modell === "browser") { browserAnbinden(k, g); continue; }
       const wlanLesen = plNetzAnbinden(k, "w" + g.id), imageLesen = plNetzAnbinden(k, "i" + g.id);
       k.querySelectorAll("[data-befehl]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
         await senden(`/api/player/${g.id}/befehl`, { art: b.dataset.befehl }); g.befehle.push(b.dataset.befehl); }, T.pl.befehlOk); });
@@ -1283,7 +1410,8 @@ async function playerSeite(inhalt) {
       k.querySelector("[data-wlan-senden]").onclick = (e) => aktion(e.target, async () => {
         await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); P = await holen("/api/player"); listeZeichnen(); }, T.pl.wlanGesendet);
       k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {
-        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), fernwartung: k.querySelector(`#plIFw${g.id}`).checked, server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+        const fo = k.querySelector(`#plIForm${g.id}`);
+        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), fernwartung: k.querySelector(`#plIFw${g.id}`).checked, form: fo ? fo.value : "gz", server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
         plHerunterladen(d.kennung, d.datei); }, T.pl.laedtHerunter);
       k.querySelector("[data-entfernen]").onclick = (e) => {
         if (!confirm(T.pl.entfernenFrage(g.name))) return;
@@ -1296,16 +1424,17 @@ async function playerSeite(inhalt) {
     clearInterval(timer);
     timer = setInterval(async () => {
       if (aktiv !== "player") return;
-      const alt = P.basis.phase;
+      const alt = laedt();
       P = await holen("/api/player");
-      if (alt === "laedt" || P.basis.phase === "laedt") {
-        $("#plBasis").innerHTML = basisText();
-        if (alt === "laedt" && P.basis.phase !== "laedt") zeichnen();
+      if (alt || laedt()) {
+        $("#plBasis").innerHTML = basisText(false);
+        $("#plBasisPc").innerHTML = basisText(true);
+        if (alt && !laedt()) zeichnen();
       }
       const w = $("#plWartend");
       if (w) w.textContent = wartendText();
       if (!inhalt.querySelector("#plListe :focus, #plListe details[open], #plListe pre:not([hidden]), #plListe .geaendert")) listeZeichnen();
-    }, P.basis.phase === "laedt" ? 2000 : 10000);
+    }, laedt() ? 2000 : 10000);
   };
   zeichnen();
   beobachten();

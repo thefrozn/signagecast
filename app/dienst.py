@@ -961,11 +961,26 @@ def player_antwort(g, bericht, ip):
 
 
 def player_hinweise(g):
-    """Passt der Fernseher zum Pi? Pi 3/Zero 2 W: nur H.264 bis Full HD; Pi 5: H.264 nur per CPU (kein 4K)."""
+    """Passt der Fernseher zum Pi? Pi 3/Zero 2 W: nur H.264 bis Full HD; Pi 5: H.264 nur per CPU (kein 4K).
+    PC und Browser-Gerät (seit 0.36): keine Codec-Hinweise (Intel/AMD dekodieren beides, der Browser ist unbekannt)."""
     t = next((t for t in einst()["fernseher"] if t["id"] == g["tv"]), None)
     if not t:
         return ["pi_kein_tv"]
-    modell = ((PL.stand.get(g["id"]) or {}).get("bericht") or {}).get("modell") or ""
+    if g.get("modell") == PL.BROWSER:
+        return []
+    b = (PL.stand.get(g["id"]) or {}).get("bericht") or {}
+    modell = b.get("modell") or ""
+    if g.get("modell") == "pc" or b.get("plattform") == "pc":
+        h = ["pi_heiss"] if (b.get("temperatur") or 0) >= 90 else []
+        if PL.online(g["id"]) and b.get("hdmi") is False:
+            h.append("pc_kein_bildschirm")
+        if g.get("anzeige_modus") == "direkt" and b.get("rueckfall"):
+            h.append("pi_direkt_rueckfall")
+        if b.get("plattform") == "pi":
+            h.append("pc_ist_pi")
+        elif g.get("modell") != "pc":
+            h.append("pi_ist_pc")
+        return h
     klasse = "pi3" if re.search(r"Pi 3|Zero 2", modell) else "pi5" if "Pi 5" in modell else g["modell"] if not modell else "pi4"
     hoehe = 2160 if t["aufloesung"] == 2160 and encoder_fuer(t) != "software" else 1080
     h = []
@@ -975,7 +990,6 @@ def player_hinweise(g):
         h.append("pi_4k")
     if klasse == "pi5" and codec_fuer(t) == "h264" and hoehe == 2160:
         h.append("pi5_h264_4k")
-    b = (PL.stand.get(g["id"]) or {}).get("bericht") or {}
     if b.get("drossel") not in (None, "", "0x0"):
         h.append("pi_strom")
     if (b.get("temperatur") or 0) >= 80:
@@ -1014,8 +1028,8 @@ def player_schleife():
         time.sleep(60)
         try:
             for g in PL.daten["geraete"]:
-                s = PL.stand.get(g["id"])
-                if s and time.time() - s["zeit"] > 300:
+                s = PL.zuletzt(g["id"])                # Agent: letzte Meldung; Browser-Gerät: letzter Datenabruf
+                if s and time.time() - s > 300:
                     if not weg.get(g["id"]):
                         weg[g["id"]] = True
                         melder.melden("player-" + g["id"], "ausfall", "player_aus", name=g["name"])
@@ -1519,7 +1533,7 @@ def todo_warnungen(e):
     if a:
         w.append({"key": "allgemein", "grund": a["grund"], "seit": a["seit"]})
     w += [{"key": "doppelt:" + t["id"], "name": t["name"]} for t in doppelt_hoch(e)]
-    w += [{"key": "player:" + g["id"], "name": g["name"]} for g in PL.daten["geraete"] if PL.stand.get(g["id"]) and not PL.online(g["id"])]
+    w += [{"key": "player:" + g["id"], "name": g["name"]} for g in PL.daten["geraete"] if PL.gesehen(g["id"]) and not PL.online(g["id"])]
     if (zustand.get("sicherung_auto") or {}).get("fehler"):
         w.append({"key": "sicherung_fehler"})
     if any(any((x.get("ergebnis") or {}).values()) for x in melder.letzte or []):
@@ -1569,7 +1583,7 @@ def status():
         "bildrate_niedrig": [t["name"] for t in bildrate_niedrig(e)],
         "todo_warn": todo_warnungen(e), "todo_aus": TODO.liste(),
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
-        "player": [{"id": g["id"], "name": g["name"], "online": PL.online(g["id"]), "gesehen": bool(PL.stand.get(g["id"]))}
+        "player": [{"id": g["id"], "name": g["name"], "online": PL.online(g["id"]), "gesehen": PL.gesehen(g["id"])}
                    for g in PL.daten["geraete"]],
         "ha": {"ok": zustand["ha_fehler"] is None, "fehler": zustand["ha_fehler"], "url": e["ha"]["url"],
                "code": (zustand.get("ha_fehler_code") or (None, None))[0], "detail": (zustand.get("ha_fehler_code") or (None, None))[1]},
@@ -2364,7 +2378,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
         if pfad == "/api/player":
-            return self.antwort(200, {"ok": True, "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(),
+            return self.antwort(200, {"ok": True, "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(), "basis_pc": PL.basis_info("pc"),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend()})
@@ -2382,11 +2396,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             kennung = (q.get("t") or [""])[0]
             e = PL.einmal.get(kennung)
             g = PL.geraet(e["id"]) if e and e["id"] else None
-            if not e or (e["id"] and not g) or not PL.basis_meta():
+            meta = PL.basis_meta(e.get("art", "pi")) if e else None
+            if not e or (e["id"] and not g) or not meta:
                 return self.antwort(404, {"ok": False, "fehler": str(M.Meldung("pi_link_alt"))})
             self.send_response(200)
-            self.send_header("Content-Type", "application/gzip")
-            self.send_header("Content-Disposition", f'attachment; filename="{PL.dateiname(g)}"')
+            if e.get("form") == "iso":                 # PC-Player roh als ISO (seit 0.36): Länge bekannt
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(meta["groesse"]))
+            else:
+                self.send_header("Content-Type", "application/gzip")
+            self.send_header("Content-Disposition", f'attachment; filename="{PL.dateiname_fuer(kennung)}"')
             self.send_header("Cache-Control", "no-store")
             self.send_header("Connection", "close")
             self.end_headers()
@@ -2759,11 +2778,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return {"geraet": PL.neu(d, tvs)["id"]}
         if p == "/api/player/koppeln":                # Code vom Fernseher eingeben (seit 0.25)
             return {"geraet": PL.koppeln(d.get("code"), {"name": d.get("name", ""), "tv": d.get("tv", "")}, tvs)["id"]}
-        if p == "/api/player/sammel-image":           # Image für mehrere Pis, ohne Schlüssel (seit 0.25)
-            kennung = PL.herunterladen_vorbereiten("", d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")))
-            return {"kennung": kennung, "datei": PL.dateiname(None)}
+        if p == "/api/player/sammel-image":           # Image für mehrere Geräte, ohne Schlüssel (seit 0.25; PC seit 0.36)
+            kennung = PL.herunterladen_vorbereiten("", d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")),
+                                                   art=d.get("art"), form=d.get("form", "gz"))
+            return {"kennung": kennung, "datei": PL.dateiname_fuer(kennung)}
         if p == "/api/player/basis-laden":
-            threading.Thread(target=PL.basis_laden, args=(VERSION,), daemon=True).start()
+            art = "pc" if d.get("art") == "pc" else "pi"
+            threading.Thread(target=PL.basis_laden, args=(VERSION, art), daemon=True).start()
             return {}
         if p == "/api/player/einstellungen":
             PL.einstellen(d)
@@ -2774,7 +2795,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/(start|ein|ende)", p)
         if m:                                        # Fernwartung (seit 0.33)
             return self.terminal_post(m.group(1), m.group(2), d)
-        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image)", p)
+        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image|link-neu)", p)
         if not m:
             raise KeyError(p)
         gid, art = m.groups()
@@ -2787,8 +2808,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         elif art == "wlan":
             PL.wlan_wechseln(gid, d.get("wlan") or {})
         elif art == "image":
-            kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")))
-            return {"kennung": kennung, "datei": PL.dateiname(PL.geraet(gid))}
+            kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")),
+                                                   form=d.get("form", "gz"))
+            return {"kennung": kennung, "datei": PL.dateiname_fuer(kennung)}
+        elif art == "link-neu":                      # Browser-Gerät: neuer Link, der alte gilt nicht mehr (seit 0.36)
+            PL.link_neu(gid)
         return {}
 
     def terminal_post(self, gid, art, d):

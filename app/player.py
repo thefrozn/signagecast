@@ -10,6 +10,9 @@
 # Kopplung (seit 0.25): Ein Image für mehrere Pis enthält Server und WLAN, aber keinen Schlüssel. Der Pi handelt ihn mit
 # dem Server per Diffie-Hellman aus und zeigt einen daraus abgeleiteten 6-stelligen Code; erst die Eingabe dieses Codes
 # in der Verwaltung macht aus der Anfrage ein Gerät. Wer sich im Netz dazwischenschiebt, hätte einen anderen Code.
+# PC-Player (seit 0.36, experimentell): derselbe Agent auf x86-64-Geräten mit UEFI – eigenes Grundimage (ISO, auch für
+# USB-Sticks), Modell „pc“, Direktmodus als Standard. Browser-Gerät (seit 0.36): kein Agent, nur ein geheimer Link
+# /anzeige/<Schlüssel> für eine beliebige Kiosk-Live-CD oder einen Browser im Vollbild; online = die Seite ruft Daten ab.
 import hashlib, hmac, json, lzma, os, re, secrets, shutil, subprocess, threading, time, urllib.request, zlib
 
 from streams import DATEN
@@ -21,14 +24,23 @@ AGENT = os.path.join(BASIS, "player", "agent.py")
 DATEI = os.path.join(DATEN, "player.json")
 ORDNER = os.path.join(DATEN, "player")
 GRUND = os.path.join(ORDNER, "basis")
+GRUND_PC = os.path.join(ORDNER, "basis-pc")            # PC-Player (seit 0.36)
+ARTEN = {"pi": {"name": "signagecast-player-v", "endung": ".img.xz", "art": "signagecast-player-image"},
+         "pc": {"name": "signagecast-pc-v", "endung": ".iso.xz", "art": "signagecast-pc-image"}}
+
+
+def ordner(art):
+    """Ordner des Grundimages (zur Laufzeit gelesen – die Tests biegen GRUND/GRUND_PC um)."""
+    return GRUND_PC if art == "pc" else GRUND
 PROJEKT = "thefrozn/signagecast"
 QUELLE = os.environ.get("SC_PLAYER_QUELLE", "")       # Ordner mit Grundimage (Test vor dem Release), sonst GitHub
 # Öffentlicher Schlüssel der Releases (wie werkzeug/aktualisieren.sh; release.sh prüft, dass beide gleich sind)
 SCHLUESSEL = "RWS+1ozfjYuftY7DYt4RjDJLsJKenGkFL7prSxRjeDuk3c+++cclZqgD"
 PLATZ = 16384                                          # Länge des Platzhalters signagecast.json im Image
-MODELLE = ("pi45", "pi3")                              # Pi 5/4/400/CM4 | Pi 3/Zero 2 W (nur H.264 bis Full HD)
+MODELLE = ("pi45", "pi3", "pc")                        # Pi 5/4/400/CM4 | Pi 3/Zero 2 W (nur H.264 bis Full HD) | PC (seit 0.36)
+BROWSER = "browser"                                    # Browser-Gerät (seit 0.36): nur Link, kein Agent
 AUFLOESUNGEN = ("auto", "720", "1080", "2160")
-ANZEIGE_MODI = ("stream", "direkt")                    # Direktmodus nur Pi 4/5 (Pi 3/Zero 2 W: zu wenig Speicher)
+ANZEIGE_MODI = ("stream", "direkt")                    # Direktmodus nur Pi 4/5 und PC (Pi 3/Zero 2 W: zu wenig Speicher)
 BEFEHLE = ("neustart", "player_neu", "bild", "protokoll", "cec_an", "cec_aus", "erkennen", "systemupdate")
 ONLINE_S = 60
 LAENDER = {"Europe/Berlin": "DE", "Europe/Vienna": "AT", "Europe/Zurich": "CH", "Europe/Amsterdam": "NL", "Europe/Brussels": "BE",
@@ -45,7 +57,7 @@ kopplungen = {}       # Anfrage-Kennung -> {"code", "schluessel", "bis", "ip", "
 koppel_zeiten = []    # Zeitpunkte neuer Kopplungsanfragen der letzten Stunde (Grenze gegen Durchprobieren)
 direkt_abruf = {}     # id -> Zeit des letzten Abrufs von daten.json im Direktmodus (zeigt: die Seite lebt)
 kameras_erlaubt = {}  # TV-Kennung -> {"cam_<id>", …} aus der letzten daten.json (nur diese Kamera-Streams gibt der Zugang frei)
-basis_stand = {"phase": "", "geladen": 0, "gesamt": 0, "fehler": "", "code": "", "p": {}, "version": ""}
+basis_stand = {a: {"phase": "", "geladen": 0, "gesamt": 0, "fehler": "", "code": "", "p": {}, "version": ""} for a in ARTEN}
 
 
 # Diffie-Hellman für die Kopplung: RFC 3526, 2048-Bit-Gruppe 14, Erzeuger 2 (wie im Agent; nur Standardbibliothek)
@@ -135,7 +147,7 @@ def _felder(g, d, tvs):
         if d["tv"] and d["tv"] not in tvs:
             raise Fehler("pi_tv")
         g["tv"] = d["tv"] or ""
-    if d.get("modell") in MODELLE:
+    if d.get("modell") in MODELLE and g.get("modell") != BROWSER:     # ein Browser-Gerät bleibt eines (kein Agent)
         g["modell"] = d["modell"]
     if d.get("aufloesung") in AUFLOESUNGEN:
         g["aufloesung"] = d["aufloesung"]
@@ -157,6 +169,8 @@ def _felder(g, d, tvs):
         g["anzeige_modus"] = d["anzeige_modus"]
     if g.get("modell") == "pi3":
         g["anzeige_modus"] = "stream"
+    if g.get("modell") == BROWSER:
+        g["anzeige_modus"] = "direkt"
 
 
 def neu(d, tvs, schluessel=None):
@@ -166,6 +180,10 @@ def neu(d, tvs, schluessel=None):
          "name": "", "tv": "", "modell": "pi45", "aufloesung": "auto", "drehung": 0, "lautstaerke": 100, "cec_zeitplan": False,
          "schreibschutz": True, "systemupdate": "woechentlich", "hwdec": "auto", "anzeige_modus": "stream", "wlan_rev": 0, "wlan_soll": None,
          "hotspot_pw": "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz23456789") for _ in range(10))}
+    if d.get("modell") == BROWSER:                     # seit 0.36: Gerät ohne Agent, nur Link
+        g["modell"] = BROWSER
+    elif d.get("modell") == "pc" and "anzeige_modus" not in d:
+        g["anzeige_modus"] = "direkt"                  # PC: Direktmodus als Standard (genug Speicher, VAAPI)
     _felder(g, dict({"name": d.get("name", "")}, **d), tvs)
     with sperre:
         daten["geraete"].append(g)
@@ -200,11 +218,25 @@ def entfernen(gid):
             pass
 
 
+def link_neu(gid):
+    """Browser-Gerät: neuen Schlüssel – der alte Link gilt sofort nicht mehr."""
+    with sperre:
+        g = geraet(gid)
+        if not g or g.get("modell") != BROWSER:
+            raise Fehler("pi_unbekannt")
+        g["schluessel"] = secrets.token_hex(32)
+        speichern(daten)
+    direkt_abruf.pop(gid, None)
+
+
 def befehl(gid, art):
     if art not in BEFEHLE:
         raise Fehler("pi_befehl")
-    if not geraet(gid):
+    g = geraet(gid)
+    if not g:
         raise Fehler("pi_unbekannt")
+    if g.get("modell") == BROWSER:
+        raise Fehler("pi_browser_befehl")
     with sperre:
         liste = [b for b in befehle.get(gid, []) if b["art"] != art]
         befehle[gid] = liste + [{"id": secrets.token_hex(4), "art": art, "zeit": time.time()}]
@@ -280,7 +312,8 @@ def koppel_anfrage(d, ip):
     kennung = secrets.token_hex(16)
     with sperre:
         kopplungen[kennung] = {"code": code, "schluessel": schluessel, "bis": jetzt + KOPPEL_S, "ip": ip, "geraet": "",
-                               "modell": str(d.get("modell", ""))[:80], "zeit": jetzt}
+                               "modell": str(d.get("modell", ""))[:80], "zeit": jetzt,
+                               "plattform": "pc" if d.get("plattform") == "pc" else "pi"}
     return {"kennung": kennung, "b": format(b_pub, "x"), "gueltig": KOPPEL_S}
 
 
@@ -305,7 +338,7 @@ def koppeln(code, d, tvs):
         e = next((v for v in kopplungen.values() if len(code) == 6 and hmac.compare_digest(v["code"], code) and not v["geraet"]), None)
     if not e:
         raise Fehler("pi_code")
-    modell = "pi3" if re.search(r"Pi 3|Zero 2", e["modell"]) else "pi45"
+    modell = "pc" if e.get("plattform") == "pc" else "pi3" if re.search(r"Pi 3|Zero 2", e["modell"]) else "pi45"
     g = neu(dict(d, modell=modell), tvs, schluessel=e["schluessel"])
     with sperre:
         e["geraet"], e["bis"] = g["id"], time.time() + KOPPEL_S       # der Pi holt das Ergebnis in den nächsten Sekunden ab
@@ -358,6 +391,8 @@ def anzeige_pfad_ok(pfad):
 
 def modus_fuer(g, bericht=None):
     """Stream oder direkt – Pi 3/Zero 2 W (laut Meldung oder Einstellung) immer Stream."""
+    if g.get("modell") == BROWSER:
+        return "direkt"
     modell = ((bericht or (stand.get(g["id"]) or {}).get("bericht")) or {}).get("modell") or ""
     if g.get("modell") == "pi3" or re.search(r"Pi 3|Zero 2", modell):
         return "stream"
@@ -418,8 +453,24 @@ def datei_ablegen(g, endung, roh):
 
 
 def online(gid):
+    g = geraet(gid)
+    if g and g.get("modell") == BROWSER:               # Browser-Gerät: die Seite holt alle 15 s ihre Daten
+        a = direkt_abruf.get(gid)
+        return bool(a) and time.time() - a < ONLINE_S
     s = stand.get(gid)
     return bool(s) and time.time() - s["zeit"] < ONLINE_S
+
+
+def gesehen(gid):
+    """Hat sich das Gerät seit dem Start des Dienstes schon einmal gemeldet (Agent) bzw. Daten abgerufen (Browser)?"""
+    return bool(stand.get(gid) or direkt_abruf.get(gid))
+
+
+def zuletzt(gid):
+    g, s = geraet(gid), stand.get(gid)
+    if g and g.get("modell") == BROWSER:
+        return direkt_abruf.get(gid)
+    return s["zeit"] if s else None
 
 
 def liste(hinweise):
@@ -428,8 +479,10 @@ def liste(hinweise):
     for g in daten["geraete"]:
         s = stand.get(g["id"]) or {}
         bild = os.path.join(ORDNER, g["id"] + ".jpg")
+        z = zuletzt(g["id"])
         aus.append(dict({k: v for k, v in g.items() if k not in ("schluessel", "wlan_soll", "hotspot_pw")},
-                        online=online(g["id"]), zuletzt=int(s["zeit"]) if s else None, seit=int(s.get("seit") or 0) or None,
+                        online=online(g["id"]), zuletzt=int(z) if z else None, seit=int(s.get("seit") or 0) or None,
+                        link_pfad="/anzeige/" + anzeige_schluessel(g) if g.get("modell") == BROWSER else None,
                         bericht=s.get("bericht") or {}, ip=s.get("ip"), wlan_offen=(g.get("wlan_soll") or {}).get("netze", [{}])[0].get("ssid"),
                         befehle=[b["art"] for b in befehle.get(g["id"], [])], ergebnisse=ergebnisse.get(g["id"], []),
                         bild=int(os.path.getmtime(bild)) if os.path.exists(bild) else None,
@@ -447,6 +500,8 @@ def wochenpflege():
         return
     for g in daten["geraete"]:
         lu = ((stand.get(g["id"]) or {}).get("bericht") or {}).get("letztes_update") or {}
+        if g.get("modell") in ("pc", BROWSER):        # PC: Updates mit neuem Image; Browser: kein Agent
+            continue
         if g["systemupdate"] == "woechentlich" and online(g["id"]) and time.time() - (lu.get("zeit") or 0) > 6 * 86400 \
                 and not any(b["art"] == "systemupdate" for b in befehle.get(g["id"], [])) and g["id"] not in pflege_heute:
             pflege_heute.add(g["id"])
@@ -459,10 +514,11 @@ pflege_heute = set()
 
 
 # ---------- Grundimage ----------
-def basis_meta():
+def basis_meta(art="pi"):
     try:
-        m = json.load(open(os.path.join(GRUND, "meta.json")))
-        return m if os.path.exists(os.path.join(GRUND, m["datei"])) else None
+        o = ordner(art)
+        m = json.load(open(os.path.join(o, "meta.json")))
+        return m if os.path.exists(os.path.join(o, m["datei"])) else None
     except (OSError, ValueError, KeyError):
         return None
 
@@ -483,14 +539,15 @@ def _holen(url, ziel=None, fortschritt=None):
                     fortschritt(len(teil))
 
 
-def _quelle(version):
-    """(Version, {Name: Adresse}) des neuesten Release mit Player-Image – zuerst das zur eigenen Version."""
+def _quelle(version, art="pi"):
+    """(Version, {Name: Adresse}) des neuesten Release mit diesem Image – zuerst das zur eigenen Version."""
+    a = ARTEN[art]
     if QUELLE:
-        meta = next((n for n in sorted(os.listdir(QUELLE)) if re.fullmatch(r"signagecast-player-v.+\.json", n)
+        meta = next((n for n in sorted(os.listdir(QUELLE)) if re.fullmatch(re.escape(a["name"]) + r".+\.json", n)
                      and not n.endswith(".cdx.json")), None)          # seit 0.30 liegt die SBOM daneben
         if not meta:
             raise Fehler("pi_kein_image")
-        v = meta[len("signagecast-player-v"):-5]
+        v = meta[len(a["name"]):-5]
         return v, {n: "file://" + os.path.join(QUELLE, n) for n in os.listdir(QUELLE)}
     rel = json.loads(_holen(f"https://api.github.com/repos/{PROJEKT}/releases?per_page=20"))
     rel.sort(key=lambda r: r.get("tag_name") != f"v{version}")
@@ -499,23 +556,25 @@ def _quelle(version):
             continue
         namen = {a["name"]: a["browser_download_url"] for a in r.get("assets", [])}
         v = r["tag_name"].lstrip("v")
-        if all(f"signagecast-player-v{v}{e}" in namen for e in (".json", ".json.minisig", ".img.xz")):
+        if all(f"{a['name']}{v}{e}" in namen for e in (".json", ".json.minisig", a["endung"])):
             return v, namen
     raise Fehler("pi_kein_image")
 
 
-def basis_laden(version):
+def basis_laden(version, art="pi"):
     """Grundimage holen und prüfen: Signatur der .json (minisign, Schlüssel der Releases), dann Prüfsumme des Images."""
-    if basis_stand["phase"] == "laedt":
+    st, a = basis_stand[art], ARTEN[art]
+    grund = ordner(art)
+    if st["phase"] == "laedt":
         return
-    basis_stand.update(phase="laedt", geladen=0, gesamt=0, fehler="", code="", p={}, version="")
+    st.update(phase="laedt", geladen=0, gesamt=0, fehler="", code="", p={}, version="")
     try:
-        v, namen = _quelle(version)
-        os.makedirs(GRUND, exist_ok=True)
-        tmp = os.path.join(GRUND, "neu")
+        v, namen = _quelle(version, art)
+        os.makedirs(grund, exist_ok=True)
+        tmp = os.path.join(grund, "neu")
         shutil.rmtree(tmp, ignore_errors=True)
         os.makedirs(tmp)
-        n = f"signagecast-player-v{v}"
+        n = a["name"] + v
         _holen(namen[n + ".json"], os.path.join(tmp, "meta.json"))
         _holen(namen[n + ".json.minisig"], os.path.join(tmp, "meta.json.minisig"))
         r = subprocess.run(["minisign", "-Vqm", os.path.join(tmp, "meta.json"), "-P", SCHLUESSEL, "-x", os.path.join(tmp, "meta.json.minisig")],
@@ -523,37 +582,37 @@ def basis_laden(version):
         if r.returncode != 0:
             raise Fehler("pi_signatur")
         meta = json.load(open(os.path.join(tmp, "meta.json")))
-        if meta.get("art") != "signagecast-player-image" or meta["platzhalter"]["laenge"] != PLATZ:
+        if meta.get("art") != a["art"] or meta["platzhalter"]["laenge"] != PLATZ or not re.fullmatch(r"[A-Za-z0-9._-]+", meta.get("datei", "")):
             raise Fehler("pi_signatur")
-        if shutil.disk_usage(GRUND).free < meta["xz_groesse"] + 500_000_000:
+        if shutil.disk_usage(grund).free < meta["xz_groesse"] + 500_000_000:
             raise Fehler("pi_platz", mb=meta["xz_groesse"] // 1_000_000 + 500)
-        basis_stand.update(gesamt=meta["xz_groesse"], version=v)
+        st.update(gesamt=meta["xz_groesse"], version=v)
         h = hashlib.sha256()
 
         def weiter(n):
-            basis_stand["geladen"] += n
+            st["geladen"] += n
         _holen(namen[meta["datei"]], os.path.join(tmp, meta["datei"]), weiter)
         with open(os.path.join(tmp, meta["datei"]), "rb") as f:
             for teil in iter(lambda: f.read(1 << 20), b""):
                 h.update(teil)
         if h.hexdigest() != meta["sha256"]:
             raise Fehler("pi_pruefsumme")
-        for alt in os.listdir(GRUND):              # altes Grundimage weg, neues an seine Stelle
+        for alt in os.listdir(grund):              # altes Grundimage weg, neues an seine Stelle
             if alt != "neu":
-                os.unlink(os.path.join(GRUND, alt))
+                os.unlink(os.path.join(grund, alt))
         for x in os.listdir(tmp):
-            os.replace(os.path.join(tmp, x), os.path.join(GRUND, x))
+            os.replace(os.path.join(tmp, x), os.path.join(grund, x))
         os.rmdir(tmp)
-        basis_stand.update(phase="fertig")
+        st.update(phase="fertig")
     except Exception as f:
-        shutil.rmtree(os.path.join(GRUND, "neu"), ignore_errors=True)
-        basis_stand.update(phase="fehler", fehler=str(f)[:200], code=getattr(f, "code", ""), p=getattr(f, "p", {}))
+        shutil.rmtree(os.path.join(grund, "neu"), ignore_errors=True)
+        st.update(phase="fehler", fehler=str(f)[:200], code=getattr(f, "code", ""), p=getattr(f, "p", {}))
 
 
-def basis_info():
-    m = basis_meta()
-    return dict(basis_stand, vorhanden={"version": m["version"], "groesse": m["groesse"], "erstellt": m.get("erstellt"),
-                                         "basis": m.get("basis")} if m else None)
+def basis_info(art="pi"):
+    m = basis_meta(art)
+    return dict(basis_stand[art], vorhanden={"version": m["version"], "groesse": m["groesse"], "erstellt": m.get("erstellt"),
+                                              "basis": m.get("basis")} if m else None)
 
 
 # ---------- Image je Gerät ----------
@@ -590,12 +649,24 @@ def konfig(g, netze, server, sprache, zeitzone, fernwartung=False):
     return roh + b" " * (PLATZ - 1 - len(roh)) + b"\n"
 
 
-def herunterladen_vorbereiten(gid, w, server, fernwartung=False):
+def image_art(g, art=None):
+    """pi oder pc: aus dem Modell des Geräts, beim Image für mehrere Geräte aus der Auswahl."""
+    if g:
+        return "pc" if g.get("modell") == "pc" else "pi"
+    return "pc" if art == "pc" else "pi"
+
+
+def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form="gz"):
     """Einmal-Kennung (30 min) für den Download; das WLAN lebt nur bis dahin im Speicher, wenn es nicht gespeichert wird.
-    gid = "": Image für mehrere Pis (Kopplung per Code)."""
-    if gid and not geraet(gid):
+    gid = "": Image für mehrere Geräte (Kopplung per Code). form: gz (.img.gz, USB-Stick/SD-Karte) oder iso (PC: roh,
+    für Ventoy, CD und VMs)."""
+    g = geraet(gid) if gid else None
+    if gid and not g:
         raise Fehler("pi_unbekannt")
-    meta = basis_meta()
+    if g and g.get("modell") == BROWSER:
+        raise Fehler("pi_browser_befehl")
+    art = image_art(g, art)
+    meta = basis_meta(art)
     if not meta:
         raise Fehler("pi_kein_image")
     if not gid and _version(meta.get("version")) < (0, 25):       # erst der Agent ab 0.25 kann sich koppeln
@@ -611,7 +682,8 @@ def herunterladen_vorbereiten(gid, w, server, fernwartung=False):
     for k in [k for k, v in einmal.items() if v["bis"] < jetzt]:
         del einmal[k]
     kennung = secrets.token_urlsafe(18)
-    einmal[kennung] = {"id": gid, "netze": [netz] if netz else [], "server": server, "bis": jetzt + 1800, "fernwartung": bool(fernwartung)}
+    einmal[kennung] = {"id": gid, "netze": [netz] if netz else [], "server": server, "bis": jetzt + 1800, "fernwartung": bool(fernwartung),
+                       "art": art, "form": "iso" if art == "pc" and form == "iso" else "gz"}
     return kennung
 
 
@@ -622,25 +694,32 @@ def _version(v):
         return (0,)
 
 
-def dateiname(g):
-    if not g:
-        return "signagecast-player-kopplung.img.gz"
-    return "signagecast-player-" + (re.sub(r"[^a-z0-9]+", "-", g["name"].lower()).strip("-") or g["id"]) + ".img.gz"
+def dateiname(g, art="pi", form="gz"):
+    vorne = "signagecast-pc-" if art == "pc" else "signagecast-player-"
+    name = (re.sub(r"[^a-z0-9]+", "-", g["name"].lower()).strip("-") or g["id"]) if g else "kopplung"
+    return vorne + name + (".iso" if art == "pc" and form == "iso" else ".img.gz")
+
+
+def dateiname_fuer(kennung):
+    e = einmal.get(kennung) or {}
+    return dateiname(geraet(e["id"]) if e.get("id") else None, e.get("art", "pi"), e.get("form", "gz"))
 
 
 def image_schreiben(kennung, schreiben, sprache, zeitzone):
-    """Grundimage entpacken, Gerätedatei in den Platzhalter schreiben, als .img.gz ausgeben (schreiben(bytes))."""
+    """Grundimage entpacken, Gerätedatei in den Platzhalter schreiben, als .img.gz (bzw. PC: auch roh als .iso)
+    ausgeben (schreiben(bytes))."""
     e = einmal.get(kennung)
     if not e or e["bis"] < time.time():
         raise Fehler("pi_link_alt")
-    g, meta = geraet(e["id"]) if e["id"] else None, basis_meta()
+    art, roh_aus = e.get("art", "pi"), e.get("form") == "iso"
+    g, meta = geraet(e["id"]) if e["id"] else None, basis_meta(art)
     if (e["id"] and not g) or not meta:
         raise Fehler("pi_kein_image")
     neu = konfig(g, e["netze"], e["server"], sprache, zeitzone, e.get("fernwartung", False))
     off, marke = meta["platzhalter"]["offset"], meta["platzhalter"]["marke"].encode() + b"-0000"
     ende = off + PLATZ
     dec, gz, pos, alt = lzma.LZMADecompressor(), zlib.compressobj(1, zlib.DEFLATED, 31), 0, b""
-    with open(os.path.join(GRUND, meta["datei"]), "rb") as f:
+    with open(os.path.join(ordner(art), meta["datei"]), "rb") as f:
         roh = b""
         while not dec.eof:
             if dec.needs_input:
@@ -657,8 +736,9 @@ def image_schreiben(kennung, schreiben, sprache, zeitzone):
                 teil = teil[:a - pos] + neu[a - off:b - off] + teil[b - pos:]
             pos += len(teil)
             if teil:
-                schreiben(gz.compress(teil))
+                schreiben(teil if roh_aus else gz.compress(teil))
     if pos != meta["groesse"] or not alt.startswith(marke):
         raise Fehler("pi_platzhalter")
-    schreiben(gz.flush())
+    if not roh_aus:
+        schreiben(gz.flush())
     einmal.pop(kennung, None)

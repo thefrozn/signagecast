@@ -342,6 +342,7 @@ class Anzeige:
                 "--hwdec=" + ("no" if o.get("hwdec") == "aus" else "vaapi,auto-safe" if PC else "drm-copy,v4l2m2m-copy,auto-copy-safe"),
                 "--cache=yes", "--demuxer-max-bytes=64MiB", "--network-timeout=15", "--keep-open=no",
                 "--image-display-duration=inf", "--osd-bar=no", "--osd-level=1", "--cursor-autohide=always",
+                "--osc=no",                     # ohne Bedienleiste – und ohne das Leerlauf-Logo von mpv ab 0.38 (Debian 13)
                 "--background-color=#000000", "--screenshot-format=jpg", "--screenshot-jpeg-quality=70",
                 f"--volume={o.get('lautstaerke', 100)}", f"--video-rotate={o.get('drehung', 0)}",
                 "--ao=alsa", "--audio-device=" + hdmi_ton(), "--audio-fallback-to-null=yes",

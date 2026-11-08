@@ -23,14 +23,14 @@ trap 'rm -rf "$A"' EXIT
 echo "== Werkzeuge"
 apt-get update -q
 DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mmdebstrap squashfs-tools xorriso mtools \
-  dosfstools shim-signed grub-efi-amd64-signed python3 xz-utils ca-certificates >/dev/null
+  dosfstools shim-signed grub-efi-amd64-signed python3 xz-utils ca-certificates gpg >/dev/null
 
 echo "== Debian 13 mit Player"
 # Pakete: Kernel + live-boot (startet aus dem squashfs), Netz (NetworkManager, auch Hotspot), Anzeige wie beim Pi
 # (mpv für Stream und Hinweise, cage + Chromium für den Direktmodus), Grafik- und Video-Treiber (VAAPI), Firmware für
 # gängige WLAN-Karten und Grafik, Mikrocode. Kein Desktop, kein SSH.
 PAKETE="linux-image-amd64 live-boot systemd-sysv systemd-timesyncd udev dbus kmod iproute2 iputils-ping procps less nano
-  tzdata ca-certificates python3 dosfstools util-linux pciutils usbutils
+  tzdata ca-certificates python3 dosfstools util-linux pciutils usbutils zstd
   network-manager dnsmasq-base wpasupplicant iw rfkill wireless-regdb
   mpv qrencode cage seatd grim wlr-randr alsa-utils fonts-dejavu-core chromium
   libgl1-mesa-dri libegl1 va-driver-all intel-media-va-driver mesa-va-drivers
