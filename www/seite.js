@@ -15,14 +15,14 @@ const TEXTE = {
           "hail": "Hagel", "lightning": "Gewitter", "lightning-rainy": "Gewitter, Regen", "partlycloudy": "Teilweise bewölkt",
           "pouring": "Starkregen", "rainy": "Regnerisch", "snowy": "Schnee", "snowy-rainy": "Schneeregen", "sunny": "Sonnig",
           "windy": "Windig", "windy-variant": "Windig, bewölkt" },
-        feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes", wetterQuelle: "Wetterdaten: MET Norway",
+        feuchte: "Luftfeuchte", wind: "Wind", keinStream: "Gerade kein Live-Stream", naechstes: "Als Nächstes", wetterQuelle: "Wetterdaten: MET Norway", fernwartung: "Fernwartung aktiv",
         heute: "Heute", morgen: "Morgen", keineTermine: "Keine Termine", locale: "de-DE",
         bis: "bis", keineWarnung: "Keine Unwetterwarnung", dwd: "Quelle: Deutscher Wetterdienst", alarm: "Notfall" },
   en: { lage: { "clear-night": "Clear night", "cloudy": "Cloudy", "exceptional": "Exceptional", "fog": "Fog", "hail": "Hail",
           "lightning": "Thunderstorm", "lightning-rainy": "Thunderstorm, rain", "partlycloudy": "Partly cloudy",
           "pouring": "Pouring", "rainy": "Rainy", "snowy": "Snowy", "snowy-rainy": "Sleet", "sunny": "Sunny",
           "windy": "Windy", "windy-variant": "Windy, cloudy" },
-        feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway",
+        feuchte: "Humidity", wind: "Wind", keinStream: "No live stream right now", naechstes: "Up next", wetterQuelle: "Weather data: MET Norway", fernwartung: "Remote maintenance active",
         heute: "Today", morgen: "Tomorrow", keineTermine: "No events", locale: "en-GB",
         bis: "until", keineWarnung: "No weather warning", dwd: "Source: Deutscher Wetterdienst", alarm: "Emergency" },
 };
@@ -640,7 +640,18 @@ async function laden() {
     meldungExtern(d.meldung_extern);
     durchsage(d.durchsage);
     alarmZeigen(d.alarm);
+    fernwartungZeigen(d.fernwartung);
   } catch (_) { /* nächster Versuch */ }
+}
+
+// Fernwartung (seit 0.33): Nur im Direktmodus eines Pi setzt der Server das Feld – solange ein Terminal zu diesem Pi
+// offen ist, steht der Hinweis oben rechts (im Stream-Modus blendet ihn mpv auf dem Pi ein, nicht die geteilte Seite).
+function fernwartungZeigen(an) {
+  let el = $("fernwartung");
+  if (!an) { if (el) el.hidden = true; return; }
+  if (!el) { el = document.createElement("div"); el.id = "fernwartung"; document.body.appendChild(el); }
+  el.textContent = T.fernwartung;
+  el.hidden = false;
 }
 
 // Meldung per Webhook (seit 0.16): Banner über jedem Layout, auch bei „schwarz“

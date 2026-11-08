@@ -183,3 +183,8 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-pdf img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .typ-pdf.fuellen img { object-fit: cover; }
 
+
+/* Fernwartung aktiv (seit 0.33, nur Direktmodus eines Pi) */
+#fernwartung { position: absolute; right: 1.5vw; top: 2vh; z-index: 200; padding: .4vh .8vw; border-radius: .6vh;
+  background: rgba(0,0,0,.6); color: #ffd700; font-size: 2.6vh; font-weight: 600; pointer-events: none; }
+#fernwartung[hidden] { display: none; }
