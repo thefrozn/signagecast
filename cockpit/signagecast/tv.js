@@ -53,7 +53,8 @@ const TEXTE = {
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
     pl: { titel: "Raspberry Pi als Player", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
-          bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
+          ram: "Arbeitsspeicher: Für den Stream reicht 1 GB (Zero 2 W: 512 MB). Für den Direktmodus mindestens 2 GB, besser 4 GB – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe; mit Schreibschutz liegt auch alles, was der Browser speichert, im Arbeitsspeicher. Schätzwerte, auf echten Pis noch nicht gemessen.",
+          bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
           experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Einstellungen → Anzeige).",
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
@@ -83,7 +84,7 @@ const TEXTE = {
           schreibschutz: "Schreibschutz (empfohlen)", schreibschutzText: "Das System läuft im Arbeitsspeicher, die SD-Karte bleibt unverändert – Stromausfall und Ausstecken schaden ihr nicht. Ändern startet den Pi neu.",
           systemupdate: "Systemupdates", su: { woechentlich: "wöchentlich (So 3 Uhr)", aus: "nur von Hand" }, hwdec: "Video-Dekodierung", hw: { auto: "Hardware (Standard)", aus: "nur CPU (bei Bildfehlern)" },
           anzeige: "Anzeige", am: { stream: "Stream vom Server (Standard)", direkt: "Direkt: Pi zeigt die Seite selbst (experimentell)" },
-          anzeigeText: "Direkt: Der Pi öffnet die TV-Seite selbst im Browser – gestochen scharf, ohne Verzögerung, und der Server muss für diesen Pi nichts kodieren. Der Pi zeichnet in Full HD (4K-Fernseher rechnen hoch). Nur Pi 4/5; Videos und Kameras können ruckeln. Macht der Browser Probleme, nimmt der Pi für eine Stunde den Stream.",
+          anzeigeText: "Direkt: Der Pi öffnet die TV-Seite selbst im Browser – gestochen scharf, ohne Verzögerung, und der Server muss für diesen Pi nichts kodieren. Der Pi zeichnet in Full HD (4K-Fernseher rechnen hoch). Nur Pi 4/5 mit mindestens 2 GB Arbeitsspeicher (besser 4 GB); Videos und Kameras können ruckeln. Macht der Browser Probleme, nimmt der Pi für eine Stunde den Stream.",
           direktModus: "Direktmodus (Browser)",
           b: { bild: "Bildschirmfoto", erkennen: "Name anzeigen", cec_an: "TV ein", cec_aus: "TV aus", player_neu: "Player neu starten", neustart: "Pi neu starten",
                systemupdate: "Systemupdate jetzt", protokoll: "Protokoll holen" },
@@ -116,6 +117,7 @@ const TEXTE = {
                pi_kein_hdmi: "Kein Bildschirm erkannt – HDMI-Kabel prüfen (Pi 4/5: den Anschluss neben dem Strom nehmen).",
                pi_direkt_pi3: "Der Direktmodus braucht einen Pi 4 oder Pi 5 – dieser Pi zeigt den Stream.",
                pi_direkt_kein_browser: "Das Image dieses Pi hat noch keinen Browser (vor 0.24 erstellt): für den Direktmodus ein neues Image herunterladen und flashen. Bis dahin zeigt er den Stream.",
+               pi_direkt_ram: "Dieser Pi hat weniger als 2 GB Arbeitsspeicher – für den Direktmodus knapp (Browser und Cache liegen mit Schreibschutz im Arbeitsspeicher). Ruckelt die Seite oder startet sie neu: Anzeige auf „Stream“ stellen oder einen Pi mit 4 GB nehmen.",
                pi_direkt_rueckfall: "Der Browser hatte Probleme – der Pi zeigt für eine Stunde den Stream. „Player neu starten“ versucht es sofort wieder." } },
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
     todo: { player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
@@ -340,7 +342,8 @@ const TEXTE = {
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
     pl: { titel: "Raspberry Pi as player", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
-          bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
+          ram: "Memory: 1 GB is enough for the stream (Zero 2 W: 512 MB). Direct mode needs at least 2 GB, better 4 GB – especially with videos, cameras, web pages or 4K output; with write protection everything the browser stores is kept in memory too. Estimates, not yet measured on real Pis.",
+          bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
           experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Settings → Display).",
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
@@ -370,7 +373,7 @@ const TEXTE = {
           schreibschutz: "Write protection (recommended)", schreibschutzText: "The system runs in memory, the SD card stays unchanged – power cuts and unplugging do not harm it. Changing it restarts the Pi.",
           systemupdate: "System updates", su: { woechentlich: "weekly (Sun 3 am)", aus: "manual only" }, hwdec: "Video decoding", hw: { auto: "hardware (default)", aus: "CPU only (on picture errors)" },
           anzeige: "Display", am: { stream: "stream from the server (default)", direkt: "direct: the Pi shows the page itself (experimental)" },
-          anzeigeText: "Direct: the Pi opens the TV page itself in a browser – sharp, without delay, and the server does not need to encode anything for this Pi. The Pi draws in Full HD (4K TVs upscale). Pi 4/5 only; videos and cameras may stutter. If the browser has problems, the Pi uses the stream for one hour.",
+          anzeigeText: "Direct: the Pi opens the TV page itself in a browser – sharp, without delay, and the server does not need to encode anything for this Pi. The Pi draws in Full HD (4K TVs upscale). Pi 4/5 with at least 2 GB of memory only (better 4 GB); videos and cameras may stutter. If the browser has problems, the Pi uses the stream for one hour.",
           direktModus: "direct mode (browser)",
           b: { bild: "Screenshot", erkennen: "Show name", cec_an: "TV on", cec_aus: "TV off", player_neu: "Restart player", neustart: "Restart Pi",
                systemupdate: "System update now", protokoll: "Fetch log" },
@@ -403,6 +406,7 @@ const TEXTE = {
                pi_kein_hdmi: "No screen detected – check the HDMI cable (Pi 4/5: use the port next to the power).",
                pi_direkt_pi3: "Direct mode needs a Pi 4 or Pi 5 – this Pi shows the stream.",
                pi_direkt_kein_browser: "This Pi’s image has no browser yet (created before 0.24): download and flash a new image for direct mode. Until then it shows the stream.",
+               pi_direkt_ram: "This Pi has less than 2 GB of memory – tight for direct mode (with write protection the browser and its cache are kept in memory). If the page stutters or restarts: set the display to “stream” or use a Pi with 4 GB.",
                pi_direkt_rueckfall: "The browser had problems – the Pi shows the stream for one hour. “Restart player” tries again right away." } },
     todoTitel: "To do", todoOk: "All good.",
     todo: { player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
@@ -673,6 +677,8 @@ let T = TEXTE[(cockpit.language || "de").startsWith("de") ? "de" : "en"];
 // ---------- Hilfsfunktionen ----------
 const $ = (sel, wurzel = document) => wurzel.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Arbeitsspeicher eines Pi als Nenngröße: MemTotal liegt etwas darunter (z. B. 2-GB-Pi ≈ 1850 MB)
+const ramNenn = (mb) => { const n = [512, 1024, 2048, 4096, 8192, 16384].find((x) => mb <= x); return !n ? Math.round(mb / 1024) + " GB" : n < 1024 ? n + " MB" : n / 1024 + " GB"; };
 function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 
 async function holen(pfad) {
@@ -1131,7 +1137,7 @@ async function playerSeite(inhalt) {
       <div class="karte" id="plNeu"><h2>${esc(T.pl.neu)}</h2>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" id="plName" maxlength="40" placeholder="${esc(T.pl.namePlatz)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
-        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3"], "pi45", T.pl.m)}</select></div>
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3"], "pi45", T.pl.m)}</select></div><p class="leise">${esc(T.pl.ram)}</p>
         ${plNetz("n", P.wlan, true)}
         ${fwBox("plFw")}
         <div class="zeile"><button class="knopf haupt" id="plErstellen" ${bereit ? "" : "disabled"}>${esc(T.pl.erstellen)}</button></div>
@@ -1194,7 +1200,7 @@ async function playerSeite(inhalt) {
       : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
       : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
     const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? " " + T.pl.zitat(b.ssid) : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
-    const zeilen = g.zuletzt ? [[T.pl.modell, b.modell], [T.pl.ip, g.ip], [T.pl.netz, netz],
+    const zeilen = g.zuletzt ? [[T.pl.modell, b.modell + (b.ram_mb > 0 ? " · " + ramNenn(b.ram_mb) : "")], [T.pl.ip, g.ip], [T.pl.netz, netz],
       [T.pl.hdmi, b.hdmi ? (b.tv_name || "HDMI") + (b.ausgang ? ` (${b.ausgang})` : "") : T.pl.keinHdmi],
       [T.pl.video, b.modus_ist === "direkt" ? T.pl.direktModus : v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
       [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
@@ -1220,7 +1226,7 @@ async function playerSeite(inhalt) {
       <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
-        <div class="zeile"><label>${esc(T.pl.modell)}</label><select name="modell">${opt(["pi45", "pi3"], g.modell, T.pl.m)}</select></div>
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select name="modell">${opt(["pi45", "pi3"], g.modell, T.pl.m)}</select></div><p class="leise">${esc(T.pl.ram)}</p>
         <div class="zeile"><label>${esc(T.pl.drehung)}</label><select name="drehung">${opt([0, 90, 180, 270], g.drehung, { 0: "0°", 90: "90°", 180: "180°", 270: "270°" })}</select></div>
         <div class="zeile"><label>${esc(T.pl.aufloesung)}</label><select name="aufloesung">${opt(["auto", "720", "1080", "2160"], g.aufloesung, T.pl.a)}</select></div>
         <div class="zeile"><label>${esc(T.pl.lautstaerke)}</label><input type="number" name="lautstaerke" min="0" max="100" value="${g.lautstaerke}"></div>

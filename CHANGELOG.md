@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- **Raspberry Pi player: memory recommendations:** the model choice (new player and its settings) says how much memory
+  a Pi needs – stream 1 GB (Zero 2 W: 512 MB), direct mode at least 2 GB, better 4 GB (with write protection the browser
+  and its cache are kept in memory). Estimates, not yet measured on real Pis. The Pi now reports its memory (agent 1.4,
+  Pis update it from the server); the card shows it (e.g. “Raspberry Pi 4 Model B · 2 GB”), and a Pi in direct mode with
+  less than 2 GB gets a note – direct mode stays allowed.
+
 ## v0.33.0 (2026-11-08)
 - **Remote maintenance – terminal to a Raspberry Pi in the browser (experimental):** a root shell drawn with xterm.js (like Cockpit's
   terminal), from the Pi's card in the admin. Off by default: the Pi itself must allow it (box when creating the image,

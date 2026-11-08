@@ -987,6 +987,8 @@ def player_hinweise(g):
             h.append("pi_direkt_kein_browser")
         elif b.get("rueckfall"):
             h.append("pi_direkt_rueckfall")
+        if klasse != "pi3" and PL.ram_knapp_direkt(b.get("ram_mb")):
+            h.append("pi_direkt_ram")     # nur Hinweis (seit 0.34): Chromium samt Cache liegt mit Schreibschutz im RAM
     return h
 
 

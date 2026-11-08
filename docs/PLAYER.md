@@ -16,6 +16,7 @@ You create a ready SD card image in the admin and manage all Pis there – no co
 |---|---|
 | **Pi 5, Pi 4, Pi 400** (also CM4) | up to **4K** – the TV in SignageCast can stay on H.265 / 4K |
 | **Pi 3, Zero 2 W** | **Full HD with H.264 only** – set the TV in SignageCast to codec *H.264* and resolution *Full HD* |
+| Memory (RAM) | stream: **1 GB** is enough (Zero 2 W: 512 MB) · [direct mode](#direct-mode-since-024-experimental): **at least 2 GB, better 4 GB** |
 | SD card | 8 GB or more, brand card (A1/A2) |
 | Power supply | the **official** one – cheap ones cause under-voltage (the admin warns) |
 | HDMI cable | Pi 4/5: micro HDMI, Zero 2 W: mini HDMI |
@@ -80,6 +81,10 @@ from the Pi's HDMI.
 
 - The Pi draws in **Full HD** (a 4K TV upscales); *Output 4K* forces 4K, which is usually too much for the Pi.
 - **Pi 3 and Zero 2 W** always use the stream (not enough memory); the setting is hidden for them.
+- **Memory:** at least **2 GB**, better **4 GB** – especially with videos, cameras, web pages or 4K output. With write
+  protection the system runs in memory, so the browser's cache (up to 64 MB) and profile are kept there too. A Pi with
+  less than 2 GB reports its memory, and its card shows a note; direct mode stays allowed. These are estimates, not yet
+  measured on real Pis.
 - Videos and cameras are decoded by the Pi – they may stutter, especially H.264 on the Pi 5 (no hardware decoder).
 - **Fallback:** if the browser crashes or the page does not load three times within 10 minutes, the Pi shows the
   stream for one hour; the admin shows a note. *Restart player* tries direct mode again right away.
@@ -159,6 +164,7 @@ Kommandozeile, ohne Tastatur am Pi.
 |---|---|
 | **Pi 5, Pi 4, Pi 400** (auch CM4) | bis **4K** – der Fernseher in SignageCast kann auf H.265 / 4K bleiben |
 | **Pi 3, Zero 2 W** | **nur Full HD mit H.264** – den Fernseher in SignageCast auf Codec *H.264* und Auflösung *Full HD* stellen |
+| Arbeitsspeicher (RAM) | Stream: **1 GB** reicht (Zero 2 W: 512 MB) · [Direktmodus](#direktmodus-seit-024-experimentell): **mindestens 2 GB, besser 4 GB** |
 | SD-Karte | ab 8 GB, Markenkarte (A1/A2) |
 | Netzteil | das **offizielle** – billige führen zu Unterspannung (die Verwaltung warnt) |
 | HDMI-Kabel | Pi 4/5: Micro-HDMI, Zero 2 W: Mini-HDMI |
@@ -225,6 +231,10 @@ Durchsagen, Gong) kommt aus dem HDMI des Pi.
 
 - Der Pi zeichnet in **Full HD** (ein 4K-Fernseher rechnet hoch); *Ausgabe 4K* erzwingt 4K, das ist für den Pi meist zu viel.
 - **Pi 3 und Zero 2 W** zeigen immer den Stream (zu wenig Speicher); die Einstellung ist dort ausgeblendet.
+- **Arbeitsspeicher:** mindestens **2 GB**, besser **4 GB** – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe.
+  Mit Schreibschutz läuft das System im Arbeitsspeicher, also liegen auch Cache (bis 64 MB) und Profil des Browsers dort.
+  Ein Pi mit weniger als 2 GB meldet seinen Speicher, seine Karte zeigt dann einen Hinweis; der Direktmodus bleibt
+  erlaubt. Die Werte sind geschätzt, auf echten Pis noch nicht gemessen.
 - Videos und Kameras dekodiert der Pi – sie können ruckeln, vor allem H.264 auf dem Pi 5 (ohne Hardware-Dekoder).
 - **Rückfall:** Stürzt der Browser ab oder lädt die Seite dreimal in 10 Minuten nicht, zeigt der Pi eine Stunde lang den
   Stream; die Verwaltung zeigt einen Hinweis. *Player neu starten* versucht den Direktmodus sofort wieder.

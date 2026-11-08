@@ -17,7 +17,7 @@
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.3"
+VERSION = "1.4"
 BOOT = "/boot/firmware"
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
 AGENT_BOOT = BOOT + "/signagecast/agent.py"       # vom Server aktualisiert; start.sh nimmt ihn vor dem eingebauten
@@ -141,6 +141,12 @@ def konfig_speichern(k):
 # ---------- System ----------
 def modell():
     return lesen("/proc/device-tree/model", "unbekannt")
+
+
+def ram_mb():
+    """Arbeitsspeicher in MB (MemTotal; etwas unter der Nenngröße, z. B. 2-GB-Pi ≈ 1850). None, wenn unbekannt."""
+    m = re.search(r"^MemTotal:\s+(\d+) kB", lesen("/proc/meminfo", ""), re.M)
+    return int(m.group(1)) // 1024 if m else None
 
 
 def schreibschutz_aktiv():
@@ -1035,7 +1041,7 @@ class Player:
         art, ssid, signal, ip = netz()
         verbunden, tv_name, ausgang = hdmi()
         v = self.anzeige.video_info() if self.anzeige.url and self.anzeige.laeuft() else {}
-        return {"version": VERSION, "modell": modell(), "netz": art, "ssid": ssid, "signal": signal, "ip": ip,
+        return {"version": VERSION, "modell": modell(), "ram_mb": ram_mb(), "netz": art, "ssid": ssid, "signal": signal, "ip": ip,
                 "temperatur": round(int(lesen("/sys/class/thermal/thermal_zone0/temp", "0") or 0) / 1000, 1),
                 "drossel": lauf("vcgencmd", "get_throttled")[1].partition("=")[2], "laufzeit": int(time.time() - START),
                 "hochgefahren": int(float(lesen("/proc/uptime", "0").split()[0])), "hdmi": verbunden, "tv_name": tv_name,

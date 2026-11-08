@@ -364,6 +364,14 @@ def modus_fuer(g, bericht=None):
     return g.get("anzeige_modus", "stream") if g.get("anzeige_modus") in ANZEIGE_MODI else "stream"
 
 
+RAM_DIREKT_MIN = 1536     # MB MemTotal: darunter ein Pi mit 1 GB oder weniger – für den Direktmodus zu knapp (Empfehlung ab 2 GB)
+
+
+def ram_knapp_direkt(mb):
+    """Direktmodus: Pi meldet weniger als 2 GB Arbeitsspeicher (nur Hinweis, der Modus bleibt erlaubt)."""
+    return isinstance(mb, int) and not isinstance(mb, bool) and 0 < mb < RAM_DIREKT_MIN
+
+
 def agent_hash():
     try:
         return hashlib.sha256(open(AGENT, "rb").read()).hexdigest()

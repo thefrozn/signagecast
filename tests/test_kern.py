@@ -613,6 +613,25 @@ class Direktmodus024(unittest.TestCase):
         self.assertEqual(PL.modus_fuer(alt), "stream")
         self.assertNotIn("schluessel", json.dumps(PL.liste(lambda g: [])))
 
+    def test_ram_hinweis_direktmodus(self):
+        """Seit 0.34: unter 2 GB nur ein Hinweis – der Direktmodus bleibt erlaubt. Agent liest MemTotal."""
+        PL = self.PL
+        for mb, knapp in ((420, True), (906, True), (1535, True), (1850, False), (3790, False), (None, False), ("viel", False), (True, False), (0, False)):
+            self.assertEqual(PL.ram_knapp_direkt(mb), knapp, mb)
+        g = PL.neu({"name": "A", "tv": "tv", "anzeige_modus": "direkt"}, {"tv"})
+        a = PL.melden(g, {"modell": "Raspberry Pi 4 Model B Rev 1.5", "ram_mb": 906}, "1.2.3.4", None, None)
+        self.assertEqual(a["modus"], "direkt")
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        alt = agent.lesen
+        try:
+            agent.lesen = lambda pfad, vorgabe="": "MemTotal:        1897892 kB\nMemFree:  100 kB\n" if pfad == "/proc/meminfo" else alt(pfad, vorgabe)
+            self.assertEqual(agent.ram_mb(), 1853)
+            agent.lesen = lambda pfad, vorgabe="": vorgabe
+            self.assertIsNone(agent.ram_mb())
+        finally:
+            agent.lesen = alt
+
     def test_agent_umschalten_und_rueckfall(self):
         """Agent: Direktmodus startet den Browser statt mpv; drei Abstürze -> eine Stunde Stream; „Player neu“ setzt zurück."""
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
