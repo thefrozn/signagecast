@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.34.0 (2026-11-08)
 - **Raspberry Pi player: memory recommendations:** the model choice (new player and its settings) says how much memory
   a Pi needs – stream 1 GB (Zero 2 W: 512 MB), direct mode at least 2 GB, better 4 GB (with write protection the browser
   and its cache are kept in memory). Estimates, not yet measured on real Pis. The Pi now reports its memory (agent 1.4,
