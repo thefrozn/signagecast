@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.33.0 (2026-11-08)
 - **Remote maintenance – terminal to a Raspberry Pi in the browser (experimental):** a root shell drawn with xterm.js (like Cockpit's
   terminal), from the Pi's card in the admin. Off by default: the Pi itself must allow it (box when creating the image,
   or its setup page) – a taken-over server cannot reach Pis that do not. No open port and no SSH on the Pi: two signed
