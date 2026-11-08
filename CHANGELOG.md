@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.35.0 (2026-11-08)
 - **Overview: hide entries of the to-do list:** a ✕ next to each entry hides it without fixing it – tips for good,
   “new version” only for that version, problems until they were solved once (if they come back, they show again; per Pi
   for players). “*n* hidden – show” lists them with “Show again”. “Change the initial password” (Docker) cannot be
