@@ -89,6 +89,21 @@ const TEXTE = {
                systemupdate: "Systemupdate jetzt", protokoll: "Protokoll holen" },
           bText: { erkennen: "Zeigt 30 Sekunden Name und IP auf dem Fernseher – so findest du den richtigen Pi.", systemupdate: "Der Pi lädt Updates (Schreibschutz kurz aus) und startet zweimal neu – etwa 5–15 Minuten." },
           wartet: (a) => `wartet auf den Pi: ${a}`, ergebnis: "Zuletzt", ok: "ok", fehlgeschlagen: "fehlgeschlagen",
+          fw: { knopf: "Terminal", knopfText: "Shell (root) auf diesem Pi im Browser – wie das Terminal in Cockpit",
+            aus: "Fernwartung ist auf diesem Pi aus. Einschalten: beim Erstellen des Images ankreuzen oder auf der Einrichtungsseite des Pi.",
+            alt: "Der Agent auf diesem Pi kann noch keine Fernwartung – er aktualisiert sich bei der nächsten Meldung selbst.",
+            laeuft: (seit, wer) => `Fernwartung läuft seit ${seit} (${wer})`,
+            image: "Fernwartung erlauben (Terminal aus der Verwaltung, root)",
+            imageText: "Ab Werk aus. Der Pi lässt eine Sitzung nur zu, wenn das hier oder auf seiner Einrichtungsseite eingeschaltet ist – so kommt auch jemand, der den Server übernimmt, nicht auf Pis, die es nicht erlauben.",
+            titel: (n) => `Terminal – ${n}`, schliessen: "Sitzung beenden", zu: "Schließen", verbinde: "Verbinde mit dem Pi … (bis zu 15 s)", verbunden: "verbunden",
+            beendet: (g) => `Sitzung beendet: ${g}`,
+            schreibschutz: "Schreibschutz ist an: Änderungen sind nach einem Neustart weg – vorher in den Einstellungen dieses Pi ausschalten.",
+            hinweis: "Auf dem Fernseher steht solange „Fernwartung aktiv“. Nach 10 min ohne Eingabe oder spätestens nach 60 min endet die Sitzung.",
+            protokoll: "Letzte Fernwartungen", verloren: "… (ältere Ausgabe übersprungen)",
+            gruende: { verwaltung: "beendet", leerlauf: "10 min ohne Eingabe", zeitgrenze: "60 min erreicht", verwaltung_weg: "Fenster geschlossen",
+              pi_antwortet_nicht: "der Pi hat sich nicht gemeldet", neue_sitzung: "neue Sitzung", geraet_entfernt: "Pi entfernt",
+              pi_beendet: "Shell beendet (exit)", pi_leerlauf: "10 min ohne Eingabe", pi_zeitgrenze: "60 min erreicht",
+              pi_abgeschaltet: "am Pi abgeschaltet", unbekannt: "Sitzung unbekannt" } },
           protokollZeigen: "Protokoll anzeigen", wlanAendern: "WLAN ändern", wlanAendernText: "Der Pi probiert das neue WLAN aus. Erreicht er den Server damit nicht, kehrt er zum bisherigen zurück. Bisherige WLANs bleiben als Ersatz gespeichert.",
           wlanOffen: (s) => `WLAN-Wechsel zu „${s}“ wartet auf den Pi`, wlanSenden: "An den Pi senden", wlanGesendet: "Gesendet – der Pi übernimmt es bei der nächsten Meldung",
           imageNeu: "Image erneut herunterladen", imageNeuText: "Für eine neue SD-Karte. Der Schlüssel bleibt gleich – eine alte Karte mit diesem Player funktioniert weiter.",
@@ -361,6 +376,21 @@ const TEXTE = {
                systemupdate: "System update now", protokoll: "Fetch log" },
           bText: { erkennen: "Shows name and IP on the TV for 30 seconds – so you find the right Pi.", systemupdate: "The Pi installs updates (write protection off for a moment) and restarts twice – about 5–15 minutes." },
           wartet: (a) => `waiting for the Pi: ${a}`, ergebnis: "Last", ok: "ok", fehlgeschlagen: "failed",
+          fw: { knopf: "Terminal", knopfText: "Shell (root) on this Pi in the browser – like the terminal in Cockpit",
+            aus: "Remote maintenance is off on this Pi. To switch it on: tick it when creating the image, or on the Pi’s setup page.",
+            alt: "The agent on this Pi cannot do remote maintenance yet – it updates itself at its next report.",
+            laeuft: (seit, wer) => `Remote maintenance running since ${seit} (${wer})`,
+            image: "Allow remote maintenance (terminal from the admin, root)",
+            imageText: "Off by default. The Pi only accepts a session if this or its setup page switched it on – so even someone who takes over the server cannot get onto Pis that do not allow it.",
+            titel: (n) => `Terminal – ${n}`, schliessen: "End session", zu: "Close", verbinde: "Connecting to the Pi … (up to 15 s)", verbunden: "connected",
+            beendet: (g) => `Session ended: ${g}`,
+            schreibschutz: "Write protection is on: changes are gone after a restart – switch it off in this Pi’s settings first.",
+            hinweis: "The TV shows “Remote maintenance active” meanwhile. The session ends after 10 min without input or after 60 min at the latest.",
+            protokoll: "Recent remote sessions", verloren: "… (older output skipped)",
+            gruende: { verwaltung: "ended", leerlauf: "10 min without input", zeitgrenze: "60 min reached", verwaltung_weg: "window closed",
+              pi_antwortet_nicht: "the Pi did not respond", neue_sitzung: "new session", geraet_entfernt: "Pi removed",
+              pi_beendet: "shell ended (exit)", pi_leerlauf: "10 min without input", pi_zeitgrenze: "60 min reached",
+              pi_abgeschaltet: "switched off on the Pi", unbekannt: "session unknown" } },
           protokollZeigen: "Show log", wlanAendern: "Change Wi-Fi", wlanAendernText: "The Pi tries the new Wi-Fi. If it cannot reach the server with it, it returns to the previous one. Previous networks stay as fallback.",
           wlanOffen: (s) => `Wi-Fi change to “${s}” is waiting for the Pi`, wlanSenden: "Send to the Pi", wlanGesendet: "Sent – the Pi applies it at its next report",
           imageNeu: "Download image again", imageNeuText: "For a new SD card. The key stays the same – an old card with this player keeps working.",
@@ -500,7 +530,9 @@ const TEXTE = {
       sch_aus_nicht: "Home Assistant cannot switch {e} off – the device does not offer it",
       pi_ssid: "Wi-Fi name missing or longer than 32 characters", pi_wlan_pw: "Wi-Fi password: 8 to 63 characters",
       pi_wlan_unbekannt: "This Wi-Fi is not saved (any more)", pi_name: "Player name missing", pi_tv: "Unknown TV", pi_lautstaerke: "Volume 0 to 100",
-      pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_server: "Server address as http://IP:port",
+      pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_offline: "The Pi is not reachable right now",
+      pi_fernwartung_aus: "This Pi does not allow remote maintenance – switch it on on the SD card (when creating the image) or on its setup page",
+      pi_fernwartung_alt: "The agent on this Pi cannot do remote maintenance yet – it updates itself at its next report, please try again shortly", pi_server: "Server address as http://IP:port",
       pi_server_lokal: "The Pi cannot find the server with this address – enter the IP in your home network under Advanced (e.g. http://192.168.1.20:8890)", pi_port: "Port 1 to 65535",
       pi_kein_image: "No player image yet – first “Download player image”", pi_signatur: "Signature of the player image invalid – not used",
       pi_pruefsumme: "Checksum of the player image wrong – please download again", pi_platz: "Not enough disk space – about {mb} MB needed",
@@ -978,6 +1010,104 @@ function plNetzAnbinden(wurzel, px) {
         speichern: wurzel.querySelector(`[name=${px}Merken]`).checked };
 }
 
+// ---------- Fernwartung (seit 0.33): Terminal zum Pi, gezeichnet mit xterm.js (wie das Terminal in Cockpit) ----------
+const fwBox = (id, an) => `<div class="zeile"><label><input type="checkbox" id="${id}" ${an ? "checked" : ""}> ${esc(T.pl.fw.image)}</label></div>
+  <p class="leise">${esc(T.pl.fw.imageText)}</p>`;
+let xtermGeladen = null;
+function xtermLaden() {
+  const datei = (src) => new Promise((ok, f) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = f; document.head.appendChild(s); });
+  if (!xtermGeladen) {
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "xterm/xterm.css"; document.head.appendChild(css);
+    xtermGeladen = datei("xterm/xterm.js").then(() => datei("xterm/addon-fit.js"));
+  }
+  return xtermGeladen;
+}
+// xterm.js legt seine Maße und Farben als <style>-Elemente an; die Sicherheitsrichtlinie von Cockpit (style-src 'self')
+// blockiert solche eingebetteten Stile. Statt sie zu lockern: Inhalt in ein programmatisch erzeugtes Stylesheet
+// spiegeln (adoptedStyleSheets, von der Richtlinie nicht betroffen) und bei jeder Änderung nachziehen.
+function xtermStileSpiegeln(wurzel) {
+  const blatt = new CSSStyleSheet();
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, blatt];
+  const nachziehen = () => { try { blatt.replaceSync([...wurzel.querySelectorAll("style")].map((s) => s.textContent).join("\n")); } catch (_) { /* nächste Änderung */ } };
+  const mo = new MutationObserver(nachziehen);
+  mo.observe(wurzel, { subtree: true, childList: true, characterData: true });
+  nachziehen();
+  return () => { mo.disconnect(); document.adoptedStyleSheets = document.adoptedStyleSheets.filter((x) => x !== blatt); };
+}
+async function terminalOeffnen(g) {
+  if (document.querySelector(".fw-fenster")) return;
+  await xtermLaden();
+  const f = document.createElement("div");
+  f.className = "fw-fenster";
+  f.innerHTML = `<div class="fw-kopf"><b>${esc(T.pl.fw.titel(g.name))}</b> <span class="leise" data-fw-status>${esc(T.pl.fw.verbinde)}</span>
+      <button class="knopf gefahr" data-fw-ende>${esc(T.pl.fw.schliessen)}</button></div>
+    <p class="leise fw-hinweis">${esc(T.pl.fw.hinweis)}</p><div class="fw-term"></div>`;
+  document.body.appendChild(f);
+  const term = new Terminal({ cursorBlink: true, fontSize: 14, scrollback: 5000, convertEol: false,
+    fontFamily: '"DejaVu Sans Mono", "Liberation Mono", Menlo, Consolas, monospace', theme: { background: "#1e1e1e", foreground: "#e6e6e6" } });
+  const fit = new FitAddon.FitAddon();
+  term.loadAddon(fit);
+  const stileEnde = xtermStileSpiegeln(f.querySelector(".fw-term"));
+  term.open(f.querySelector(".fw-term"));
+  fit.fit();
+  term.focus();
+  const status = (t) => { f.querySelector("[data-fw-status]").textContent = t; };
+  const gelb = (t) => term.write(`\x1b[33m${t}\x1b[0m\r\n`);
+  if (g.bericht && g.bericht.schreibschutz) gelb(T.pl.fw.schreibschutz);
+  let sid = null, offen = true, puffer = "", sendet = false, groesse = null;
+  const pfad = (x) => `/api/player/${g.id}/terminal/${x}`;
+  const schliessen = async (grund) => {
+    if (!offen) return;
+    offen = false;
+    status(T.pl.fw.beendet(T.pl.fw.gruende[grund] || grund));
+    gelb("\r\n" + T.pl.fw.beendet(T.pl.fw.gruende[grund] || grund));
+    window.removeEventListener("resize", anpassen);
+    f.querySelector("[data-fw-ende]").textContent = T.pl.fw.zu;
+    f.querySelector("[data-fw-ende]").onclick = () => { term.dispose(); stileEnde(); f.remove(); };
+  };
+  const senden_ = async () => {           // Eingaben bündeln: höchstens eine Anfrage gleichzeitig
+    if (sendet || !sid || !offen || (!puffer && !groesse)) return;
+    sendet = true;
+    const text = puffer, gr = groesse;
+    puffer = ""; groesse = null;
+    try { await senden(pfad("ein"), Object.assign({ sid, text }, gr ? { spalten: gr.cols, zeilen: gr.rows } : {})); }
+    catch (_) { /* nächster Versuch mit der nächsten Eingabe */ }
+    sendet = false;
+    if (puffer || groesse) senden_();
+  };
+  term.onData((t) => { puffer += t; senden_(); });
+  term.onResize((r) => { groesse = r; senden_(); });
+  const anpassen = () => { try { fit.fit(); } catch (_) { /* Fenster zu */ } };
+  window.addEventListener("resize", anpassen);
+  f.querySelector("[data-fw-ende]").onclick = async () => {
+    if (sid) { try { await senden(pfad("ende"), { sid }); } catch (_) { /* egal */ } }
+    schliessen("verwaltung");
+  };
+  let wer = "";
+  try { wer = cockpit.user ? ((await cockpit.user()) || {}).name || "" : ""; } catch (_) { wer = ""; }
+  try {
+    sid = (await senden(pfad("start"), { spalten: term.cols, zeilen: term.rows, wer: wer || (CONTAINER ? "verwaltung" : "cockpit") })).sid;
+  } catch (e) {
+    gelb(e.message);
+    return schliessen("unbekannt");
+  }
+  let ab = 0, verbunden = false;
+  while (offen) {
+    let d;
+    try { d = JSON.parse(await dienst.get(pfad("aus"), { sid, ab }, KOPF)); }
+    catch (_) { await new Promise((r) => setTimeout(r, 1500)); continue; }
+    if (d.verloren) gelb(T.pl.fw.verloren);
+    if (d.daten) {
+      const roh = atob(d.daten), bytes = new Uint8Array(roh.length);
+      for (let i = 0; i < roh.length; i++) bytes[i] = roh.charCodeAt(i);
+      term.write(bytes);
+    }
+    ab = d.ab;
+    if (!verbunden && d.zustand === "offen") { verbunden = true; status(T.pl.fw.verbunden); }
+    if (d.zustand === "zu") return schliessen(d.grund || "unbekannt");
+  }
+}
+
 async function playerSeite(inhalt) {
   let P = await holen("/api/player");
   const tvOpt = (w) => `<option value="">${esc(T.pl.keinTv)}</option>` + E.fernseher.map((t) => `<option value="${esc(t.id)}" ${t.id === w ? "selected" : ""}>${esc(t.name)}</option>`).join("");
@@ -1003,6 +1133,7 @@ async function playerSeite(inhalt) {
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
         <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3"], "pi45", T.pl.m)}</select></div>
         ${plNetz("n", P.wlan, true)}
+        ${fwBox("plFw")}
         <div class="zeile"><button class="knopf haupt" id="plErstellen" ${bereit ? "" : "disabled"}>${esc(T.pl.erstellen)}</button></div>
         <div id="plSchritte" hidden><h3>${esc(T.pl.schritte)}</h3><ol><li>${esc(T.pl.s1)}</li><li>${esc(T.pl.s2)}</li><li>${esc(T.pl.s3)}</li><li>${esc(T.pl.s4)}</li></ol></div>
         <details class="erweitert"><summary>${esc(T.pl.erweitert)}</summary>
@@ -1015,6 +1146,7 @@ async function playerSeite(inhalt) {
             <button class="knopf klein" data-vergessen="${esc(s)}">${esc(T.pl.vergessen)}</button></div>`).join("")}` : ""}</details></div>
       <div class="karte" id="plKop"><h2>${esc(T.pl.koppeln)}</h2><p class="leise">${esc(T.pl.koppelnText)}</p>
         ${plNetz("s", P.wlan, true)}
+        ${fwBox("plSFw")}
         <div class="zeile"><button class="knopf" id="plSammel" ${bereit ? "" : "disabled"}>${esc(T.pl.sammelImage)}</button></div>
         <p id="plWartend" class="leise">${wartendText()}</p>
         <div class="zeile"><label>${esc(T.pl.code)}</label><input type="text" id="plCode" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="${esc(T.pl.codePlatz)}"></div>
@@ -1024,7 +1156,7 @@ async function playerSeite(inhalt) {
       <h2>${esc(T.pl.liste)}</h2><div id="plListe"></div>`;
     const netzSammel = plNetzAnbinden($("#plKop"), "s");
     $("#plSammel").onclick = (e) => aktion(e.target, async () => {
-      const d = await senden("/api/player/sammel-image", { wlan: netzSammel(), server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+      const d = await senden("/api/player/sammel-image", { wlan: netzSammel(), fernwartung: $("#plSFw").checked, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
       plHerunterladen(d.kennung, d.datei);
       $("#plSchritte").hidden = false;
     }, T.pl.laedtHerunter);
@@ -1039,7 +1171,7 @@ async function playerSeite(inhalt) {
       const wlan = netzNeu();
       const r = await senden("/api/player/neu", { name: $("#plName").value, tv: $("#plTv").value, modell: $("#plModell").value });
       let d;
-      try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
+      try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
       catch (f) { await senden(`/api/player/${r.geraet}/entfernen`); throw f; }        // ohne Image kein halbes Gerät zurücklassen
       plHerunterladen(d.kennung, d.datei);
       $("#plSchritte").hidden = false; $("#plName").value = "";
@@ -1079,6 +1211,11 @@ async function playerSeite(inhalt) {
       <div class="zeile">${["bild", "erkennen", "cec_an", "cec_aus", "player_neu", "neustart", "systemupdate", "protokoll"].map((a) =>
         `<button class="knopf" data-befehl="${a}" title="${esc(T.pl.bText[a] || "")}">${esc(T.pl.b[a])}</button>`).join("")}
         ${g.protokoll ? `<button class="knopf" data-protokoll>${esc(T.pl.protokollZeigen)}</button>` : ""}</div>
+      ${g.online ? (g.fernwartung ? `<div class="zeile"><button class="knopf haupt" data-terminal title="${esc(T.pl.fw.knopfText)}"><span class="mdi mdi-console"></span> ${esc(T.pl.fw.knopf)}</button>
+        ${g.terminal ? `<span class="warn">${esc(T.pl.fw.laeuft(zeit(g.terminal.start), g.terminal.wer))}</span>` : ""}</div>`
+        : `<p class="leise">${esc("fernwartung" in b ? T.pl.fw.aus : T.pl.fw.alt)}</p>`) : ""}
+      ${(g.fernwartung_protokoll || []).length ? `<details class="erweitert"><summary>${esc(T.pl.fw.protokoll)}</summary><ul class="leise">${g.fernwartung_protokoll.map((x) =>
+        `<li>${esc(zeit(x.start))} · ${esc(x.wer)} · ${Math.max(1, Math.round((x.ende - x.start) / 60))} min · ${esc(T.pl.fw.gruende[x.grund] || x.grund)}</li>`).join("")}</ul></details>` : ""}
       <pre data-log hidden class="pl-log"></pre>
       <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
@@ -1097,7 +1234,7 @@ async function playerSeite(inhalt) {
       <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
         ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
       <details class="erweitert" data-image><summary>${esc(T.pl.imageNeu)}</summary><p class="leise">${esc(T.pl.imageNeuText)}</p>
-        ${plNetz("i" + g.id, P.wlan, true)}<div class="zeile"><button class="knopf" data-image-laden ${P.basis.vorhanden ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
+        ${plNetz("i" + g.id, P.wlan, true)}${fwBox("plIFw" + g.id, g.fernwartung)}<div class="zeile"><button class="knopf" data-image-laden ${P.basis.vorhanden ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
         <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
   };
   const bilderLaden = () => inhalt.querySelectorAll("img[data-bild]").forEach(async (i) => {
@@ -1114,6 +1251,8 @@ async function playerSeite(inhalt) {
       const wlanLesen = plNetzAnbinden(k, "w" + g.id), imageLesen = plNetzAnbinden(k, "i" + g.id);
       k.querySelectorAll("[data-befehl]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
         await senden(`/api/player/${g.id}/befehl`, { art: b.dataset.befehl }); g.befehle.push(b.dataset.befehl); }, T.pl.befehlOk); });
+      const term = k.querySelector("[data-terminal]");
+      if (term) term.onclick = () => terminalOeffnen(g);
       const log = k.querySelector("[data-protokoll]");
       if (log) log.onclick = (e) => aktion(e.target, async () => {
         const p = k.querySelector("[data-log]"); p.textContent = await dienst.get(`/api/player/${g.id}/protokoll`, {}, KOPF); p.hidden = false; p.scrollTop = p.scrollHeight; }, null);
@@ -1129,7 +1268,7 @@ async function playerSeite(inhalt) {
       k.querySelector("[data-wlan-senden]").onclick = (e) => aktion(e.target, async () => {
         await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); P = await holen("/api/player"); listeZeichnen(); }, T.pl.wlanGesendet);
       k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {
-        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), fernwartung: k.querySelector(`#plIFw${g.id}`).checked, server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
         plHerunterladen(d.kennung, d.datei); }, T.pl.laedtHerunter);
       k.querySelector("[data-entfernen]").onclick = (e) => {
         if (!confirm(T.pl.entfernenFrage(g.name))) return;

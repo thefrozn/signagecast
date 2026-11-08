@@ -10,6 +10,12 @@
   {"name": "hls.js", "id": "hlsjs", "version": "1.5.20", "lizenz": "Apache-2.0",
    "url": "https://github.com/video-dev/hls.js", "purl": "pkg:npm/hls.js@1.5.20",
    "pfade": ["www/hls"]},
+  {"name": "xterm.js", "id": "xterm", "version": "5.5.0", "lizenz": "MIT",
+   "url": "https://github.com/xtermjs/xterm.js", "purl": "pkg:npm/%40xterm/xterm@5.5.0",
+   "pfade": ["cockpit/signagecast/xterm/xterm.js", "cockpit/signagecast/xterm/xterm.css", "cockpit/signagecast/xterm/LICENSE"]},
+  {"name": "xterm.js addon-fit", "id": "xterm-fit", "version": "0.10.0", "lizenz": "MIT",
+   "url": "https://github.com/xtermjs/xterm.js", "purl": "pkg:npm/%40xterm/addon-fit@0.10.0",
+   "pfade": ["cockpit/signagecast/xterm/addon-fit.js", "cockpit/signagecast/xterm/LICENSE-addon-fit"]},
   {"name": "MediaMTX", "id": "mediamtx", "version": "v1.21.3", "lizenz": "MIT",
    "url": "https://github.com/bluenviron/mediamtx", "purl": "pkg:golang/github.com/bluenviron/mediamtx@v1.21.3",
    "pfade": [], "geladen": "installieren.sh / Dockerfile laden es zur Installation (Prüfsumme geprüft)"}

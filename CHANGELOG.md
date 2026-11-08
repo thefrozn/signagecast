@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+- **Remote maintenance – terminal to a Raspberry Pi in the browser:** a root shell drawn with xterm.js (like Cockpit's
+  terminal), from the Pi's card in the admin. Off by default: the Pi itself must allow it (box when creating the image,
+  or its setup page) – a taken-over server cannot reach Pis that do not. No open port and no SSH on the Pi: two signed
+  requests, input and output encrypted, replay-protected; ends after 10 min idle / 60 min; *Remote maintenance active*
+  on the TV meanwhile; every session logged without its content. Agent 1.3 (Pis update it from the server).
+  Bundles xterm.js 5.5.0 and addon-fit 0.10.0 (MIT). See [PLAYER.md](docs/PLAYER.md#remote-maintenance--terminal-in-the-browser-since-033).
+
 ## v0.32.1 (2026-11-08)
 - **Deleting a TV cleans up after it:** its browser profile (`chromium-<id>`, often 100–300 MB) and its render settings
   (`render-<id>.env`) are removed when the settings are saved, at service start and hourly; if its render chain is still

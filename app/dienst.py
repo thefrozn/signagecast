@@ -38,6 +38,7 @@ import csvimport as CSV                       # noqa: E402
 import webbild as WB                          # noqa: E402
 import pdf as PDF                             # noqa: E402
 import player as PL                           # noqa: E402
+import fernwartung as FW                      # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -825,12 +826,12 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         ziel = u.path + ("?" + urllib.parse.urlencode(q) if q else "")
         if u.path == "/daten.json":
             PL.direkt_abruf[g["id"]] = time.time()
-            self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel, kameras=t["id"])
+            self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel, kameras=t["id"], fernwartung=bool(FW.zustand(g["id"])))
         else:
             self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel)
         return True
 
-    def weiterleiten(self, port, ziel, kameras=None):
+    def weiterleiten(self, port, ziel, kameras=None, fernwartung=False):
         """GET an 127.0.0.1:<port> durchreichen (mit Range, als Datenstrom – auch Radio und MJPEG)."""
         import http.client
         kopf = {k: self.headers[k] for k in ("Range", "If-None-Match", "If-Modified-Since", "User-Agent") if self.headers.get(k)}
@@ -844,6 +845,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             if kameras is not None:               # Kamera-Adressen (nur im Container lesbar) auf diesen Zugang umschreiben
                 roh = r.read().replace(f"http://127.0.0.1:{HLS_PORT}/cam_".encode(), b"/hlscam/cam_")
                 PL.kameras_erlaubt[kameras] = set(x.decode() for x in re.findall(rb"/hlscam/(cam_[a-z0-9_]{2,16})/", roh))
+                if fernwartung and roh.rstrip().endswith(b"}"):   # nur auf diesem Pi: Hinweis „Fernwartung aktiv“ (seit 0.33)
+                    roh = roh.rstrip()[:-1] + b', "fernwartung": true}'
                 self.send_response(r.status); self.send_header("Content-Type", r.getheader("Content-Type") or "application/json")
                 self.send_header("Cache-Control", "no-store"); self.send_header("Content-Length", str(len(roh)))
                 self.end_headers(); self.wfile.write(roh)
@@ -919,6 +922,14 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             antwort, typ = b'{"ok": true}', "application/json"
         elif pfad == "/player/agent":
             antwort, typ = open(PL.AGENT, "rb").read(), "text/x-python"
+        elif pfad in ("/player/terminal/ein", "/player/terminal/aus"):   # Fernwartung (seit 0.33)
+            try:
+                d = json.loads(roh or b"{}")
+                d = d if isinstance(d, dict) else {}
+            except ValueError:
+                d = {}
+            erg = FW.pi_ein(g, d) if pfad.endswith("/ein") else FW.pi_aus(g, d)
+            antwort, typ = json.dumps(erg).encode(), "application/json"
         else:
             return self.antwort(404, {"ok": False})
         self.send_response(200); self.send_header("Content-Type", typ); self.send_header("Content-Length", str(len(antwort)))
@@ -2305,6 +2316,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend()})
+        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/aus", pfad)
+        if m:                                        # Fernwartung: lange Anfrage nach Ausgabe (seit 0.33)
+            return self.antwort(200, dict(FW.ausgabe(m.group(1), (q.get("sid") or [""])[0], (q.get("ab") or ["0"])[0]), ok=True))
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(bild|protokoll)", pfad)
         if m:
             try:
@@ -2690,7 +2704,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/player/koppeln":                # Code vom Fernseher eingeben (seit 0.25)
             return {"geraet": PL.koppeln(d.get("code"), {"name": d.get("name", ""), "tv": d.get("tv", "")}, tvs)["id"]}
         if p == "/api/player/sammel-image":           # Image für mehrere Pis, ohne Schlüssel (seit 0.25)
-            kennung = PL.herunterladen_vorbereiten("", d.get("wlan"), str(d.get("server") or player_server()))
+            kennung = PL.herunterladen_vorbereiten("", d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")))
             return {"kennung": kennung, "datei": PL.dateiname(None)}
         if p == "/api/player/basis-laden":
             threading.Thread(target=PL.basis_laden, args=(VERSION,), daemon=True).start()
@@ -2701,6 +2715,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/player/wlan-vergessen":
             PL.wlan_vergessen(str(d.get("ssid", "")))
             return {}
+        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/(start|ein|ende)", p)
+        if m:                                        # Fernwartung (seit 0.33)
+            return self.terminal_post(m.group(1), m.group(2), d)
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image)", p)
         if not m:
             raise KeyError(p)
@@ -2714,9 +2731,24 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         elif art == "wlan":
             PL.wlan_wechseln(gid, d.get("wlan") or {})
         elif art == "image":
-            kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), str(d.get("server") or player_server()))
+            kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")))
             return {"kennung": kennung, "datei": PL.dateiname(PL.geraet(gid))}
         return {}
+
+    def terminal_post(self, gid, art, d):
+        g = PL.geraet(gid)
+        if not g:
+            raise M.Meldung("pi_unbekannt")
+        if art == "start":
+            b = (PL.stand.get(gid) or {}).get("bericht") or {}
+            if not PL.online(gid):
+                raise M.Meldung("pi_offline")
+            if "fernwartung" not in b:
+                raise M.Meldung("pi_fernwartung_alt")
+            return {"sid": FW.starten(g, bool(b.get("fernwartung")), d.get("spalten"), d.get("zeilen"), d.get("wer"))}
+        if art == "ein":
+            return {"offen": FW.eingabe(gid, str(d.get("sid", "")), d.get("text") or "", d.get("spalten"), d.get("zeilen"))}
+        return {"beendet": FW.beenden(gid, str(d.get("sid", "")))}
 
 
 def main():

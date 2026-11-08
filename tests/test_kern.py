@@ -1388,5 +1388,87 @@ class FernseherReste0321(unittest.TestCase):
             srv.server_close()
 
 
+
+class Fernwartung033(unittest.TestCase):
+    """Terminal zum Pi: Verschlüsselung wie im Agent, nur mit Erlaubnis des Pi, Schutz vor Wiedereinspielen, Zeitgrenzen."""
+    def setUp(self):
+        import fernwartung as FW
+        self.FW = FW
+        self.g = {"id": "abcd1234", "name": "Test-Pi", "schluessel": "11" * 32}
+        FW.sitzungen.clear()
+
+    def agent(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "player"))
+        import agent
+        return agent
+
+    def test_verschluesselung_wie_agent(self):
+        A, FW = self.agent(), self.FW
+        k = FW.schluessel(self.g)
+        self.assertEqual(k, A.fw_schluessel(self.g))
+        for roh in (b"", b"ls -la\r", os.urandom(70000)):
+            text = FW.verschluesseln(k, roh)
+            self.assertEqual(A.fw_entschluesseln(k, text), roh)
+            self.assertEqual(FW.entschluesseln(k, A.fw_verschluesseln(k, roh)), roh)
+            if roh:
+                self.assertNotIn(roh[:6], __import__("base64").b64decode(text))
+        self.assertNotEqual(FW.verschluesseln(k, b"gleich"), FW.verschluesseln(k, b"gleich"))   # neue Nonce je Nachricht
+
+    def test_nur_mit_erlaubnis_des_pi(self):
+        with self.assertRaises(ValueError):
+            self.FW.starten(self.g, False, 80, 24, "x")
+        self.assertIsNone(self.FW.fuer_meldung(self.g))
+
+    def test_ablauf_und_wiedereinspielen(self):
+        FW, g = self.FW, self.g
+        k = FW.schluessel(g)
+        sid = FW.starten(g, True, 100, 30, "tester")
+        t = FW.fuer_meldung(g)
+        self.assertEqual((t["sid"], t["spalten"], t["zeilen"]), (sid, 100, 30))
+        self.assertTrue(FW.pi_ein(g, {"sid": sid, "n": 1}, warten=0.05)["offen"])
+        self.assertEqual(FW.zustand(g["id"])["zustand"], "offen")
+        self.assertTrue(FW.eingabe(g["id"], sid, "ls\r"))
+        d = FW.pi_ein(g, {"sid": sid, "n": 2, "groesse_rev": 1}, warten=0.05)
+        self.assertEqual(FW.entschluesseln(k, d["daten"]), b"ls\r")
+        self.assertFalse(FW.pi_ein(g, {"sid": sid, "n": 2}, warten=0.05)["offen"])      # mitgeschnittene Anfrage
+        self.assertFalse(FW.pi_ein(g, {"sid": "0" * 32, "n": 9}, warten=0.05)["offen"])  # fremde Sitzung
+        self.assertTrue(FW.pi_aus(g, {"sid": sid, "n": 1, "daten": FW.verschluesseln(k, b"datei.txt\r\n")})["offen"])
+        self.assertFalse(FW.pi_aus(g, {"sid": sid, "n": 1, "daten": FW.verschluesseln(k, b"nochmal")})["offen"])
+        a = FW.ausgabe(g["id"], sid, 0, warten=0)
+        self.assertEqual(__import__("base64").b64decode(a["daten"]), b"datei.txt\r\n")
+        self.assertEqual(FW.ausgabe(g["id"], sid, a["ab"], warten=0)["daten"], "")
+        self.assertTrue(FW.eingabe(g["id"], sid, "", 120, 40))
+        d = FW.pi_ein(g, {"sid": sid, "n": 3, "groesse_rev": 1}, warten=0.05)
+        self.assertEqual((d["spalten"], d["zeilen"], d["groesse_rev"]), (120, 40, 2))
+        FW.pi_aus(g, {"sid": sid, "n": 2, "daten": FW.verschluesseln(k, b""), "ende": "beendet"})
+        self.assertEqual(FW.ausgabe(g["id"], sid, a["ab"], warten=0)["zustand"], "zu")
+        p = FW.protokoll(g["id"])[0]
+        self.assertEqual((p["wer"], p["grund"], p["name"]), ("tester", "pi_beendet", "Test-Pi"))
+        self.assertNotIn("datei.txt", open(FW.PROTOKOLL).read())                         # keine Inhalte im Protokoll
+        self.assertIsNone(FW.zustand(g["id"]))
+
+    def test_zeitgrenzen(self):
+        FW, g = self.FW, self.g
+        for feld, grund in (("eingabe_zeit", "leerlauf"), ("start", "zeitgrenze"), ("verwaltung_zeit", "verwaltung_weg")):
+            sid = FW.starten(g, True, 80, 24, "x")
+            FW.pi_ein(g, {"sid": sid, "n": 1}, warten=0.01)
+            FW.sitzungen[g["id"]][feld] -= 4000
+            self.assertIsNone(FW.zustand(g["id"]))
+            self.assertEqual(FW.protokoll(g["id"])[0]["grund"], grund)
+        sid = FW.starten(g, True, 80, 24, "x")
+        FW.sitzungen[g["id"]]["start"] -= 50                                                    # Pi meldet sich nicht
+        self.assertIsNone(FW.fuer_meldung(g))
+        self.assertEqual(FW.protokoll(g["id"])[0]["grund"], "pi_antwortet_nicht")
+
+    def test_image_nur_auf_wunsch(self):
+        import player as PL
+        g = {"id": "abcd1234", "schluessel": "11" * 32, "name": "x", "hotspot_pw": "y" * 10, "schreibschutz": True,
+             "lautstaerke": 100, "drehung": 0, "hwdec": "auto", "aufloesung": "auto"}
+        ohne = json.loads(PL.konfig(g, [], "http://10.0.0.1:8890", "de", ""))
+        mit = json.loads(PL.konfig(g, [], "http://10.0.0.1:8890", "de", "", True))
+        self.assertNotIn("fernwartung", ohne)
+        self.assertTrue(mit["fernwartung"])
+
+
 if __name__ == "__main__":
     unittest.main()

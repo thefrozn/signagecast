@@ -9,11 +9,15 @@
 # (Start, Hotspot, Fehler) zeigt weiter mpv. Macht der Browser dreimal in 10 min Probleme, nimmt der Pi eine Stunde den Stream.
 # Kopplung (seit 0.25): Ein Image für mehrere Pis hat keinen Schlüssel. Der Pi handelt ihn per Diffie-Hellman mit dem
 # Server aus und zeigt einen 6-stelligen Code, den man in der Verwaltung eingibt; der Schlüssel geht nie übers Netz.
+# Fernwartung (seit 1.3 / SignageCast 0.33): Terminal aus der Verwaltung – nur, wenn dieser Pi es erlaubt („fernwartung“
+# in signagecast.json, beim Image erstellen oder auf der Einrichtungsseite; ab Werk aus). Die Shell (root) läuft in einem
+# PTY; Ein- und Ausgabe gehen verschlüsselt über zwei signierte Anfragen, am Pi bleibt jeder Port zu. Ende nach 10 min
+# ohne Eingabe, spätestens nach 60 min; solange steht „Fernwartung aktiv“ auf dem Fernseher.
 # Nur Python-Standardbibliothek; läuft als root (WLAN, CEC, Neustart), mpv und Chromium als Benutzer „signage“.
-import hashlib, hmac, json, os, re, secrets, shutil, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.2"
+VERSION = "1.3"
 BOOT = "/boot/firmware"
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
 AGENT_BOOT = BOOT + "/signagecast/agent.py"       # vom Server aktualisiert; start.sh nimmt ihn vor dem eingebauten
@@ -44,7 +48,10 @@ TEXTE = {
            "koppeln1": "In der SignageCast-Verwaltung unter Fernseher → Player → „Pi koppeln“ diesen Code eingeben.",
            "koppeln2": "Der Code gilt 10 Minuten, danach erscheint ein neuer.", "gekoppelt": "Gekoppelt – starte …", "seite_titel": "SignageCast – WLAN einrichten", "netz": "WLAN", "anderes": "anderes WLAN (Name eingeben)",
            "passwort": "Passwort", "speichern": "Verbinden", "fertig": "Der Player verbindet sich jetzt. Erscheint der QR-Code in einer Minute "
-           "wieder auf dem Fernseher, war das Passwort falsch.", "name": "Name des WLANs"},
+           "wieder auf dem Fernseher, war das Passwort falsch.", "name": "Name des WLANs",
+           "fw_hinweis": "Fernwartung aktiv", "fw_titel": "Fernwartung", "fw_text": "Erlaubt ein Terminal (root) zu diesem Pi aus der "
+           "SignageCast-Verwaltung. Ab Werk aus. Jede Sitzung wird protokolliert und steht solange auf dem Fernseher.",
+           "fw_erlauben": "Fernwartung erlauben", "fw_speichern": "Speichern", "fw_gespeichert": "Gespeichert."},
     "en": {"start": "SignageCast is starting …", "verbinde": "Connecting to the server …", "kein_server": "Server not reachable",
            "kein_stream": "Waiting for the stream …", "kein_tv": "No TV has been assigned to this player yet.",
            "gesperrt": "This player was removed in the admin.", "unbekannt": "The server does not know this player.",
@@ -59,7 +66,10 @@ TEXTE = {
            "koppeln1": "In the SignageCast admin under TVs → Players → “Pair a Pi”, enter this code.",
            "koppeln2": "The code is valid for 10 minutes, then a new one appears.", "gekoppelt": "Paired – starting …", "seite_titel": "SignageCast – set up Wi-Fi", "netz": "Wi-Fi", "anderes": "other Wi-Fi (enter name)",
            "passwort": "Password", "speichern": "Connect", "fertig": "The player is connecting now. If the QR code appears on the TV again "
-           "within a minute, the password was wrong.", "name": "Wi-Fi name"},
+           "within a minute, the password was wrong.", "name": "Wi-Fi name",
+           "fw_hinweis": "Remote maintenance active", "fw_titel": "Remote maintenance", "fw_text": "Allows a terminal (root) to this Pi "
+           "from the SignageCast admin. Off by default. Every session is logged and shown on the TV while it lasts.",
+           "fw_erlauben": "Allow remote maintenance", "fw_speichern": "Save", "fw_gespeichert": "Saved."},
 }
 
 
@@ -650,6 +660,157 @@ class Server:
             return f.code, f.read(), f.headers
 
 
+# ---------- Fernwartung (seit 1.3) ----------
+FW_LEER_S, FW_MAX_S = 600, 3600
+
+
+def fw_schluessel(k):
+    return hmac.new(bytes.fromhex(k["schluessel"]), b"fernwartung", "sha256").digest()
+
+
+def _fw_xor(s, nonce, roh):
+    if not roh:
+        return b""
+    strom = hashlib.shake_256(s + nonce).digest(len(roh))
+    return (int.from_bytes(roh, "big") ^ int.from_bytes(strom, "big")).to_bytes(len(roh), "big")
+
+
+def fw_verschluesseln(s, roh):
+    nonce = secrets.token_bytes(16)
+    return base64.b64encode(nonce + _fw_xor(s, nonce, roh)).decode()
+
+
+def fw_entschluesseln(s, text):
+    roh = base64.b64decode(text or "", validate=True)
+    return _fw_xor(s, roh[:16], roh[16:]) if len(roh) >= 16 else b""
+
+
+class Terminal:
+    """Eine Shell-Sitzung: bash als root in einem PTY. Zwei Fäden: Ausgabe lesen und senden, Eingaben abholen."""
+    def __init__(self, server, k, sid, spalten, zeilen):
+        self.server, self.sid, self.s = server, sid, fw_schluessel(k)
+        self.offen, self.grund, self.start = True, "", time.time()
+        self.eingabe_zeit, self.n_ein, self.n_aus, self.groesse_rev = self.start, 0, 0, 0
+        self.sperre = threading.Lock()
+        umgebung = {"TERM": "xterm-256color", "HOME": "/root", "USER": "root", "LOGNAME": "root", "SHELL": "/bin/bash",
+                    "LANG": "C.UTF-8", "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "SIGNAGECAST_FERNWARTUNG": "1"}
+        self.pid, self.fd = pty.fork()
+        if self.pid == 0:                           # Kind: nur noch die Shell starten
+            try:
+                os.chdir("/root")
+                os.execve("/bin/bash", ["bash", "-l"], umgebung)
+            finally:
+                os._exit(127)
+        self.groesse(spalten, zeilen)
+        log(f"Fernwartung: Sitzung beginnt (Shell {self.pid})")
+        threading.Thread(target=self._lesen, daemon=True).start()
+        threading.Thread(target=self._holen, daemon=True).start()
+
+    def groesse(self, spalten, zeilen):
+        try:
+            fcntl.ioctl(self.fd, termios.TIOCSWINSZ, struct.pack("HHHH", int(zeilen), int(spalten), 0, 0))
+        except (OSError, ValueError):
+            pass
+
+    def _senden(self, roh, ende=""):
+        with self.sperre:
+            self.n_aus += 1
+            daten = {"sid": self.sid, "n": self.n_aus, "daten": fw_verschluesseln(self.s, roh)}
+            if ende:
+                daten["ende"] = ende
+        try:
+            code, inhalt = self.server.anfrage("/player/terminal/aus", daten, zeit=20)
+            return code == 200 and bool(json.loads(inhalt).get("offen"))
+        except (OSError, PermissionError, ValueError):
+            return True                            # kurz kein Netz: weiter versuchen (Zeitgrenzen gelten trotzdem)
+
+    def _lesen(self):
+        while self.offen:
+            jetzt = time.time()
+            if jetzt - self.eingabe_zeit > FW_LEER_S:
+                return self.schliessen("leerlauf")
+            if jetzt - self.start > FW_MAX_S:
+                return self.schliessen("zeitgrenze")
+            try:
+                bereit = select.select([self.fd], [], [], 0.5)[0]
+                if not bereit:
+                    continue
+                roh = os.read(self.fd, 65536)
+                ende = time.time() + 0.02             # kurz sammeln: weniger, größere Anfragen
+                while len(roh) < 65536 and time.time() < ende and select.select([self.fd], [], [], max(0, ende - time.time()))[0]:
+                    teil = os.read(self.fd, 65536 - len(roh))
+                    if not teil:
+                        break
+                    roh += teil
+            except OSError:                          # Shell beendet (EIO)
+                roh = b""
+            if not roh:
+                return self.schliessen("beendet")
+            if not self._senden(roh):
+                return self.schliessen("server", melden=False)
+
+    def _holen(self):
+        fehler = 0
+        while self.offen:
+            with self.sperre:
+                self.n_ein += 1
+                anfrage = {"sid": self.sid, "n": self.n_ein, "groesse_rev": self.groesse_rev}
+            try:
+                code, inhalt = self.server.anfrage("/player/terminal/ein", anfrage, zeit=30)
+                d = json.loads(inhalt) if code == 200 else None
+            except (OSError, PermissionError, ValueError):
+                d = None
+            if d is None:
+                fehler += 1
+                if fehler > 40:                      # gut 1 min kein Server
+                    return self.schliessen("kein_server", melden=False)
+                time.sleep(1.5)
+                continue
+            fehler = 0
+            if not d.get("offen"):
+                return self.schliessen("server", melden=False)
+            if d.get("groesse_rev") and d["groesse_rev"] != self.groesse_rev:
+                self.groesse_rev = d["groesse_rev"]
+                self.groesse(d.get("spalten", 80), d.get("zeilen", 24))
+            try:
+                roh = fw_entschluesseln(self.s, d.get("daten"))
+            except ValueError:
+                roh = b""
+            if roh:
+                self.eingabe_zeit = time.time()
+                try:
+                    while roh:
+                        roh = roh[os.write(self.fd, roh):]
+                except OSError:
+                    return self.schliessen("beendet")
+
+    def _aufsammeln(self):
+        try:
+            os.waitpid(self.pid, 0)                  # kein Zombie
+        except OSError:
+            pass
+
+    def schliessen(self, grund, melden=True):
+        with self.sperre:
+            if not self.offen:
+                return
+            self.offen, self.grund = False, grund
+        for sig in (signal.SIGHUP, signal.SIGKILL):
+            try:
+                os.killpg(os.getpgid(self.pid), sig)
+            except OSError:
+                pass
+            time.sleep(0.2)
+        threading.Thread(target=self._aufsammeln, daemon=True).start()
+        try:
+            os.close(self.fd)
+        except OSError:
+            pass
+        log(f"Fernwartung: Sitzung beendet ({grund}) nach {int(time.time() - self.start)} s")
+        if melden:
+            self._senden(b"", ende=grund)
+
+
 # ---------- Hotspot und Einrichtungsseite ----------
 class Hotspot:
     def __init__(self, player):
@@ -726,6 +887,11 @@ class Hotspot:
             def do_POST(self):
                 n = min(int(self.headers.get("Content-Length") or 0), 4096)
                 f = urllib.parse.parse_qs(self.rfile.read(n).decode(errors="replace"))
+                if (f.get("aktion") or [""])[0] == "fernwartung":      # seit 1.3: am Pi selbst erlauben oder verbieten
+                    hs.p.k["fernwartung"] = (f.get("fernwartung") or [""])[0] == "1"
+                    konfig_speichern(hs.p.k)
+                    log("Fernwartung", "erlaubt" if hs.p.k["fernwartung"] else "verboten", "(Einrichtungsseite)")
+                    return self.senden(hs.seite(hinweis=hs.p.t["fw_gespeichert"]))
                 ssid = (f.get("ssid_frei") or [""])[0].strip() or (f.get("ssid") or [""])[0].strip()
                 pw = (f.get("passwort") or [""])[0]
                 if not ssid or not 8 <= len(pw) <= 63:
@@ -734,7 +900,7 @@ class Hotspot:
                 threading.Thread(target=hs.p.wlan_neu, args=(ssid, pw), daemon=True).start()
         return B
 
-    def seite(self, fehler="", fertig=False):
+    def seite(self, fehler="", fertig=False, hinweis=""):
         import html
         t = self.p.t
         if fertig:
@@ -745,11 +911,16 @@ class Hotspot:
                       f"</option></select></label><label>{html.escape(t['name'])}<input name=ssid_frei autocapitalize=off></label>"
                       f"<label>{html.escape(t['passwort'])}<input name=passwort type=password minlength=8 maxlength=63 required></label>"
                       f"<button>{html.escape(t['speichern'])}</button></form>" + (f"<p class=f>{html.escape(fehler)}</p>" if fehler else ""))
+            an = " checked" if self.p.k.get("fernwartung") else ""
+            inhalt += (f"<h2>{html.escape(t['fw_titel'])}</h2><form method=post><input type=hidden name=aktion value=fernwartung>"
+                       f"<p>{html.escape(t['fw_text'])}</p><label class=k><input type=checkbox name=fernwartung value=1{an}> "
+                       f"{html.escape(t['fw_erlauben'])}</label><button>{html.escape(t['fw_speichern'])}</button></form>"
+                       + (f"<p>{html.escape(hinweis)}</p>" if hinweis else ""))
         return (f"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
                 f"<title>{html.escape(t['seite_titel'])}</title><style>body{{font:17px system-ui,sans-serif;max-width:28em;margin:2em auto;"
                 f"padding:0 16px;background:#111;color:#eee}}label{{display:block;margin:1em 0}}select,input,button{{display:block;width:100%;"
                 f"font:inherit;padding:.6em;margin-top:.3em;box-sizing:border-box}}button{{background:#2f7d4f;color:#fff;border:0;border-radius:6px}}"
-                f".f{{color:#f88}}</style><h1>{html.escape(t['seite_titel'])}</h1><p>{html.escape(self.p.k.get('name', ''))}</p>{inhalt}")
+                f".f{{color:#f88}}h2{{margin-top:2em;font-size:1.2em}}label.k input{{display:inline;width:auto;margin-right:.5em}}</style><h1>{html.escape(t['seite_titel'])}</h1><p>{html.escape(self.p.k.get('name', ''))}</p>{inhalt}")
 
 
 # ---------- Player ----------
@@ -771,6 +942,7 @@ class Player:
         self.offline_seit = time.time()
         self.letzte_meldung, self.wlan_laeuft, self.versuche, self.erkennen_bis, self.hotspot_seit = 0, False, 0, 0, 0
         self.kopplung, self.koppel_pause = None, 0     # laufende Kopplung (Image für mehrere Pis)
+        self.terminal, self.fw_hinweis_an = None, False    # Fernwartung (seit 1.3)
 
     # --- Einrichtung beim Start ---
     def einrichten(self):
@@ -871,7 +1043,8 @@ class Player:
                 "schreibschutz": schreibschutz_aktiv(), "cec": bool(glob_liste("/dev/cec*")), "wlan_rev": self.wlan_rev,
                 "netze": [n["ssid"] for n in self.k.get("wlan") or []], "letztes_update": self.k.get("letztes_update"),
                 "ergebnisse": self.ergebnisse[:10], "browser": Browser.verfuegbar(), "modus_ist": "direkt" if self.browser.laeuft() else "stream",
-                "rueckfall": self.rueckfall if time.time() < self.rueckfall_bis else ""}
+                "rueckfall": self.rueckfall if time.time() < self.rueckfall_bis else "",
+                "fernwartung": bool(self.k.get("fernwartung")), "terminal": bool(self.terminal and self.terminal.offen)}
 
     def melden_versuch(self):
         try:
@@ -939,6 +1112,33 @@ class Player:
             except (OSError, PermissionError) as f:
                 erg.update(ok=False, hinweis=str(f)[:200])
             self.ergebnisse.append(erg)
+
+    # --- Fernwartung (seit 1.3) ---
+    def fernwartung(self):
+        """Sitzung starten, wenn der Server eine anbietet und dieser Pi Fernwartung erlaubt; sonst eine laufende beenden."""
+        t, laeuft = self.soll.get("terminal"), self.terminal and self.terminal.offen
+        if not self.k.get("fernwartung"):
+            if laeuft:
+                self.terminal.schliessen("abgeschaltet")
+            return
+        if laeuft and (not t or t.get("sid") != self.terminal.sid):
+            self.terminal.schliessen("server", melden=False)
+        elif t and not laeuft and isinstance(t.get("sid"), str) and re.fullmatch(r"[0-9a-f]{32}", t["sid"]) \
+                and (not self.terminal or self.terminal.sid != t["sid"]):
+            try:
+                self.terminal = Terminal(self.server, self.k, t["sid"], t.get("spalten", 80), t.get("zeilen", 24))
+            except OSError as f:
+                log("Fernwartung: Shell startet nicht:", f)
+
+    def fernwartung_hinweis(self):
+        """Solange eine Sitzung läuft: klein oben rechts auf dem Fernseher (mpv; im Direktmodus zeigt ihn die TV-Seite)."""
+        an = bool(self.terminal and self.terminal.offen)
+        if an and self.anzeige.laeuft():
+            self.anzeige.befehl("osd-overlay", 2, "ass-events", "{\\an9\\pos(1880,40)\\fs30\\bord2\\shad0\\1c&H00D7FF&}" + self.t["fw_hinweis"],
+                                1920, 1080, warten=False)
+        elif self.fw_hinweis_an and self.anzeige.laeuft():
+            self.anzeige.befehl("osd-overlay", 2, "none", "", warten=False)
+        self.fw_hinweis_an = an
 
     def einstellungen_anwenden(self):
         s = self.soll
@@ -1014,6 +1214,8 @@ class Player:
             if self.melden_versuch():
                 self.einstellungen_anwenden()
                 self.befehle()
+                self.fernwartung()
+        self.fernwartung_hinweis()
         if self.wlan_laeuft:
             self.browser.beenden()
             return

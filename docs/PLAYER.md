@@ -88,6 +88,28 @@ from the Pi's HDMI.
   access to the page of **its own TV** (no admin API; only the cameras in that TV's layout). Removing the Pi makes it
   invalid at once.
 
+## Remote maintenance – terminal in the browser (since 0.33)
+
+A Pi card in the admin can open a **terminal** to the Pi: a root shell in the browser, drawn with xterm.js like the
+terminal in Cockpit – `top`, `nano`, tab completion, copy and paste, the size follows the window.
+
+- **Off by default.** The Pi only accepts a session if *it* allows it: tick *Allow remote maintenance* when creating
+  the image (also for the image for several Pis), or switch it on/off on the Pi's **setup page** (hotspot, see above).
+  Even someone who takes over the server cannot get onto Pis that do not allow it – the Pi checks this itself.
+- **No open port, no SSH:** the Pi learns about a session at its next report (up to 15 s) and then talks to the server
+  through two signed requests of its own. Input and output are **encrypted** (port 8890 is plain HTTP): key derived
+  from the device key, SHAKE-256 key stream with a fresh nonce per message; request signatures protect against changes,
+  sequence numbers against replayed requests.
+- **Limits:** a session ends after 10 minutes without input and after 60 minutes at the latest (server and Pi both check),
+  and when the admin window is closed. One session per Pi.
+- **Visible:** the TV shows *Remote maintenance active* meanwhile (stream mode: mpv overlay; direct mode: the TV page).
+- **Log:** every session (who, when, how long, why it ended) – shown in the Pi's card, kept in
+  `/var/lib/signagecast/fernwartung.json`. Input and output are **not** logged (passwords could end up there).
+- **Write protection:** with write protection on, changes are gone after a restart – the terminal says so; switch it
+  off in the Pi's settings first if a change must stay.
+- Without new image: Pis update their agent from the server by themselves; switch remote maintenance on via the setup
+  page or write a new image with the box ticked.
+
 ## How it works (short)
 
 - The image is the official **Raspberry Pi OS Lite (64 bit)** plus `mpv`, `qrencode`, `overlayroot`, for direct mode
@@ -208,6 +230,28 @@ Durchsagen, Gong) kommt aus dem HDMI des Pi.
 - Sicherheit: Der Pi öffnet `http://<Server>:8890/anzeige/<Schlüssel>`. Der Schlüssel ist aus dem Geräteschlüssel
   abgeleitet und gibt nur die Seite **seines Fernsehers** frei (keine Verwaltungs-API; nur die Kameras aus dessen
   Layout). Entfernen macht ihn sofort ungültig.
+
+## Fernwartung – Terminal im Browser (seit 0.33)
+
+In der Karte eines Pi öffnet *Terminal* eine **Shell (root) auf dem Pi im Browser**, gezeichnet mit xterm.js wie das
+Terminal in Cockpit – `top`, `nano`, Tab-Ergänzung, Kopieren und Einfügen, die Größe folgt dem Fenster.
+
+- **Ab Werk aus.** Der Pi lässt eine Sitzung nur zu, wenn *er* es erlaubt: beim Erstellen des Images *Fernwartung
+  erlauben* ankreuzen (auch beim Image für mehrere Pis) oder auf der **Einrichtungsseite** des Pi (Hotspot, siehe oben)
+  ein- und ausschalten. Auch wer den Server übernimmt, kommt so nicht auf Pis, die es nicht erlauben – das prüft der Pi selbst.
+- **Kein offener Port, kein SSH:** Der Pi erfährt bei seiner nächsten Meldung (bis zu 15 s) von der Sitzung und spricht
+  dann über zwei eigene, signierte Anfragen mit dem Server. Ein- und Ausgabe sind **verschlüsselt** (Port 8890 ist
+  unverschlüsseltes HTTP): Schlüssel aus dem Geräteschlüssel abgeleitet, SHAKE-256 als Schlüsselstrom mit neuer Nonce
+  je Nachricht; die Signaturen schützen vor Veränderung, laufende Nummern vor wieder eingespielten Anfragen.
+- **Grenzen:** Eine Sitzung endet nach 10 Minuten ohne Eingabe und spätestens nach 60 Minuten (prüfen Server und Pi),
+  außerdem, wenn das Fenster in der Verwaltung zu ist. Eine Sitzung je Pi.
+- **Sichtbar:** Auf dem Fernseher steht solange *Fernwartung aktiv* (Stream: Einblendung von mpv; Direktmodus: die TV-Seite).
+- **Protokoll:** jede Sitzung (wer, wann, wie lange, warum beendet) – in der Karte des Pi, gespeichert in
+  `/var/lib/signagecast/fernwartung.json`. Ein- und Ausgaben werden **nicht** mitgeschrieben (dort könnten Passwörter stehen).
+- **Schreibschutz:** Ist er an, sind Änderungen nach einem Neustart weg – das Terminal sagt es; soll etwas bleiben,
+  vorher in den Einstellungen des Pi ausschalten.
+- Ohne neues Image: Die Pis holen sich den neuen Agent selbst vom Server; Fernwartung dann über die Einrichtungsseite
+  einschalten oder ein neues Image mit Haken schreiben.
 
 ## Technik (kurz)
 

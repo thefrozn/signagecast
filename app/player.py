@@ -14,6 +14,7 @@ import hashlib, hmac, json, lzma, os, re, secrets, shutil, subprocess, threading
 
 from streams import DATEN
 from meldung import Meldung as Fehler
+import fernwartung as FW
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AGENT = os.path.join(BASIS, "player", "agent.py")
@@ -191,6 +192,7 @@ def entfernen(gid):
     stand.pop(gid, None)
     befehle.pop(gid, None)
     direkt_abruf.pop(gid, None)
+    FW.entfernen(gid)
     for endung in (".jpg", ".log"):
         try:
             os.unlink(os.path.join(ORDNER, gid + endung))
@@ -387,7 +389,7 @@ def melden(g, bericht, ip, stream, bildschirm):
             "drehung": g["drehung"], "aufloesung": g["aufloesung"], "hwdec": g["hwdec"], "schreibschutz": g["schreibschutz"],
             "bildschirm": bildschirm, "befehle": [{"id": b["id"], "art": b["art"]} for b in offen],
             "wlan": {"rev": g["wlan_soll"]["rev"], "netze": g["wlan_soll"]["netze"]} if g.get("wlan_soll") else None,
-            "agent": agent_hash()}
+            "agent": agent_hash(), "terminal": FW.fuer_meldung(g) if bericht.get("fernwartung") else None}
 
 
 def ergebnisse_merken(g, liste):
@@ -424,7 +426,9 @@ def liste(hinweise):
                         befehle=[b["art"] for b in befehle.get(g["id"], [])], ergebnisse=ergebnisse.get(g["id"], []),
                         bild=int(os.path.getmtime(bild)) if os.path.exists(bild) else None,
                         protokoll=os.path.exists(os.path.join(ORDNER, g["id"] + ".log")), hinweise=hinweise(g),
-                        anzeige_modus=g.get("anzeige_modus", "stream"), modus=modus_fuer(g)))
+                        anzeige_modus=g.get("anzeige_modus", "stream"), modus=modus_fuer(g),
+                        fernwartung=bool((s.get("bericht") or {}).get("fernwartung")), terminal=FW.zustand(g["id"]),
+                        fernwartung_protokoll=FW.protokoll(g["id"], 5)))
     return aus
 
 
@@ -557,12 +561,14 @@ def sammel_hotspot_pw():
         return daten["sammel_hotspot_pw"]
 
 
-def konfig(g, netze, server, sprache, zeitzone):
+def konfig(g, netze, server, sprache, zeitzone, fernwartung=False):
     """Gerätedatei für die Boot-Partition – genau PLATZ Byte (JSON, Rest Leerzeichen). g = None: Image für mehrere Pis
     (ohne Schlüssel – der Pi koppelt sich per Code)."""
     k = {"art": "signagecast-player", "v": 1, "server": server,
          "sprache": sprache if sprache in ("de", "en") else "de", "zeitzone": zeitzone or "", "land": LAENDER.get(zeitzone, "DE"),
          "wlan": netze}
+    if fernwartung:                                    # seit 0.33: Terminal aus der Verwaltung erlaubt (ab Werk aus)
+        k["fernwartung"] = True
     if g:
         k.update(id=g["id"], schluessel=g["schluessel"], name=g["name"], hostname=hostname(g), wlan_rev=g.get("wlan_rev", 0),
                  hotspot_pw=g["hotspot_pw"], schreibschutz=g["schreibschutz"],
@@ -576,7 +582,7 @@ def konfig(g, netze, server, sprache, zeitzone):
     return roh + b" " * (PLATZ - 1 - len(roh)) + b"\n"
 
 
-def herunterladen_vorbereiten(gid, w, server):
+def herunterladen_vorbereiten(gid, w, server, fernwartung=False):
     """Einmal-Kennung (30 min) für den Download; das WLAN lebt nur bis dahin im Speicher, wenn es nicht gespeichert wird.
     gid = "": Image für mehrere Pis (Kopplung per Code)."""
     if gid and not geraet(gid):
@@ -597,7 +603,7 @@ def herunterladen_vorbereiten(gid, w, server):
     for k in [k for k, v in einmal.items() if v["bis"] < jetzt]:
         del einmal[k]
     kennung = secrets.token_urlsafe(18)
-    einmal[kennung] = {"id": gid, "netze": [netz] if netz else [], "server": server, "bis": jetzt + 1800}
+    einmal[kennung] = {"id": gid, "netze": [netz] if netz else [], "server": server, "bis": jetzt + 1800, "fernwartung": bool(fernwartung)}
     return kennung
 
 
@@ -622,7 +628,7 @@ def image_schreiben(kennung, schreiben, sprache, zeitzone):
     g, meta = geraet(e["id"]) if e["id"] else None, basis_meta()
     if (e["id"] and not g) or not meta:
         raise Fehler("pi_kein_image")
-    neu = konfig(g, e["netze"], e["server"], sprache, zeitzone)
+    neu = konfig(g, e["netze"], e["server"], sprache, zeitzone, e.get("fernwartung", False))
     off, marke = meta["platzhalter"]["offset"], meta["platzhalter"]["marke"].encode() + b"-0000"
     ende = off + PLATZ
     dec, gz, pos, alt = lzma.LZMADecompressor(), zlib.compressobj(1, zlib.DEFLATED, 31), 0, b""

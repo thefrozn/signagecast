@@ -44,7 +44,8 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 - **Raspberry Pi as player** (experimental) – create a ready SD card image per screen in the admin (Wi-Fi included,
   hotspot with QR code if it finds no network) or one image for many Pis that pair with a code on the TV, then manage all Pis centrally: status, screenshot, TV on/off via
   HDMI-CEC, rotation, Wi-Fi change with fallback, updates; optional *direct mode* (Pi 4/5 shows the page itself, no
-  encoding on the server) – see [PLAYER.md](docs/PLAYER.md).
+  encoding on the server); optional **terminal in the browser** to each Pi (off by default, the Pi must allow it) –
+  see [PLAYER.md](docs/PLAYER.md).
 - **Messages and notifications** – official severe weather warnings of the DWD (Germany) as a layout element; short
   messages from other systems (e.g. Home Assistant) as a banner on the TVs via a webhook with a secret key; notifications
   via Telegram, e-mail or Home Assistant when a TV fails, an update or backup fails or Home Assistant is disconnected.

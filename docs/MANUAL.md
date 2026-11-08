@@ -145,6 +145,8 @@ address by itself (start page or autostart of its browser).
 From 0.23 (experimental): **TVs → Players (Raspberry Pi)** creates a ready SD card image per screen (Wi-Fi included)
 and manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
 [Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
+Since 0.33 a Pi that allows it opens a **terminal** (root shell in the browser) from its card – off by default,
+see [Remote maintenance](PLAYER.md#remote-maintenance--terminal-in-the-browser-since-033).
 
 ### Output and capture size
 TVs → **Video stream**, per TV:
