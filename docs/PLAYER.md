@@ -90,6 +90,8 @@ from the Pi's HDMI.
 
 ## Remote maintenance – terminal in the browser (since 0.33)
 
+*Experimental: tested with a simulated Pi (the real agent code), not yet on a real Pi.*
+
 A Pi card in the admin can open a **terminal** to the Pi: a root shell in the browser, drawn with xterm.js like the
 terminal in Cockpit – `top`, `nano`, tab completion, copy and paste, the size follows the window.
 
@@ -232,6 +234,8 @@ Durchsagen, Gong) kommt aus dem HDMI des Pi.
   Layout). Entfernen macht ihn sofort ungültig.
 
 ## Fernwartung – Terminal im Browser (seit 0.33)
+
+*Experimentell: mit einem simulierten Pi (echter Agent-Code) getestet, noch nicht auf einem echten Pi.*
 
 In der Karte eines Pi öffnet *Terminal* eine **Shell (root) auf dem Pi im Browser**, gezeichnet mit xterm.js wie das
 Terminal in Cockpit – `top`, `nano`, Tab-Ergänzung, Kopieren und Einfügen, die Größe folgt dem Fenster.
