@@ -2,8 +2,9 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.29 (layout editor, players and docker login from 0.20–0.23) with the six areas Overview, TVs, Content, Video & sound,
-Settings and System.
+0.33 with the six areas Overview, TVs, Content, Live videos, Settings and System.
+
+**🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
 [← README](../README.md) · [installation](INSTALL.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
@@ -55,15 +56,17 @@ next to Cockpit's own pages. If your server already runs Cockpit, SignageCast in
 
 ### 6. Overview
 At the top a **to-do list**: problems first (e.g. Home Assistant not reachable), then tips (automatic backup off, no
-notification set up) – each entry links to the page where you fix it. Below, every TV with its state and sound, viewers, weather source, time check against NTP (“time from the host,
-synchronised”), video encoding (graphics unit or software fallback), Home Assistant connection, CPU, RAM, uptime.
+notification set up) – each entry links to the page where you fix it. Below, every TV with its state, current stream,
+resolution and sound, then viewers, weather source, time check against NTP (“time from the host, synchronised”), video
+encoding (graphics unit or software fallback), Home Assistant connection, streams in rotation, CPU, RAM and uptime.
 
 ![Overview](tour/04-overview.jpg)
 
 ### 7. TVs
-Each TV has its own address, layout, optional schedule (other layout or black at certain times), sound (radio or the
-original sound of the cams), volume, categories and video settings: output Full HD (default) or 4K, the **capture
-size** the browser draws in (720p saves CPU, 1440p is sharper), bitrate and codec.
+Each TV has its own address and a card in three parts: **Display** (layout, optional schedule with another layout or
+black at certain times, layout carousel, switching the TV via Home Assistant), **Live video** (on/off, what the video
+window shows, categories) and **Sound** (radio or the original sound of the cams, volume). Under *Video stream*: output
+Full HD (default) or 4K, the **capture size** the browser draws in (720p saves CPU, 1440p is sharper), bitrate and codec.
 
 ![TV settings](tour/05-tvs.jpg)
 
@@ -76,14 +79,23 @@ preset, tune and B-frames per TV. A change is tried briefly first; if it does no
 ### 8. Raspberry Pi as player (experimental)
 TVs → *Players (Raspberry Pi)*: a Pi at the TV plays the finished stream via HDMI – also on TVs without a usable
 browser. Enter a name, pick the TV and the network (LAN or Wi-Fi), download a ready image and write it to an SD card;
-nothing to type on the Pi. Afterwards every Pi is managed here: online state, model, IP, Wi-Fi signal, screen, video,
-temperature, a screenshot of what it shows, buttons for screenshot, TV on/off (HDMI-CEC), restart and system update,
-and Wi-Fi changes with automatic return to the old network. The Pi in this picture is simulated – the player has not
-been tested on real hardware yet ([details](PLAYER.md)).
+nothing to type on the Pi. Or download one image for many Pis: each shows a 6-digit code on the TV, which you enter
+here to pair it. Afterwards every Pi is managed here: online state, model, IP, screen, video, temperature, buttons for
+screenshot, TV on/off (HDMI-CEC), restart and system update, and Wi-Fi changes with automatic return to the old network.
+The Pi in these pictures is simulated (real agent code) – the player has not been tested on real hardware yet
+([details](PLAYER.md)).
 
-![Players page with one Raspberry Pi](tour/05b-players.jpg)
+![Player card of one Raspberry Pi](tour/05b-players.jpg)
 
-### 9. Layouts and editor
+### 9. Remote maintenance – terminal to a Pi (experimental, since 0.33)
+**Terminal** on the Pi's card opens a root shell in the browser, drawn like Cockpit's own terminal. Off by default:
+the Pi itself must allow it (box when creating the image, or its setup page), so someone who takes over the server
+cannot reach Pis that do not. No open port and no SSH on the Pi; input and output are encrypted. The TV shows
+*Remote maintenance active* meanwhile, and a session ends after 10 minutes without input or 60 minutes at the latest.
+
+![Terminal to a Raspberry Pi in the browser](tour/05c-remote-terminal.jpg)
+
+### 10. Layouts and editor
 Content → Layouts starts with all layouts as tiles – mini preview, on which TV each one is shown, edit, and copy /
 export / delete in the “⋯” menu. “New layout” asks for a name and a starting point (empty, template or copy), so an
 existing layout is never overwritten.
@@ -91,127 +103,118 @@ existing layout is never overwritten.
 ![Layouts overview](tour/06a-layouts.jpg)
 
 In the editor, drag and resize elements on a 48 × 27 grid. Next to it the **layers** (top = front, as on the TV; show
-or hide, bring forward / send backward) and the selected element – here a chart: pick the value by clicking it in the
-data source's response. Click the same spot again to reach stacked elements, Tab selects the next one.
+or hide, bring forward / send backward) and the selected element – here a chart: pick the value with “pick …” by
+clicking it in the data source's response. Click the same spot again to reach stacked elements, Tab selects the next one.
 
-![Layout editor with layers and path picker](tour/06-layout-editor.jpg)
+![Layout editor with layers and a chart element](tour/06-layout-editor.jpg)
 
 Every element can be limited to a **period** (“Only during …”: date, optionally with time) – the ⏱ in the layers and on
-the canvas marks it. New elements since 0.20: **PDF** (up to 50 pages) and **web page** with the display “Screenshot”
-for pages that forbid embedding.
+the canvas marks it. Elements such as **PDF** (up to 50 pages) and **web page** with the display “Screenshot” for pages
+that forbid embedding make layouts like the service desk above.
 
 ![Layout editor: text with a period](tour/06b-editor-period.jpg)
 
-### 10. Data sources
+### 11. Data sources
 Your own JSON APIs, RSS/Atom feeds, pictures, iCal calendars and cameras, fetched by the container at the interval you
 choose. “View data” shows the response as a tree; a click copies the path for use in elements and placeholders.
 Instead of an address, a source can also be an uploaded file (up to 1 MB) – e.g. the waste collection calendar of your
-town as `.ics` or `.csv` when it offers no subscription address. For CSV you choose delimiter, quote character, header
-row and character set (all detected automatically), which columns to import under which name, optional row filters
-(e.g. *LOCATION is empty* or *TYPE does not contain bulky waste*) and optionally a date column: the rows then appear as
-events in the *Calendar / waste collection* element. That element can also show icons only – e.g. a bin in the top
-corner when residual waste is collected in the next days (rules *title contains … → icon and colour*, with a waste
-template).
+town as `.ics` or `.csv` when it offers no subscription address.
 
 ![Data sources with response tree](tour/07-data-sources.jpg)
 
-A waste calendar from a CSV file: delimiter and character set detected, columns ticked, a row filter (*DISTRICT is
-empty* – drops bulky and hazardous waste dates of other districts) and the date and title column for the calendar.
+For CSV you choose delimiter, quote character, header row and character set (all detected automatically), which columns
+to import under which name, optional row filters and optionally a date column: the rows then appear as events in the
+*Calendar / waste collection* element. Here a waste calendar with the row filter *DISTRICT is empty* – it drops the
+bulky and hazardous waste dates of another district.
 
 ![CSV import with row filter and calendar columns](tour/07a-csv-import.jpg)
 
-### 11. Import from curl
+### 12. Import from curl
 Paste a `curl` command from an API guide – address, method and headers are filled in, `Authorization` is marked as a
 secret automatically (shown as •••• after saving, kept out of backups unless you choose otherwise). The command is only
 parsed, never executed.
 
 ![Data source created from a curl command](tour/08-curl-import.jpg)
 
-### 12. Streams
-The built-in list of wildlife and nature live streams, plus streams found by the nightly search. Quality is measured
-while playing; streams that stall or only deliver low resolution get strikes and are skipped. Protect favourites,
-reject unwanted ones.
+### 13. Live videos – streams
+The built-in list of wildlife and nature live streams, plus streams found by the nightly search. Every stream has a
+**state** – ready, night (with “daylight in …”), not live, resolution too low, paused after a strike, location
+unknown – and the chips above the list filter by it (with counts), next to text, category and origin (fixed / found).
+Quality is measured while playing, and the next stream is checked on YouTube before it is announced. Protect
+favourites, reject unwanted ones.
 
-![Stream list](tour/09-streams.jpg)
+![Stream list with states and filters](tour/09-streams.jpg)
 
-### 13. Radio
-Your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info, a buffer that
-bridges short dropouts.
+### 14. Live videos – rotation & quality
+Minutes per stream, only streams where it is daytime, minimum sun elevation; under *Advanced* the minimum quality
+(360p … 1080p) and the strike rules. The categories are grouped into **Animals** and **More topics** (since 0.32:
+cities & squares, beaches & coasts, mountains & ski, harbours & ships, airports & planes, trains & railways, space &
+Earth, natural wonders). Categories added by an update start switched off on existing installations.
+
+![Rotation, quality and categories](tour/09a-rotation-quality.jpg)
+
+### 15. Radio
+Content → Radio: your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info,
+a buffer that bridges short dropouts.
 
 ![Radio stations](tour/10-radio.jpg)
 
-### 14. Clips
+### 16. Clips
 At fixed minutes a clip interrupts the rotation – e.g. the German news “tagesschau in 100 Sekunden”. Buffer: the
 container preloads each new edition (complete or only the first MB), so the clip plays without stalling.
 
 ![Clip settings with buffer](tour/11-clips.jpg)
 
-### 15. Settings → General
+### 17. Settings → General
 Language and weather source, location by place search, time source: NTP server (default: the country pool) and time
-zone – if the host keeps its clock synchronised, nothing is corrected. Home Assistant has its own page next to it.
-Unsaved changes are marked on their card, and you are asked before leaving the page.
+zone – if the host keeps its clock synchronised, nothing is corrected. Home Assistant and notifications have their own
+pages next to it. Unsaved changes are marked on their card, and you are asked before leaving the page.
 
 ![Settings: display, location and time source](tour/12-settings.jpg)
 
-### 16. Updates
+### 18. Updates
 System (Debian) and SignageCast updates with one click or automatically within a maintenance window, only while
-nobody is watching. Releases are signed; an update is installed only with a valid signature and returns to the
-previous version automatically if SignageCast does not run afterwards.
+nobody is watching. Releases are signed and carry a software bill of materials (SBOM); an update is installed only with
+a valid signature and returns to the previous version automatically if SignageCast does not run afterwards.
 
 ![Updates](tour/13-updates.jpg)
 
-### 17. Backup
+### 19. Backup
 A ZIP with settings, stream list, pictures and chart history. You are asked explicitly whether credentials and
 passwords should be included – then the ZIP is AES-256 encrypted and a strong password is required. Automatic backups
 daily or weekly; restore in the admin or when installing a new instance.
 
 ![Backup with encryption](tour/14-backup.jpg)
 
-### 18. Docker / Podman
+### 20. Docker / Podman
 In the container image there is no Cockpit: the same admin page is served with its own login on port 19090; the
-initial password is printed in the container log.
+initial password is printed in the container log. The password is changed under Settings → Access.
 
 ![Login page of the container image](tour/15-docker-login.jpg)
 
-### 19. On the phone
+### 21. On the phone
 The admin works on a phone as well – the areas become one menu; switch elements on and off, change sizes, sound, sources.
 
 <img src="tour/16-mobile.jpg" width="320" alt="Admin on a phone">
 
-### 20. Notifications and webhook
-Telegram, e-mail (SMTP) and Home Assistant, each with a test button; rarely needed options under “Advanced”. Below,
-the webhook for short messages on the TVs (key shown only once).
+### 22. Notifications
+Telegram, e-mail (SMTP) and Home Assistant, each with a test button; rarely needed options under “Advanced”, and what
+to report: TV failure, failed update or backup, Home Assistant disconnected, TV stutters.
 
-![Notifications and webhook](tour/17-notifications.jpg)
+![Notifications](tour/17-notifications.jpg)
 
-### 21. Performance test
+### 23. Performance test
 System → Performance measures for 10 seconds how smoothly every running TV is rendered and encoded – frames/s of the
-TV page and of the encoder, speed, duplicated frames, CPU per TV, memory, graphics unit – and gives concrete
-recommendations. Here a deliberately overloaded 2-core test container. A second page, opened on the playback device,
-measures transfer and playback there.
+TV page and of the encoder, speed, dropped or duplicated frames, CPU per TV, memory, graphics unit – and gives concrete
+recommendations. A second page, opened on the playback device, measures transfer and playback there. Below: after how
+many seconds without viewers a TV's video stream switches off.
 
 ![Performance test with recommendations](tour/18-performance.jpg)
 
-### 22. Announcement panel
-Settings → Announcements: accounts with their own password and the TVs they may reach, the voice (offline with Piper:
-Kerstin or Thorsten), chime and templates. The reception opens `http://<IP>:8890/pult` – it can only send and end
-announcements, nothing else.
+### 24. Announcements, emergency screen and webhook
+Content → Announcements: the panel for the reception (`http://<IP>:8890/pult` – it can only send and end
+announcements), the voice (offline with Piper: Kerstin or Thorsten), chime, accounts with their own password and the
+TVs they may reach, and templates. Further down the **emergency screen** with its templates and webhook commands, and
+**messages via webhook**: other systems (e.g. Home Assistant) put a short banner on the TVs, with a key shown only once.
 
-![Announcement panel settings](tour/19-announcements.jpg)
-
----
-
-## Deutsch (kurz)
-
-Die Verwaltung ist seit 0.17 in sechs Bereiche gegliedert (Übersicht mit „Zu erledigen“, Fernseher, Inhalte,
-Video & Ton, Einstellungen, System). Neu seit 0.17–0.19: Layouts-Übersicht mit Kacheln, Ebenen im Editor,
-Leistungstest mit Empfehlungen und das Durchsage-Pult. Neu seit 0.20–0.23: Empfangs-Layout mit PDF, Webseite als
-Bildschirmfoto und Hinweis mit Zeitraum, das rote Notfall-Vollbild, die Kodierung je Fernseher und die Seite
-„Player (Raspberry Pi)“ mit einem simulierten Pi (am echten Gerät noch nicht getestet). Neu seit 0.26–0.29 (Bilder
-mit 0.29 neu aufgenommen): Müllabfuhr als Symbole oben rechts auf dem Fernseher, CSV-Import mit Zeilenfilter und
-Termin-Spalten sowie Ausgabe (Standard Full HD) und Aufnahmegröße je Fernseher. Die Tour zeigt zuerst zwei Fernseher – Live-Tierkamera mit Wetter und eigenen Daten (Rheinpegel, Bitcoin, Countdown)
-sowie ein reines Daten-Layout (Diagramm mit echten Pegelwerten, Feiertage per iCal, Feed, QR-Code). Danach die
-Verwaltung: SignageCast als Menüpunkt in Cockpit, Übersicht mit „Zu erledigen“, Fernseher, Layout-Editor mit Pfad-Auswahl, Datenquellen
-mit Antwort-Baum und curl-Import, Streams, Radio, Einspieler mit Puffer, Verbindung mit Zeitquelle, Updates
-(signiert, mit Rückkehr bei Fehlern), Sicherung (AES-256 mit Zugangsdaten), die Anmeldeseite im Docker-Betrieb und
-die Ansicht auf dem Handy sowie Benachrichtigungen und Webhook. Alle Bilder stammen aus einer Demo-Installation ohne private Daten.
+![Announcements, emergency screen and webhook](tour/19-announcements.jpg)

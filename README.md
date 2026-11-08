@@ -126,7 +126,7 @@ Webhook und Benachrichtigungen über Telegram, E-Mail oder Home Assistant, PDFs 
 Ports und Anmeldung: [Installation](docs/INSTALL.md). Nötig ist ein x86-Rechner mit Intel-Grafik (z. B. Mini-PC mit
 N100), ohne Grafik läuft ein Notbetrieb in Full HD – siehe [Hardware](docs/HARDWARE.md).
 
-**Mehr:** [Bildschirm-Tour](docs/TOUR.md) · [Handbuch & FAQ](docs/MANUAL.md) · [Technik, Updates, Sicherheit](docs/HOW-IT-WORKS.md)
+**Mehr:** [Bildschirm-Tour](docs/TOUR.de.md) · [Handbuch & FAQ](docs/MANUAL.md) · [Technik, Updates, Sicherheit](docs/HOW-IT-WORKS.md)
 (alle Seiten englisch mit deutscher Kurzfassung, die NAS-Anleitungen komplett auch auf Deutsch).
 
 **Grundsätze:** Stabilität, Sicherheit und geringer Verbrauch sind gleich wichtig – keins wird für ein anderes
