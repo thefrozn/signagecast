@@ -1781,6 +1781,27 @@ def fernseher_reste_entfernen(ids):
     return weg
 
 
+def reste_nach_kette(ids):
+    """Läuft die Kette eines gerade gelöschten Fernsehers noch (MediaMTX beendet sie nach dem Neuladen), nach ihrem Ende
+    aufräumen statt erst beim stündlichen Durchlauf. Ein Thread, höchstens 2 min."""
+    offen = [os.path.basename(p)[len("kette-"):-len(".pids")] for p in glob.glob(os.path.join(DATEN, "kette-*.pids"))]
+    if not [x for x in offen if x not in ids] or zustand.get("reste_wartet"):
+        return
+    zustand["reste_wartet"] = True
+
+    def warten():
+        try:
+            for _ in range(60):
+                time.sleep(2)
+                if all(t in {x["id"] for x in einst()["fernseher"]} or not os.path.exists(os.path.join(DATEN, f"kette-{t}.pids"))
+                       for t in offen):
+                    break
+            fernseher_reste_entfernen({t["id"] for t in einst()["fernseher"]})
+        finally:
+            zustand["reste_wartet"] = False
+    threading.Thread(target=warten, daemon=True).start()
+
+
 def render_schreiben(e):
     """Je Fernseher die Werte für tv-render.sh (wirken beim nächsten Start seiner Kette) und die MediaMTX-Pfade
     (MediaMTX lädt die Datei bei Änderung selbst neu)."""
@@ -1813,6 +1834,7 @@ def render_schreiben(e):
             pfade += (f"  cam_{q['id']}:\n    source: {json.dumps(q['url'])}\n    sourceOnDemand: yes\n"
                       f"    sourceOnDemandStartTimeout: 15s\n    sourceOnDemandCloseAfter: 20s\n")
     fernseher_reste_entfernen({t["id"] for t in e["fernseher"]})
+    reste_nach_kette({t["id"] for t in e["fernseher"]})
     try:
         if os.path.exists(MEDIAMTX_YML):
             vorlage = open(MEDIAMTX_VORLAGE).read().replace("hlsAddress: :8888", f"hlsAddress: :{HLS_PORT}")
