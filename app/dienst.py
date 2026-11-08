@@ -17,6 +17,15 @@ import radio                                  # noqa: E402
 import layouts as L                           # noqa: E402
 import wetter as W                            # noqa: E402
 import zeit as Z                              # noqa: E402
+
+
+class Server(ThreadingHTTPServer):
+    """Wie ThreadingHTTPServer, aber ohne Traceback, wenn der Browser die Verbindung abbricht (z. B. eine lange Anfrage
+    beim Beenden einer Kette) – das ist normal (seit 0.32.1). Andere Fehler werden wie bisher protokolliert."""
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (BrokenPipeError, ConnectionResetError)):
+            return
+        super().handle_error(request, client_address)
 import hardware as HW                         # noqa: E402
 import meldung as M                           # noqa: E402
 import sicherung as S                         # noqa: E402
@@ -2730,7 +2739,7 @@ def main():
         render_schreiben(einst())
     threading.Thread(target=kodierung, daemon=True).start()
     try:
-        webhook_server = ThreadingHTTPServer(("0.0.0.0", WEBHOOK_PORT), WebhookBearbeiter)
+        webhook_server = Server(("0.0.0.0", WEBHOOK_PORT), WebhookBearbeiter)
         threading.Thread(target=webhook_server.serve_forever, daemon=True).start()
     except OSError as f:
         print(f"Webhook-Port {WEBHOOK_PORT} nicht verfügbar: {f}", flush=True)
@@ -2745,7 +2754,7 @@ def main():
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]
                                                       if kette_laeuft(t["id"])])).start()
-    ThreadingHTTPServer(("127.0.0.1", int(os.environ.get("SC_PORT", "8080"))), Bearbeiter).serve_forever()
+    Server(("127.0.0.1", int(os.environ.get("SC_PORT", "8080"))), Bearbeiter).serve_forever()
 
 
 if __name__ == "__main__":

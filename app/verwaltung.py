@@ -4,10 +4,20 @@
 # Schutz: ein Passwort (PBKDF2), Sitzung als Cookie (HttpOnly, SameSite=Strict); jede Anfrage an den Datendienst
 # braucht zusätzlich den Kopf X-SignageCast: 1 (fremde Seiten können ihn ohne CORS-Freigabe nicht setzen).
 # Startpasswort: SC_PASSWORT oder zufällig – steht dann bei jedem Start im Protokoll (docker logs), bis es geändert ist.
-import hashlib, hmac, json, mimetypes, os, secrets, threading, time, urllib.error, urllib.parse, urllib.request
+import hashlib, hmac, json, mimetypes, os, secrets, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import einstellungen as E
+
+
+class Server(ThreadingHTTPServer):
+    """Wie ThreadingHTTPServer, aber ohne Traceback, wenn der Browser die Verbindung abbricht (z. B. eine lange Anfrage
+    beim Beenden einer Kette) – das ist normal (seit 0.32.1). Andere Fehler werden wie bisher protokolliert."""
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (BrokenPipeError, ConnectionResetError)):
+            return
+        super().handle_error(request, client_address)
+
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEITE = os.environ.get("SC_VERWALTUNG_DATEIEN", os.path.join(BASIS, "cockpit", "signagecast"))
@@ -266,4 +276,4 @@ class Bearbeiter(BaseHTTPRequestHandler):
 
 def starten(port):
     einrichten()
-    ThreadingHTTPServer(("0.0.0.0", port), Bearbeiter).serve_forever()
+    Server(("0.0.0.0", port), Bearbeiter).serve_forever()

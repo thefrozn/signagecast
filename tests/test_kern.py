@@ -1369,5 +1369,24 @@ class FernseherReste0321(unittest.TestCase):
                           "render-laeuft.env", "render-tv.env"])
 
 
+    def test_abgebrochene_verbindung_ohne_traceback(self):
+        import contextlib, io
+        from http.server import BaseHTTPRequestHandler
+        import dienst as D
+        srv = D.Server(("127.0.0.1", 0), BaseHTTPRequestHandler)
+        try:
+            for fehler, gemeldet in ((BrokenPipeError(32, "Broken pipe"), False), (ConnectionResetError(104, "reset"), False),
+                                     (ValueError("echt"), True)):
+                aus = io.StringIO()
+                with contextlib.redirect_stderr(aus):
+                    try:
+                        raise fehler
+                    except Exception:
+                        srv.handle_error(None, ("127.0.0.1", 1))
+                self.assertEqual("Traceback" in aus.getvalue(), gemeldet, type(fehler).__name__)
+        finally:
+            srv.server_close()
+
+
 if __name__ == "__main__":
     unittest.main()

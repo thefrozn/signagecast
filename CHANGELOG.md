@@ -4,6 +4,8 @@
 - **Deleting a TV cleans up after it:** its browser profile (`chromium-<id>`, often 100–300 MB) and its render settings
   (`render-<id>.env`) are removed when the settings are saved, at service start and hourly; if its render chain is still
   running, right after it has ended (usually a few seconds). Backup copies such as `chromium-tv.alt-…` are left alone.
+- **No more `BrokenPipeError` tracebacks in the log** when a browser drops a connection (e.g. while a render chain
+  stops); other errors are still logged in full.
 
 ## v0.32.0 (2026-11-08)
 - **More than animals – eight new topics:** cities & squares, beaches & coasts, mountains & ski, harbours & ships,
