@@ -2,7 +2,7 @@
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
-angebunden). Die Verwaltung zeigt Version 0.33 mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
+angebunden). Die Verwaltung zeigt Version 0.33 (Player-Karte 0.34) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
 Einstellungen und System.
 
 **🇬🇧 [English version](TOUR.md)**
@@ -86,7 +86,9 @@ bleibt SignageCast bei „Automatisch“. Felder, die für den aktiven Encoder n
 Fernseher → *Player (Raspberry Pi)*: Ein Pi am Fernseher zeigt den fertigen Stream per HDMI – auch an Fernsehern ohne
 brauchbaren Browser. Name eingeben, Fernseher und Netzwerk (LAN oder WLAN) wählen, fertiges Image herunterladen und auf
 eine SD-Karte schreiben; am Pi musst du nichts eintippen. Oder ein Image für viele Pis: Jeder zeigt einen 6-stelligen
-Code auf dem Fernseher, den du hier zum Koppeln eingibst. Danach verwaltest du jeden Pi hier: online, Modell, IP,
+Code auf dem Fernseher, den du hier zum Koppeln eingibst. Welcher Pi passt, steht gleich bei der Modellwahl: Für den Stream
+reicht 1 GB Arbeitsspeicher, für den Direktmodus (Pi zeigt die Seite selbst) mindestens 2 GB, besser 4 GB (seit 0.34).
+Danach verwaltest du jeden Pi hier: online, Modell mit Arbeitsspeicher, IP,
 Bildschirm, Video, Temperatur, Knöpfe für Bildschirmfoto, TV ein/aus (HDMI-CEC), Neustart und Systemupdate und
 WLAN-Wechsel mit automatischer Rückkehr ins alte Netz. Der Pi auf diesen Bildern ist simuliert (echter Agent-Code) –
 am echten Gerät ist der Player noch nicht getestet ([Details](PLAYER.md#deutsch-raspberry-pi-als-player)).

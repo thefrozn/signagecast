@@ -2,7 +2,7 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.33 with the six areas Overview, TVs, Content, Live videos, Settings and System.
+0.33 (player card 0.34) with the six areas Overview, TVs, Content, Live videos, Settings and System.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
@@ -80,7 +80,9 @@ preset, tune and B-frames per TV. A change is tried briefly first; if it does no
 TVs → *Players (Raspberry Pi)*: a Pi at the TV plays the finished stream via HDMI – also on TVs without a usable
 browser. Enter a name, pick the TV and the network (LAN or Wi-Fi), download a ready image and write it to an SD card;
 nothing to type on the Pi. Or download one image for many Pis: each shows a 6-digit code on the TV, which you enter
-here to pair it. Afterwards every Pi is managed here: online state, model, IP, screen, video, temperature, buttons for
+here to pair it. The model choice says which Pi fits: 1 GB of memory is enough for the stream,
+direct mode (the Pi shows the page itself) needs at least 2 GB, better 4 GB (since 0.34). Afterwards every Pi is managed
+here: online state, model with memory, IP, screen, video, temperature, buttons for
 screenshot, TV on/off (HDMI-CEC), restart and system update, and Wi-Fi changes with automatic return to the old network.
 The Pi in these pictures is simulated (real agent code) – the player has not been tested on real hardware yet
 ([details](PLAYER.md)).
