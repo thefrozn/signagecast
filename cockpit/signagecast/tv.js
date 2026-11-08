@@ -120,6 +120,10 @@ const TEXTE = {
                pi_direkt_ram: "Dieser Pi hat weniger als 2 GB Arbeitsspeicher – für den Direktmodus knapp (Browser und Cache liegen mit Schreibschutz im Arbeitsspeicher). Ruckelt die Seite oder startet sie neu: Anzeige auf „Stream“ stellen oder einen Pi mit 4 GB nehmen.",
                pi_direkt_rueckfall: "Der Browser hatte Probleme – der Pi zeigt für eine Stunde den Stream. „Player neu starten“ versucht es sofort wieder." } },
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
+    todoAus: { tipp: "Ausblenden (dauerhaft, bis du ihn wieder einblendest)", update: "Ausblenden (bis zur nächsten Version)",
+               warn: "Ausblenden (bis das Problem einmal behoben war – tritt es wieder auf, erscheint es wieder)" },
+    todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
+    todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
     todo: { player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
@@ -409,6 +413,10 @@ const TEXTE = {
                pi_direkt_ram: "This Pi has less than 2 GB of memory – tight for direct mode (with write protection the browser and its cache are kept in memory). If the page stutters or restarts: set the display to “stream” or use a Pi with 4 GB.",
                pi_direkt_rueckfall: "The browser had problems – the Pi shows the stream for one hour. “Restart player” tries again right away." } },
     todoTitel: "To do", todoOk: "All good.",
+    todoAus: { tipp: "Hide (for good, until you show it again)", update: "Hide (until the next version)",
+               warn: "Hide (until the problem was solved once – if it comes back, it shows again)" },
+    todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
+    todoEin: "Show again", todoAusgeblendet: "hidden",
     todo: { player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
@@ -497,6 +505,7 @@ const TEXTE = {
       sich_pw_schwach: "Password too weak – mix upper and lower case, digits and symbols (or a passphrase of 20+ characters)",
       sich_pw_fehlt: "The backup is encrypted – please enter the password", sich_pw_falsch: "Wrong password for the backup",
       sich_ungueltig: "Not a SignageCast backup", sich_zu_gross: "Backup too large", sich_kein_aes: "Encryption not available (package python3-pyzipper missing)",
+      todo_unbekannt: "This entry cannot be hidden",
       sich_geheim_ohne_pw: "With credentials and passwords only with a password (AES-256)", sich_name: "Unknown backup",
       med_art: "Only pictures (JPG, PNG) and videos (MP4, WebM)", med_kaputt: "Video not readable",
       med_hevc: "The video is H.265 – the browser in the container cannot play it; please save it as H.264 (MP4)",
@@ -1345,32 +1354,53 @@ async function leistungSeite(inhalt) {
 }
 
 // „Zu erledigen“ (seit 0.17): wichtig (warn) zuerst, Tipps danach; jeder Eintrag führt zur passenden Seite
+// „Zu erledigen“: Warnungen berechnet der Dienst (todo_warn, mit Kennung), Hinweise und Tipps die Verwaltung. Seit 0.35
+// lässt sich jeder Eintrag außer dem Startpasswort ausblenden (todo_aus, gespeichert beim Dienst):
+// Tipp dauerhaft, Update nur für diese Version, Warnung bis das Problem einmal weg war.
+let TODO_ZEIGEN = false;
+const TODO_WARN = {
+  ha: () => [T.todo.ha, "ha"], bildrate: (w) => [T.todo.bildrate(w.name), "leistung"],
+  allgemein: (w) => [T.todo.allgemein(w.grund, String(w.seit || "").slice(11)), "streams"], doppelt: (w) => [T.todo.doppelt(w.name), "leistung"],
+  player: (w) => [T.todo.player(w.name), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
+  bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
+};
 async function todoZeichnen(s) {
   const l = [];
-  const neu = (stufe, text, seite) => l.push({ stufe, text, seite });
-  if (s.ha.url && !s.ha.ok) neu("warn", T.todo.ha, "ha");
-  for (const n of s.bildrate_niedrig || []) neu("warn", T.todo.bildrate(n), "leistung");
-  if (s.allgemein) neu("warn", T.todo.allgemein(s.allgemein.grund, s.allgemein.seit.slice(11)), "streams");
-  for (const n of s.doppelt_hoch || []) neu("warn", T.todo.doppelt(n), "leistung");
-  for (const g of s.player || []) if (g.gesehen && !g.online) neu("warn", T.todo.player(g.name), "player");
-  const sa = s.sicherung_auto || {};
-  if (sa.fehler) neu("warn", T.todo.sicherungFehler, "sicherung");
-  if ((s.benachrichtigung || []).some((x) => Object.values(x.ergebnis).some(Boolean))) neu("warn", T.todo.bnFehler, "benachrichtigung");
-  if (s.wetter.quelle === "met" && s.wetter.fehler) neu("warn", T.todo.wetter, "allgemein");
-  if (s.neue_version) neu("info", T.todo.update(s.neue_version), CONTAINER ? "uebersicht" : "updates");
-  if (s.kodierung && s.kodierung.art === "software") neu("info", T.todo.software, "uebersicht");
-  if (E.sicherung.plan === "aus") neu("tipp", T.todo.sicherung, "sicherung");
+  const neu = (stufe, text, seite, key, art) => l.push({ stufe, text, seite, key, art });
+  for (const w of s.todo_warn || []) {
+    const f = TODO_WARN[w.key.split(":")[0]];
+    if (f) { const [text, seite] = f(w); neu("warn", text, seite, w.key, "warn"); }
+  }
+  if (s.neue_version) neu("info", T.todo.update(s.neue_version), CONTAINER ? "uebersicht" : "updates", "update:" + s.neue_version, "update");
+  if (s.kodierung && s.kodierung.art === "software") neu("info", T.todo.software, "uebersicht", "software", "tipp");
+  if (E.sicherung.plan === "aus") neu("tipp", T.todo.sicherung, "sicherung", "sicherung", "tipp");
   const B = E.benachrichtigung;
-  if (!B.telegram.aktiv && !B.email.aktiv && !B.ha.aktiv) neu("tipp", T.todo.benachrichtigung, "benachrichtigung");
-  if (CONTAINER) {
+  if (!B.telegram.aktiv && !B.email.aktiv && !B.ha.aktiv) neu("tipp", T.todo.benachrichtigung, "benachrichtigung", "benachrichtigung", "tipp");
+  if (CONTAINER) {                          // Sicherheitslücke: nicht ausblendbar (kein key)
     try { if ((await (await fetch("/verwaltung/info", { credentials: "same-origin" })).json()).startpasswort) neu("warn", T.todo.passwort, "zugang"); } catch (_) { /* egal */ }
   }
   const ziel = $("#todo");
   if (!ziel) return;
+  const aus = new Set(s.todo_aus || []);
   const rang = { warn: 0, info: 1, tipp: 2 };
   l.sort((a, b) => rang[a.stufe] - rang[b.stufe]);
-  ziel.innerHTML = l.length ? l.map((x) => `<li class="${x.stufe}">${x.seite === "uebersicht" ? esc(x.text)
-    : `<a href="#${x.seite}">${esc(x.text)}</a>`}</li>`).join("") : `<li class="gut">${esc(T.todoOk)}</li>`;
+  const sichtbar = l.filter((x) => !x.key || !aus.has(x.key)), versteckt = l.filter((x) => x.key && aus.has(x.key));
+  const zeile = (x, ist_aus) => `<li class="${x.stufe}${ist_aus ? " aus" : ""}">${x.seite === "uebersicht" ? esc(x.text)
+    : `<a href="#${x.seite}">${esc(x.text)}</a>`}${ist_aus ? ` <span class="leise">(${esc(T.todoAusgeblendet)})</span>
+      <button class="todo-knopf todo-ein" data-todo-ein="${esc(x.key)}">${esc(T.todoEin)}</button>`
+    : x.key ? `<button class="todo-knopf todo-x" data-todo-aus="${esc(x.key)}" title="${esc(T.todoAus[x.art])}" aria-label="${esc(T.todoAus[x.art])}">✕</button>` : ""}</li>`;
+  ziel.innerHTML = (sichtbar.length ? sichtbar.map((x) => zeile(x, false)).join("") : `<li class="gut">${esc(T.todoOk)}</li>`)
+    + (versteckt.length ? `<li class="todo-versteckt"><a href="#" data-todo-zeigen>${esc(TODO_ZEIGEN ? T.todoVerbergen : T.todoVersteckt(versteckt.length))}</a></li>`
+      + (TODO_ZEIGEN ? versteckt.map((x) => zeile(x, true)).join("") : "") : "");
+  const umschalten = async (pfad, key, knopf) => {
+    knopf.disabled = true;
+    try { s.todo_aus = (await senden(pfad, { key })).todo_aus; } catch (f) { knopf.disabled = false; melden(f.message, true); return; }
+    todoZeichnen(s);
+  };
+  ziel.querySelectorAll("[data-todo-aus]").forEach((b) => { b.onclick = () => umschalten("/api/todo/aus", b.dataset.todoAus, b); });
+  ziel.querySelectorAll("[data-todo-ein]").forEach((b) => { b.onclick = () => umschalten("/api/todo/ein", b.dataset.todoEin, b); });
+  const z = ziel.querySelector("[data-todo-zeigen]");
+  if (z) z.onclick = (ev) => { ev.preventDefault(); TODO_ZEIGEN = !TODO_ZEIGEN; todoZeichnen(s); };
 }
 
 async function uebersicht(inhalt) {

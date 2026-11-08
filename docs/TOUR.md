@@ -56,7 +56,8 @@ next to Cockpit's own pages. If your server already runs Cockpit, SignageCast in
 
 ### 6. Overview
 At the top a **to-do list**: problems first (e.g. Home Assistant not reachable), then tips (automatic backup off, no
-notification set up) – each entry links to the page where you fix it. Below, every TV with its state, current stream,
+notification set up) – each entry links to the page where you fix it; the ✕ hides it (tips for good, problems until they were
+solved once, since 0.35). Below, every TV with its state, current stream,
 resolution and sound, then viewers, weather source, time check against NTP (“time from the host, synchronised”), video
 encoding (graphics unit or software fallback), Home Assistant connection, streams in rotation, CPU, RAM and uptime.
 

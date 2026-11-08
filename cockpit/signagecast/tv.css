@@ -36,6 +36,13 @@ ul.todo li:last-child { border-bottom: 0; }
 ul.todo li::before { position: absolute; left: 2px; content: "•"; font-weight: 700; }
 ul.todo li.warn::before { content: "!"; color: #c62828; } ul.todo li.info::before { content: "i"; color: var(--akzent); }
 ul.todo li.tipp { color: var(--leise); } ul.todo li.gut::before { content: "✓"; color: #2e7d32; }
+/* seit 0.35: Einträge ausblenden */
+ul.todo li { padding-right: 40px; }
+ul.todo .todo-knopf { font: inherit; cursor: pointer; background: none; border: 1px solid transparent; border-radius: 6px; color: var(--leise); }
+ul.todo .todo-x { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; font-size: 1rem; }
+ul.todo .todo-x:hover, ul.todo .todo-x:focus-visible { border-color: var(--linie); color: inherit; }
+ul.todo .todo-ein { margin-left: 6px; padding: 2px 8px; border-color: var(--linie); font-size: .9em; }
+ul.todo li.aus { opacity: .7; } ul.todo li.todo-versteckt { font-size: .9em; } ul.todo li.todo-versteckt::before { content: ""; }
 details.erweitert { border-top: 1px dashed var(--linie); margin-top: 12px; }
 details.erweitert > summary { color: var(--leise); font-weight: 500; }
 @media (max-width: 640px) { #reiter, #unter { display: none; } #menue { display: block; } }

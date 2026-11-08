@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+- **Overview: hide entries of the to-do list:** a ✕ next to each entry hides it without fixing it – tips for good,
+  “new version” only for that version, problems until they were solved once (if they come back, they show again; per Pi
+  for players). “*n* hidden – show” lists them with “Show again”. “Change the initial password” (Docker) cannot be
+  hidden; notifications are not affected. Stored on the server in `/var/lib/signagecast/todo.json` (all browsers and
+  accounts) and included in backups. Warnings are now computed by the service, which frees hidden ones 5 minutes
+  after start at the earliest, once a problem was absent at two checks in a row (60 s apart).
+
 ## v0.34.0 (2026-11-08)
 - **Raspberry Pi player: memory recommendations:** the model choice (new player and its settings) says how much memory
   a Pi needs – stream 1 GB (Zero 2 W: 512 MB), direct mode at least 2 GB, better 4 GB (with write protection the browser

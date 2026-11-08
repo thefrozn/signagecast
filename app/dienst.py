@@ -36,6 +36,7 @@ import durchsage as DS                        # noqa: E402
 import quellen as Q                           # noqa: E402
 import csvimport as CSV                       # noqa: E402
 import webbild as WB                          # noqa: E402
+import todo as TD                             # noqa: E402
 import pdf as PDF                             # noqa: E402
 import player as PL                           # noqa: E402
 import fernwartung as FW                      # noqa: E402
@@ -114,6 +115,7 @@ def bn_behalten(neu, auch_leer=False):
 
 
 qn = Q.Quellen(lambda: einst(), os.path.join(DATEN, "verlauf.json"))
+TODO = TD.Liste(os.path.join(DATEN, "todo.json"))   # ausgeblendete Einträge von „Zu erledigen“ (seit 0.35)
 
 
 ha = HA(lambda: einst()["ha"]["url"])
@@ -1495,6 +1497,52 @@ def anzeige_nr(t):
     return f":{99 + t['nr']}"
 
 
+def doppelt_hoch(e):
+    return [t for t in e["fernseher"] if dup_hoch.get(t["id"], 0) >= 3]
+
+
+def bildrate_niedrig(e):
+    def niedrig(br):
+        return len(br) >= 6 and sum(x["fps"] for x in br) / len(br) < 20
+    return [t for t in e["fernseher"] if kette_laeuft(t["id"]) and
+            niedrig([x for x in (zustand.get("bildrate") or {}).get(t["id"], []) if time.time() - x["t"] < 90])]
+
+
+def todo_warnungen(e):
+    """Warnungen für „Zu erledigen“ (seit 0.35 hier statt in der Verwaltung): Kennung + Werte für den Text. Die Kennung
+    braucht die Prüfschleife, um ausgeblendete Warnungen wieder freizugeben, sobald das Problem weg war."""
+    w = []
+    if e["ha"]["url"] and zustand["ha_fehler"] is not None:
+        w.append({"key": "ha"})
+    w += [{"key": "bildrate:" + t["id"], "name": t["name"]} for t in bildrate_niedrig(e)]
+    a = streams.allgemein_aktiv()
+    if a:
+        w.append({"key": "allgemein", "grund": a["grund"], "seit": a["seit"]})
+    w += [{"key": "doppelt:" + t["id"], "name": t["name"]} for t in doppelt_hoch(e)]
+    w += [{"key": "player:" + g["id"], "name": g["name"]} for g in PL.daten["geraete"] if PL.stand.get(g["id"]) and not PL.online(g["id"])]
+    if (zustand.get("sicherung_auto") or {}).get("fehler"):
+        w.append({"key": "sicherung_fehler"})
+    if any(any((x.get("ergebnis") or {}).values()) for x in melder.letzte or []):
+        w.append({"key": "bn_fehler"})
+    if e["anzeige"]["wetter_quelle"] == "met" and met.fehler:
+        w.append({"key": "wetter"})
+    return w
+
+
+def todo_schleife():
+    """Ausgeblendete Warnungen freigeben, sobald das Problem weg war. Erst 5 min nach dem Start: vorher sind HA, Wetter
+    und Player noch nicht geprüft und sähen „in Ordnung“ aus."""
+    time.sleep(300)
+    while True:
+        try:
+            weg = TODO.pruefen({x["key"] for x in todo_warnungen(einst())}, zustand.get("neue_version"))
+            if weg:
+                print("Zu erledigen: wieder eingeblendet:", ", ".join(weg), flush=True)
+        except Exception as f:                  # nie die Schleife verlieren
+            print("Zu erledigen:", repr(f), flush=True)
+        time.sleep(60)
+
+
 def status():
     m = {}
     for z in open("/proc/meminfo"):
@@ -1517,10 +1565,9 @@ def status():
         "benachrichtigung": melder.letzte,
         "sicherung_auto": zustand.get("sicherung_auto"),
         "allgemein": streams.allgemein_aktiv(),
-        "doppelt_hoch": [t["name"] for t in e["fernseher"] if dup_hoch.get(t["id"], 0) >= 3],
-        "bildrate_niedrig": [t["name"] for t in e["fernseher"] if kette_laeuft(t["id"]) and (lambda br: len(br) >= 6 and
-                             sum(x["fps"] for x in br) / len(br) < 20)([x for x in (zustand.get("bildrate") or {}).get(t["id"], [])
-                                                                       if time.time() - x["t"] < 90])],
+        "doppelt_hoch": [t["name"] for t in doppelt_hoch(e)],
+        "bildrate_niedrig": [t["name"] for t in bildrate_niedrig(e)],
+        "todo_warn": todo_warnungen(e), "todo_aus": TODO.liste(),
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
         "player": [{"id": g["id"], "name": g["name"], "online": PL.online(g["id"]), "gesehen": bool(PL.stand.get(g["id"]))}
                    for g in PL.daten["geraete"]],
@@ -1943,6 +1990,7 @@ def sicherung_zip(mit_geheimnissen, passwort=None):
     if qn.verlauf:
         with qn.verlauf.sperre:
             dateien["verlauf.json"] = json.dumps(qn.verlauf.reihen).encode()
+    dateien["todo.json"] = TODO.als_bytes()      # ausgeblendete Einträge von „Zu erledigen“ (seit 0.35)
     # eigene Medien: Bilder immer, Videos nur bis MEDIEN_SICHERUNG_MAX insgesamt (sonst wird die ZIP unhandlich)
     ausgelassen, summe = [], 0
     for m in sorted(einst()["medien"], key=lambda x: x["art"] != "bild"):
@@ -1995,6 +2043,8 @@ def sicherung_zip_einspielen(roh, passwort=None, mit_strikes=True):
         with qn.verlauf.sperre:
             qn.verlauf.reihen = {k: v for k, v in reihen.items() if isinstance(v, list)}
         qn.verlauf.speichern()
+    if "todo.json" in dateien:
+        TODO.einspielen(dateien["todo.json"])
     if "verwaltung.json" in dateien and CONTAINER:
         vw = os.path.join(os.path.dirname(E.PFAD), "verwaltung.json")
         fd = os.open(vw, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
@@ -2467,6 +2517,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/pult/probe":
             ziel = [t["id"] for t in einst()["fernseher"] if not d.get("tv") or t["id"] == d.get("tv")]
             return {"id": durchsage_senden("Dies ist eine Probedurchsage.", ziel, True, einst()["pult"]["gong"], 20, "Verwaltung")}
+        if p in ("/api/todo/aus", "/api/todo/ein"):  # „Zu erledigen“: Eintrag aus-/wieder einblenden (seit 0.35)
+            if not (TODO.ausblenden if p.endswith("/aus") else TODO.einblenden)(d.get("key")):
+                raise M.Meldung("todo_unbekannt")
+            return {"todo_aus": TODO.liste()}
         if p == "/api/aktion/ton-neu":
             return {"erledigt": ton_neu_starten()}
         if p == "/api/leistung/test":                # ca. 10 s messen (läuft im eigenen Anfrage-Thread)
@@ -2783,7 +2837,7 @@ def main():
     for ziel in (ha_schleife, streams_schleife, vorab_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
-                 pdf_schleife, schalten_schleife, player_schleife):
+                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

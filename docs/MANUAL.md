@@ -17,7 +17,7 @@ that video, so the TV needs no app, no login and no updates.
 
 | Area | Pages | What you do there |
 |---|---|---|
-| **Overview** | – | To-do list (problems first, then tips), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
+| **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
 | **TVs** | TVs · Players (Raspberry Pi) | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; Raspberry Pi players at the TV ([PLAYER.md](PLAYER.md)) |
 | **Content** | Layouts · Data sources · Media · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
 | **Live videos** | Streams · Rotation & quality · Search | Live cams, minutes per stream, daylight, minimum quality and strikes, categories for all TVs, nightly search |
@@ -185,6 +185,18 @@ minutes), an update fails or was rolled back, the automatic backup fails, Home A
 5 minutes. Every event is sent once, plus an all-clear when it is over. The bot token and the SMTP password are shown as
 •••• and are not part of a backup unless you include secrets.
 
+### Hide an entry in the to-do list
+Overview → *To do*: the **✕** next to an entry hides it without fixing it. How long depends on the kind of entry:
+
+- **Tips** (automatic backup off, no notification, video in software): for good, until you show them again.
+- **New version available:** only for this version – the next one appears again.
+- **Problems** (player not responding, Home Assistant or weather not reachable, TV stutters, backup or notification
+  failed): until the problem was solved once. If it comes back later, it shows again. For players this applies per Pi.
+
+“*n* hidden – show” below the list shows the hidden entries with a **Show again** button. *Change the initial password*
+(Docker) cannot be hidden. Hiding only affects the list – notifications are still sent. The hidden entries are kept on
+the server (`/var/lib/signagecast/todo.json`, valid for every browser and account) and are part of backups.
+
 ## 4. FAQ
 
 **The TV shows nothing / “connecting” forever.**
@@ -233,6 +245,8 @@ It is never shown again. Create a new one and update the senders.
 
 Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Player – fertiges Image je Bildschirm mit WLAN,
 zentrale Verwaltung; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
+
+Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, ohne sie zu erledigen – Tipps dauerhaft, „Neue Version“ nur für diese Version, Probleme bis sie einmal behoben waren (tritt es wieder auf, erscheint es wieder). „Startpasswort ändern“ lässt sich nicht ausblenden; Benachrichtigungen kommen weiter.
 
 Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Rotation & Qualität → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
 

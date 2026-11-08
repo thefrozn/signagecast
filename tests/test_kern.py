@@ -1489,5 +1489,69 @@ class Fernwartung033(unittest.TestCase):
         self.assertTrue(mit["fernwartung"])
 
 
+
+class Todo035(unittest.TestCase):
+    """Seit 0.35: Einträge von „Zu erledigen“ ausblenden – Tipp dauerhaft, Update je Version, Warnung bis das Problem weg war."""
+    def setUp(self):
+        import todo as TD
+        self.TD, self.pfad = TD, os.path.join(tempfile.mkdtemp(), "todo.json")
+        self.l = TD.Liste(self.pfad)
+
+    def test_arten(self):
+        art = self.TD.art
+        for k, a in (("sicherung", "tipp"), ("benachrichtigung", "tipp"), ("software", "tipp"), ("update:v0.35.0", "update"),
+                     ("update:0.35.1", "update"), ("ha", "warn"), ("wetter", "warn"), ("allgemein", "warn"), ("sicherung_fehler", "warn"),
+                     ("bn_fehler", "warn"), ("player:0123abcd", "warn"), ("bildrate:tv", "warn"), ("doppelt:kueche2", "warn")):
+            self.assertEqual(art(k), a, k)
+        for k in ("passwort", "", None, 5, "player:xyz", "bildrate:TV", "update:neu", "ha ", "x" * 50, "../todo"):
+            self.assertIsNone(art(k), k)                 # Startpasswort und Unbekanntes lassen sich nicht ausblenden
+        self.assertFalse(self.l.ausblenden("passwort"))
+
+    def test_tipp_bleibt_update_je_version(self):
+        l = self.l
+        self.assertTrue(l.ausblenden("sicherung") and l.ausblenden("update:v0.35.0"))
+        for _ in range(3):
+            l.pruefen(set(), "v0.35.0")
+        self.assertEqual(l.liste(), ["sicherung", "update:v0.35.0"])
+        l.pruefen(set(), "v0.36.0")                       # neue Version: Hinweis kommt wieder, Tipp bleibt weg
+        self.assertEqual(l.liste(), ["sicherung"])
+        self.assertEqual(self.TD.Liste(self.pfad).liste(), ["sicherung"])   # gespeichert
+        self.assertTrue(l.einblenden("sicherung"))
+        self.assertFalse(l.einblenden("sicherung"))
+        self.assertEqual(l.liste(), [])
+
+    def test_warnung_bis_problem_weg(self):
+        l = self.l
+        l.ausblenden("player:0123abcd")
+        l.ausblenden("ha")
+        for _ in range(5):                                # Problem besteht weiter: bleibt ausgeblendet
+            l.pruefen({"player:0123abcd", "ha"}, None)
+        self.assertEqual(l.liste(), ["ha", "player:0123abcd"])
+        l.pruefen({"ha"}, None)                           # einmal weg: noch nicht (Aussetzer)
+        l.pruefen({"ha", "player:0123abcd"}, None)        # wieder da: Zähler zurück
+        l.pruefen({"ha"}, None)
+        self.assertIn("player:0123abcd", l.liste())
+        self.assertEqual(l.pruefen({"ha"}, None), ["player:0123abcd"])   # zweimal hintereinander weg: freigegeben
+        self.assertEqual(l.liste(), ["ha"])
+
+    def test_sicherung_und_kaputte_datei(self):
+        self.l.ausblenden("software")
+        roh = self.l.als_bytes()
+        neu = self.TD.Liste(os.path.join(tempfile.mkdtemp(), "todo.json"))
+        neu.einspielen(roh)
+        self.assertEqual(neu.liste(), ["software"])
+        neu.einspielen(b'{"aus": {"passwort": {"art": "tipp"}, "ha": {"art": "warn"}, "x": 1}}')
+        self.assertEqual(neu.liste(), ["ha"])             # Unbekanntes aus Sicherungen wird verworfen
+        neu.einspielen(b"kaputt")
+        self.assertEqual(neu.liste(), ["ha"])
+        open(self.pfad, "w").write("{kaputt")
+        self.assertEqual(self.TD.Liste(self.pfad).liste(), [])
+
+    def test_obergrenze(self):
+        for i in range(self.TD.MAX):
+            self.assertTrue(self.l.ausblenden(f"player:{i:08x}"))
+        self.assertFalse(self.l.ausblenden("ha"))
+
+
 if __name__ == "__main__":
     unittest.main()

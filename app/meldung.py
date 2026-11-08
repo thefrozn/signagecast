@@ -51,6 +51,7 @@ DE = {
     "sich_ungueltig": "Keine SignageCast-Sicherung",
     "sich_zu_gross": "Sicherung zu groß",
     "sich_kein_aes": "Verschlüsselung nicht verfügbar (Paket python3-pyzipper fehlt)",
+    "todo_unbekannt": "Diesen Eintrag kann man nicht ausblenden",
     "sich_geheim_ohne_pw": "Mit Zugangsdaten und Passwörtern nur mit Passwort (AES-256)",
     "sich_name": "Unbekannte Sicherung",
     # Eigene Medien
