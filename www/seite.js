@@ -736,3 +736,8 @@ laden(); setInterval(laden, 15000);
 setInterval(uhr, 1000);
 // Speicher frei halten: alle 6 h einmal neu laden
 setInterval(() => { if (new Date().getSeconds() < 5 && Date.now() - start > 6 * 3600 * 1000) location.reload(); }, 1000);
+// Mauszeiger nach 3 s ohne Bewegung ausblenden (seit 0.36 – PC-Player, Browser-Geräte; Bewegung zeigt ihn wieder)
+let zeigerZeit = null;
+const zeigerWeg = () => { document.documentElement.style.cursor = "none"; };
+addEventListener("mousemove", () => { document.documentElement.style.cursor = ""; clearTimeout(zeigerZeit); zeigerZeit = setTimeout(zeigerWeg, 3000); }, { passive: true });
+zeigerZeit = setTimeout(zeigerWeg, 3000);

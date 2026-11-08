@@ -669,7 +669,7 @@ def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form=
     meta = basis_meta(art)
     if not meta:
         raise Fehler("pi_kein_image")
-    if not gid and _version(meta.get("version")) < (0, 25):       # erst der Agent ab 0.25 kann sich koppeln
+    if not gid and art == "pi" and _version(meta.get("version")) < (0, 25):       # erst der Agent ab 0.25 kann sich koppeln
         raise Fehler("pi_basis_alt", v=meta.get("version") or "?")
     netz, merken = wlan_aus_anfrage(w)
     if merken:
@@ -688,10 +688,9 @@ def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form=
 
 
 def _version(v):
-    try:
-        return tuple(int(x) for x in str(v).split(".")[:3])
-    except ValueError:
-        return (0,)
+    """„0.35.0“ -> (0, 35, 0); Zusätze wie „-test“ zählen nicht."""
+    m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", str(v or ""))
+    return tuple(int(x or 0) for x in m.groups()) if m else (0,)
 
 
 def dateiname(g, art="pi", form="gz"):

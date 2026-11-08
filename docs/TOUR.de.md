@@ -84,7 +84,7 @@ bleibt SignageCast bei „Automatisch“. Felder, die für den aktiven Encoder n
 ![Kodierung je Fernseher](tour/de/05a-encoding.jpg)
 
 ### 8. Raspberry Pi als Player (experimentell)
-Fernseher → *Player (Raspberry Pi)*: Ein Pi am Fernseher zeigt den fertigen Stream per HDMI – auch an Fernsehern ohne
+Fernseher → *Player*: Ein Pi am Fernseher zeigt den fertigen Stream per HDMI – auch an Fernsehern ohne
 brauchbaren Browser. Name eingeben, Fernseher und Netzwerk (LAN oder WLAN) wählen, fertiges Image herunterladen und auf
 eine SD-Karte schreiben; am Pi musst du nichts eintippen. Oder ein Image für viele Pis: Jeder zeigt einen 6-stelligen
 Code auf dem Fernseher, den du hier zum Koppeln eingibst. Welcher Pi passt, steht gleich bei der Modellwahl: Für den Stream
@@ -92,7 +92,9 @@ reicht 1 GB Arbeitsspeicher, für den Direktmodus (Pi zeigt die Seite selbst) mi
 Danach verwaltest du jeden Pi hier: online, Modell mit Arbeitsspeicher, IP,
 Bildschirm, Video, Temperatur, Knöpfe für Bildschirmfoto, TV ein/aus (HDMI-CEC), Neustart und Systemupdate und
 WLAN-Wechsel mit automatischer Rückkehr ins alte Netz. Der Pi auf diesen Bildern ist simuliert (echter Agent-Code) –
-am echten Gerät ist der Player noch nicht getestet ([Details](PLAYER.md#deutsch-raspberry-pi-als-player)).
+am echten Gerät ist der Player noch nicht getestet ([Details](PLAYER.md#deutsch-raspberry-pi-als-player)). Seit 0.36 kann auch ein PC (x86-64 mit UEFI)
+Player sein – er startet vom USB-Stick und zeigt die Seite selbst –, und ein *Browser-Gerät* ist nur ein geheimer Link
+für einen Smart-TV oder einen Kiosk-Browser.
 
 ![Karte eines Raspberry Pi](tour/de/05b-players.jpg)
 

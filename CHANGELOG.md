@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.36.0 (2026-11-08)
+- **PC as player (experimental):** an ordinary PC, mini PC or thin client (x86-64 with UEFI, Secure Boot may stay on)
+  becomes a player from a USB stick – without touching its disk – and shows the page itself in direct mode (default
+  for PCs). New PC image (Debian 13 live, built with every release, signed, SBOM): one file that is both an ISO (Ventoy,
+  CD, VM) and a USB image; the admin downloads it per player as `.img.gz` (USB stick) or `.iso`, or as one image for
+  several PCs with pairing code. Settings, screenshot, remote maintenance and fallback to the stream as with the Pi;
+  any screen connector (HDMI, DisplayPort …), video decoding via VAAPI (Intel/AMD); always write-protected, no system
+  updates (new image instead). Tested in a UEFI VM with Secure Boot, not yet on many real PCs.
+- **Browser device:** a player without image – just a secret link `/anzeige/<key>` for a smart TV, a Fire TV stick or a
+  kiosk live CD; “online” while the page fetches its data, notification after 5 minutes without. *Create new link*
+  invalidates the old one.
+- **Direct mode fixed for Raspberry Pis too:** found while testing the PC – the browser never started on a screen:
+  `seatd` did not start (wrong path in the image, Debian ships `/usr/sbin/seatd`) and `cage` looked for an existing
+  Wayland session. The agent (1.5, Pis update it from the server) repairs `seatd` at runtime and starts `cage` correctly;
+  new images are fixed as well. Screenshots in direct mode come as PNG (Debian's `grim` has no JPEG).
+- mpv no longer shows its idle logo (“Drop files or URLs to play here”, mpv 0.38+) over the player's notes; new images
+  include an emoji font (e.g. ⏱ in “up next”); the TV page hides the mouse pointer after 3 s without movement.
+- Admin: section *Players* (instead of *Players (Raspberry Pi)*), *Pair a player* for Pis and PCs.
+
 ## v0.35.0 (2026-11-08)
 - **Overview: hide entries of the to-do list:** a ✕ next to each entry hides it without fixing it – tips for good,
   “new version” only for that version, problems until they were solved once (if they come back, they show again; per Pi

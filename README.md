@@ -11,7 +11,7 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
 
 **📸 [Screenshot tour](docs/TOUR.md)** – the TV and every page of the admin, step by step.
 
-**Docs:** [Installation](docs/INSTALL.md) · [Hardware](docs/HARDWARE.md) · [Raspberry Pi player](docs/PLAYER.md) · [Manual & FAQ](docs/MANUAL.md) · [How it works](docs/HOW-IT-WORKS.md) · [Changelog](CHANGELOG.md)
+**Docs:** [Installation](docs/INSTALL.md) · [Hardware](docs/HARDWARE.md) · [Players (Pi, PC, browser)](docs/PLAYER.md) · [Manual & FAQ](docs/MANUAL.md) · [How it works](docs/HOW-IT-WORKS.md) · [Changelog](CHANGELOG.md)
 
 *Deutsche Kurzfassung weiter unten.*
 
@@ -46,6 +46,9 @@ Made for the living room, waiting rooms of practices and company receptions. Fre
   HDMI-CEC, rotation, Wi-Fi change with fallback, updates; optional *direct mode* (Pi 4/5 shows the page itself, no
   encoding on the server); optional **terminal in the browser** to each Pi (off by default, the Pi must allow it) –
   see [PLAYER.md](docs/PLAYER.md).
+- **PC as player** (experimental, since 0.36) – an ordinary PC or thin client (x86-64, UEFI, Secure Boot may stay on)
+  starts from a USB stick and shows the page itself; managed like a Pi. Or a **browser device**: just a secret link for a
+  smart TV or kiosk browser – see [PLAYER.md](docs/PLAYER.md#pc-as-player-since-036-experimental).
 - **Messages and notifications** – official severe weather warnings of the DWD (Germany) as a layout element; short
   messages from other systems (e.g. Home Assistant) as a banner on the TVs via a webhook with a secret key; notifications
   via Telegram, e-mail or Home Assistant when a TV fails, an update or backup fails or Home Assistant is disconnected.
@@ -115,7 +118,7 @@ SignageCast macht aus einem Fernseher einen ruhigen Infobildschirm: Uhr, Wetter 
 dazu ein großes Fenster mit **Live-Kameras von Tieren und Natur** aus aller Welt – nur dort, wo gerade Tag ist.
 Gezeichnet wird in einem kleinen Linux-Container, der Fernseher öffnet nur eine Adresse im Browser. Das Bild gestaltest
 du im **Layout-Editor** (Bausteine ziehen, Größe ändern, Vorlagen für Wohnzimmer, Wartezimmer und Firma),
-dazu Hintergründe nach Tageszeit, Internetradio, Raspberry Pi als Player am Fernseher ([Anleitung](docs/PLAYER.md#deutsch-raspberry-pi-als-player)), Einspieler wie „tagesschau in 100 Sekunden“, mehrere Fernseher,
+dazu Hintergründe nach Tageszeit, Internetradio, Raspberry Pi oder PC als Player am Fernseher ([Anleitung](docs/PLAYER.md#deutsch-raspberry-pi-als-player)), Einspieler wie „tagesschau in 100 Sekunden“, mehrere Fernseher,
 eigene Datenquellen (JSON-API, RSS, Bilder), Kameras, Kalender, Webseiten, Unwetterwarnungen des DWD, Meldungen per
 Webhook und Benachrichtigungen über Telegram, E-Mail oder Home Assistant, PDFs Seite für Seite, Bausteine mit Zeitraum
 („vom 23.12. bis 2.1. geschlossen“), ein Notfall-Vollbild für alle Fernseher und echtes Aus-/Einschalten der Fernseher

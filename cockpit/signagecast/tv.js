@@ -13,7 +13,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player (Raspberry Pi)", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
@@ -109,7 +109,7 @@ const TEXTE = {
           wlanOffen: (s) => `WLAN-Wechsel zu „${s}“ wartet auf den Pi`, wlanSenden: "An den Pi senden", wlanGesendet: "Gesendet – der Pi übernimmt es bei der nächsten Meldung",
           imageNeu: "Image erneut herunterladen", imageNeuText: "Für eine neue SD-Karte. Der Schlüssel bleibt gleich – eine alte Karte mit diesem Player funktioniert weiter.",
           entfernen: "Entfernen", entfernenFrage: (n) => `Player „${n}“ entfernen? Sein Schlüssel wird ungültig, der Pi zeigt dann nur noch einen Hinweis.`,
-          befehlOk: "Befehl gesendet – der Pi holt ihn in wenigen Sekunden ab", bildAlt: (z) => `Bildschirmfoto von ${z}`, netzwerke: "WLANs auf dem Pi",
+          befehlOk: "Befehl gesendet – der Player holt ihn in wenigen Sekunden ab", bildAlt: (z) => `Bildschirmfoto von ${z}`, netzwerke: "WLANs auf dem Player",
           update: "Letztes Systemupdate",
           h: { pi_kein_tv: "Kein Fernseher zugewiesen – der Pi zeigt nur einen Hinweis.", pi_h265: "Pi 3/Zero 2 W kann H.265 nicht flüssig abspielen: beim Fernseher den Codec „H.264“ wählen.",
                pi_4k: "Pi 3/Zero 2 W schafft kein 4K: beim Fernseher die Auflösung „Full HD“ wählen.", pi5_h264_4k: "Der Pi 5 dekodiert H.264 nur per CPU – 4K ruckelt. Beim Fernseher „H.265“ oder „Full HD“ wählen.",
@@ -326,7 +326,7 @@ const TEXTE = {
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players (Raspberry Pi)", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
@@ -422,7 +422,7 @@ const TEXTE = {
           wlanOffen: (s) => `Wi-Fi change to “${s}” is waiting for the Pi`, wlanSenden: "Send to the Pi", wlanGesendet: "Sent – the Pi applies it at its next report",
           imageNeu: "Download image again", imageNeuText: "For a new SD card. The key stays the same – an old card with this player keeps working.",
           entfernen: "Remove", entfernenFrage: (n) => `Remove player “${n}”? Its key becomes invalid; the Pi then only shows a note.`,
-          befehlOk: "Command sent – the Pi picks it up within a few seconds", bildAlt: (z) => `Screenshot from ${z}`, netzwerke: "Wi-Fi networks on the Pi",
+          befehlOk: "Command sent – the player picks it up within a few seconds", bildAlt: (z) => `Screenshot from ${z}`, netzwerke: "Wi-Fi networks on the player",
           update: "Last system update",
           h: { pi_kein_tv: "No TV assigned – the Pi only shows a note.", pi_h265: "Pi 3/Zero 2 W cannot play H.265 smoothly: choose codec “H.264” for the TV.",
                pi_4k: "Pi 3/Zero 2 W cannot do 4K: choose resolution “Full HD” for the TV.", pi5_h264_4k: "The Pi 5 decodes H.264 on the CPU only – 4K stutters. Choose “H.265” or “Full HD” for the TV.",
@@ -1334,7 +1334,7 @@ async function playerSeite(inhalt) {
       : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
       : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
     const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? " " + T.pl.zitat(b.ssid) : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
-    const zeilen = g.zuletzt ? [[T.pl.modell, b.modell + (b.ram_mb > 0 ? " · " + ramNenn(b.ram_mb) : "")], [T.pl.ip, g.ip], [T.pl.netz, netz],
+    const zeilen = g.zuletzt ? [[T.pl.modell, b.modell + (b.ram_mb > 0 ? " · " + (pc ? (Math.round(b.ram_mb / 102.4) / 10).toLocaleString(ORT()) + " GB" : ramNenn(b.ram_mb)) : "")], [T.pl.ip, g.ip], [T.pl.netz, netz],
       [T.pl.hdmi, b.hdmi ? (b.tv_name || "HDMI") + (b.ausgang ? ` (${b.ausgang})` : "") : T.pl.keinHdmi],
       [T.pl.video, b.modus_ist === "direkt" ? T.pl.direktModus : v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
       [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
@@ -1379,7 +1379,11 @@ async function playerSeite(inhalt) {
         <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
   };
   const bilderLaden = () => inhalt.querySelectorAll("img[data-bild]").forEach(async (i) => {
-    try { i.src = URL.createObjectURL(new Blob([await dienstBinaer.get(`/api/player/${i.dataset.bild}/bild`, { t: Date.now() }, { "X-SignageCast": "1" })], { type: "image/jpeg" })); }
+    try {
+      const roh = await dienstBinaer.get(`/api/player/${i.dataset.bild}/bild`, { t: Date.now() }, { "X-SignageCast": "1" });
+      const png = roh && roh[0] === 0x89 && roh[1] === 0x50;          // Direktmodus: PNG (grim ohne JPEG, seit 0.36)
+      i.src = URL.createObjectURL(new Blob([roh], { type: png ? "image/png" : "image/jpeg" }));
+    }
     catch (_) { i.remove(); }
   });
   const listeZeichnen = () => {

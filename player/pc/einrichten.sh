@@ -13,9 +13,8 @@ printf '[Login]\nNAutoVTs=0\nReserveVT=0\n' > /etc/systemd/logind.conf.d/signage
 systemctl mask ctrl-alt-del.target
 passwd -l root >/dev/null
 systemctl enable signagecast-player.service NetworkManager.service systemd-timesyncd.service
-# seatd: Gruppe video darf den Bildschirm nehmen (Benutzer signage ist darin)
-mkdir -p /etc/systemd/system/seatd.service.d
-printf '[Service]\nExecStart=\nExecStart=/usr/bin/seatd -g video\n' > /etc/systemd/system/seatd.service.d/signagecast.conf
+# seatd: Gruppe video darf den Bildschirm nehmen (Benutzer signage ist darin) – Debians Dienst startet schon mit „-g video“
+grep -q -- '-g video' /usr/lib/systemd/system/seatd.service
 systemctl enable seatd.service
 # Hotspot: jede Adresse zeigt auf den Player – Handys öffnen die Einrichtungsseite dann von selbst
 mkdir -p /etc/NetworkManager/dnsmasq-shared.d /etc/NetworkManager/conf.d

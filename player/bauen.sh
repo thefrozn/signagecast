@@ -52,7 +52,7 @@ apt-get update -q
 apt-get install -y -q --no-install-recommends mpv qrencode overlayroot iw rfkill unattended-upgrades
 # Direktmodus (seit 0.24): Chromium in cage (Wayland-Kiosk), seatd vergibt den Bildschirm ohne Anmeldung, grim macht
 # Bildschirmfotos, wlr-randr stellt Auflösung und Drehung ein, amixer die Lautstärke
-apt-get install -y -q --no-install-recommends cage seatd grim wlr-randr alsa-utils fonts-dejavu-core
+apt-get install -y -q --no-install-recommends cage seatd grim wlr-randr alsa-utils fonts-dejavu-core fonts-noto-color-emoji
 apt-get install -y -q --no-install-recommends chromium || apt-get install -y -q --no-install-recommends chromium-browser
 command -v chromium >/dev/null || command -v chromium-browser >/dev/null
 update-initramfs -u -k all
@@ -66,7 +66,8 @@ systemctl enable signagecast-player.service
 # seatd: Gruppe video darf den Bildschirm nehmen (Benutzer signage ist darin)
 mkdir -p /etc/systemd/system/seatd.service.d
 if [ -f /usr/lib/systemd/system/seatd.service ] || [ -f /lib/systemd/system/seatd.service ]; then
-  printf '[Service]\nExecStart=\nExecStart=/usr/bin/seatd -g video\n' > /etc/systemd/system/seatd.service.d/signagecast.conf
+  # Debian liefert /usr/sbin/seatd (bis 0.35 stand hier /usr/bin – seatd startete nie, der Agent repariert das zur Laufzeit)
+  printf '[Service]\nExecStart=\nExecStart=%s -g video\n' "$(command -v seatd)" > /etc/systemd/system/seatd.service.d/signagecast.conf
 else
   printf '[Unit]\nDescription=Seat management daemon\n\n[Service]\nType=simple\nExecStart=/usr/bin/seatd -g video\nRestart=always\nRestartSec=1\n\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/seatd.service
 fi

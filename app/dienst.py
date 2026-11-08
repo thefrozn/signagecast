@@ -916,7 +916,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
                 bericht = {}
             antwort = json.dumps(player_antwort(g, bericht, self.client_address[0])).encode()
             typ = "application/json"
-        elif pfad == "/player/bild" and roh[:2] == b"\xff\xd8":
+        elif pfad == "/player/bild" and (roh[:2] == b"\xff\xd8" or roh[:8] == b"\x89PNG\r\n\x1a\n"):   # PNG seit 0.36 (grim ohne JPEG)
             PL.datei_ablegen(g, ".jpg", roh)
             antwort, typ = b'{"ok": true}', "application/json"
         elif pfad == "/player/protokoll":
@@ -2391,7 +2391,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 roh = open(os.path.join(PL.ORDNER, m.group(1) + (".jpg" if m.group(2) == "bild" else ".log")), "rb").read()
             except OSError:
                 return self.antwort(404, {"ok": False})
-            return self.antwort(200, roh, "image/jpeg" if m.group(2) == "bild" else "text/plain; charset=utf-8")
+            typ = ("image/png" if roh[:4] == b"\x89PNG" else "image/jpeg") if m.group(2) == "bild" else "text/plain; charset=utf-8"
+            return self.antwort(200, roh, typ)
         if pfad == "/api/player/image":            # Image je Gerät als Datenstrom (.img.gz, ohne Länge, endet mit der Verbindung)
             kennung = (q.get("t") or [""])[0]
             e = PL.einmal.get(kennung)

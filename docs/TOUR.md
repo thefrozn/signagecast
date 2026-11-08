@@ -78,7 +78,7 @@ preset, tune and B-frames per TV. A change is tried briefly first; if it does no
 ![Encoding settings per TV](tour/05a-encoding.jpg)
 
 ### 8. Raspberry Pi as player (experimental)
-TVs → *Players (Raspberry Pi)*: a Pi at the TV plays the finished stream via HDMI – also on TVs without a usable
+TVs → *Players*: a Pi at the TV plays the finished stream via HDMI – also on TVs without a usable
 browser. Enter a name, pick the TV and the network (LAN or Wi-Fi), download a ready image and write it to an SD card;
 nothing to type on the Pi. Or download one image for many Pis: each shows a 6-digit code on the TV, which you enter
 here to pair it. The model choice says which Pi fits: 1 GB of memory is enough for the stream,
@@ -86,7 +86,8 @@ direct mode (the Pi shows the page itself) needs at least 2 GB, better 4 GB (sin
 here: online state, model with memory, IP, screen, video, temperature, buttons for
 screenshot, TV on/off (HDMI-CEC), restart and system update, and Wi-Fi changes with automatic return to the old network.
 The Pi in these pictures is simulated (real agent code) – the player has not been tested on real hardware yet
-([details](PLAYER.md)).
+([details](PLAYER.md)). Since 0.36 a PC (x86-64 with UEFI) can be a player too – it starts from a USB stick and
+shows the page itself – and a *browser device* is just a secret link for a smart TV or a kiosk browser.
 
 ![Player card of one Raspberry Pi](tour/05b-players.jpg)
 

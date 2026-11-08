@@ -18,7 +18,7 @@ that video, so the TV needs no app, no login and no updates.
 | Area | Pages | What you do there |
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
-| **TVs** | TVs · Players (Raspberry Pi) | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; Raspberry Pi players at the TV ([PLAYER.md](PLAYER.md)) |
+| **TVs** | TVs · Players | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)) |
 | **Content** | Layouts · Data sources · Media · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
 | **Live videos** | Streams · Rotation & quality · Search | Live cams, minutes per stream, daylight, minimum quality and strikes, categories for all TVs, nightly search |
 | **Settings** | General · Home Assistant · Notifications (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; admin password |
@@ -142,7 +142,7 @@ address by itself (start page or autostart of its browser).
 
 ### Play on a Raspberry Pi at the TV
 
-From 0.23 (experimental): **TVs → Players (Raspberry Pi)** creates a ready SD card image per screen (Wi-Fi included)
+From 0.23 (experimental): **TVs → Players** creates a ready SD card image per screen (Wi-Fi included)
 and manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
 [Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
 Since 0.33 a Pi that allows it opens a **terminal** (root shell in the browser) from its card – off by default,

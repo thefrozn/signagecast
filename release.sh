@@ -3,7 +3,7 @@
 #
 #   ./release.sh v0.14.0            prüfen, taggen, Paket bauen, signieren, hochladen, gegenprüfen
 #   ./release.sh v0.14.0 --trocken  alles prüfen und Paket bauen/signieren, aber nichts veröffentlichen
-#   ./release.sh v0.23.0 --player   nach der Action „Player-Image“: dessen .json signieren und hochladen
+#   ./release.sh v0.23.0 --player   nach der Action „Player-Image“: .json und SBOM von Pi- und PC-Image (seit 0.36) signieren
 #
 # Voraussetzungen: git, gh (angemeldet), minisign, python3 (+ python3-pyzipper für alle Tests), optional shellcheck.
 # Signaturschlüssel: $SIGNATUR_SCHLUESSEL oder ~/.config/signagecast-signatur/signagecast.key (nie im Repo).
@@ -23,24 +23,27 @@ if [ "$TROCKEN" = "--player" ]; then
   OEFFENTLICH=$(sed -n 's/^SCHLUESSEL=//p' werkzeug/aktualisieren.sh)
   P=$(mktemp -d)
   trap 'rm -rf "$P"' EXIT
-  M="signagecast-player-$TAG.json"
-  echo "== Warten auf das Player-Image ($M)"
-  for _ in $(seq 1 90); do gh release download "$TAG" -p "$M" -D "$P" --clobber >/dev/null 2>&1 && break; sleep 20; done
-  [ -s "$P/$M" ] || fehler "$M nicht im Release – läuft die Action „Player-Image“? (gh run list -w player.yml)"
-  python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["art"]=="signagecast-player-image" and m["version"]==sys.argv[2]' "$P/$M" "$V" \
-    || fehler "$M passt nicht zu $TAG"
-  minisign -Sqm "$P/$M" -s "$SCHLUESSEL_DATEI" -t "SignageCast Player $TAG"
-  minisign -Vqm "$P/$M" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel"
-  gh release upload "$TAG" "$P/$M.minisig" --clobber
-  echo "   ok: $M signiert"
-  # SBOM des Images (seit 0.30): Prüfsumme steht in der .json – erst prüfen, dann signieren
-  S="signagecast-player-$TAG.cdx.json"
-  gh release download "$TAG" -p "$S" -D "$P" --clobber >/dev/null 2>&1 || fehler "$S nicht im Release"
-  python3 -c 'import hashlib,json,sys; m=json.load(open(sys.argv[1])); assert m["sbom"]["sha256"]==hashlib.sha256(open(sys.argv[2],"rb").read()).hexdigest()' "$P/$M" "$P/$S" \
-    || fehler "$S passt nicht zur Prüfsumme in $M"
-  minisign -Sqm "$P/$S" -s "$SCHLUESSEL_DATEI" -t "SignageCast Player $TAG SBOM"
-  gh release upload "$TAG" "$P/$S.minisig" --clobber
-  echo "   ok: $S signiert"
+  # Pi-Image und (seit 0.36) PC-Image: je .json und SBOM signieren
+  for ART in player pc; do
+    M="signagecast-$ART-$TAG.json"
+    echo "== Warten auf das Image ($M)"
+    for _ in $(seq 1 90); do gh release download "$TAG" -p "$M" -D "$P" --clobber >/dev/null 2>&1 && break; sleep 20; done
+    [ -s "$P/$M" ] || fehler "$M nicht im Release – läuft die Action „Player-Image“? (gh run list -w player.yml)"
+    python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["art"]==sys.argv[3] and m["version"]==sys.argv[2]' "$P/$M" "$V" "signagecast-$ART-image" \
+      || fehler "$M passt nicht zu $TAG"
+    minisign -Sqm "$P/$M" -s "$SCHLUESSEL_DATEI" -t "SignageCast $([ $ART = pc ] && echo PC-Player || echo Player) $TAG"
+    minisign -Vqm "$P/$M" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel"
+    gh release upload "$TAG" "$P/$M.minisig" --clobber
+    echo "   ok: $M signiert"
+    # SBOM des Images (seit 0.30): Prüfsumme steht in der .json – erst prüfen, dann signieren
+    S="signagecast-$ART-$TAG.cdx.json"
+    gh release download "$TAG" -p "$S" -D "$P" --clobber >/dev/null 2>&1 || fehler "$S nicht im Release"
+    python3 -c 'import hashlib,json,sys; m=json.load(open(sys.argv[1])); assert m["sbom"]["sha256"]==hashlib.sha256(open(sys.argv[2],"rb").read()).hexdigest()' "$P/$M" "$P/$S" \
+      || fehler "$S passt nicht zur Prüfsumme in $M"
+    minisign -Sqm "$P/$S" -s "$SCHLUESSEL_DATEI" -t "SignageCast $ART $TAG SBOM"
+    gh release upload "$TAG" "$P/$S.minisig" --clobber
+    echo "   ok: $S signiert"
+  done
   exit 0
 fi
 

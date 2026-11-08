@@ -557,8 +557,32 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "{art}:CARD={karte},DEV={dev}"; co
             return None
         return karte
 
+    @staticmethod
+    def seatd_sicherstellen():
+        """seatd muss laufen (vergibt den Bildschirm an cage). Images bis 0.35 haben einen Drop-in mit /usr/bin/seatd – Debian
+        liefert /usr/sbin/seatd, der Dienst startet dann nie. Reparatur zur Laufzeit unter /run (auch mit Schreibschutz)."""
+        if os.path.exists("/run/seatd.sock") or not shutil.which("seatd"):
+            return
+        d = "/run/systemd/system/seatd.service.d"
+        try:
+            os.makedirs(d, exist_ok=True)
+            with open(d + "/zz-signagecast.conf", "w") as f:
+                f.write(f"[Service]\nExecStart=\nExecStart={shutil.which('seatd')} -g video\n")
+        except OSError:
+            return
+        lauf("systemctl", "daemon-reload")
+        lauf("systemctl", "reset-failed", "seatd.service")
+        lauf("systemctl", "restart", "seatd.service")
+        for _ in range(20):
+            if os.path.exists("/run/seatd.sock"):
+                log("seatd repariert und gestartet")
+                return
+            time.sleep(0.1)
+        log("seatd startet nicht")
+
     def starten(self, url, optionen, sprache):
         self.beenden()
+        self.seatd_sicherstellen()
         self.gestartet, self.url, self.optionen, self.lautstaerke = time.time(), url, dict(optionen), None
         os.makedirs(LAUF, exist_ok=True)
         try:
@@ -582,8 +606,12 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "{art}:CARD={karte},DEV={dev}"; co
         args.append(url)
         uid, gid = benutzer_ids()
         try:
+            # cage selbst ohne WAYLAND_DISPLAY: sonst sucht wlroots eine vorhandene Wayland-Sitzung, statt den Bildschirm
+            # zu nehmen („Could not connect to remote display“); ohne Tastatur/Maus trotzdem starten
+            umg = {k: v for k, v in self._umgebung().items() if k != "WAYLAND_DISPLAY"}
+            umg.update(WLR_BACKENDS="drm,libinput", WLR_LIBINPUT_NO_DEVICES="1")
             self.proc = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                                         user=uid, group=gid, extra_groups=gruppen(), env=self._umgebung(), start_new_session=True)
+                                         user=uid, group=gid, extra_groups=gruppen(), env=umg, start_new_session=True)
         except (OSError, KeyError, TypeError) as f:
             log("Browser startet nicht:", f)
             self.proc = None
@@ -596,6 +624,8 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "{art}:CARD={karte},DEV={dev}"; co
     def _fehlerausgabe(self, proc):
         for z in proc.stderr:
             z = z.decode(errors="replace").strip()
+            if "dbus/" in z or "WebGL1 blocklisted" in z:      # ohne Sitzungsbus/GPU unvermeidlich, nur Lärm im Protokoll
+                continue
             if z and ("ERROR" in z or "FATAL" in z or z.startswith("[cage]") or "seat" in z.lower()):
                 log("Browser:", z[:300])
 
@@ -636,8 +666,12 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "{art}:CARD={karte},DEV={dev}"; co
         self.proc, self.gestartet = None, 0
 
     def bildschirmfoto(self):
+        """JPEG – Debians grim kann aber kein JPEG („jpeg support disabled“), dann PNG (seit 1.5; Server ab 0.36)."""
         code, roh = self._als_signage("grim", "-t", "jpeg", "-q", "70", "-", zeit=20)
-        return roh if code == 0 and roh[:2] == b"\xff\xd8" else None
+        if code == 0 and roh[:2] == b"\xff\xd8":
+            return roh
+        code, roh = self._als_signage("grim", "-t", "png", "-l", "3", "-", zeit=20)
+        return roh if code == 0 and roh[:8] == b"\x89PNG\r\n\x1a\n" else None
 
 
 def benutzer_ids():

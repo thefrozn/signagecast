@@ -27,7 +27,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 
 ## Step by step
 
-1. Admin → **TVs → Players (Raspberry Pi)** → **Download player image** (once, about 850 MB; checked with the project's
+1. Admin → **TVs → Players** → **Download player image** (once, about 850 MB; checked with the project's
    signature).
 2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
@@ -46,10 +46,10 @@ networks again – after a power cut the router is often slower than the Pi.
 
 Instead of one image per screen you can flash **the same image onto any number of cards**:
 
-1. Under **Pair a Pi**, choose the network and click **Download image for several Pis**
+1. Under **Pair a player**, choose the network and click **Download image for several devices**
    (`signagecast-player-kopplung.img.gz` – server address and Wi-Fi, but no key).
 2. Flash it as above, Pi to the TV, power on. After the start the TV shows **“Code: 123 456”**.
-3. In the admin under **Pair a Pi** enter the code, a name and the TV → **Pair**. A few seconds later the Pi shows the
+3. In the admin under **Pair a player** enter the code, a name and the TV → **Pair**. A few seconds later the Pi shows the
    picture; from then on it is an ordinary player (settings, buttons, *Download image again*).
 
 The admin shows how many Pis are currently showing a code (model and IP, never the code). A code is valid for 10
@@ -117,6 +117,55 @@ terminal in Cockpit – `top`, `nano`, tab completion, copy and paste, the size 
 - Without new image: Pis update their agent from the server by themselves; switch remote maintenance on via the setup
   page or write a new image with the box ticked.
 
+## PC as player (since 0.36, experimental)
+
+*Tested in a UEFI virtual machine with Secure Boot (image build, boot, direct mode, stream, pairing, USB data partition,
+remote maintenance); not yet on many real PCs. Feedback helps.*
+
+An ordinary **PC, mini PC or thin client** (x86-64) becomes a player: it starts from a **USB stick** without touching
+its disk and shows the TV page itself in **direct mode** (default for PCs) – sharp, without delay, and the server
+encodes nothing for it. Everything else works as with a Pi: settings, screenshot, remote maintenance, pairing code,
+fallback to the stream.
+
+| | |
+|---|---|
+| Computer | 64-bit with **UEFI** (roughly 2013 or newer). **Secure Boot may stay on** (Debian's signed shim, GRUB and kernel). No legacy BIOS. |
+| Memory | **at least 4 GB** |
+| Graphics | **Intel or AMD**: videos decoded in hardware (VAAPI). NVIDIA works, videos then on the CPU. |
+| USB stick | 4 GB or more |
+| Network | LAN cable (nothing to set up) or Wi-Fi (hotspot setup as with the Pi, if the Wi-Fi card can do it) |
+
+1. Admin → **TVs → Players** → **PC image: Download** (once, about 750 MB; checked with the project's signature).
+2. **Add player** → model **PC** → choose the format:
+   - **USB stick (.img.gz)** – write with balenaEtcher, Raspberry Pi Imager (*Use custom*) or Rufus (choose *DD image*).
+     The PC keeps pairing, Wi-Fi and player updates on the stick.
+   - **ISO (.iso)** – for Ventoy, CD or a virtual machine. Same system; changes made on the device only last until the
+     next restart (the settings come from the server anyway).
+3. Plug in the stick, connect the screen, start from USB (boot menu usually F12, F11, F8 or Esc). First start 1–2 min.
+
+**One image for several PCs:** *Pair a player* → *For: PC* – as with the Pi, every PC shows a code.
+
+**Differences to the Pi:** the system is a **live system** – always write-protected, power cuts do no harm. There are
+**no system updates**: new software (also browser security fixes) comes with a new image – *Download image again*, rewrite
+the stick. The player software itself updates from your server as usual. Usually **no HDMI-CEC** (TV on/off). The
+picture can go to any connector (HDMI, DisplayPort, DVI, VGA); sound goes to the HDMI/DisplayPort output with a screen.
+
+**How it is built:** Debian 13 (amd64) with live-boot, built by GitHub Actions with every release
+(`player/pc/bauen.sh`, SBOM next to it). One file is both an ISO and a USB image: ISO9660 with the system and the
+placeholder `signagecast.json`, partition 2 the EFI system partition, partition 3 a small FAT partition `SCDATEN` for
+the player's data. No desktop, no SSH, no login on the console.
+
+## Browser device – link only (since 0.36)
+
+For devices that already have a browser – smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk)
+or just a browser in full screen. *Add player* → model **Browser device** → *Create link*. The admin shows a secret link
+`http://<server>:8890/anzeige/<key>` that shows exactly this TV – set it as the start page.
+
+- “Online” means: the page fetches its data (every 15 s). A notification comes after 5 minutes without (as with the Pi).
+- No image, no screenshot, no fallback to the stream, no remote maintenance.
+- The link only opens this TV's page, never the admin. Treat it like a password; port 8890 is unencrypted HTTP – only
+  in your own network. *Create new link* makes the old one invalid immediately, *Remove* as well.
+
 ## How it works (short)
 
 - The image is the official **Raspberry Pi OS Lite (64 bit)** plus `mpv`, `qrencode`, `overlayroot`, for direct mode
@@ -175,7 +224,7 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 
 ## Schritt für Schritt
 
-1. Verwaltung → **Fernseher → Player (Raspberry Pi)** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
+1. Verwaltung → **Fernseher → Player** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
    des Projekts geprüft).
 2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
    oder **WLAN** (Name und Passwort – oder ein gespeichertes). **Image erstellen und herunterladen** klicken.
@@ -194,10 +243,10 @@ der Pi die bekannten WLANs erneut – nach einem Stromausfall ist der Router oft
 
 Statt eines Images je Bildschirm kannst du **dasselbe Image auf beliebig viele Karten** schreiben:
 
-1. Unter **Pi koppeln** das Netzwerk wählen und **Image für mehrere Pis herunterladen** klicken
+1. Unter **Player koppeln** das Netzwerk wählen und **Image für mehrere Geräte herunterladen** klicken
    (`signagecast-player-kopplung.img.gz` – Server-Adresse und WLAN, aber kein Schlüssel).
 2. Wie oben flashen, Pi an den Fernseher, Strom an. Nach dem Start zeigt der Fernseher **„Code: 123 456“**.
-3. In der Verwaltung unter **Pi koppeln** Code, Name und Fernseher eingeben → **Koppeln**. Wenige Sekunden später zeigt
+3. In der Verwaltung unter **Player koppeln** Code, Name und Fernseher eingeben → **Koppeln**. Wenige Sekunden später zeigt
    der Pi das Bild; danach ist er ein ganz normaler Player (Einstellungen, Knöpfe, *Image erneut herunterladen*).
 
 Die Verwaltung zeigt, wie viele Pis gerade einen Code anzeigen (Modell und IP, nie den Code). Ein Code gilt 10 Minuten,
@@ -266,6 +315,57 @@ Terminal in Cockpit – `top`, `nano`, Tab-Ergänzung, Kopieren und Einfügen, d
   vorher in den Einstellungen des Pi ausschalten.
 - Ohne neues Image: Die Pis holen sich den neuen Agent selbst vom Server; Fernwartung dann über die Einrichtungsseite
   einschalten oder ein neues Image mit Haken schreiben.
+
+## PC als Player (seit 0.36, experimentell)
+
+*Getestet in einer virtuellen Maschine mit UEFI und Secure Boot (Image-Bau, Start, Direktmodus, Stream, Kopplung,
+Datenpartition auf dem Stick, Fernwartung); noch nicht auf vielen echten PCs. Rückmeldungen helfen.*
+
+Ein normaler **PC, Mini-PC oder Thin Client** (x86-64) wird zum Player: Er startet vom **USB-Stick**, ohne seine
+Festplatte anzufassen, und zeigt die TV-Seite im **Direktmodus** selbst (Standard bei PCs) – gestochen scharf, ohne
+Verzögerung, und der Server kodiert für ihn nichts. Alles andere wie beim Pi: Einstellungen, Bildschirmfoto,
+Fernwartung, Kopplungscode, Rückfall auf den Stream.
+
+| | |
+|---|---|
+| Rechner | 64 Bit mit **UEFI** (etwa ab 2013). **Secure Boot darf an bleiben** (signierter shim, GRUB und Kernel von Debian). Kein altes BIOS. |
+| Arbeitsspeicher | **mindestens 4 GB** |
+| Grafik | **Intel oder AMD**: Videos per Hardware (VAAPI). NVIDIA geht, Videos dann per CPU. |
+| USB-Stick | ab 4 GB |
+| Netz | LAN-Kabel (nichts einzurichten) oder WLAN (Hotspot-Einrichtung wie beim Pi, wenn die WLAN-Karte das kann) |
+
+1. Verwaltung → **Fernseher → Player** → **PC-Image laden** (einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
+2. **Player hinzufügen** → Modell **PC** → Format wählen:
+   - **USB-Stick (.img.gz)** – mit balenaEtcher, Raspberry Pi Imager („Eigenes Image“) oder Rufus („DD-Image“) schreiben.
+     Der PC merkt sich Kopplung, WLAN und Updates des Players auf dem Stick.
+   - **ISO (.iso)** – für Ventoy, CD oder eine virtuelle Maschine. Dasselbe System; am Gerät Geändertes gilt nur bis
+     zum Neustart (die Einstellungen kommen ohnehin vom Server).
+3. Stick einstecken, Bildschirm anschließen, vom USB-Stick starten (Startmenü meist F12, F11, F8 oder Esc). Erster Start 1–2 min.
+
+**Ein Image für mehrere PCs:** *Player koppeln* → *Für: PC* – wie beim Pi zeigt jeder PC einen Code.
+
+**Unterschiede zum Pi:** Das System ist ein **Live-System** – immer schreibgeschützt, Stromausfälle schaden nicht. Es
+gibt **keine Systemupdates**: neue Software (auch Sicherheitsupdates des Browsers) kommt mit einem neuen Image –
+*Image erneut herunterladen*, Stick neu beschreiben. Die Player-Software selbst aktualisiert sich wie gewohnt vom Server.
+Meist **kein HDMI-CEC** (TV ein/aus). Das Bild geht an jeden Anschluss (HDMI, DisplayPort, DVI, VGA), der Ton an den
+HDMI-/DisplayPort-Ausgang mit Bildschirm.
+
+**Aufbau:** Debian 13 (amd64) mit live-boot, gebaut von GitHub Actions zu jedem Release (`player/pc/bauen.sh`, SBOM
+daneben). Eine Datei ist ISO und USB-Image zugleich: ISO9660 mit dem System und dem Platzhalter `signagecast.json`,
+Partition 2 die EFI-Systempartition, Partition 3 eine kleine FAT-Partition `SCDATEN` für die Daten des Players. Kein
+Desktop, kein SSH, keine Anmeldung an der Konsole.
+
+## Browser-Gerät – nur ein Link (seit 0.36)
+
+Für Geräte, die schon einen Browser haben – Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus
+Kiosk) oder einfach ein Browser im Vollbild. *Player hinzufügen* → Modell **Browser-Gerät** → *Link erstellen*. Die
+Verwaltung zeigt einen geheimen Link `http://<Server>:8890/anzeige/<Schlüssel>`, der genau diesen Fernseher zeigt –
+als Startseite eintragen.
+
+- „Online“ heißt: Die Seite holt ihre Daten (alle 15 s). Nach 5 Minuten ohne kommt eine Benachrichtigung (wie beim Pi).
+- Kein Image, kein Bildschirmfoto, kein Rückfall auf den Stream, keine Fernwartung.
+- Der Link öffnet nur die Seite dieses Fernsehers, nie die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist
+  unverschlüsseltes HTTP – nur im eigenen Netz. *Neuen Link erzeugen* macht den alten sofort ungültig, *Entfernen* ebenso.
 
 ## Technik (kurz)
 

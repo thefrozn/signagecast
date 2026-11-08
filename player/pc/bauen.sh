@@ -32,7 +32,7 @@ echo "== Debian 13 mit Player"
 PAKETE="linux-image-amd64 live-boot systemd-sysv systemd-timesyncd udev dbus kmod iproute2 iputils-ping procps less nano
   tzdata ca-certificates python3 dosfstools util-linux pciutils usbutils zstd
   network-manager dnsmasq-base wpasupplicant iw rfkill wireless-regdb
-  mpv qrencode cage seatd grim wlr-randr alsa-utils fonts-dejavu-core chromium
+  mpv qrencode cage seatd grim wlr-randr alsa-utils fonts-dejavu-core fonts-noto-color-emoji chromium
   libgl1-mesa-dri libegl1 va-driver-all intel-media-va-driver mesa-va-drivers
   firmware-linux-free firmware-misc-nonfree firmware-intel-graphics firmware-amd-graphics firmware-iwlwifi
   firmware-realtek firmware-atheros firmware-brcm80211 firmware-mediatek firmware-intel-sound firmware-sof-signed
