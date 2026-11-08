@@ -2,7 +2,7 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.33 (player card 0.34) with the six areas Overview, TVs, Content, Live videos, Settings and System.
+0.33 (player card 0.34, overview 0.35) with the six areas Overview, TVs, Content, Live videos, Settings and System.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 

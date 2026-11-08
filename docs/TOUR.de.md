@@ -2,7 +2,7 @@
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
-angebunden). Die Verwaltung zeigt Version 0.33 (Player-Karte 0.34) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
+angebunden). Die Verwaltung zeigt Version 0.33 (Player-Karte 0.34, Übersicht 0.35) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
 Einstellungen und System.
 
 **🇬🇧 [English version](TOUR.md)**
