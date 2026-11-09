@@ -2,7 +2,7 @@
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
-angebunden). Die Verwaltung zeigt Version 0.33 (Übersicht 0.35, Player 0.36) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
+angebunden). Die Verwaltung zeigt Version 0.33 (Übersicht 0.35, Player 0.36, Kategorien 0.37) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
 Einstellungen und System.
 
 **🇬🇧 [English version](TOUR.md)**
@@ -73,7 +73,9 @@ Jeder Fernseher hat eine eigene Adresse und eine Karte in drei Teilen: **Anzeige
 anderem Layout oder schwarz zu bestimmten Zeiten, Layout-Karussell, Ein- und Ausschalten über Home Assistant),
 **Live-Video** (an/aus, was das Videofenster zeigt, Kategorien) und **Ton** (Radio oder Originalton der Kameras,
 Lautstärke). Unter *Videostream*: Ausgabe Full HD (Standard) oder 4K, die **Aufnahmegröße**, in der der Browser zeichnet
-(720p spart CPU, 1440p ist schärfer), Bitrate und Codec.
+(720p spart CPU, 1440p ist schärfer), Bitrate und Codec. Seit 0.37 zeigt *Über HA schalten* außerdem, ob der Fernseher
+laut Home Assistant an oder aus ist, und kann nach dem Einschalten eine Quelle wählen (z. B. HDMI 2) und die TV-Seite
+öffnen (LG webOS, Android TV / Fire TV oder ein eigener HA-Dienst).
 
 ![Fernseher-Einstellungen](tour/de/05-tvs.jpg)
 
@@ -169,13 +171,18 @@ angekündigt wird. Lieblinge schützen, Unerwünschtes ablehnen.
 
 ![Streamliste mit Zuständen und Filtern](tour/de/09-streams.jpg)
 
-### 14. Live-Videos – Rotation & Qualität
-Minuten je Stream, nur Streams, wo vor Ort Tag ist, Mindest-Sonnenhöhe; unter *Erweitert* die Mindestqualität
-(360p … 1080p) und die Strike-Regeln. Die Kategorien sind in **Tiere** und **Weitere Themen** gegliedert (seit 0.32:
-Städte & Plätze, Strände & Küsten, Berge & Ski, Häfen & Schiffe, Flughäfen & Flugzeuge, Züge & Bahn, Weltraum & Erde,
-Naturschauspiele). Kategorien, die ein Update neu bringt, starten auf bestehenden Installationen ausgeschaltet.
+### 14. Live-Videos – Kategorien, Rotation & Qualität
+**Kategorien** (seit 0.37 eine eigene Seite) sind in **Tiere** und **Weitere Themen** gegliedert (Städte & Plätze,
+Strände & Küsten, Berge & Ski, Häfen & Schiffe, Flughäfen & Flugzeuge, Züge & Bahn, Weltraum & Erde, Naturschauspiele).
+Jede lässt sich bearbeiten: Name, Gruppe, bis zu 6 eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen,
+„Tag/Nacht egal“, ein/aus für alle Fernseher oder je Fernseher – mit der Zahl ihrer Streams. Gefundene Tier-Streams
+landen in der ersten Kategorie, deren Wörter passen. **Neue Kategorie** legt eigene an (z. B. Leuchttürme) mit eigener
+nächtlicher Suche; eingebaute lassen sich auf den Standard zurücksetzen.
 
-![Rotation, Qualität und Kategorien](tour/de/09a-rotation-quality.jpg)
+![Kategorien](tour/de/09a-categories.jpg)
+
+*Rotation & Qualität*: Minuten je Stream, nur Streams, wo vor Ort Tag ist, Mindest-Sonnenhöhe; unter *Erweitert* die
+Mindestqualität (360p … 1080p) und die Strike-Regeln.
 
 ### 15. Radio
 Inhalte → Radio: eigene Sender (MP3/AAC, auch .m3u/.pls), Vorschläge für deinen Standort von radio-browser.info und ein

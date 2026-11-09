@@ -10,7 +10,7 @@
 - **Found animal streams are sorted:** instead of all landing in *Newly found* they go to the first category whose
   words match the title (bears, birds, sea …). Existing finds are sorted on the next search or when categories are
   saved; a category set by hand stays. Settings and backups carry the categories; streams of a missing category go to
-  *Newly found*.
+  *Newly found*. Right after the update the service sorts the existing finds once.
 - **Home Assistant: TV state, source and TV page after switching on** – per TV under *Switch via HA*:
   - **State:** SignageCast asks HA once a minute whether the TV is on, off or unreachable (and which source it shows)
     and shows it on the TV card and in the overview.
@@ -20,6 +20,7 @@
     “Android TV” with ADB) or your own HA service with `{url}` / `{entity}` in its data (e.g. a script for Samsung).
   - After switching on (schedule, emergency screen or test button) SignageCast waits up to 90 s until the TV is ready;
     “Run now (test)” runs it immediately, the last result is shown on the card.
+- **Tour:** chapter 14 shows the new categories page; chapter 7 mentions TV state, source and TV page via HA.
 - Fix: found streams whose title starts with “LIVE – …” got an empty name.
 
 ## v0.36.2 (2026-11-09)

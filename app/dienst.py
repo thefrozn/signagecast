@@ -2969,6 +2969,12 @@ def main():
     os.makedirs(DATEN, exist_ok=True)
     render_schreiben(einst())
     zeitzone_setzen()
+    try:
+        n = streams.einsortieren()                # seit 0.37: nach dem Update alte Funde gleich in ihre Kategorien
+        if n:
+            print(f"Streams einsortiert: {n}", flush=True)
+    except Exception as ex:
+        print("Einsortieren:", ex, flush=True)
 
     def beenden(*_):
         # Verlauf (Diagramme) beim Stoppen/Update sichern – sonst fehlen bis zu 5 min Werte

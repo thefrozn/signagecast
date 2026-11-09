@@ -2,7 +2,7 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.33 (overview 0.35, players 0.36) with the six areas Overview, TVs, Content, Live videos, Settings and System.
+0.33 (overview 0.35, players 0.36, categories 0.37) with the six areas Overview, TVs, Content, Live videos, Settings and System.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
@@ -68,6 +68,8 @@ Each TV has its own address and a card in three parts: **Display** (layout, opti
 black at certain times, layout carousel, switching the TV via Home Assistant), **Live video** (on/off, what the video
 window shows, categories) and **Sound** (radio or the original sound of the cams, volume). Under *Video stream*: output
 Full HD (default) or 4K, the **capture size** the browser draws in (720p saves CPU, 1440p is sharper), bitrate and codec.
+Since 0.37 *Switch via HA* also shows whether the TV is on or off according to Home Assistant and can, after switching
+on, select a source (e.g. HDMI 2) and open the TV page (LG webOS, Android TV / Fire TV or an own HA service).
 
 ![TV settings](tour/05-tvs.jpg)
 
@@ -161,13 +163,18 @@ favourites, reject unwanted ones.
 
 ![Stream list with states and filters](tour/09-streams.jpg)
 
-### 14. Live videos – rotation & quality
-Minutes per stream, only streams where it is daytime, minimum sun elevation; under *Advanced* the minimum quality
-(360p … 1080p) and the strike rules. The categories are grouped into **Animals** and **More topics** (since 0.32:
-cities & squares, beaches & coasts, mountains & ski, harbours & ships, airports & planes, trains & railways, space &
-Earth, natural wonders). Categories added by an update start switched off on existing installations.
+### 14. Live videos – categories, rotation & quality
+**Categories** (since 0.37 an own page) are grouped into **Animals** and **More topics** (cities & squares, beaches &
+coasts, mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders). Each
+one can be edited: name, group, up to 6 own YouTube search terms, words that must appear in the title, “ignore
+day/night”, on/off for all TVs or per TV – with the number of its streams. Found animal streams are sorted into the
+first category whose words match. **New category** adds your own (e.g. lighthouses) with its own nightly search;
+built-in ones can be reset to default.
 
-![Rotation, quality and categories](tour/09a-rotation-quality.jpg)
+![Categories](tour/09a-categories.jpg)
+
+*Rotation & quality*: minutes per stream, only streams where it is daytime, minimum sun elevation; under *Advanced*
+the minimum quality (360p … 1080p) and the strike rules.
 
 ### 15. Radio
 Content → Radio: your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info,
