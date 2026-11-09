@@ -11,16 +11,124 @@ import sicherung as S
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
 TIER_KATEGORIEN = ["safari", "affen", "meer", "vogel", "baer", "wald", "zoo", "neu"]
-# Seit 0.32: Themen ohne Tiere – eigene Suche je Thema (streams.THEMEN). Neue Kategorien sind bei bestehenden
+# Seit 0.32: Themen ohne Tiere – eigene Suche je Thema. Neue eingebaute Kategorien sind bei bestehenden
 # Installationen zunächst aus (siehe kategorien_bekannt), bei neuen an.
 THEMEN_KATEGORIEN = ["stadt", "strand", "berge", "hafen", "flug", "bahn", "weltraum", "natur"]
-KATEGORIEN = TIER_KATEGORIEN + THEMEN_KATEGORIEN
+KATEGORIEN = TIER_KATEGORIEN + THEMEN_KATEGORIEN          # die eingebauten
+KAT_MAX = 40                                              # höchstens so viele Kategorien
+KAT_BEGRIFFE_MAX = 6                                      # Suchbegriffe je Kategorie (jeder ist eine Anfrage bei YouTube)
+
+
+def _kat(gruppe, begriffe=(), woerter="", ohne_tag=False, ohne_tag_woerter=""):
+    return {"name": "", "gruppe": gruppe, "begriffe": list(begriffe), "woerter": [w for w in woerter.split("|") if w],
+            "ohne_tag": ohne_tag, "ohne_tag_woerter": [w for w in ohne_tag_woerter.split("|") if w]}
+
+
+# Seit 0.37 editierbar (Seite „Kategorien“). name leer = übersetzter Standardname der Verwaltung.
+# begriffe: eigene YouTube-Suche dieser Kategorie. woerter: reguläre Ausdrücke, einer muss im Titel stehen – bei Tieren
+# sortieren sie auch die Funde der allgemeinen Tiersuche ein (erste passende Kategorie gewinnt, sonst „neu“).
+# ohne_tag: Tag/Nacht am Ort gilt nicht (ganze Kategorie); ohne_tag_woerter: nur für Streams mit diesen Wörtern im Titel.
+KATEGORIEN_STANDARD = {
+    "safari": _kat("tiere", woerter=r"elephant|elefant|\blions?\b|löwe|giraffe|zebra|rhino|nashorn|hippo|leopard|cheetah|gepard|"
+                                    r"buffalo|safari|waterhole|wasserloch|africam|kruger|savann|serengeti|mara\b|tsavo|sabi|big ?5|big five|"
+                                    r"botswana|namibia|hwange|chobe|okavango|etosha"),
+    "affen": _kat("tiere", woerter=r"gorilla|chimp|bonobo|orangutan|orang-utan|monkey|\bapes?\b|\baffe|baboon|pavian|lemur"),
+    "meer": _kat("tiere", woerter=r"underwater|unterwasser|reef|riff|coral|koralle|aquarium|jelly|qualle|shark|\bhai|whale|\bwal\b|"
+                                  r"orca|dolphin|delfin|\bseals?\b|sea lion|robbe|seehund|otter|manatee|turtle|schildkröte|kelp|"
+                                  r"ocean|penguin|pinguin"),
+    "vogel": _kat("tiere", woerter=r"bird|vogel|vögel|eagle|adler|\bowl\b|eule|osprey|falcon|falke|hawk|stork|storch|\bnest|"
+                                   r"feeder|hummingbird|toucan|macaw|flamingo|heron|reiher|puffin"),
+    "baer": _kat("tiere", woerter=r"\bbears?\b|bär|grizzly|polar|eisbär|wolf|wolves|wölfe"),
+    "wald": _kat("tiere", woerter=r"forest|\bwald|deer|\bhirsch|\breh\b|moose|\belch|\belk\b|bison|\bfox|fuchs|badger|dachs|"
+                                  r"beaver|biber|raccoon"),
+    "zoo": _kat("tiere", woerter=r"\bzoo|tierpark|panda|koala|kangaroo|känguru|capybara|sloth|faultier|meerkat|erdmännchen|"
+                                 r"alligator|crocodile|krokodil"),
+    "neu": _kat("tiere"),
+    "stadt": _kat("themen", ["city live cam", "times square live cam", "shibuya crossing live cam", "old town square live cam",
+                             "piazza live webcam", "city skyline live cam"],
+                  r"city|square|plaza|piazza|platz|crossing|downtown|street|skyline|old town|altstadt|harbourfront"),
+    "strand": _kat("themen", ["beach live cam", "surf live cam", "island beach live cam", "pier live cam"],
+                   r"beach|strand|surf|shore|coast|küste|playa|pier|lagoon|bay\b"),
+    "berge": _kat("themen", ["mountain live cam", "alps live webcam", "ski resort live cam", "summit live cam"],
+                  r"mountain|alps|alpen|\bberg|ski|summit|gipfel|peak|glacier|gletscher|valley|zugspitze|matterhorn|jungfrau"),
+    "hafen": _kat("themen", ["harbor live cam ships", "port live cam ship traffic", "panama canal live cam", "ferry live cam"],
+                  r"\bport\b|harbou?r|hafen|ship|schiff|canal|kanal|vessel|ferry|fähre|cruise|container|lock\b|schleuse"),
+    "flug": _kat("themen", ["airport live cam", "plane spotting live", "runway live cam"],
+                 r"airport|flughafen|plane|runway|landing|spotting|aviation|aircraft|flugzeug"),
+    "bahn": _kat("themen", ["train live cam", "railway live cam", "railcam live"],
+                 r"train|railway|railroad|\brail|bahn|\bzug\b|railcam|locomotive|station"),
+    "weltraum": _kat("themen", ["iss live earth from space", "nasa live stream earth", "space station live"],
+                     r"\biss\b|space station|nasa|earth from space|from space|weltraum|orbit", ohne_tag=True),
+    "natur": _kat("themen", ["volcano live cam", "northern lights live cam", "waterfall live cam", "niagara falls live cam",
+                             "geyser live cam"],
+                  r"volcano|vulkan|aurora|northern lights|nordlicht|waterfall|wasserfall|falls\b|geyser|geysir|eruption",
+                  ohne_tag_woerter=r"aurora|northern lights|nordlicht"),
+}
+
+
+def kategorien_standard():
+    return [dict(copy.deepcopy(KATEGORIEN_STANDARD[k]), id=k, eingebaut=True, standard=True) for k in KATEGORIEN]
+
+
+def _muster_liste(liste, n, laenge=80):
+    aus = [_text(x, laenge) for x in (liste or []) if str(x).strip()][:n]
+    for x in aus:
+        try:
+            re.compile(x)
+        except re.error:
+            raise Fehler("e_suchmuster", x=repr(x))
+    return aus
+
+
+def pruefe_kategorien(liste):
+    """Kategorien (seit 0.37): eingebaute behalten ihre Kennung und lassen sich nicht löschen (fehlende kommen an ihrer
+    Stelle wieder dazu), eigene bekommen eine Kennung aus der Verwaltung. „neu“ hat keine Suche und keine Wörter."""
+    if not isinstance(liste, list):
+        raise Fehler("e_wert", w="kategorien")
+    aus, ids = [], set()
+    for k in liste[:KAT_MAX + len(KATEGORIEN)]:
+        if not isinstance(k, dict):
+            continue
+        kid = _text(k.get("id", ""), 12, r"[a-z][a-z0-9]{1,11}")
+        if kid in ids:
+            raise Fehler("e_kat_doppelt", id=kid)
+        ids.add(kid)
+        eingebaut = kid in KATEGORIEN_STANDARD
+        name = _text(k.get("name", ""), 40).strip()
+        if not eingebaut and not name:
+            raise Fehler("e_kat_name")
+        begriffe = [_text(b, 80).strip() for b in (k.get("begriffe") or []) if str(b).strip()]
+        if len(begriffe) > KAT_BEGRIFFE_MAX:
+            raise Fehler("e_kat_begriffe", name=name or kid, n=KAT_BEGRIFFE_MAX)
+        x = {"id": kid, "eingebaut": eingebaut, "name": name,
+             "gruppe": k.get("gruppe") if k.get("gruppe") in ("tiere", "themen") else "tiere",
+             "begriffe": begriffe,
+             "woerter": _muster_liste(k.get("woerter"), 80),
+             "ohne_tag": bool(k.get("ohne_tag", False)),
+             "ohne_tag_woerter": _muster_liste(k.get("ohne_tag_woerter"), 20)}
+        if kid == "neu":
+            x.update(gruppe="tiere", begriffe=[], woerter=[], ohne_tag=False, ohne_tag_woerter=[])
+        if eingebaut:
+            # standard: unverändert gespeichert -> nach Updates gilt der jeweils aktuelle Standard (verbesserte Wörter
+            # kommen an). Wer etwas ändert, behält seine Fassung.
+            std = KATEGORIEN_STANDARD[kid]
+            if k.get("standard") and any(x[f] != std[f] for f in std):
+                x.update(copy.deepcopy(std))
+            x["standard"] = all(x[f] == std[f] for f in std)
+        aus.append(x)
+    for i, kid in enumerate(KATEGORIEN):                   # eingebaute, die fehlen, an ihrer Stelle ergänzen
+        if kid not in ids:
+            aus.insert(min(i, len(aus)), dict(copy.deepcopy(KATEGORIEN_STANDARD[kid]), id=kid, eingebaut=True, standard=True))
+    if len(aus) > KAT_MAX:
+        raise Fehler("e_kat_max", n=KAT_MAX)
+    return aus
 AUFNAHMEN = (720, 1080, 1440)             # Höhe der Aufnahme (Chromium zeichnet in 16:9)
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
 
 STANDARD = {
     "sprache": "",                        # de | en – TV-Seite und Verwaltung; leer = beim ersten Öffnen der Verwaltung aus der Browsersprache
     "ha": {"url": "http://homeassistant.local:8123"},
+    "kategorien": [],                     # seit 0.37 editierbar; leer = eingebaute (pruefen ergänzt sie)
     "standort": {"breite": 52.52, "laenge": 13.40, "name": ""},
     # Jeder Fernseher ist eine eigene Ausgabe mit eigener Adresse http://<IP>:8888/<id> und eigener Render-Kette
     "fernseher": [
@@ -214,6 +322,8 @@ def pruefen(e):
         raise Fehler("e_objekt")
     if "sprache" in e:
         s["sprache"] = e["sprache"] if e["sprache"] in ("de", "en", "") else ""
+    s["kategorien"] = pruefe_kategorien(e.get("kategorien") or [])
+    kat_ids = {k["id"] for k in s["kategorien"]}
     ha = e.get("ha", {})
     if "url" in ha:
         s["ha"]["url"] = _text(ha["url"], 200, r"https?://[\w.\-]+(:\d{1,5})?/?").rstrip("/")
@@ -260,7 +370,7 @@ def pruefen(e):
             liste.append({"id": tid, "name": _text(t.get("name", tid), 40) or tid, "video": bool(t.get("video", True)),
                           "ton": ton, "radio_sender": _text(t.get("radio_sender", ""), 12, r"[a-z0-9]*"),
                           "lautstaerke": _zahl(t.get("lautstaerke", 70), 0, 100, int),
-                          "kategorien_aus": [k for k in t.get("kategorien_aus", []) if k in KATEGORIEN],
+                          "kategorien_aus": [k for k in t.get("kategorien_aus", []) if k in kat_ids],
                           "aufloesung": aufl, "aufnahme": aufn, "bitrate_mbit": _zahl(t.get("bitrate_mbit", alt.get("bitrate_mbit", 16)), 2, 40, int),
                           # seit 0.18: auto = H.265 bei 4K, H.264 bei Full HD (läuft auf praktisch jedem Gerät)
                           "codec": t.get("codec", alt.get("codec")) if t.get("codec", alt.get("codec")) in ("auto", "h264", "h265") else "auto",
@@ -343,7 +453,7 @@ def pruefen(e):
     if "schlecht_s" in v: sv["schlecht_s"] = _zahl(v["schlecht_s"], 5, 170, int)
     if "strike_grenze" in v: sv["strike_grenze"] = _zahl(v["strike_grenze"], 1, 20, int)
     if "sperre_h" in v: sv["sperre_h"] = _zahl(v["sperre_h"], 0, 72)
-    if "kategorien_aus" in v: sv["kategorien_aus"] = [k for k in v["kategorien_aus"] if k in KATEGORIEN]
+    if "kategorien_aus" in v: sv["kategorien_aus"] = [k for k in v["kategorien_aus"] if k in kat_ids]
     # Neue Kategorien bei bestehenden Installationen aus: Einstellungen von vor 0.32 kennen nur die Tier-Kategorien.
     # Ganz neue Installation (noch kein „video“) bekommt alle eingeschaltet.
     if "video" in e:

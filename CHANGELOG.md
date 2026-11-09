@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+- **Edit categories and create your own:** new page Live videos → *Categories*. Each category has a name, a group
+  (animals / more topics), up to 6 own YouTube search terms, words that must appear in the title and “ignore
+  day/night”; you see how many streams it holds and on which TVs it is off, and switch it for all TVs or per TV. Own
+  categories (e.g. lighthouses) get their own nightly search; deleting one moves its streams to a category you choose
+  and removes it from all TVs. Built-in categories can be reset to default; unchanged ones follow improvements in
+  updates. The category switches moved from *Rotation & quality* to the new page.
+- **Found animal streams are sorted:** instead of all landing in *Newly found* they go to the first category whose
+  words match the title (bears, birds, sea …). Existing finds are sorted on the next search or when categories are
+  saved; a category set by hand stays. Settings and backups carry the categories; streams of a missing category go to
+  *Newly found*.
+- Fix: found streams whose title starts with “LIVE – …” got an empty name.
+
 ## v0.36.2 (2026-11-09)
 - **Logo:** SignageCast has a logo – a globe with a play symbol and the sun (`docs/logo/`: mark, word mark light/dark,
   PNG, social preview picture). It appears in the admin header and as favicon of the TV page and the announcement panel.

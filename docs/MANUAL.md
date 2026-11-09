@@ -20,7 +20,7 @@ that video, so the TV needs no app, no login and no updates.
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
 | **TVs** | TVs · Players | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)) |
 | **Content** | Layouts · Data sources · Media · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
-| **Live videos** | Streams · Rotation & quality · Search | Live cams, minutes per stream, daylight, minimum quality and strikes, categories for all TVs, nightly search |
+| **Live videos** | Streams · Categories · Rotation & quality · Search | Live cams; categories (edit, create, switch on/off for all TVs or per TV); minutes per stream, daylight, minimum quality and strikes; nightly search |
 | **Settings** | General · Home Assistant · Notifications (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; admin password |
 | **System** | Updates · Backup · Performance | Signed updates, maintenance window, encrypted backups, performance test, switching off the stream without viewers |
 
@@ -31,12 +31,31 @@ location and (optionally) Home Assistant and shows the TV address.
 ## 3. Typical tasks
 
 ### More than animals: cities, beaches, space …
-Live videos → Rotation & quality → *Categories (for all TVs)* → **More topics**: cities & squares, beaches & coasts,
+Live videos → Categories → **More topics**: cities & squares, beaches & coasts,
 mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders. Each topic has
 its own nightly search (only while it is switched on), sorts what it finds into its category and takes the location
 from the title (daylight rule as for animals; space and northern lights ignore it). On an update new categories start
 **switched off**, so your rotation does not change until you switch them on. Per TV you can switch categories off again
 under TVs → Live video → Categories.
+
+### Edit categories or create your own (since 0.37)
+Live videos → **Categories** shows every category with the number of its streams and where it is switched off. Open
+one to change:
+- **Name** – empty keeps the built-in name (translated); own categories need one.
+- **Group** – *Animals* or *More topics* (only decides where it is listed and which filters apply).
+- **Switched on** – for all TVs and, with several TVs, per TV (the same switches as on the TV card).
+- **Search terms** – up to 6, one per line; each is one YouTube request per nightly search. The search only runs while
+  the category is switched on for all TVs. Animal categories can stay empty – the general animal search (Search page)
+  fills them.
+- **Words in the title** – one must appear in the title of a found stream (regular expressions allowed). For animals
+  they also sort the finds of the general animal search: the first matching category wins, otherwise *Newly found*.
+  When you save, found streams in *Newly found* are sorted again; a category you set by hand on a stream stays.
+- **Ignore day/night** – for things without daylight like space; optionally only for certain words in the title
+  (northern lights).
+
+**New category** adds your own (e.g. lighthouses: search term `lighthouse live cam`, words `lighthouse`, `leuchtturm`).
+Built-in categories can be **reset to default** but not deleted; unchanged ones follow improvements in updates. When you
+delete your own category you choose where its streams go; it disappears from all TVs.
 
 ### Show something different at night
 TVs → *Schedule*: add a time range with another layout or “black”. A schedule always wins over the carousel.
@@ -248,7 +267,9 @@ zentrale Verwaltung; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als
 
 Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, ohne sie zu erledigen – Tipps dauerhaft, „Neue Version“ nur für diese Version, Probleme bis sie einmal behoben waren (tritt es wieder auf, erscheint es wieder). „Startpasswort ändern“ lässt sich nicht ausblenden; Benachrichtigungen kommen weiter.
 
-Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Rotation & Qualität → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
+Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
+
+Seit 0.37: **Kategorien bearbeiten und eigene anlegen** unter Live-Videos → **Kategorien**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten

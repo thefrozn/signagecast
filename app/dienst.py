@@ -2125,6 +2125,7 @@ def einspielen(d, mit_strikes=True):
     if mit_strikes and isinstance(d.get("strikes"), dict):
         from streams import STRIKES, schreib
         schreib(STRIKES, d["strikes"])
+    streams.einsortieren()                       # Streams unbekannter Kategorien nach „neu“ (seit 0.37)
     neu_liste.set()
 
 
@@ -2362,7 +2363,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/status":
             return self.antwort(200, status())
         if pfad == "/api/einstellungen":
-            return self.antwort(200, {"einstellungen": einst_aussen(), "kategorien": E.KATEGORIEN, "kategorien_themen": E.THEMEN_KATEGORIEN, "stufen": E.STUFEN,
+            ks = einst()["kategorien"]
+            return self.antwort(200, {"einstellungen": einst_aussen(), "kategorien": [k["id"] for k in ks],
+                                      "kategorien_themen": [k["id"] for k in ks if k["gruppe"] == "themen"],
+                                      "kategorien_standard": E.kategorien_standard(), "kategorien_max": E.KAT_MAX,
+                                      "kategorien_begriffe_max": E.KAT_BEGRIFFE_MAX, "stufen": E.STUFEN,
                                       "bausteine": {t: {k: std for k, (_, std) in o.items()} for t, o in L.TYPEN.items()},
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
@@ -2652,8 +2657,22 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 s["naechster"] = 0
                 qn.neu.set()
             return {}
+        if p == "/api/kategorien/loeschen":           # eigene Kategorie löschen, ihre Streams in eine andere (seit 0.37)
+            kid, ziel = str(d.get("id", "")), str(d.get("ziel") or "neu")
+            ks = einst()["kategorien"]
+            k = next((x for x in ks if x["id"] == kid), None)
+            if not k or ziel == kid or not any(x["id"] == ziel for x in ks):
+                raise M.Meldung("e_kat_unbekannt")
+            if k["eingebaut"]:
+                raise M.Meldung("e_kat_eingebaut")
+            zustand["einstellungen"] = E.speichern(dict(einst(), kategorien=[x for x in ks if x["id"] != kid]))
+            n = streams.einsortieren({kid: ziel})
+            neu_liste.set()
+            return {"einstellungen": einst_aussen(), "verschoben": n}
         if p == "/api/einstellungen":
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
+            if "kategorien" in d:                        # Wörter geändert: gefundene Streams neu einsortieren
+                streams.einsortieren()
             for tv_id in render_schreiben(einst()):          # neue Kodierung: laufende Kette neu (kurz schwarz)
                 kette_neu_starten(tv_id)
             neu_liste.set()
@@ -2664,7 +2683,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             qn.neu.set()
             return {"einstellungen": einst_aussen()}
         if p == "/api/streams":
-            s = streams.hinzufuegen(str(d.get("link", "")), d.get("name") or None, d.get("kategorie", "neu"),
+            kat = d.get("kategorie", "neu")
+            s = streams.hinzufuegen(str(d.get("link", "")), d.get("name") or None,
+                                    kat if any(k["id"] == kat for k in einst()["kategorien"]) else "neu",
                                     d.get("breite"), d.get("laenge"))
             neu_liste.set()
             return {"stream": s}

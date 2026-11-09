@@ -1301,6 +1301,117 @@ class OhneGlobalenVideoschalter0311(unittest.TestCase):
         self.assertEqual([t["video"] for t in s["fernseher"]], [True])
 
 
+class Kategorien037(unittest.TestCase):
+    """Seit 0.37: Kategorien editierbar – eigene anlegen, eingebaute ändern, löschen, einsortieren."""
+
+    def setUp(self):
+        self.e = E.pruefen({})
+        self.s = ST.Streams(lambda: self.e)
+        ST.schreib(ST.STRIKES, {})
+        ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
+
+    def eigene(self, **k):
+        return dict({"id": "kraniche", "name": "Kraniche", "gruppe": "tiere", "begriffe": ["crane live cam"],
+                     "woerter": ["crane", "kranich"]}, **k)
+
+    def test_pruefen(self):
+        ks = E.pruefen({"kategorien": [self.eigene()]})["kategorien"]
+        self.assertEqual([k["id"] for k in ks], E.KATEGORIEN + ["kraniche"])           # eingebaute kommen wieder dazu
+        self.assertFalse(ks[-1]["eingebaut"])
+        self.assertTrue(ks[0]["eingebaut"])
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"kategorien": [self.eigene(name="")]})                         # eigene braucht Namen
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"kategorien": [self.eigene(woerter=["(kaputt"])]})              # ungültiges Muster
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"kategorien": [self.eigene(), self.eigene()]})                  # doppelt
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"kategorien": [self.eigene(id=f"k{i:02d}") for i in range(E.KAT_MAX)]})
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"kategorien": [self.eigene(begriffe=[f"b{i}" for i in range(E.KAT_BEGRIFFE_MAX + 1)])]})   # Anfragen begrenzt
+        neu = E.pruefen({"kategorien": [{"id": "neu", "begriffe": ["x"], "woerter": ["y"]}]})["kategorien"]
+        self.assertEqual(next(k for k in neu if k["id"] == "neu")["begriffe"], [])     # „neu“ ohne Suche
+
+    def test_standard_folgt_updates(self):
+        e = E.pruefen({})
+        safari = next(k for k in e["kategorien"] if k["id"] == "safari")
+        self.assertTrue(safari["standard"])
+        alt = json.loads(json.dumps(e))                                             # Datei einer älteren Version
+        next(k for k in alt["kategorien"] if k["id"] == "safari")["woerter"] = ["elephant"]
+        self.assertEqual(next(k for k in E.pruefen(alt)["kategorien"] if k["id"] == "safari")["woerter"], safari["woerter"])
+        geaendert = json.loads(json.dumps(e))                                       # vom Nutzer geändert (ohne Merker)
+        k = next(k for k in geaendert["kategorien"] if k["id"] == "safari")
+        k.pop("standard"); k["woerter"] = ["elephant"]
+        neu = next(k for k in E.pruefen(geaendert)["kategorien"] if k["id"] == "safari")
+        self.assertEqual((neu["woerter"], neu["standard"]), (["elephant"], False))
+        self.assertEqual(next(k for k in E.pruefen(E.pruefen(geaendert))["kategorien"] if k["id"] == "safari")["woerter"], ["elephant"])
+
+    def test_fernseher_und_global(self):
+        e = E.pruefen({"kategorien": [self.eigene()], "video": {"kategorien_aus": ["kraniche", "weg"], "kategorien_bekannt": E.KATEGORIEN},
+                       "fernseher": [{"id": "tv", "kategorien_aus": ["kraniche", "weg"]}]})
+        self.assertEqual(e["video"]["kategorien_aus"], ["kraniche"])
+        self.assertEqual(e["fernseher"][0]["kategorien_aus"], ["kraniche"])
+        e2 = E.pruefen(dict(e, kategorien=[]))                                       # gelöscht: Verweise verschwinden
+        self.assertEqual(e2["video"]["kategorien_aus"], [])
+        self.assertEqual(e2["fernseher"][0]["kategorien_aus"], [])
+        e3 = E.pruefen({"kategorien": [self.eigene()], "video": {"takt_min": 3, "kategorien_bekannt": E.KATEGORIEN}})
+        self.assertNotIn("kraniche", e3["video"]["kategorien_aus"])                   # neue eigene startet an
+
+    def test_suche_und_einsortieren(self):
+        self.e = E.pruefen({"kategorien": [self.eigene()]})
+        ST.schreib(ST.STREAMS, {"streams": {
+            "alt00000001": {"kategorie": "neu", "herkunft": "entdeckt", "titel": "Grizzly bear live cam Alaska", "name": "x",
+                            "zuletzt_gefunden": time.strftime("%Y-%m-%d")},
+            "alt00000002": {"kategorie": "neu", "herkunft": "entdeckt", "titel": "Bear cam", "name": "x", "kategorie_fest": True,
+                            "zuletzt_gefunden": time.strftime("%Y-%m-%d")},
+            "alt00000003": {"kategorie": "neu", "herkunft": "fest", "titel": "Bear cam", "name": "x"},
+            "alt00000004": {"kategorie": "geloescht", "herkunft": "fest", "titel": "irgendwas", "name": "x"}}, "abgelehnt": []})
+        treffer = {"crane live cam": [("kkkkkkkkkkk", "Sandhill crane nest live cam"), ("lllllllllll", "Construction site live")],
+                   "bird feeder live cam": [("vvvvvvvvvvv", "Bird feeder live cam Cornell")]}
+        self.s._suche = lambda b: treffer.get(b, [])
+        alt = ST.oembed
+        try:
+            ST.oembed = lambda vid: True
+            self.s.suchen()
+        finally:
+            ST.oembed = alt
+        d = self.s.alle()["streams"]
+        self.assertEqual(d["kkkkkkkkkkk"]["kategorie"], "kraniche")
+        self.assertNotIn("lllllllllll", d)                                             # Titel ohne Wörter der Kategorie
+        self.assertEqual(d["vvvvvvvvvvv"]["kategorie"], "vogel")                       # Tiersuche: einsortiert
+        self.assertEqual(d["alt00000001"]["kategorie"], "baer")                        # alter Fund aus „neu“
+        self.assertEqual(d["alt00000002"]["kategorie"], "neu")                         # von Hand gesetzt: bleibt
+        self.assertEqual(d["alt00000003"]["kategorie"], "neu")                         # feste: bleiben
+        self.assertEqual(d["alt00000004"]["kategorie"], "neu")                         # Kategorie gibt es nicht mehr
+
+    def test_loeschen_verschiebt(self):
+        self.e = E.pruefen({"kategorien": [self.eigene()]})
+        ST.schreib(ST.STREAMS, {"streams": {"kkkkkkkkkkk": {"kategorie": "kraniche", "herkunft": "fest", "name": "x"}}, "abgelehnt": []})
+        self.e = E.pruefen(dict(self.e, kategorien=[k for k in self.e["kategorien"] if k["id"] != "kraniche"]))
+        self.assertEqual(self.s.einsortieren({"kraniche": "vogel"}), 1)
+        self.assertEqual(self.s.alle()["streams"]["kkkkkkkkkkk"]["kategorie"], "vogel")
+
+    def test_ohne_tag_eigene(self):
+        self.e = E.pruefen({"kategorien": [self.eigene(id="mond", name="Mond", gruppe="themen", ohne_tag=True)]})
+        jetzt = time.time()
+        ST.schreib(ST.STREAMS, {"streams": {"mmmmmmmmmmm": {"art": "video", "name": "Mond", "kategorie": "mond",
+                                                            "breite": None, "laenge": None, "aktiv": True}}, "abgelehnt": []})
+        ST.schreib(ST.CACHE, {"quellen": {"mmmmmmmmmmm": {"video_id": "mmmmmmmmmmm", "live": True, "hoehe": 1080, "geprueft": jetzt}}})
+        self.assertEqual([x["video_id"] for x in self.s.liste_bauen()], ["mmmmmmmmmmm"])
+
+    def test_kurzname_nie_leer(self):
+        self.assertEqual(ST.Streams.kurzname("LIVE - Earth from space"), "Earth from space")
+        self.assertEqual(ST.Streams.kurzname("🔴 LIVE | Planet Earth from the ISS"), "Planet Earth from the ISS")
+        self.assertEqual(ST.Streams.kurzname("Nubble Lighthouse, York – LIVE"), "Nubble Lighthouse, York")
+
+    def test_aendern_von_hand(self):
+        ST.schreib(ST.STREAMS, {"streams": {"kkkkkkkkkkk": {"kategorie": "neu", "herkunft": "entdeckt", "name": "x"}}, "abgelehnt": []})
+        self.s.aendern("kkkkkkkkkkk", {"kategorie": "gibtsnicht"})
+        self.assertEqual(self.s.alle()["streams"]["kkkkkkkkkkk"]["kategorie"], "neu")
+        self.s.aendern("kkkkkkkkkkk", {"kategorie": "zoo"})
+        self.assertTrue(self.s.alle()["streams"]["kkkkkkkkkkk"]["kategorie_fest"])
+
+
 class Themen032(unittest.TestCase):
     """Seit 0.32: Themen ohne Tiere – neu bei bestehenden Installationen aus, eigene Suche, Weltraum ohne Tag/Nacht."""
 
@@ -1314,7 +1425,7 @@ class Themen032(unittest.TestCase):
         self.assertEqual(alt["video"]["kategorien_aus"], ["affen"] + E.THEMEN_KATEGORIEN)
         alt["video"]["kategorien_aus"].remove("stadt")                                # Nutzer schaltet Städte ein
         self.assertNotIn("stadt", E.pruefen(alt)["video"]["kategorien_aus"])           # bleibt an
-        self.assertEqual(set(ST.THEMEN), set(E.THEMEN_KATEGORIEN))
+        self.assertEqual({k["id"] for k in E.pruefen({})["kategorien"] if k["gruppe"] == "themen"}, set(E.THEMEN_KATEGORIEN))
 
     def test_suche_je_thema(self):
         self.e["video"]["kategorien_aus"] = ["bahn"]
@@ -1350,8 +1461,8 @@ class Themen032(unittest.TestCase):
         self.assertNotIn("bbbbbbbbbbb", d)                                             # Musik aussortiert
         self.assertEqual(sum(1 for x in "aef" if x * 11 in d), 2)                         # höchstens 2 vom selben Ort
         self.assertEqual(d["ccccccccccc"]["kategorie"], "weltraum")
-        self.assertEqual(d["ddddddddddd"]["kategorie"], "neu")
-        self.assertFalse(any(b in gefragt for b in ST.THEMEN["bahn"]["begriffe"]))     # ausgeschaltet: keine Anfragen
+        self.assertEqual(d["ddddddddddd"]["kategorie"], "safari")                      # seit 0.37 einsortiert
+        self.assertFalse(any(b in gefragt for b in E.KATEGORIEN_STANDARD["bahn"]["begriffe"]))   # ausgeschaltet: keine Anfragen
 
     def test_themen_eigene_grenze(self):
         heute = time.strftime("%Y-%m-%d")

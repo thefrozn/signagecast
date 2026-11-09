@@ -13,7 +13,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
@@ -323,10 +323,25 @@ const TEXTE = {
            stadt: "Städte & Plätze", strand: "Strände & Küsten", berge: "Berge & Ski", hafen: "Häfen & Schiffe",
            flug: "Flughäfen & Flugzeuge", bahn: "Züge & Bahn", weltraum: "Weltraum & Erde", natur: "Naturschauspiele" },
     katGruppe: { tiere: "Tiere", themen: "Weitere Themen" },
+    katText: "Hier legst du fest, was eine Kategorie ausmacht: eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen, und ob Tag/Nacht am Ort zählt. Gefundene Tier-Streams werden über die Wörter einsortiert (erste passende Kategorie, sonst „Neu gefunden“). Ein- und ausschalten geht für alle Fernseher oder je Fernseher.",
+    katNeu: "Neue Kategorie", katEigene: "eigene", katGeaendert: "geändert", katNamePflicht: "Name (Pflicht)", katGruppeWahl: "Gruppe",
+    katNeuText: "Hier landen gefundene Tier-Streams, die zu keiner Kategorie passen. Sie hat keine eigene Suche.",
+    katWo: "Eingeschaltet", katAlle: "Für alle Fernseher", katStreams: (n) => `${n} Streams`, katEinStream: "1 Stream",
+    katAusAlle: "aus", katAusBei: (l) => `aus bei ${l}`, katMitSuche: (n) => n === 1 ? "1 Suchbegriff" : `${n} Suchbegriffe`, katNameFeld: "Name",
+    katBegriffe: (n) => `Suchbegriffe (je Zeile einer, höchstens ${n})`,
+    katBegriffeTiere: "Leer = nur die allgemeine Tiersuche (Seite Suche) füllt diese Kategorie. Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf.",
+    katBegriffeThemen: "Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf. Gesucht wird nur, solange die Kategorie für alle Fernseher eingeschaltet ist.",
+    katWoerter: "Wörter im Titel (je Zeile eines, reguläre Ausdrücke erlaubt)",
+    katWoerterTiere: "Ein Wort muss im Titel stehen. Sortiert auch Funde der allgemeinen Tiersuche hierher.",
+    katWoerterThemen: "Ein Wort muss im Titel stehen. Leer = jeder Titel (außer Musik, Spiele u. Ä.).",
+    katOhneTag: "Tag/Nacht am Ort egal", katOhneTagWoerter: "Tag/Nacht egal nur bei diesen Wörtern im Titel",
+    katStreamsZeigen: "Streams zeigen", katStandard: "Auf Standard zurücksetzen",
+    katVerschieben: (n) => n ? `${n} Streams verschieben nach` : "Löschen", katWirklich: "Endgültig löschen",
+    kategorienWoanders: "Kategorien ein- und ausschalten und bearbeiten:",
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
@@ -557,6 +572,8 @@ const TEXTE = {
       e_tv_doppelt: "duplicate TV identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160", e_aufnahme: "capture only 720, 1080 or 1440",
       e_tv_fehlt: "at least one TV is required", e_zeitzone: "unknown time zone {zz}", e_stufe: "unknown level",
       e_suchmuster: "invalid search pattern: {x}", e_ortsmuster: "invalid place pattern: {m}",
+      e_kat_doppelt: "duplicate category identifier: {id}", e_kat_name: "Own category needs a name", e_kat_max: "At most {n} categories",
+      e_kat_begriffe: "{name}: at most {n} search terms", e_kat_unbekannt: "Unknown category", e_kat_eingebaut: "Built-in categories cannot be deleted",
       e_ep_quelle: "Clip: unknown source", e_ep_adresse: "Clip: address missing", e_medium_art: "Media: type picture or video",
       e_pult_pw: "Panel password: at least 6 characters", e_bild_gross: "Picture too large (max. 8 MB)", e_bild_art: "Only JPG or PNG",
       e_einspielen: "Not a SignageCast backup or profile", e_streamliste: "stream list missing", e_stream_id: "invalid ID {id}",
@@ -719,6 +736,21 @@ const TEXTE = {
            stadt: "Cities & squares", strand: "Beaches & coasts", berge: "Mountains & ski", hafen: "Harbours & ships",
            flug: "Airports & planes", bahn: "Trains & railways", weltraum: "Space & Earth", natur: "Natural wonders" },
     katGruppe: { tiere: "Animals", themen: "More topics" },
+    katText: "Define what a category is: its own YouTube search terms, words that must appear in the title and whether day/night at the location matters. Found animal streams are sorted by the words (first matching category, otherwise “Newly found”). Switch categories on and off for all TVs or per TV.",
+    katNeu: "New category", katEigene: "own", katGeaendert: "changed", katNamePflicht: "Name (required)", katGruppeWahl: "Group",
+    katNeuText: "Found animal streams that match no category end up here. It has no search of its own.",
+    katWo: "Switched on", katAlle: "For all TVs", katStreams: (n) => `${n} streams`, katEinStream: "1 stream",
+    katAusAlle: "off", katAusBei: (l) => `off on ${l}`, katMitSuche: (n) => n === 1 ? "1 search term" : `${n} search terms`, katNameFeld: "Name",
+    katBegriffe: (n) => `Search terms (one per line, at most ${n})`,
+    katBegriffeTiere: "Empty = only the general animal search (Search page) fills this category. Each term is one YouTube request per search run.",
+    katBegriffeThemen: "Each term is one YouTube request per search run. The search only runs while the category is on for all TVs.",
+    katWoerter: "Words in the title (one per line, regular expressions allowed)",
+    katWoerterTiere: "One word must appear in the title. Also sorts finds of the general animal search into this category.",
+    katWoerterThemen: "One word must appear in the title. Empty = any title (except music, games and the like).",
+    katOhneTag: "Ignore day/night at the location", katOhneTagWoerter: "Ignore day/night only with these words in the title",
+    katStreamsZeigen: "Show streams", katStandard: "Reset to default",
+    katVerschieben: (n) => n ? `Move ${n} streams to` : "Delete", katWirklich: "Delete for good",
+    kategorienWoanders: "Switch categories on and off and edit them:",
     aufgabe: { streamliste: "Check stream list", suche: "Search new streams", wache: "Measure quality" },
   },
 };
@@ -766,15 +798,19 @@ const dauer = (s) => { const t = Math.floor(s / 86400), h = Math.floor(s % 86400
 const ORT = () => E.sprache === "en" ? "en-GB" : "de-DE";   // Zeitformat nach Sprache der Verwaltung, 24 h (seit 0.23.2)
 const uhrzeit = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString(ORT(), { hour: "2-digit", minute: "2-digit" }) : "–";
 
-let E = null, KATEGORIEN = [], KAT_THEMEN = [], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
+let E = null, KAT_STANDARD = [], KAT_GRENZEN = [40, 6], STUFEN = [], ENTITAETEN = null, BAUSTEINE = {}, SCHRIFTEN = ["Roboto"];
 // YouTube-Qualitätsstufen als Auflösung anzeigen (intern bleiben die YouTube-Namen)
 const STUFE_P = { tiny: "144p", small: "240p", medium: "360p", large: "480p", hd720: "720p", hd1080: "1080p",
                   hd1440: "1440p", hd2160: "2160p", highres: "4320p" };
 const stufeText = (x) => STUFE_P[x] || x;
+// Kategorien (seit 0.37 editierbar, in E.kategorien): Kennungen, Name (eigener oder übersetzter Standard), Gruppen
+const katIds = () => E.kategorien.map((k) => k.id);
+const katName = (id) => { const k = E.kategorien.find((x) => x.id === id); return (k && k.name) || T.kat[id] || id; };
+const katOptionen = (gewaehlt) => E.kategorien.map((k) => `<option value="${esc(k.id)}" ${k.id === gewaehlt ? "selected" : ""}>${esc(katName(k.id))}</option>`).join("");
 // Kategorie-Schalter in zwei Gruppen (seit 0.32): Tiere und weitere Themen
-const katSchalter = (prefix, aus, h = "h4") => [["tiere", KATEGORIEN.filter((k) => !KAT_THEMEN.includes(k))], ["themen", KAT_THEMEN]]
+const katSchalter = (prefix, aus, h = "h4") => ["tiere", "themen"].map((g) => [g, E.kategorien.filter((k) => k.gruppe === g).map((k) => k.id)])
   .filter(([, ks]) => ks.length).map(([g, ks]) => `<${h}>${esc(T.katGruppe[g])}</${h}>` +
-    ks.map((k) => `<div class="zeile"><label>${esc(T.kat[k] || k)}</label>${schalter(prefix + k, !aus.includes(k))}</div>`).join("")).join("");
+    ks.map((k) => `<div class="zeile"><label>${esc(katName(k))}</label>${schalter(prefix + k, !aus.includes(k))}</div>`).join("")).join("");
 
 // ---------- Nicht gespeicherte Änderungen (seit 0.17) ----------
 // Eine Eingabe markiert ihre Karte; ein erfolgreicher Speichern-Knopf hebt die Markierung seiner Karte auf
@@ -803,7 +839,7 @@ const zweiTeile = (a, b) => async (i) => {
   await a($("#teilA")); await b($("#teilB"));
 };
 const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
-                 streams: streamsSeite, video, suche: sucheSeite, radio: radioSeite,
+                 streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: zweiTeile(pultSeite, webhookKarte),
                  updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang") };
@@ -812,7 +848,7 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, lay
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]],
                   ["inhalte", ["layout", "quellen", "medien", "einspieler", "radio", "pult"]],
-                  ["videoton", ["streams", "video", "suche"]],
+                  ["videoton", ["streams", "kategorien", "video", "suche"]],
                   ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "zugang"] : ["allgemein", "ha", "benachrichtigung"]],
                   ["system", ["updates", "sicherung", "leistung"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
@@ -877,7 +913,7 @@ function hinweiseZeichnen() {
 
 async function einstellungenLaden() {
   const d = await holen("/api/einstellungen");
-  E = d.einstellungen; KATEGORIEN = d.kategorien; KAT_THEMEN = d.kategorien_themen || []; STUFEN = d.stufen;
+  E = d.einstellungen; KAT_STANDARD = d.kategorien_standard || []; KAT_GRENZEN = [d.kategorien_max || 40, d.kategorien_begriffe_max || 6]; STUFEN = d.stufen;
   if (!E.sprache) {                         // Neuinstallation: Sprache aus dem Browser übernehmen und merken
     E.sprache = (cockpit.language || navigator.language || "en").startsWith("de") ? "de" : "en";
     try { await senden("/api/einstellungen", { sprache: E.sprache }); } catch (_) { /* nächstes Mal */ }
@@ -1637,13 +1673,13 @@ async function streamsSeite(inhalt) {
     <div class="karte"><h2>${esc(T.hinzufuegen)}</h2>
       <div class="zeile"><input type="url" id="nLink" placeholder="https://www.youtube.com/watch?v=…" aria-label="${esc(T.link)}"></div>
       <div class="zeile"><input type="text" id="nName" placeholder="${esc(T.name)}">
-        <select id="nKat">${KATEGORIEN.map((k) => `<option value="${k}">${esc(T.kat[k] || k)}</option>`).join("")}</select></div>
+        <select id="nKat">${katOptionen("neu")}</select></div>
       <div class="zeile"><input type="number" step="0.01" id="nBreite" placeholder="${esc(T.breite)}">
         <input type="number" step="0.01" id="nLaenge" placeholder="${esc(T.laenge)}"><span class="leise">${esc(T.ortAuto)}</span></div>
       <div class="zeile"><button class="knopf haupt" id="nOk">${esc(T.hinzufuegen)}</button></div></div>
     <div class="karte">
       <div class="zeile"><input type="text" id="fText" placeholder="${esc(T.filter)}" value="${esc(filter.text)}">
-        <select id="fKat"><option value="">${esc(T.alle)}</option>${KATEGORIEN.map((k) => `<option value="${k}" ${filter.kat === k ? "selected" : ""}>${esc(T.kat[k] || k)}</option>`).join("")}</select>
+        <select id="fKat"><option value="">${esc(T.alle)}</option>${katOptionen(filter.kat)}</select>
         <select id="fHerk">${[["", T.herkunftAlle], ["fest", T.nurFeste], ["entdeckt", T.nurGefundene]].map(([w, n]) =>
           `<option value="${w}" ${filter.herkunft === w ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
       <div class="marken" id="fZust" role="group" aria-label="${esc(T.zustandAlle)}"></div>
@@ -1706,7 +1742,7 @@ function streamKarte(s) {
   const q = s.qualitaet || {};
   const anteil = q.anteil_720p_plus != null ? Math.round(q.anteil_720p_plus * 100) : null;
   const marken = [
-    `<span class="marke">${esc(T.kat[s.kategorie] || s.kategorie)}</span>`,
+    `<span class="marke">${esc(katName(s.kategorie))}</span>`,
     `<span class="marke">${esc(s.herkunft === "entdeckt" ? T.gefunden : T.fest)}</span>`,
     zustandMarke(s),
     s.in_rotation ? `<span class="marke gut">${esc(T.inRotation)}</span>` : "",
@@ -1742,7 +1778,7 @@ function streamKarte(s) {
         if (k.querySelector(".bearbeiten")) return k.querySelector(".bearbeiten").remove();
         const f = el(`<div class="bearbeiten">
           <div class="zeile"><input type="text" name="name" value="${esc(s.name)}" aria-label="${esc(T.name)}">
-            <select name="kategorie">${KATEGORIEN.map((x) => `<option value="${x}" ${x === s.kategorie ? "selected" : ""}>${esc(T.kat[x] || x)}</option>`).join("")}</select></div>
+            <select name="kategorie">${katOptionen(s.kategorie)}</select></div>
           <div class="zeile"><input type="number" step="0.01" name="breite" value="${s.breite ?? ""}" placeholder="${esc(T.breite)}">
             <input type="number" step="0.01" name="laenge" value="${s.laenge ?? ""}" placeholder="${esc(T.laenge)}">
             <button class="knopf haupt">${esc(T.speichern)}</button></div></div>`);
@@ -1756,6 +1792,132 @@ function streamKarte(s) {
     };
   });
   return k;
+}
+
+// ---------- Kategorien (seit 0.37) ----------
+// Jede Kategorie: Name, Gruppe, eigene Suchbegriffe, Titelwörter, Tag/Nacht. Dazu, wo sie eingeschaltet ist (für alle /
+// je Fernseher) und wie viele Streams drin sind. Eingebaute lassen sich zurücksetzen, eigene löschen (Streams wandern um).
+async function kategorienSeite(inhalt) {
+  const st = await holen("/api/streams");
+  const anzahl = {};
+  for (const x of st.streams) anzahl[x.kategorie] = (anzahl[x.kategorie] || 0) + 1;
+  let ks = JSON.parse(JSON.stringify(E.kategorien));
+  const offen = new Set();
+  const zeilenText = (l) => (l || []).join("\n");
+  const zeilen = (t) => t.value.split("\n").map((x) => x.trim()).filter(Boolean);
+  const zeichnen = () => {
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.reiter.kategorien)}</h2><p class="leise">${esc(T.katText)}</p>
+        <div class="zeile"><button class="knopf" id="katNeu" ${ks.length >= KAT_GRENZEN[0] ? "disabled" : ""}>${esc(T.katNeu)}</button></div></div>
+      <div id="katListe"></div>`;
+    const liste = $("#katListe");
+    for (const g of ["tiere", "themen"]) {
+      const inGruppe = ks.filter((k) => k.gruppe === g);
+      if (!inGruppe.length) continue;
+      liste.appendChild(el(`<h3>${esc(T.katGruppe[g])}</h3>`));
+      for (const k of inGruppe) liste.appendChild(karte(k));
+    }
+    // Knopf in der Liste: Änderungen markieren ihre Karte als „nicht gespeichert“ (aenderungMerken)
+    liste.appendChild(el(`<div class="zeile"><button class="knopf haupt" id="katOk">${esc(T.speichern)}</button></div>`));
+    $("#katNeu").onclick = () => {
+      lesen();
+      let id; do { id = "k" + Math.random().toString(36).slice(2, 7).replace(/[^a-z0-9]/g, "0"); } while (ks.some((x) => x.id === id));
+      ks.push({ id, eingebaut: false, name: "", gruppe: "themen", begriffe: [], woerter: [], ohne_tag: false, ohne_tag_woerter: [], neu: true });
+      offen.add(id); zeichnen();
+      const f = liste.querySelector(`[data-id="${id}"] [name=name]`); if (f) { f.focus(); f.closest(".karte").scrollIntoView({ block: "center" }); }
+    };
+    $("#katOk").onclick = (e) => { lesen(); speichern(e.target); };
+  };
+  const karte = (k) => {
+    const aus = E.video.kategorien_aus.includes(k.id);
+    const tvAus = E.fernseher.filter((t) => t.kategorien_aus.includes(k.id));
+    const n = anzahl[k.id] || 0;
+    const std = KAT_STANDARD.find((x) => x.id === k.id);
+    const istNeu = k.id === "neu";
+    const kurz = [n === 1 ? T.katEinStream : T.katStreams(n),
+      aus ? T.katAusAlle : tvAus.length ? T.katAusBei(tvAus.map((t) => t.name).join(", ")) : "",
+      k.begriffe.length ? T.katMitSuche(k.begriffe.length) : ""].filter(Boolean).join(" · ");
+    const d = el(`<details class="karte" data-id="${esc(k.id)}" ${offen.has(k.id) ? "open" : ""}>
+      <summary><b>${esc(k.name || T.kat[k.id] || k.id)}</b>${k.eingebaut ? (k.standard === false ? ` <span class="marke">${esc(T.katGeaendert)}</span>` : "")
+        : ` <span class="marke">${esc(T.katEigene)}</span>`}
+        <span class="leise"> – ${esc(kurz)}</span></summary>
+      <div class="zeile"><label>${esc(T.katNameFeld)}</label><input type="text" name="name" maxlength="40" value="${esc(k.name)}"
+        placeholder="${esc(k.eingebaut ? T.kat[k.id] || k.id : T.katNamePflicht)}"></div>
+      ${istNeu ? `<p class="leise">${esc(T.katNeuText)}</p>` : `
+      <div class="zeile"><label>${esc(T.katGruppeWahl)}</label><select name="gruppe">${["tiere", "themen"].map((g) =>
+        `<option value="${g}" ${g === k.gruppe ? "selected" : ""}>${esc(T.katGruppe[g])}</option>`).join("")}</select></div>`}
+      <h4>${esc(T.katWo)}</h4>
+      <div class="zeile"><label>${esc(T.katAlle)}</label>${schalter("alle", !aus)}</div>
+      ${E.fernseher.length > 1 ? E.fernseher.map((t, i) => `<div class="zeile"><label>${esc(t.name)}</label>${schalter("tv" + i, !t.kategorien_aus.includes(k.id))}</div>`).join("") : ""}
+      ${istNeu ? "" : `
+      <h4>${esc(T.katBegriffe(KAT_GRENZEN[1]))}</h4><p class="leise">${esc(k.gruppe === "tiere" ? T.katBegriffeTiere : T.katBegriffeThemen)}</p>
+      <textarea name="begriffe" rows="3" spellcheck="false">${esc(zeilenText(k.begriffe))}</textarea>
+      <h4>${esc(T.katWoerter)}</h4><p class="leise">${esc(k.gruppe === "tiere" ? T.katWoerterTiere : T.katWoerterThemen)}</p>
+      <textarea name="woerter" rows="3" spellcheck="false">${esc(zeilenText(k.woerter))}</textarea>
+      <div class="zeile"><label>${esc(T.katOhneTag)}</label>${schalter("ohne_tag", k.ohne_tag)}</div>
+      <details class="erweitert"><summary>${esc(T.katOhneTagWoerter)}</summary>
+        <textarea name="ohne_tag_woerter" rows="2" spellcheck="false">${esc(zeilenText(k.ohne_tag_woerter))}</textarea></details>`}
+      <div class="zeile">
+        ${n ? `<button class="knopf" data-a="streams">${esc(T.katStreamsZeigen)}</button>` : ""}
+        ${std && !istNeu ? `<button class="knopf" data-a="standard">${esc(T.katStandard)}</button>` : ""}
+        ${!k.eingebaut ? `<button class="knopf gefahr" data-a="loeschen">${esc(T.entfernen)}</button>` : ""}</div>
+      <div class="zeile" data-loeschen hidden><label>${esc(T.katVerschieben(n))}</label>
+        <select name="ziel">${ks.filter((x) => x.id !== k.id && !x.neu).map((x) => `<option value="${esc(x.id)}" ${x.id === "neu" ? "selected" : ""}>${esc(x.name || T.kat[x.id] || x.id)}</option>`).join("")}</select>
+        <button class="knopf gefahr" data-a="wirklich">${esc(T.katWirklich)}</button></div></details>`);
+    d.addEventListener("toggle", () => { if (d.open) offen.add(k.id); else offen.delete(k.id); });
+    d.querySelectorAll("[data-a]").forEach((b) => {
+      b.onclick = () => {
+        const a = b.dataset.a;
+        if (a === "streams") { filter = Object.assign(filter, { kat: k.id, text: "", zustand: "" }); filterMerken(); return zeigeSeite("streams"); }
+        if (a === "standard") {
+          d.querySelector("[name=name]").value = "";
+          d.querySelector("[name=gruppe]").value = std.gruppe;
+          d.querySelector("[name=begriffe]").value = zeilenText(std.begriffe);
+          d.querySelector("[name=woerter]").value = zeilenText(std.woerter);
+          d.querySelector("[name=ohne_tag]").checked = std.ohne_tag;
+          d.querySelector("[name=ohne_tag_woerter]").value = zeilenText(std.ohne_tag_woerter);
+          d.querySelector("[name=name]").dispatchEvent(new Event("input", { bubbles: true }));
+          return;
+        }
+        if (a === "loeschen") {
+          if (k.neu) { lesen(); ks = ks.filter((x) => x.id !== k.id); return zeichnen(); }   // noch nicht gespeichert
+          d.querySelector("[data-loeschen]").hidden = false; return;
+        }
+        if (a === "wirklich") return aktion(b, async () => {
+          const r = await senden("/api/kategorien/loeschen", { id: k.id, ziel: d.querySelector("[name=ziel]").value });
+          E = r.einstellungen;
+          await kategorienSeite(inhalt);
+        });
+      };
+    });
+    return d;
+  };
+  // Formular -> ks (Text bleibt beim Neuzeichnen erhalten)
+  const lesen = () => {
+    for (const d of inhalt.querySelectorAll("#katListe > details[data-id]")) {
+      const k = ks.find((x) => x.id === d.dataset.id); if (!k) continue;
+      const w = (n) => d.querySelector(`[name=${n}]`);
+      k.name = w("name").value.trim();
+      if (w("gruppe")) {
+        k.gruppe = w("gruppe").value; k.begriffe = zeilen(w("begriffe")); k.woerter = zeilen(w("woerter"));
+        k.ohne_tag = w("ohne_tag").checked; k.ohne_tag_woerter = zeilen(w("ohne_tag_woerter"));
+      }
+      k._alle = w("alle").checked;
+      k._tv = E.fernseher.map((_, i) => (w("tv" + i) ? w("tv" + i).checked : k._alle));
+    }
+  };
+  const speichern = (knopf) => {
+    const an = (k, i) => (i == null ? k._alle !== false : (k._tv ? k._tv[i] : true));
+    const teil = {
+      kategorien: ks.map(({ id, name, gruppe, begriffe, woerter, ohne_tag, ohne_tag_woerter }) => ({ id, name, gruppe, begriffe, woerter, ohne_tag, ohne_tag_woerter })),
+      video: { kategorien_aus: ks.filter((k) => !an(k)).map((k) => k.id) },
+      fernseher: E.fernseher.map((t, i) => ({ ...t, kategorien_aus: ks.filter((k) => !an(k, i)).map((k) => k.id) })),
+    };
+    return aktion(knopf, async () => {
+      E = (await senden("/api/einstellungen", teil)).einstellungen;
+      await kategorienSeite(inhalt);
+    });
+  };
+  zeichnen();
 }
 
 // ---------- Anzeige ----------
@@ -1792,14 +1954,12 @@ async function video(inhalt) {
       <div class="zeile"><label>${esc(T.schlecht)}</label>${zahlFeld("schlecht", v.schlecht_s, 5, 170)}</div>
       <div class="zeile"><label>${esc(T.grenze)}</label>${zahlFeld("grenze", v.strike_grenze, 1, 20)}</div>
       <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div></details>
-      <h3>${esc(T.kategorienAlle)}</h3>
-      ${katSchalter("kat_", v.kategorien_aus)}</div>
+      <p class="leise">${esc(T.kategorienWoanders)} <a href="#kategorien">${esc(T.reiter.kategorien)}</a></p></div>
     <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
   const n = (id) => Number($("#" + id).value);
   $("#ok").onclick = (e) => speichernE({
     video: { takt_min: n("takt"), nur_tag: $("[name=nurTag]").checked, min_sonnenhoehe: n("sonne"),
-             mindeststufe: $("#stufe").value, schlecht_s: n("schlecht"), strike_grenze: n("grenze"), sperre_h: n("sperre"),
-             kategorien_aus: KATEGORIEN.filter((k) => !$(`[name=kat_${k}]`).checked) },
+             mindeststufe: $("#stufe").value, schlecht_s: n("schlecht"), strike_grenze: n("grenze"), sperre_h: n("sperre") },
   }, e.target);
 }
 
@@ -2080,7 +2240,7 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" style="width:70px"></span></div>
-        <details><summary>${esc(T.kategorien)} (${KATEGORIEN.length - t.kategorien_aus.length}/${KATEGORIEN.length})</summary>
+        <details><summary>${esc(T.kategorien)} (${katIds().length - t.kategorien_aus.length}/${katIds().length})</summary>
         ${katSchalter("kat_", t.kategorien_aus)}</details>
         <h3>${esc(T.abschnitt.ton)}</h3>
         <div class="zeile"><label>${esc(T.ton)}</label><select name="ton">${Object.keys(T.tonArt).map((x) => `<option value="${x}" ${x === t.ton ? "selected" : ""}>${esc(T.tonArt[x])}</option>`).join("")}</select></div>
@@ -2120,7 +2280,7 @@ async function fernseherSeite(inhalt) {
       const w = (n) => k.querySelector(`[name=${n}]`);
       return { ...t, name: w("name").value, id: w("id").value.trim().toLowerCase(), video: w("video").checked, ton: w("ton").value,
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
-               kategorien_aus: KATEGORIEN.filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
+               kategorien_aus: katIds().filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
                aufnahme: Number(w("aufnahme").value), bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
                encoder: w("encoder").value, preset: w("preset").value, tune: w("tune").value, bframes: Number(w("bframes").value) || 0,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),

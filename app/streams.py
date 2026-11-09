@@ -29,29 +29,7 @@ HOEHEN = [(2160, "hd2160"), (1440, "hd1440"), (1080, "hd1080"), (720, "hd720"), 
           (240, "small"), (1, "tiny")]
 GRUENDE = {"aufloesung", "puffert", "steht", "fehler", "startet_nicht"}
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
-# Seit 0.32: Themen ohne Tiere. Je Thema eigene Suchbegriffe und Pflichtwörter im Titel; gesucht wird nur, wenn das
-# Thema eingeschaltet ist (keine unnötigen Anfragen). ohne_tag: Tag/Nacht am Ort gilt nicht (ganzes Thema oder Titel).
-THEMEN = {
-    "stadt": {"begriffe": ["city live cam", "times square live cam", "shibuya crossing live cam", "old town square live cam",
-                           "piazza live webcam", "city skyline live cam"],
-              "woerter": r"city|square|plaza|piazza|platz|crossing|downtown|street|skyline|old town|altstadt|harbourfront"},
-    "strand": {"begriffe": ["beach live cam", "surf live cam", "island beach live cam", "pier live cam"],
-               "woerter": r"beach|strand|surf|shore|coast|küste|playa|pier|lagoon|bay\b"},
-    "berge": {"begriffe": ["mountain live cam", "alps live webcam", "ski resort live cam", "summit live cam"],
-              "woerter": r"mountain|alps|alpen|\bberg|ski|summit|gipfel|peak|glacier|gletscher|valley|zugspitze|matterhorn|jungfrau"},
-    "hafen": {"begriffe": ["harbor live cam ships", "port live cam ship traffic", "panama canal live cam", "ferry live cam"],
-              "woerter": r"\bport\b|harbou?r|hafen|ship|schiff|canal|kanal|vessel|ferry|fähre|cruise|container|lock\b|schleuse"},
-    "flug": {"begriffe": ["airport live cam", "plane spotting live", "runway live cam"],
-             "woerter": r"airport|flughafen|plane|runway|landing|spotting|aviation|aircraft|flugzeug"},
-    "bahn": {"begriffe": ["train live cam", "railway live cam", "railcam live"],
-             "woerter": r"train|railway|railroad|\brail|bahn|\bzug\b|railcam|locomotive|station"},
-    "weltraum": {"begriffe": ["iss live earth from space", "nasa live stream earth", "space station live"],
-                 "woerter": r"\biss\b|space station|nasa|earth from space|from space|weltraum|orbit", "ohne_tag": True},
-    "natur": {"begriffe": ["volcano live cam", "northern lights live cam", "waterfall live cam", "niagara falls live cam",
-                           "geyser live cam"],
-              "woerter": r"volcano|vulkan|aurora|northern lights|nordlicht|waterfall|wasserfall|falls\b|geyser|geysir|eruption",
-              "ohne_tag_titel": r"aurora|northern lights|nordlicht"},
-}
+# Kategorien (Suchbegriffe, Titelwörter, Tag/Nacht) stehen seit 0.37 in den Einstellungen (einstellungen.KATEGORIEN_STANDARD)
 # Für Themen: Musik, Spiele, Nachrichten, Aufzeichnungen u. Ä. aussortieren (die Tier-Ausschlüsse wie „city“, „beach“,
 # „airport“ gelten hier nicht)
 THEMEN_AUSSCHLUSS = re.compile(r"radio|music|song|lofi|sleep|relax|asmr|\bgame|gaming|minecraft|roblox|simulator|\bsim\b|"
@@ -87,9 +65,30 @@ THEMEN_ORTE = [
 ]
 
 
-def ohne_tag(s):
-    """Tag/Nacht am Ort gilt nicht: am Stream vermerkt (z. B. Nordlicht) oder für das ganze Thema (Weltraum)."""
-    return bool(s.get("ohne_tag") or THEMEN.get(s.get("kategorie"), {}).get("ohne_tag"))
+def kategorien(e):
+    """{id: Kategorie} aus den Einstellungen (seit 0.37 editierbar)."""
+    ks = e.get("kategorien")
+    if not ks:
+        from einstellungen import kategorien_standard
+        ks = kategorien_standard()
+    return {k["id"]: k for k in ks}
+
+
+def _muster(woerter):
+    return re.compile("|".join(woerter), re.I) if woerter else None
+
+
+def ohne_tag(s, kats):
+    """Tag/Nacht am Ort gilt nicht: am Stream vermerkt (z. B. Nordlicht) oder für die ganze Kategorie (Weltraum)."""
+    return bool(s.get("ohne_tag") or kats.get(s.get("kategorie"), {}).get("ohne_tag"))
+
+
+def einordnen(titel, kats):
+    """Erste Tier-Kategorie, deren Wörter im Titel stehen – sonst „neu“ (seit 0.37)."""
+    for kid, k in kats.items():
+        if kid != "neu" and k["gruppe"] == "tiere" and k["woerter"] and _muster(k["woerter"]).search(titel or ""):
+            return kid
+    return "neu"
 
 
 ID = re.compile(r"[\w-]{11}")
@@ -304,14 +303,15 @@ class Streams:
             s = d["streams"].get(sid)
             if not s:
                 raise KeyError(sid)
-            from einstellungen import KATEGORIEN
+            kats = kategorien(self.e())
             for k, w in felder.items():
                 if k in ("aktiv", "geschuetzt"):
                     s[k] = bool(w)
                 elif k == "name":
                     s[k] = str(w).strip()[:80] or s[k]
-                elif k == "kategorie" and w in KATEGORIEN:
+                elif k == "kategorie" and w in kats:
                     s[k] = w
+                    s["kategorie_fest"] = True        # von Hand gesetzt: nicht mehr automatisch einsortieren
                 elif k in ("breite", "laenge"):
                     w = float(w)
                     if not (-90 <= w <= 90 if k == "breite" else -180 <= w <= 180):
@@ -488,7 +488,7 @@ class Streams:
             return "inaktiv", a
         if s.get("kategorie") in v["kategorien_aus"]:
             return "kategorie_aus", a
-        if ohne_tag(s):
+        if ohne_tag(s, kategorien(e)):
             return self._basis(s, x, e, st, jetzt), a      # seit 0.32: z. B. Weltraum – Tag/Nacht am Ort gilt nicht
         if s.get("breite") is None:
             return "ohne_ort", a                           # Ort unbekannt: Tag/Nacht nicht bestimmbar
@@ -522,13 +522,13 @@ class Streams:
     def _pruefplan(self, d, e, qc, jetzt):
         """Welche Streams der Durchlauf bei YouTube prüft, nach Vorrang: (1) wird in 30 min hell, (2) Tag, älter als 2 h,
         (3) Nacht, älter als 6 h. Innerhalb gleichen Vorrangs der am längsten nicht geprüfte zuerst."""
-        v = e["video"]
+        v, kats = e["video"], kategorien(e)
         plan = []
         for sid, s in d["streams"].items():
-            if not s.get("aktiv", True) or s.get("kategorie") in v["kategorien_aus"] or (s.get("breite") is None and not ohne_tag(s)):
+            if not s.get("aktiv", True) or s.get("kategorie") in v["kategorien_aus"] or (s.get("breite") is None and not ohne_tag(s, kats)):
                 continue
             alt = jetzt - qc.get(sid, {}).get("geprueft", 0)
-            if not v["nur_tag"] or ohne_tag(s) or sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"]:
+            if not v["nur_tag"] or ohne_tag(s, kats) or sonnenhoehe(s["breite"], s["laenge"], jetzt) >= v["min_sonnenhoehe"]:
                 if alt > PRUEF_ALTER_S:
                     plan.append((2, -alt, sid, s))
                 continue
@@ -668,22 +668,60 @@ class Streams:
     def kurzname(titel):
         t = re.sub(r"[^\w\s·,.:'&()/-]", "", titel)
         t = re.sub(r"\b(LIVE|Live|live|24/7|4K|HD|powered by EXPLORE\.org|explore\.org)\b", "", t)
-        t = re.split(r"\s[|–—]\s|\s-\s|\s/\s", t)[0]
-        return re.sub(r"\s+", " ", t).strip(" -:,")[:55]
+        teile = [re.sub(r"\s+", " ", x).strip(" -:,") for x in re.split(r"\s[|–—]\s|\s-\s|\s/\s", " " + t + " ")]
+        return next((x for x in teile if x), titel.strip())[:55]       # erster nicht leerer Teil (seit 0.37)
 
     @staticmethod
-    def ueberzaehlig(streams, max_tag, v, jetzt=None):
+    def _einsortieren(d, kats):
+        """Seit 0.37: Streams einer gelöschten Kategorie nach „neu“; gefundene Tier-Streams in „neu“ (oder einer
+        gelöschten Kategorie) in die passende Kategorie – außer die Kategorie wurde von Hand gesetzt. Liefert die Anzahl."""
+        n = 0
+        for s in d["streams"].values():
+            k = s.get("kategorie", "neu")
+            if k not in kats:
+                s["kategorie"], k = "neu", "neu"
+                s.pop("kategorie_fest", None)
+                n += 1
+            if k == "neu" and s.get("herkunft") == "entdeckt" and not s.get("kategorie_fest"):
+                ziel = einordnen(s.get("titel") or s.get("name", ""), kats)
+                if ziel != "neu":
+                    s["kategorie"] = ziel
+                    n += 1
+        return n
+
+    def einsortieren(self, umbenennen=None):
+        """Nach dem Speichern der Kategorien: umbenennen = {alt: neu} verschiebt die Streams einer gelöschten Kategorie."""
+        kats = kategorien(self.e())
+        with sperre:
+            d = self.alle()
+            n = 0
+            for s in d["streams"].values():
+                ziel = (umbenennen or {}).get(s.get("kategorie"))
+                if ziel and ziel in kats:
+                    s["kategorie"] = ziel
+                    n += 1
+            n += self._einsortieren(d, kats)
+            if n:
+                self._speichern(d)
+        self.liste_bauen()
+        return n
+
+    @staticmethod
+    def ueberzaehlig(streams, max_tag, v, jetzt=None, themen=None):
         """Gefundene Streams, die raus müssen (seit 0.31): „max“ zählt nur Streams, an deren Ort gerade Tag ist –
         Nacht und „Ort unbekannt“ belegen keinen Platz. Insgesamt höchstens MAX_GEFUNDEN_GESAMT; darüber gehen zuerst
         die ohne Ort, dann die am längsten nicht mehr gefundenen. Geschützte und übernommene zählen nie mit.
-        Seit 0.32 zählen Themen-Streams nicht mit: je Thema höchstens THEMA_MAX (die zuletzt gefundenen bleiben)."""
+        Seit 0.32 zählen Themen-Streams nicht mit: je Thema höchstens THEMA_MAX (die zuletzt gefundenen bleiben).
+        themen: Kennungen der Kategorien in der Gruppe „Themen“ (Standard: die eingebauten)."""
         jetzt = time.time() if jetzt is None else jetzt
+        if themen is None:
+            from einstellungen import THEMEN_KATEGORIEN as themen
         entdeckt = sorted((k for k, s in streams.items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")),
                           key=lambda k: (streams[k].get("breite") is not None, streams[k].get("zuletzt_gefunden", "")), reverse=True)
         raus, tag, behalten, je_thema = [], 0, 0, {}
         for k in entdeckt:
             s = streams[k]
-            if s.get("kategorie") in THEMEN:
+            if s.get("kategorie") in themen:
                 je_thema[s["kategorie"]] = je_thema.get(s["kategorie"], 0) + 1
                 if je_thema[s["kategorie"]] > THEMA_MAX:
                     raus.append(k)
@@ -706,11 +744,13 @@ class Streams:
             return self.status["suche"]
         tier = re.compile("|".join(su["tierwoerter"]) or "^$", re.I)
         nein = re.compile("|".join(su["ausschluss"]) or "^$", re.I)
+        kats = kategorien(e)
         d = self.alle()
         st = self.strikes()
-        # Seit 0.32 zusätzlich je eingeschaltetem Thema; Tier-Treffer haben Vorrang
-        themen = [k for k in THEMEN if k not in v["kategorien_aus"]]
-        auftraege = [(b, None) for b in su["begriffe"]] + [(b, k) for k in themen for b in THEMEN[k]["begriffe"]]
+        # Seit 0.32 zusätzlich je eingeschalteter Kategorie mit eigenen Suchbegriffen (seit 0.37 auch eigene und Tiere);
+        # Treffer der allgemeinen Tiersuche haben Vorrang
+        mit_suche = [k for k, x in kats.items() if x["begriffe"] and k not in v["kategorien_aus"]]
+        auftraege = [(b, None) for b in su["begriffe"]] + [(b, k) for k in mit_suche for b in kats[k]["begriffe"]]
         try:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 ergebnisse = list(pool.map(lambda a: (a[1], self._suche(a[0])), auftraege))
@@ -728,21 +768,27 @@ class Streams:
         neu_ids = [vid for k, liste in ergebnisse if k is None for vid, t in liste
                    if not bekannt(vid) and tier.search(t) and not nein.search(t)]
         neu_ids = list(dict.fromkeys(neu_ids))[:30]
-        for k in themen:
-            wort = re.compile(THEMEN[k]["woerter"], re.I)
+        for vid in neu_ids:
+            kat[vid] = einordnen(funde[vid], kats)        # seit 0.37: in die passende Tier-Kategorie, sonst „neu“
+        for k in mit_suche:
+            x = kats[k]
+            wort = _muster(x["woerter"])
+            # Tiere: Tierwörter oder eigene Wörter, Ausschlüsse der Tiersuche; Themen: Ausschlüsse für Themen
+            passt = (lambda t: (wort.search(t) if wort else tier.search(t)) and not nein.search(t)) if x["gruppe"] == "tiere" \
+                else (lambda t: (not wort or wort.search(t)) and not THEMEN_AUSSCHLUSS.search(t))
             ids = [vid for kk, liste in ergebnisse if kk == k for vid, t in liste
-                   if not bekannt(vid) and vid not in neu_ids and vid not in kat
-                   and wort.search(t) and not THEMEN_AUSSCHLUSS.search(t)]
-            orte = {}
+                   if not bekannt(vid) and vid not in kat and passt(t)]
+            orte, n = {}, 0
             for vid in dict.fromkeys(ids):
                 o = self.ort(funde[vid])
                 if o and orte.get(o, 0) >= 2:
-                    continue                      # höchstens 2 vom selben Ort je Thema (sonst 6× Times Square)
+                    continue                      # höchstens 2 vom selben Ort je Kategorie (sonst 6× Times Square)
                 orte[o] = orte.get(o, 0) + (o is not None)
                 kat[vid] = k
-                if sum(1 for x in kat.values() if x == k) >= THEMA_MAX:
+                n += 1
+                if n >= THEMA_MAX:
                     break
-        neu_ids += list(kat)
+        neu_ids = list(dict.fromkeys(neu_ids + list(kat)))
 
         def einbettbar(vid):
             try:
@@ -759,12 +805,12 @@ class Streams:
                     continue                      # inzwischen anders bekannt (z. B. Profil eingespielt) – nie überschreiben
                 o = self.ort(funde[vid])
                 k = kat.get(vid, "neu")
-                th = THEMEN.get(k, {})
+                th = kats.get(k, {})
                 d["streams"][vid] = {"art": "video", "name": self.kurzname(funde[vid]), "titel": funde[vid][:160],
                                      "kategorie": k, "breite": o[0] if o else None, "laenge": o[1] if o else None,
                                      "aktiv": True, "geschuetzt": False, "herkunft": "entdeckt", "seit": heute,
                                      "zuletzt_gefunden": heute}
-                if th.get("ohne_tag") or (th.get("ohne_tag_titel") and re.search(th["ohne_tag_titel"], funde[vid], re.I)):
+                if th.get("ohne_tag") or (th.get("ohne_tag_woerter") and _muster(th["ohne_tag_woerter"]).search(funde[vid])):
                     d["streams"][vid]["ohne_tag"] = True
                 neu.append(d["streams"][vid]["name"])
             for vid in funde:
@@ -775,7 +821,8 @@ class Streams:
             for vid in [k for k, s in d["streams"].items() if s.get("herkunft") == "entdeckt" and not s.get("geschuetzt")
                         and (s.get("zuletzt_gefunden", "") < grenze or st.get(k, {}).get("strikes", 0) >= v["strike_grenze"])]:
                 d["streams"].pop(vid)
-            for vid in self.ueberzaehlig(d["streams"], su["max"], v):
+            self._einsortieren(d, kats)
+            for vid in self.ueberzaehlig(d["streams"], su["max"], v, themen={k for k, x in kats.items() if x["gruppe"] == "themen"}):
                 d["streams"].pop(vid)
             self._speichern(d)
         self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "pause": False, "neu": neu,
