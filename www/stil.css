@@ -190,3 +190,7 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 #fernwartung { position: absolute; right: 1.5vw; top: 2vh; z-index: 200; padding: .4vh .8vw; border-radius: .6vh;
   background: rgba(0,0,0,.6); color: #ffd700; font-size: 2.6vh; font-weight: 600; pointer-events: none; }
 #fernwartung[hidden] { display: none; }
+/* Vorschaubild (seit 0.39, ?vorschau=1): Video als Platzhalter, Laufband steht lesbar am Anfang */
+.vorschau .typ-video > .platzhalter { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 6vh; color: rgba(255, 255, 255, .6); background: #111; }
+.vorschau .laufband span { animation: none !important; transform: translate(1vh, -50%) !important; }

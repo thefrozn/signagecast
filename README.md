@@ -18,6 +18,7 @@
   <a href="docs/TOUR.md"><b>Screenshot tour</b></a> ·
   <a href="docs/PLAYER.md">Players</a> ·
   <a href="docs/MANUAL.md">Manual &amp; FAQ</a> ·
+  <a href="docs/MCP.md">AI assistants (MCP)</a> ·
   <a href="docs/HOW-IT-WORKS.md">How it works</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
   <a href="README.de.md">Deutsch</a>
@@ -116,6 +117,8 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   instead of an error; a picture check notices a black or frozen TV and repairs it (reload, restart, notify).
 - **Change log and layout versions** – who changed what and when (admin, panel, webhook, system – never values); the
   last 10 versions of every layout, also of deleted ones.
+- **AI assistants via MCP** – Claude and other assistants manage layouts, TVs, tickers, pictures and streams
+  directly over SSH, look at preview pictures, and every change lands in the log ([MCP.md](docs/MCP.md)).
 - **Layouts from an AI** – copy the instructions with the complete [layout format](docs/LAYOUT-FORMAT.md) into
   ChatGPT, Claude or Gemini and paste the answer; the import repairs what it can and tells you what.
 

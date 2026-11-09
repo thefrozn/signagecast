@@ -2046,3 +2046,130 @@ class Dienst038(unittest.TestCase):
         import todo as TD
         self.assertEqual(TD.art("internet"), "warn")
         self.assertEqual(TD.art("bild:tv"), "warn")
+
+
+class Mcp039(unittest.TestCase):
+    """Seit 0.39: MCP-Server über stdio – Handshake, Werkzeuge, Aufrufe gegen einen nachgestellten Datendienst."""
+
+    def setUp(self):
+        import io, mcp
+        self.mcp, self.io = mcp, io
+        self.e = {"layouts": [L.standard(), L.vorlagen()[-1]], "medien": [], "quellen": [],
+                  "fernseher": [{"id": "tv", "name": "Wohnzimmer", "layout": "standard", "zeitplan": [], "karussell": {}, "video": True}]}
+        self.gesendet = []
+        def anfrage(methode, pfad, daten=None, roh=False):
+            self.gesendet.append((methode, pfad, daten))
+            if pfad == "/api/einstellungen" and methode == "GET":
+                return {"einstellungen": json.loads(json.dumps(self.e))}
+            if pfad == "/api/einstellungen":
+                self.e.update(daten); return {"ok": True}
+            if pfad == "/api/layouts/pruefen":
+                l, h = L.import_pruefen(daten.get("layout") or L.json_aus_text(daten["text"]),
+                                        [x["id"] for x in self.e["layouts"] if x["id"] != daten.get("ersetzen")])
+                return {"layout": l, "hinweise": [M.als_dict(x) for x in h]}
+            if pfad.startswith("/api/vorschau/bild"):
+                return (b"\x89PNG\r\n\x1a\nxx", "image/png")
+            if pfad == "/api/meldung":
+                return {"ok": True}
+            raise mcp.Fehler("unerwartet " + pfad)
+        self.alt = mcp.anfrage
+        mcp.anfrage = anfrage
+
+    def tearDown(self):
+        self.mcp.anfrage = self.alt
+
+    def rufen(self, *nachrichten):
+        alt_ein, alt_aus = sys.stdin, sys.stdout
+        sys.stdin = self.io.StringIO("".join(json.dumps(n) + "\n" for n in nachrichten))
+        sys.stdout = aus = self.io.StringIO()
+        try:
+            self.mcp.main()
+        finally:
+            sys.stdin, sys.stdout = alt_ein, alt_aus
+        return [json.loads(z) for z in aus.getvalue().splitlines()]
+
+    def werkzeug(self, name, args):
+        return self.rufen({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": name, "arguments": args}})[0]["result"]
+
+    def test_handshake_und_liste(self):
+        r = self.rufen({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}}},
+                       {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                       {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                       {"jsonrpc": "2.0", "id": 3, "method": "gibtsnicht"})
+        self.assertEqual(len(r), 3)                                   # keine Antwort auf die Benachrichtigung
+        self.assertEqual(r[0]["result"]["protocolVersion"], "2025-06-18")
+        namen = {w["name"] for w in r[1]["result"]["tools"]}
+        self.assertTrue({"save_layout", "preview", "send_ticker", "get_layout_format"} <= namen)
+        self.assertFalse(any(re.search(r"^(update|upgrade)s?$|backup|sicherung|terminal|player|passw|system", n) for n in namen))
+        self.assertEqual(r[2]["error"]["code"], -32601)
+        for w in r[1]["result"]["tools"]:
+            self.assertEqual(w["inputSchema"]["type"], "object")
+
+    def test_layout_neu_und_ersetzen(self):
+        r = self.werkzeug("save_layout", {"layout": {"name": "KI", "elemente": [{"typ": "uhr"}, {"typ": "quatsch"}]}})
+        d = json.loads(r["content"][0]["text"])
+        self.assertEqual(len(self.e["layouts"]), 3)
+        self.assertEqual(len(d["hinweise"]), 1)
+        r = self.werkzeug("save_layout", {"layout": {"name": "KI 2", "elemente": []}, "replace_id": d["id"]})
+        self.assertEqual(len(self.e["layouts"]), 3)
+        self.assertEqual(next(l for l in self.e["layouts"] if l["id"] == d["id"])["name"], "KI 2")
+        r = self.werkzeug("delete_layout", {"id": "standard"})                       # in Gebrauch
+        self.assertTrue(r["isError"])
+        self.assertIn("tv", r["content"][0]["text"])
+
+    def test_fernseher_und_fehler(self):
+        self.werkzeug("set_tv_layout", {"tv": "tv", "layout": "nacht"})
+        self.assertEqual(self.e["fernseher"][0]["layout"], "nacht")
+        r = self.werkzeug("set_tv_layout", {"tv": "tv", "layout": "gibtsnicht"})
+        self.assertTrue(r["isError"])
+        r = self.werkzeug("send_ticker", {"text": "Hallo", "tvs": ["falsch"]})
+        self.assertTrue(r["isError"])
+        self.werkzeug("send_ticker", {"text": "Hallo"})
+        self.assertEqual(self.gesendet[-1][2]["fernseher"], ["tv"])
+        r = self.werkzeug("preview", {"layout": "nacht"})
+        self.assertEqual(r["content"][0]["type"], "image")
+        r = self.werkzeug("save_layout", {})                                           # Pflichtangabe fehlt
+        self.assertTrue(r["isError"])
+
+    def test_bild_pruefung(self):
+        with self.assertRaises(self.mcp.Fehler):
+            self.mcp.bild_laden("", base64_text := __import__("base64").b64encode(b"GIF89a").decode())
+        roh, typ = self.mcp.bild_laden("", "data:image/png;base64," + __import__("base64").b64encode(b"\x89PNG\r\n\x1a\n").decode())
+        self.assertEqual(typ, "image/png")
+        with self.assertRaises(self.mcp.Fehler):
+            self.mcp.bild_laden("file:///etc/passwd", "")
+
+
+class Admin039(unittest.TestCase):
+    """Seit 0.39: Laufschrift, Layout auf Zeit und Vorschau-Layout auch über die Verwaltungs-API (für MCP)."""
+
+    def test_meldung_und_vorrang(self):
+        import dienst as D
+        alt = D.zustand["einstellungen"]
+        D.zustand["einstellungen"] = E.pruefen({"layouts": [L.standard(), L.vorlagen()[-1]], "fernseher": [{"id": "tv"}, {"id": "b"}]})
+        try:
+            D.meldung_setzen(["tv", "gibtsnicht"], "  Heute   zu ", 120, "warnung", "MCP x")
+            self.assertEqual(D.meldung_fuer("tv")["text"], "Heute zu")
+            self.assertIsNone(D.meldung_fuer("b"))
+            D.meldung_beenden(["tv"])
+            self.assertIsNone(D.meldung_fuer("tv"))
+            with self.assertRaises(M.Meldung):
+                D.meldung_setzen(["tv"], " ", 60, "", "x")
+            l, m = D.vorrang_setzen(["b"], "nacht", 1, "x")
+            self.assertEqual((l["id"], m), ("nacht", 5))                              # mindestens 5 min
+            self.assertEqual(D.layout_fuer(D.fernseher("b"))["id"], "nacht")
+            D.vorrang_beenden(["b"])
+            self.assertEqual(D.layout_fuer(D.fernseher("b"))["id"], "standard")
+            self.assertEqual(D.tv_daten("tv", "nacht")["layout"]["id"], "nacht")       # Vorschau-Layout
+            self.assertEqual(D.tv_daten("tv", "gibtsnicht")["layout"]["id"], "standard")
+        finally:
+            D.zustand["einstellungen"] = alt
+            D.layout_vorrang.clear(); D.zustand["meldung_pult"] = None
+
+
+class McpDoku039(unittest.TestCase):
+    def test_alle_werkzeuge_beschrieben(self):
+        import mcp
+        doku = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "MCP.md"), encoding="utf-8").read()
+        for name in mcp.WERKZEUGE:
+            self.assertIn(f"`{name}`", doku, name)

@@ -38,6 +38,11 @@ const zahl = (w, nachkomma) => {
 const stellen = (einheit, wert) => (!einheit || einheit === "W" || einheit === "%" ? 0 : Math.abs(Number(wert)) >= 100 ? 0 : 1);
 
 const TV = new URLSearchParams(location.search).get("tv") || "tv";
+// Vorschau eines bestimmten Layouts (seit 0.39, z. B. für die MCP-Schnittstelle): ?layout=<kennung> – nur Anzeige
+const VORSCHAU_LAYOUT = new URLSearchParams(location.search).get("layout") || "";
+// Vorschaubild (seit 0.39, ?vorschau=1): kein YouTube und keine Daueranfrage – ein Headless-Browser soll schnell fertig werden
+const VORSCHAU = new URLSearchParams(location.search).get("vorschau") === "1";
+if (VORSCHAU) document.documentElement.classList.add("vorschau");
 let daten = null, layoutJson = "", bausteine = [], player = null, seitenVersion = "";
 const meldungen = {};                         // entity -> {wert, seit}
 
@@ -96,7 +101,8 @@ function bauen(layout) {
     if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
-      player = new LivePlayer(d, () => T);
+      if (VORSCHAU) d.innerHTML = `<div class="platzhalter">▶ Live</div>`;
+      else player = new LivePlayer(d, () => T);
     }
     f.appendChild(d);
     bausteine.push({ e, d, sichtbar: e.sichtbar });
@@ -586,7 +592,7 @@ function uhr() {
 const radio = $("radio");
 let radioUrl = "", radioFehler = 0;
 function radioSetzen(d) {
-  const r = d.ton === "radio" && d.radio ? d.radio : null;
+  const r = d.ton === "radio" && d.radio && !VORSCHAU ? d.radio : null;
   radio.volume = Math.max(0, Math.min(1, (d.lautstaerke ?? 70) / 100));
   const url = r ? r.url : "";
   if (url !== radioUrl) {
@@ -619,7 +625,7 @@ setInterval(() => {
 // ---------- Laden ----------
 async function laden() {
   try {
-    const r = await fetch("/daten.json?tv=" + encodeURIComponent(TV), { cache: "no-store" });
+    const r = await fetch("/daten.json?tv=" + encodeURIComponent(TV) + (VORSCHAU_LAYOUT ? "&layout=" + encodeURIComponent(VORSCHAU_LAYOUT) : ""), { cache: "no-store" });
     const d = await r.json();
     if (!d || !d.ok) return;
     // seit 0.28.1: nach einem Update (andere Version im Dienst) sofort mit dem neuen Code neu laden
@@ -724,6 +730,7 @@ laden(); setInterval(laden, 15000);
 // Durchsagen und Notfall-Vollbild per Long-Polling (seit 0.29): der Datendienst antwortet, sobald sich etwas ändert
 // (sonst nach 20 s) – sofort sichtbar, ohne alle 2 s zu fragen. Bei einem Fehler 2 s warten.
 (async function durchsagenHolen() {
+  if (VORSCHAU) return;
   let stand = "";
   for (;;) {
     try {

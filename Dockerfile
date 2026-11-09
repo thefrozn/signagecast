@@ -33,7 +33,8 @@ COPY player /opt/signagecast/player
 COPY cockpit/signagecast /opt/signagecast/cockpit/signagecast
 COPY profile /opt/signagecast/profile
 COPY docker/start.sh /opt/signagecast/docker/start.sh
-RUN chmod -R a+rX,go-w /opt/signagecast && chmod 755 /opt/signagecast/render/tv-render.sh /opt/signagecast/docker/start.sh
+RUN chmod -R a+rX,go-w /opt/signagecast && chmod 755 /opt/signagecast/render/tv-render.sh /opt/signagecast/docker/start.sh \
+ && printf '#!/bin/sh\nexec python3 /opt/signagecast/app/mcp.py "$@"\n' > /usr/local/bin/signagecast-mcp && chmod 755 /usr/local/bin/signagecast-mcp
 
 LABEL org.opencontainers.image.title="SignageCast" \
       org.opencontainers.image.description="Turn any TV into a calm information screen with live wildlife cams" \

@@ -533,6 +533,47 @@ def meldung_fuer(tv_id):
     return {"text": m["text"], "stil": m["stil"], "bis": m["bis"]}
 
 
+def meldung_setzen(tvs, text, dauer_s, stil, von):
+    """Laufschrift-Meldung auf den Fernsehern tvs (Pult seit 0.38, Verwaltung/MCP seit 0.39)."""
+    text = " ".join(str(text or "").split())[:200]
+    alle = {t["id"] for t in einst()["fernseher"]}
+    tvs = [x for x in tvs if x in alle]
+    if not text or not tvs:
+        raise M.Meldung("d_text_tv")
+    zustand["meldung_pult"] = {"text": text, "bis": time.time() + max(60, min(12 * 3600, int(dauer_s or 3600))), "tvs": tvs,
+                               "von": str(von)[:40], "stil": "warnung" if stil == "warnung" else "info"}
+
+
+def meldung_beenden(tvs):
+    mp = zustand.get("meldung_pult")
+    if mp:
+        mp["tvs"] = [x for x in mp["tvs"] if x not in tvs]
+
+
+def vorrang_setzen(tvs, layout_id, minuten, von):
+    """Layout vorübergehend zeigen (vor Zeitplan und Karussell); Pult seit 0.38, Verwaltung/MCP seit 0.39."""
+    l = next((x for x in einst()["layouts"] if x["id"] == layout_id), None)
+    alle = {t["id"] for t in einst()["fernseher"]}
+    tvs = [x for x in tvs if x in alle]
+    if not l or not tvs:
+        raise M.Meldung("d_text_tv")
+    minuten = max(5, min(12 * 60, int(minuten or 60)))
+    for x in tvs:
+        layout_vorrang[x] = {"layout": l["id"], "bis": time.time() + minuten * 60, "von": str(von)[:40]}
+    schalten_neu.set()                            # war der Fernseher im Zeitplan „schwarz“: einschalten
+    return l, minuten
+
+
+def vorrang_beenden(tvs):
+    for x in tvs:
+        layout_vorrang.pop(x, None)
+    schalten_neu.set()
+
+
+def tv_namen(ids):
+    return ", ".join(t["name"] for t in einst()["fernseher"] if t["id"] in ids)
+
+
 # ---------- Durchsagen (seit 0.19) ----------
 # Nur im Arbeitsspeicher: laufende Durchsagen und „Zuletzt“ (höchstens 10, 2 Stunden) – Namen werden nirgends gespeichert.
 durchsagen = []                                   # [{id, text, tvs, bis, audio, zeit, von, t}]
@@ -817,39 +858,29 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             if not z.get("meldung"):
                 return self.antwort(403, {"ok": False, "code": "p_recht"})
             tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
-            mp = zustand.get("meldung_pult")
             if daten.get("aus"):
-                if mp:
-                    mp["tvs"] = [x for x in mp["tvs"] if x not in (tvs or erlaubt)]
-                PROTOKOLL.eintragen(z["name"], "pult", "meldung_aus", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in (tvs or erlaubt)))
+                meldung_beenden(tvs or erlaubt)
+                PROTOKOLL.eintragen(z["name"], "pult", "meldung_aus", tv_namen(tvs or erlaubt))
                 return self.antwort(200, {"ok": True})
-            text = " ".join(str(daten.get("text", "")).split())[:200]
-            if not text or not tvs:
-                return self.antwort(200, {"ok": False, "code": "d_text_tv"})
-            dauer = max(60, min(12 * 3600, int(daten.get("dauer_s") or 3600)))
-            zustand["meldung_pult"] = {"text": text, "bis": time.time() + dauer, "tvs": tvs, "von": z["name"],
-                                       "stil": "warnung" if daten.get("stil") == "warnung" else "info"}
-            PROTOKOLL.eintragen(z["name"], "pult", "meldung", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs))
+            try:
+                meldung_setzen(tvs, daten.get("text", ""), daten.get("dauer_s"), daten.get("stil"), z["name"])
+            except (M.Meldung, ValueError) as f:
+                return self.antwort(200, {"ok": False, "code": getattr(f, "code", "d_text_tv")})
+            PROTOKOLL.eintragen(z["name"], "pult", "meldung", tv_namen(tvs))
             return self.antwort(200, {"ok": True})
         if pfad == "/pult/layout" and self.command == "POST":
             if not z.get("layout"):
                 return self.antwort(403, {"ok": False, "code": "p_recht"})
             tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
             if daten.get("aus"):
-                for x in tvs or erlaubt:
-                    layout_vorrang.pop(x, None)
-                PROTOKOLL.eintragen(z["name"], "pult", "layout_aus", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in (tvs or erlaubt)))
-                schalten_neu.set()
+                vorrang_beenden(tvs or erlaubt)
+                PROTOKOLL.eintragen(z["name"], "pult", "layout_aus", tv_namen(tvs or erlaubt))
                 return self.antwort(200, {"ok": True})
-            l = next((x for x in einst()["layouts"] if x["id"] == daten.get("layout")), None)
-            if not l or not tvs:
-                return self.antwort(200, {"ok": False, "code": "d_text_tv"})
-            minuten = max(5, min(12 * 60, int(daten.get("minuten") or 60)))
-            for x in tvs:
-                layout_vorrang[x] = {"layout": l["id"], "bis": time.time() + minuten * 60, "von": z["name"]}
-            PROTOKOLL.eintragen(z["name"], "pult", "layout", f"{l['name']} → " + ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs)
-                                + f" ({minuten} min)")
-            schalten_neu.set()                    # war der Fernseher im Zeitplan „schwarz“: einschalten
+            try:
+                l, minuten = vorrang_setzen(tvs, daten.get("layout"), daten.get("minuten"), z["name"])
+            except (M.Meldung, ValueError) as f:
+                return self.antwort(200, {"ok": False, "code": getattr(f, "code", "d_text_tv")})
+            PROTOKOLL.eintragen(z["name"], "pult", "layout", f"{l['name']} → {tv_namen(tvs)} ({minuten} min)")
             return self.antwort(200, {"ok": True})
         if pfad == "/pult/schalten" and self.command == "POST":
             if not z.get("schalten"):
@@ -1244,6 +1275,7 @@ PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion 
     "/api/aktion/ton-neu": "ton_neu", "/api/layouts/wiederherstellen": "layout_wiederherstellen", "/api/pult/stimme-laden": "stimme_laden",
     "/api/pult/probe": "probedurchsage", "/api/player/neu": "player_neu", "/api/player/koppeln": "player_koppeln",
     "/api/player/einstellungen": "player_einstellungen", "/api/player/wlan-vergessen": "player_wlan", "/api/player/sammel-image": "player_image",
+    "/api/meldung": "meldung", "/api/layout-vorrang": "layout", "/api/durchsage": "durchsage",
 }
 PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennung mit {0} = erste Gruppe
     (re.compile(r"/api/streams/([\w-]{11}|UC[\w-]{22})(?:/([a-z-]+))?"), "stream_{1}"),
@@ -1270,6 +1302,7 @@ def protokoll_verwaltung(handler, p, d, antwort):
     if p == "/api/medien/teil" and not d.get("fertig"):
         return
     extra = handler.protokoll_detail or {}
+    aktion = extra.get("aktion") or aktion
     if aktion == "einstellungen":
         teile = sorted(k for k in d if k not in EINST_BEREICHE_STILL and k != "layouts")
         detail = ", ".join(teile)
@@ -1577,13 +1610,15 @@ def schalten_schleife():
         schalten_neu.clear()
 
 
-def tv_daten(tv_id):
+def tv_daten(tv_id, vorschau_layout=None):
     e = einst()
     t = fernseher(tv_id)
     if not t:
         return {"ok": False, "fehler": "unbekannter Fernseher"}
     v = e["video"]
-    layout = layout_fuer(t, e["layouts"])
+    # vorschau_layout (seit 0.39): ein bestimmtes Layout zeigen – nur für Vorschaubilder, ändert nichts
+    layout = next((l for l in e["layouts"] if l["id"] == vorschau_layout), None) if vorschau_layout else None
+    layout = layout or layout_fuer(t, e["layouts"])
     hat_video = any(x["typ"] == "video" and x["sichtbar"] for x in layout.get("elemente", []))
     vr = streams.vorrang if streams.vorrang and streams.vorrang["bis"] > time.time() \
         and streams.vorrang.get("tv") in (None, t["id"]) else None
@@ -1960,6 +1995,28 @@ def vorschau(tv_id):
     r = subprocess.run(["ffmpeg", "-v", "error", "-f", "x11grab", "-video_size", f"{aw}x{ah}", "-i", anzeige_nr(t),
                         "-frames:v", "1", "-vf", "scale=960:-1", "-f", "mjpeg", "-"], capture_output=True, timeout=15)
     return r.stdout if r.returncode == 0 and r.stdout else None
+
+
+vorschau_sperre = threading.Lock()
+
+
+def vorschau_bild(tv_id, layout_id=""):
+    """TV-Seite eines Fernsehers (wahlweise mit einem bestimmten Layout) in einem kurzlebigen Headless-Chromium
+    fotografieren, 960 × 540 (seit 0.39). Nur eine Aufnahme gleichzeitig, niedrige Priorität."""
+    t = fernseher(tv_id) or (einst()["fernseher"][0] if not tv_id else None)
+    if not t:
+        raise KeyError(f"unbekannter Fernseher {tv_id}")
+    if layout_id and not any(l["id"] == layout_id for l in einst()["layouts"]):
+        raise KeyError(f"unbekanntes Layout {layout_id}")
+    url = f"http://127.0.0.1:{os.environ.get('SC_PORT', '8080')}/?tv={t['id']}&vorschau=1" + (f"&layout={layout_id}" if layout_id else "")
+    ziel = os.path.join(DATEN, "vorschau-mcp.png")
+    if not vorschau_sperre.acquire(timeout=60):
+        raise RuntimeError("Vorschau beschäftigt")
+    try:
+        WB.aufnehmen(url, 1920, 1080, 0.5, ziel, einst()["sprache"] or "en")
+        return open(ziel, "rb").read()
+    finally:
+        vorschau_sperre.release()
 
 
 def schreib_wenn_anders(pfad, inhalt):
@@ -2631,8 +2688,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             qs = urllib.parse.parse_qs(p.query)
             return self.antwort(200, ds_warten((qs.get("tv") or [""])[0], (qs.get("stand") or [""])[0][:40]))
         if p.path == "/daten.json":
-            tv = (urllib.parse.parse_qs(p.query).get("tv") or [None])[0]
-            return self.antwort(200, tv_daten(tv))
+            qs = urllib.parse.parse_qs(p.query)
+            return self.antwort(200, tv_daten((qs.get("tv") or [None])[0], (qs.get("layout") or [None])[0]))
         m = re.fullmatch(r"/kamera/(camera\.[a-z0-9_]+)\.jpg", p.path)
         if m:                                     # für die TV-Seite (nur Kameras aus den Layouts)
             try:
@@ -2815,6 +2872,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 return self.antwort(200, {"ok": True, "orte": radio.ort_suchen((q.get("q") or [""])[0], einst()["sprache"])})
             except Exception as ex:
                 return self.antwort(200, {"ok": False, "fehler": str(ex)})
+        if pfad == "/api/vorschau/bild":              # seit 0.39: Foto der TV-Seite (auch ohne Zuschauer), z. B. für MCP
+            try:
+                bild = vorschau_bild((q.get("tv") or [""])[0], (q.get("layout") or [""])[0])
+            except (RuntimeError, KeyError) as f:
+                return self.antwort(200, {"ok": False, "fehler": str(f)[:200]})
+            return self.antwort(200, bild, "image/png")
         if pfad == "/api/vorschau.jpg":
             bild = vorschau((q.get("tv") or [None])[0])
             return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
@@ -3035,7 +3098,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/layouts/pruefen":                # Import (seit 0.38): Datei oder eingefügter Text, fehlertolerant
             roh = L.json_aus_text(d["text"]) if isinstance(d.get("text"), str) else d.get("layout")
             e = einst()
-            l, hinweise = L.import_pruefen(roh, [x["id"] for x in e["layouts"]], bild_da=lambda n: os.path.exists(os.path.join(BILDER, n)),
+            ersetzen = str(d.get("ersetzen") or "")      # seit 0.39: Kennung behalten (Layout ersetzen)
+            l, hinweise = L.import_pruefen(roh, [x["id"] for x in e["layouts"] if x["id"] != ersetzen], bild_da=lambda n: os.path.exists(os.path.join(BILDER, n)),
                                            quellen=[q["id"] for q in e["quellen"]],
                                            pdf_da=lambda n: bool(PDF.seiten(PDF_ORDNER, n)))
             return {"layout": l, "hinweise": [M.als_dict(h) for h in hinweise]}
@@ -3052,6 +3116,31 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
             self.protokoll_detail = {"text": l["name"]}
             return {"einstellungen": einst_aussen()}
+        if p == "/api/meldung":                       # Laufschrift (seit 0.39, wie am Pult) – leer = alle Fernseher
+            tvs = [str(x) for x in (d.get("fernseher") or [t["id"] for t in einst()["fernseher"]])]
+            if d.get("aus"):
+                meldung_beenden(tvs)
+                self.protokoll_detail = {"text": tv_namen(tvs), "aktion": "meldung_aus"}
+                return {}
+            meldung_setzen(tvs, d.get("text", ""), d.get("dauer_s"), d.get("stil"), verwaltung_wer(self))
+            self.protokoll_detail = {"text": tv_namen(tvs)}
+            return {}
+        if p == "/api/layout-vorrang":                # Layout vorübergehend (seit 0.39, wie am Pult)
+            tvs = [str(x) for x in (d.get("fernseher") or [t["id"] for t in einst()["fernseher"]])]
+            if d.get("aus"):
+                vorrang_beenden(tvs)
+                self.protokoll_detail = {"text": tv_namen(tvs), "aktion": "layout_aus"}
+                return {}
+            l, minuten = vorrang_setzen(tvs, d.get("layout"), d.get("minuten"), verwaltung_wer(self))
+            self.protokoll_detail = {"text": f"{l['name']} → {tv_namen(tvs)} ({minuten} min)"}
+            return {}
+        if p == "/api/durchsage":                     # Durchsage (seit 0.39, wie am Pult; Text nicht ins Protokoll)
+            tvs = [t["id"] for t in einst()["fernseher"] if not d.get("fernseher") or t["id"] in d["fernseher"]]
+            pu = einst()["pult"]
+            did = durchsage_senden(d.get("text", ""), tvs, bool(d.get("vorlesen")) and pu["vorlesen"], pu["gong"],
+                                   max(10, min(3600, int(d.get("dauer_s") or pu["dauer_s"]))), verwaltung_wer(self))
+            self.protokoll_detail = {"text": tv_namen(tvs)}
+            return {"id": did}
         if p == "/api/kategorien/loeschen":           # eigene Kategorie löschen, ihre Streams in eine andere (seit 0.37)
             kid, ziel = str(d.get("id", "")), str(d.get("ziel") or "neu")
             ks = einst()["kategorien"]

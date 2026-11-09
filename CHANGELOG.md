@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.39.0 (2026-11-09)
+- **MCP server – manage the content with Claude or another AI assistant:** `signagecast-mcp` speaks the Model Context
+  Protocol over stdio; the assistant starts it via SSH (`ssh -T tvadmin@<IP> signagecast-mcp`) – no new port, no token,
+  login with your SSH key. 30 tools: status, TVs and layouts, the layout format, create/replace/delete layouts (with
+  versions and undo), a **preview picture** of any TV page or layout, put a layout on a TV (also schedule and carousel),
+  ticker message, layout for a while, announcement, pictures and own media, streams, data sources (also from a curl
+  command) and the change log. Deliberately not: updates, backups, players/terminal, Home Assistant connection,
+  passwords and keys. Every change is in the log as “MCP *user*”. Guide: [docs/MCP.md](docs/MCP.md).
+- Admin API: ticker message, layout for a while and announcement also without the panel (used by MCP, logged).
+- TV page: `?layout=<id>` shows another layout for a preview only; `?vorschau=1` leaves out YouTube, radio and the
+  long-polling so a headless browser takes the picture in about a second.
+
 ## v0.38.0 (2026-11-09)
 - **When the internet is gone, the TVs stay calm:** SignageCast checks once a minute whether YouTube is reachable (one
   TCP connection, only while a TV shows live videos). If not (twice in a row), the video window shows your own media

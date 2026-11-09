@@ -93,6 +93,8 @@ chmod 755 /opt/signagecast.neu/render/tv-render.sh /opt/signagecast.neu/werkzeug
 # Vorige Version aufheben – für „Zurück zur vorigen Version“ und die automatische Rückkehr nach einem fehlerhaften Update
 rm -rf /opt/signagecast.vorher /opt/signagecast.alt; [ -d /opt/signagecast ] && mv /opt/signagecast /opt/signagecast.vorher
 mv /opt/signagecast.neu /opt/signagecast
+# MCP-Schnittstelle (seit 0.39): ein KI-Assistent startet sie per SSH – ssh <benutzer>@<host> signagecast-mcp
+printf '#!/bin/sh\nexec python3 /opt/signagecast/app/mcp.py "$@"\n' > /usr/local/bin/signagecast-mcp && chmod 755 /usr/local/bin/signagecast-mcp
 # Startfassung mit einem Pfad "tv"; der Datendienst schreibt danach die Pfade aller Fernseher hinein
 if [ ! -f /etc/signagecast/mediamtx.yml ] || grep -q "runOnDemand: /usr/local/bin\|{ABSCHALTEN}" /etc/signagecast/mediamtx.yml; then
   sed "s#{PFADE}#  tv:\n    runOnDemand: /opt/signagecast/render/tv-render.sh#" /opt/signagecast/render/mediamtx.yml > /etc/signagecast/mediamtx.yml

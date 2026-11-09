@@ -45,6 +45,10 @@ see [NOTICE.md](../NOTICE.md).
 - **Change log and layout versions (since 0.38):** `/var/lib/signagecast/protokoll.json` (last 500 entries, kind and
   area only) and `layout-versionen.json` (10 per layout, 10 deleted layouts); both are in backups. The Cockpit user
   name is sent along for the log only – access is decided by Cockpit as before.
+- **MCP server (since 0.39):** `/usr/local/bin/signagecast-mcp` → `app/mcp.py`, JSON-RPC over stdio, started by the
+  assistant via SSH (or `docker exec -i`). It only calls the local admin API (127.0.0.1:8080) and offers content tools
+  – no system functions. Preview pictures: `/api/vorschau/bild` runs a short-lived headless Chromium on
+  `/?tv=…&layout=…&vorschau=1` (960 × 540, one at a time, low priority).
 
 ## Updates and backups
 

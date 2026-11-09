@@ -104,6 +104,12 @@ it can and lists it (unknown elements, invalid values, pictures that are not her
 pictures and choose Home Assistant entities. The format is described in [LAYOUT-FORMAT.md](LAYOUT-FORMAT.md) –
 generated from the code, so it is always current.
 
+### Let Claude manage the content (since 0.39)
+SignageCast has an MCP server for AI assistants. Allow SSH login with a key (`ssh-copy-id tvadmin@<IP>`), then e.g. in
+Claude Code `claude mcp add signagecast -- ssh -T tvadmin@<IP> signagecast-mcp`. The assistant can build layouts, look
+at preview pictures, assign layouts and schedules, send tickers and announcements, upload pictures, manage streams and
+data sources – not updates, backups, players or secrets. Details: [MCP.md](MCP.md).
+
 ### Who changed what? (since 0.38)
 System → *Log*: every change in the admin (with the Cockpit user), at the announcement panel, via webhook and by
 SignageCast itself (updates, picture check, internet outages). Only kind and area, never values – no passwords, no
@@ -328,6 +334,10 @@ starten und melden. **Änderungsprotokoll** (System → Protokoll: wer, wann, wa
 Anleitung kopieren, Antwort mit „Text einfügen …“ übernehmen; der Import repariert und nennt jede Änderung; Format in
 [LAYOUT-FORMAT.md](LAYOUT-FORMAT.md)). **Pult-Rechte** je Zugang: Laufschrift-Meldung, Layout vorübergehend
 umschalten, Fernseher über HA ein/aus.
+
+Seit 0.39: **MCP-Schnittstelle** für Claude & Co. – per SSH (`ssh -T tvadmin@<IP> signagecast-mcp`): Layouts bauen,
+Vorschaubild, Zuweisung, Zeitplan, Laufschrift, Durchsage, Bilder, Streams, Datenquellen; nichts am System. Anleitung:
+[MCP.md](MCP.md#deutsch-kurz).
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten
