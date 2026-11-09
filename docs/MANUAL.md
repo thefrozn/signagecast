@@ -57,6 +57,12 @@ one to change:
 Built-in categories can be **reset to default** but not deleted; unchanged ones follow improvements in updates. When you
 delete your own category you choose where its streams go; it disappears from all TVs.
 
+### Switch the TV on and off via Home Assistant
+TVs → TV card → *Switch via HA*: the TV's entity (`media_player`, `switch` or `remote`). When “black” starts in the
+schedule the TV is switched off, when it ends switched on again (also for the emergency screen). Since 0.37 a
+media_player can additionally get a **source after switching on** (e.g. `HDMI 2` where the player is connected) –
+“Get sources from HA” shows the names the TV offers.
+
 ### Show something different at night
 TVs → *Schedule*: add a time range with another layout or “black”. A schedule always wins over the carousel.
 

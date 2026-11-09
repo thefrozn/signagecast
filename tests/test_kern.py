@@ -1412,6 +1412,44 @@ class Kategorien037(unittest.TestCase):
         self.assertTrue(self.s.alle()["streams"]["kkkkkkkkkkk"]["kategorie_fest"])
 
 
+class Quelle037(unittest.TestCase):
+    """Seit 0.37: nach dem Einschalten über HA die Quelle wählen."""
+
+    def test_einstellung(self):
+        t = E.pruefen({"fernseher": [{"id": "tv", "ha_schalten": "media_player.tv", "ha_quelle": "HDMI 2"}]})["fernseher"][0]
+        self.assertEqual(t["ha_quelle"], "HDMI 2")
+        self.assertEqual(E.pruefen({"fernseher": [{"id": "tv"}]})["fernseher"][0]["ha_quelle"], "")
+
+    def test_wartet_und_waehlt(self):
+        import dienst as D
+        zustaende = iter([{"state": "off", "attributes": {}},
+                          {"state": "on", "attributes": {"source_list": ["HDMI 1", "HDMI 2"], "source": "HDMI 1"}}])
+        gesendet = []
+        alt = D.ha
+        class HA:
+            def get(self, pfad): return next(zustaende)
+            def post(self, pfad, d): gesendet.append((pfad, d))
+        try:
+            D.ha = HA()
+            self.assertIsNone(D.quelle_waehlen("tv", "media_player.tv", "HDMI 2", warten=5, takt=0))
+        finally:
+            D.ha = alt
+        self.assertEqual(gesendet, [("/api/services/media_player/select_source", {"entity_id": "media_player.tv", "source": "HDMI 2"})])
+        self.assertIsNone(D.schalten_stand["tv"]["quelle"]["fehler"])
+
+    def test_unbekannte_quelle(self):
+        import dienst as D
+        alt = D.ha
+        class HA:
+            def get(self, pfad): return {"state": "on", "attributes": {"source_list": ["HDMI 1"]}}
+            def post(self, pfad, d): raise AssertionError("darf nicht senden")
+        try:
+            D.ha = HA()
+            self.assertEqual(D.quelle_waehlen("tv", "media_player.tv", "HDMI 3", warten=0.05, takt=0.01), "unbekannte Quelle")
+        finally:
+            D.ha = alt
+
+
 class Themen032(unittest.TestCase):
     """Seit 0.32: Themen ohne Tiere – neu bei bestehenden Installationen aus, eigene Suche, Weltraum ohne Tag/Nacht."""
 

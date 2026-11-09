@@ -1231,6 +1231,37 @@ def tv_schalten(t, an):
         if f.detail.startswith("400 "):            # HA: Entität bietet turn_on/turn_off nicht an (z. B. Samsung ohne WoL)
             raise M.Meldung("sch_an_nicht" if an else "sch_aus_nicht", e=ent) from None
         raise
+    if an and t.get("ha_quelle") and ent.startswith("media_player."):
+        threading.Thread(target=quelle_waehlen, args=(t["id"], ent, t["ha_quelle"]), daemon=True).start()
+
+
+QUELLE_WARTEN_S = 90                               # so lange darauf warten, dass der Fernseher nach dem Einschalten bereit ist
+
+
+def quelle_waehlen(tv_id, ent, quelle, warten=QUELLE_WARTEN_S, takt=3):
+    """Seit 0.37: nach dem Einschalten die Quelle wählen (z. B. „HDMI 2“, an dem der Player hängt, oder die Browser-App).
+    Wartet, bis HA den Fernseher als eingeschaltet meldet und die Quelle anbietet; Ergebnis in schalten_stand."""
+    ende, fehler = time.time() + warten, "nicht bereit"
+    while time.time() < ende:
+        try:
+            s = ha.get(f"/api/states/{ent}")
+            liste = (s.get("attributes") or {}).get("source_list") or []
+            if s.get("state") not in ("off", "unavailable", "unknown", "standby") and (not liste or quelle in liste):
+                if (s.get("attributes") or {}).get("source") != quelle:
+                    time.sleep(takt)                  # frisch eingeschaltete Fernseher nehmen Befehle erst kurz danach an
+                    ha.post("/api/services/media_player/select_source", {"entity_id": ent, "source": quelle})
+                fehler = None
+                break
+            if liste and quelle not in liste:
+                fehler = "unbekannte Quelle"
+        except Exception as ex:
+            fehler = str(ex)[:200]
+        time.sleep(takt)
+    st = schalten_stand.setdefault(tv_id, {"soll": "an", "entity": ent, "zeit": None, "fehler": None, "versuche": 0})
+    st["quelle"] = {"name": quelle, "zeit": time.strftime("%H:%M"), "fehler": fehler}
+    if fehler:
+        print(f"Fernseher {tv_id}: Quelle {quelle!r} nicht gewählt:", fehler, flush=True)
+    return fehler
 
 
 def schalten_einmal(erster=False):
@@ -1564,7 +1595,7 @@ def status():
         m[k] = int(w.split()[0])
     sv = os.statvfs("/")
     e = einst()
-    return {
+    return {"schalten": schalten_stand,
         "version": VERSION, "zeit": time.strftime("%Y-%m-%d %H:%M:%S"),
         "neue_version": zustand.get("neue_version"), "projekt": f"https://github.com/{PROJEKT}",
         "wetter": {"quelle": e["anzeige"]["wetter_quelle"], "abruf": met.abruf, "fehler": met.fehler, "fehler_m": met.fehler_m,
@@ -2436,6 +2467,15 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, dict(ha.testen(), eigene_ip=eigene_ip()))
         if pfad == "/api/ha/einrichtung":
             return self.antwort(200, {"eigene_ip": eigene_ip(), "url": einst()["ha"]["url"], "stream_port": HLS_PORT})
+        if pfad == "/api/ha/quellen":              # Quellen eines Fernsehers in HA (source_list), seit 0.37
+            ent = (q.get("entity") or [""])[0]
+            if not re.fullmatch(r"media_player\.[a-z0-9_]+", ent):
+                return self.antwort(200, {"ok": False, "fehler": "media_player"})
+            try:
+                a = ha.get(f"/api/states/{ent}").get("attributes") or {}
+                return self.antwort(200, {"ok": True, "quellen": a.get("source_list") or [], "aktuell": a.get("source")})
+            except Exception as ex:
+                return self.antwort(200, {"ok": False, "fehler": str(ex)})
         if pfad == "/api/ha/entitaeten":
             try:
                 liste = [{"id": s["entity_id"], "name": s.get("attributes", {}).get("friendly_name", ""),

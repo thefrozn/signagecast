@@ -159,6 +159,11 @@ const TEXTE = {
     kennung: "Kennung (a–z, 0–9, steht in der Adresse)", fernseherNeu: "Fernseher hinzufügen", fernseherWeg: "Fernseher entfernen",
     schalten: "Über HA schalten", schaltenText: "Entität des Fernsehers in Home Assistant (media_player, switch oder remote). Beginnt im Zeitplan „schwarz“, wird er ausgeschaltet, danach wieder eingeschaltet – nur beim Wechsel, Einschalten von Hand bleibt also. Einschalten klappt nur, wenn es in HA geht (Samsung/LG oft nur mit Wake-on-LAN). Erst speichern, dann testen.",
     schaltenAus: "Aus (Test)", schaltenAn: "An (Test)", schaltenOk: "An Home Assistant geschickt",
+    quelle: "Quelle nach dem Einschalten", quellenHolen: "Quellen aus HA holen",
+    quelleText: "Optional, nur für media_player: z. B. „HDMI 2“ (dort hängt der Player) oder die App mit der TV-Seite. SignageCast wartet nach dem Einschalten, bis der Fernseher bereit ist (bis 90 s), und wählt dann die Quelle.",
+    quelleNurMp: "Quellen gibt es nur bei media_player-Entitäten", keineQuellen: "Home Assistant meldet für dieses Gerät keine Quellen (oft erst, wenn es eingeschaltet ist).",
+    quellenGefunden: (l, a) => `Quellen: ${l} – gerade: ${a}`,
+    quelleZuletzt: (q) => `Zuletzt ${q.zeit}: „${q.name}“ ${q.fehler ? "nicht gewählt (" + q.fehler + ")" : "gewählt"}.`,
     wirklichTvWeg: "Diesen Fernseher entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Fernseher",
     tvHinweis: "Ton, Sender, Lautstärke und Videos wirken sofort; Ausgabe und Bitrate beim nächsten Start des Streams.",
     meineSender: "Meine Sender", keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
@@ -487,6 +492,11 @@ const TEXTE = {
     kennung: "Identifier (a–z, 0–9, part of the address)", fernseherNeu: "Add TV", fernseherWeg: "Remove TV",
     schalten: "Switch via HA", schaltenText: "The TV's entity in Home Assistant (media_player, switch or remote). When “black” starts in the schedule it is switched off, afterwards on again – only at the change, so switching on by hand stays. Switching on only works if HA can do it (Samsung/LG often only with Wake-on-LAN). Save first, then test.",
     schaltenAus: "Off (test)", schaltenAn: "On (test)", schaltenOk: "Sent to Home Assistant",
+    quelle: "Source after switching on", quellenHolen: "Get sources from HA",
+    quelleText: "Optional, media_player only: e.g. “HDMI 2” (where the player is connected) or the app showing the TV page. After switching on SignageCast waits until the TV is ready (up to 90 s), then selects the source.",
+    quelleNurMp: "Sources exist only for media_player entities", keineQuellen: "Home Assistant reports no sources for this device (often only while it is on).",
+    quellenGefunden: (l, a) => `Sources: ${l} – current: ${a}`,
+    quelleZuletzt: (q) => `Last ${q.zeit}: “${q.name}” ${q.fehler ? "not selected (" + q.fehler + ")" : "selected"}.`,
     wirklichTvWeg: "Remove this TV? Its address will stop working.", weitererTv: "Another TV",
     tvHinweis: "Sound, station, volume and videos apply immediately; output and bitrate at the next stream start.",
     meineSender: "My stations", keineSender: "No stations yet – load suggestions below or enter your own address.",
@@ -2235,7 +2245,10 @@ async function fernseherSeite(inhalt) {
           ${E.layouts.map((l) => `<label style="margin-right:12px"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
         <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
           <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
-            <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div></details>
+            <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div>
+          <div class="zeile"><label>${esc(T.quelle)}</label><input type="text" name="ha_quelle" value="${esc(t.ha_quelle || "")}" list="quellen-${esc(t.id)}" placeholder="HDMI 2" spellcheck="false">
+            <datalist id="quellen-${esc(t.id)}"></datalist><button class="knopf" name="quellenHolen">${esc(T.quellenHolen)}</button></div>
+          <p class="leise" name="quelleInfo">${esc(T.quelleText)}${((sta.schalten || {})[t.id] || {}).quelle ? " " + esc(T.quelleZuletzt((sta.schalten[t.id].quelle))) : ""}</p></details>
         <h3>${esc(T.abschnitt.video)}</h3>
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
@@ -2269,6 +2282,13 @@ async function fernseherSeite(inhalt) {
       k.querySelector("[name=video_quelle]").onchange = alleSichtbar; alleSichtbar();
       kodierungAnbinden(k, sta);
       k.querySelector("[name=lautstaerke]").oninput = (e) => { k.querySelector("[name=lw]").textContent = e.target.value + " %"; };
+      k.querySelector("[name=quellenHolen]").onclick = (ev) => aktion(ev.target, async () => {
+        const ent = k.querySelector("[name=ha_schalten]").value.trim();
+        const r = await holen("/api/ha/quellen?entity=" + encodeURIComponent(ent));
+        if (!r.ok) throw new Error(r.fehler === "media_player" ? T.quelleNurMp : r.fehler);
+        k.querySelector(`#quellen-${t.id}`).innerHTML = r.quellen.map((x) => `<option value="${esc(x)}">`).join("");
+        k.querySelector("[name=quelleInfo]").textContent = r.quellen.length ? T.quellenGefunden(r.quellen.join(", "), r.aktuell || "–") : T.keineQuellen;
+      }, null);
       for (const [n, an] of [["schAus", false], ["schAn", true]])
         k.querySelector(`[name=${n}]`).onclick = (ev) => aktion(ev.target, () => senden("/api/fernseher/schalten", { tv: t.id, an }), T.schaltenOk);
       const weg = k.querySelector("[name=weg]");
@@ -2284,6 +2304,7 @@ async function fernseherSeite(inhalt) {
                aufnahme: Number(w("aufnahme").value), bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
                encoder: w("encoder").value, preset: w("preset").value, tune: w("tune").value, bframes: Number(w("bframes").value) || 0,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),
+               ha_quelle: w("ha_quelle").value.trim(),
                karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
                             layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
                zeitplan: [...k.querySelectorAll("[name=zeiten] .zeile")].map((z) => ({ von: z.querySelector("[name=zvon]").value,
