@@ -2,7 +2,7 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.33 (player card 0.34, overview 0.35) with the six areas Overview, TVs, Content, Live videos, Settings and System.
+0.33 (overview 0.35, players 0.36) with the six areas Overview, TVs, Content, Live videos, Settings and System.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
@@ -77,19 +77,31 @@ preset, tune and B-frames per TV. A change is tried briefly first; if it does no
 
 ![Encoding settings per TV](tour/05a-encoding.jpg)
 
-### 8. Raspberry Pi as player (experimental)
-TVs → *Players*: a Pi at the TV plays the finished stream via HDMI – also on TVs without a usable
-browser. Enter a name, pick the TV and the network (LAN or Wi-Fi), download a ready image and write it to an SD card;
-nothing to type on the Pi. Or download one image for many Pis: each shows a 6-digit code on the TV, which you enter
-here to pair it. The model choice says which Pi fits: 1 GB of memory is enough for the stream,
-direct mode (the Pi shows the page itself) needs at least 2 GB, better 4 GB (since 0.34). Afterwards every Pi is managed
-here: online state, model with memory, IP, screen, video, temperature, buttons for
-screenshot, TV on/off (HDMI-CEC), restart and system update, and Wi-Fi changes with automatic return to the old network.
-The Pi in these pictures is simulated (real agent code) – the player has not been tested on real hardware yet
-([details](PLAYER.md)). Since 0.36 a PC (x86-64 with UEFI) can be a player too – it starts from a USB stick and
-shows the page itself – and a *browser device* is just a secret link for a smart TV or a kiosk browser.
+### 8. Players – Raspberry Pi, PC or browser (experimental)
+TVs → *Players*: a player at the TV shows SignageCast – also on TVs without a usable browser. *Add player*: enter a
+name, pick the TV, the **model** and the network (LAN or Wi-Fi), download a ready image and write it to an SD card or
+USB stick; nothing to type at the device. Or download one image for many devices: each shows a 6-digit code on the TV,
+which you enter under *Pair a player*.
 
-![Player card of one Raspberry Pi](tour/05b-players.jpg)
+- **Raspberry Pi** – plays the finished stream via HDMI; 1 GB of memory is enough for that. In direct mode (the Pi shows
+  the page itself, no encoding on the server) it needs at least 2 GB, better 4 GB.
+- **PC** (since 0.36) – an ordinary PC, mini PC or thin client (x86-64 with UEFI, Secure Boot may stay on) starts from a
+  USB stick without touching its disk and shows the page itself in direct mode. The same file is also an ISO for CD,
+  Ventoy or a VM.
+- **Browser device** (since 0.36) – no image at all, just a secret link for a smart TV, a Fire TV stick or a kiosk
+  browser. It counts as online while the page fetches its data.
+
+![Adding a PC as player: model and image format](tour/05d-new-player.jpg)
+
+Afterwards every player is managed here: online state, model with memory, IP, screen, video or direct mode,
+temperature, buttons for screenshot, restart and – on a Pi – TV on/off (HDMI-CEC) and system update, and Wi-Fi changes
+with automatic return to the old network. A PC runs as a write-protected live system: new software comes with a new
+image. The devices in these pictures are simulated (real agent code); the PC image was tested in a UEFI VM with
+Secure Boot ([details](PLAYER.md)).
+
+![Card of a PC player in direct mode](tour/05b-players.jpg)
+
+![Browser device with its secret link](tour/05e-browser-device.jpg)
 
 ### 9. Remote maintenance – terminal to a Pi (experimental, since 0.33)
 **Terminal** on the Pi's card opens a root shell in the browser, drawn like Cockpit's own terminal. Off by default:

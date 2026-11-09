@@ -2,7 +2,7 @@
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
-angebunden). Die Verwaltung zeigt Version 0.33 (Player-Karte 0.34, Übersicht 0.35) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
+angebunden). Die Verwaltung zeigt Version 0.33 (Übersicht 0.35, Player 0.36) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
 Einstellungen und System.
 
 **🇬🇧 [English version](TOUR.md)**
@@ -83,20 +83,31 @@ bleibt SignageCast bei „Automatisch“. Felder, die für den aktiven Encoder n
 
 ![Kodierung je Fernseher](tour/de/05a-encoding.jpg)
 
-### 8. Raspberry Pi als Player (experimentell)
-Fernseher → *Player*: Ein Pi am Fernseher zeigt den fertigen Stream per HDMI – auch an Fernsehern ohne
-brauchbaren Browser. Name eingeben, Fernseher und Netzwerk (LAN oder WLAN) wählen, fertiges Image herunterladen und auf
-eine SD-Karte schreiben; am Pi musst du nichts eintippen. Oder ein Image für viele Pis: Jeder zeigt einen 6-stelligen
-Code auf dem Fernseher, den du hier zum Koppeln eingibst. Welcher Pi passt, steht gleich bei der Modellwahl: Für den Stream
-reicht 1 GB Arbeitsspeicher, für den Direktmodus (Pi zeigt die Seite selbst) mindestens 2 GB, besser 4 GB (seit 0.34).
-Danach verwaltest du jeden Pi hier: online, Modell mit Arbeitsspeicher, IP,
-Bildschirm, Video, Temperatur, Knöpfe für Bildschirmfoto, TV ein/aus (HDMI-CEC), Neustart und Systemupdate und
-WLAN-Wechsel mit automatischer Rückkehr ins alte Netz. Der Pi auf diesen Bildern ist simuliert (echter Agent-Code) –
-am echten Gerät ist der Player noch nicht getestet ([Details](PLAYER.md#deutsch-raspberry-pi-als-player)). Seit 0.36 kann auch ein PC (x86-64 mit UEFI)
-Player sein – er startet vom USB-Stick und zeigt die Seite selbst –, und ein *Browser-Gerät* ist nur ein geheimer Link
-für einen Smart-TV oder einen Kiosk-Browser.
+### 8. Player – Raspberry Pi, PC oder Browser (experimentell)
+Fernseher → *Player*: Ein Player am Fernseher zeigt SignageCast – auch an Fernsehern ohne brauchbaren Browser.
+*Player hinzufügen*: Name eingeben, Fernseher, **Modell** und Netzwerk (LAN oder WLAN) wählen, fertiges Image
+herunterladen und auf eine SD-Karte oder einen USB-Stick schreiben; am Gerät musst du nichts eintippen. Oder ein Image
+für viele Geräte: Jedes zeigt einen 6-stelligen Code auf dem Fernseher, den du unter *Player koppeln* eingibst.
 
-![Karte eines Raspberry Pi](tour/de/05b-players.jpg)
+- **Raspberry Pi** – zeigt den fertigen Stream per HDMI; dafür reicht 1 GB Arbeitsspeicher. Im Direktmodus (der Pi
+  zeigt die Seite selbst, der Server muss nichts kodieren) mindestens 2 GB, besser 4 GB.
+- **PC** (seit 0.36) – ein normaler PC, Mini-PC oder Thin Client (x86-64 mit UEFI, Secure Boot darf an bleiben) startet
+  vom USB-Stick, ohne seine Festplatte anzufassen, und zeigt die Seite im Direktmodus selbst. Dieselbe Datei ist auch ein
+  ISO für CD, Ventoy oder eine VM.
+- **Browser-Gerät** (seit 0.36) – ganz ohne Image, nur ein geheimer Link für einen Smart-TV, einen Fire-TV-Stick oder
+  einen Kiosk-Browser. Es gilt als online, solange die Seite ihre Daten abruft.
+
+![PC als Player hinzufügen: Modell und Image-Format](tour/de/05d-new-player.jpg)
+
+Danach verwaltest du jeden Player hier: online, Modell mit Arbeitsspeicher, IP, Bildschirm, Video bzw. Direktmodus,
+Temperatur, Knöpfe für Bildschirmfoto, Neustart und – beim Pi – TV ein/aus (HDMI-CEC) und Systemupdate sowie
+WLAN-Wechsel mit automatischer Rückkehr ins alte Netz. Ein PC läuft als schreibgeschütztes Live-System: neue Software
+kommt mit einem neuen Image. Die Geräte auf diesen Bildern sind simuliert (echter Agent-Code); das PC-Image ist in einer
+UEFI-VM mit Secure Boot getestet ([Details](PLAYER.md#deutsch-raspberry-pi-als-player)).
+
+![Karte eines PC-Players im Direktmodus](tour/de/05b-players.jpg)
+
+![Browser-Gerät mit seinem geheimen Link](tour/de/05e-browser-device.jpg)
 
 ### 9. Fernwartung – Terminal zum Pi (experimentell, seit 0.33)
 **Terminal** auf der Karte des Pi öffnet eine root-Shell im Browser, gezeichnet wie Cockpits eigenes Terminal. Ab Werk

@@ -8,7 +8,8 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--hg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 header { position: sticky; top: 0; z-index: 2; background: var(--karte); border-bottom: 1px solid var(--linie); padding: 10px 16px 0; }
-h1 { margin: 0 0 8px; font-size: 20px; }
+h1 { margin: 0 0 8px; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+h1 > img { width: 26px; height: 26px; flex: none; }   /* Logo (seit 0.36.2) */
 h2 { font-size: 17px; margin: 0 0 10px; }
 h3 { font-size: 15px; margin: 14px 0 6px; }
 h4 { font-size: 13px; margin: 12px 0 4px; color: var(--leise); text-transform: uppercase; letter-spacing: .04em; }

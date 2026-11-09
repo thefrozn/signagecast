@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.36.2 (2026-11-09)
+- **Logo:** SignageCast has a logo – a globe with a play symbol and the sun (`docs/logo/`: mark, word mark light/dark,
+  PNG, social preview picture). It appears in the admin header and as favicon of the TV page and the announcement panel.
+- **New README** (shorter, with logo, badges, features in four groups and a picture gallery) and a German
+  `README.de.md` instead of the short German section.
+- **Tour:** chapter 8 now shows players as Raspberry Pi, PC or browser device – new pictures of adding a PC, a PC card
+  in direct mode and a browser device (English and German).
+- Admin: the remote maintenance hint says “player” instead of “Pi” (also true for PCs).
+
 ## v0.36.1 (2026-11-09)
 - **Direct mode without mouse pointer:** with a mouse attached (or in a VM) the pointer stayed in the middle of the
   screen, and over a YouTube video it kept the title and pause symbol visible. Agent 1.6 (players update it from the
