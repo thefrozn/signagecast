@@ -23,6 +23,8 @@ BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEITE = os.environ.get("SC_VERWALTUNG_DATEIEN", os.path.join(BASIS, "cockpit", "signagecast"))
 PW_DATEI = os.path.join(os.path.dirname(E.PFAD), "verwaltung.json")
 DIENST = f"http://127.0.0.1:{os.environ.get('SC_PORT', '8080')}"
+LADEN = {"/laden/player-image": "/api/player/image", "/laden/ki-datei": "/api/ki/datei",
+         "/laden/sicherung": "/api/sicherung/datei", "/laden/ablage": "/api/ablage"}
 SITZUNG_S = 30 * 86400
 sitzungen = {}                 # Kennung -> Ablaufzeit (nur im Speicher: Neustart = neu anmelden)
 sperre = threading.Lock()
@@ -205,8 +207,8 @@ class Bearbeiter(BaseHTTPRequestHandler):
 
     def do_GET(self):
         pfad = urllib.parse.urlparse(self.path).path
-        if pfad == "/laden/player-image":
-            return self.strom("/api/player/image?" + urllib.parse.urlparse(self.path).query)
+        if pfad in LADEN:                            # echte Downloads (Player-Image, seit 0.40.1 auch .mcpb und Sicherung)
+            return self.strom(LADEN[pfad] + "?" + urllib.parse.urlparse(self.path).query)
         if pfad.startswith("/dienst/"):
             return self.weiterreichen()
         if pfad == "/base1/cockpit.js":

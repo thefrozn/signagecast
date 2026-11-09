@@ -731,6 +731,7 @@ def pult_fernseher(z):
 
 # ---------- KI-Assistenten im Heimnetz (MCP über HTTP/HTTPS, seit 0.40) ----------
 TLS_ORDNER = os.path.join(DATEN, "tls")
+KI_DATEIEN = {}                                   # id -> (gültig bis, Dateiname, .mcpb) – zum Herunterladen (seit 0.40.1)
 KI_FEHLVERSUCHE = {}                              # IP -> [Zeitpunkte] falscher Schlüssel/Code (höchstens 10 je Minute)
 MCP_MAX = 16_000_000                              # ein Bild (10 MB) als base64 passt hinein
 
@@ -764,6 +765,44 @@ def ki_fehlversuch(ip):
 
 def ki_gesperrt(ip):
     return len([t for t in KI_FEHLVERSUCHE.get(ip, []) if time.time() - t < 60]) >= 10
+
+
+def ki_datei_merken(eintrag, roh):
+    """Die .mcpb bis zum Einlösen (höchstens EINLOESEN_S) im Speicher halten, damit der Browser sie als echten Download
+    holen kann – Safari lädt in der Cockpit-Verwaltung keine im Browser erzeugten Dateien (blob:) herunter (0.40.1)."""
+    jetzt = time.time()
+    for k in [k for k, (bis, _, _) in KI_DATEIEN.items() if bis < jetzt]:
+        KI_DATEIEN.pop(k, None)
+    name = re.sub(r"[^a-z0-9._-]+", "-", eintrag["name"].lower()).strip("-.") or "computer"
+    KI_DATEIEN[eintrag["id"]] = (jetzt + KZ.EINLOESEN_S, f"signagecast-{name}.mcpb", roh)
+    return KI_DATEIEN[eintrag["id"]][1]
+
+
+ABLAGE = {}                                       # id -> (gültig bis, Dateiname, Typ, Inhalt) – Downloads aus dem Browser
+ABLAGE_S, ABLAGE_MAX = 300, 3
+ABLAGE_TYPEN = ("application/json", "text/markdown")
+
+
+def ablegen(name, typ, inhalt):
+    """Datei, die die Verwaltung erzeugt (Layout-Export, KI-Anleitung), kurz ablegen und einmal als echten Download
+    ausliefern – Safari lädt in der Cockpit-Verwaltung keine im Browser erzeugten Dateien (blob:) herunter (0.40.1)."""
+    name = str(name or "")
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,120}", name) or typ not in ABLAGE_TYPEN or not isinstance(inhalt, str):
+        raise E.Fehler("ungültige Datei")
+    jetzt = time.time()
+    for k in [k for k, x in ABLAGE.items() if x[0] < jetzt] + sorted(ABLAGE, key=lambda k: ABLAGE[k][0])[:max(0, len(ABLAGE) - ABLAGE_MAX + 1)]:
+        ABLAGE.pop(k, None)
+    aid = secrets.token_urlsafe(16)
+    ABLAGE[aid] = (jetzt + ABLAGE_S, name, typ, inhalt.encode())
+    return aid
+
+
+def ki_datei(zid):
+    x = KI_DATEIEN.get(zid)
+    if x and x[0] < time.time():
+        KI_DATEIEN.pop(zid, None)
+        return None
+    return x
 
 
 def mcpb_bauen(eintrag, code, adresse):
@@ -1026,6 +1065,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             if not x:
                 ki_fehlversuch(ip)
                 return self.antwort(403, {"ok": False})
+            KI_DATEIEN.pop(x["id"], None)             # eingelöst – die Datei ist wertlos
             PROTOKOLL.eintragen(x["name"], "system", "ki_gekoppelt", ip)
             return self.antwort(200, {"ok": True, "schluessel": schluessel})
         x = KI.pruefen((self.headers.get("Authorization") or "").removeprefix("Bearer ").strip(), ip)
@@ -2816,6 +2856,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    def herunterladen(self, roh, dateiname, typ):
+        """Datei mit Content-Disposition – der Browser speichert sie direkt (Cockpit: externer Kanal; Docker: /laden/…)."""
+        self.send_response(200)
+        self.send_header("Content-Type", typ)
+        self.send_header("Content-Disposition", f'attachment; filename="{dateiname}"')
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(roh)))
+        self.end_headers()
+        self.wfile.write(roh)
+
     def koerper(self, maxlen=12_000_000):
         n = int(self.headers.get("Content-Length", "0") or 0)
         if n > maxlen:
@@ -2911,6 +2961,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/ki":                          # verbundene Computer für KI-Assistenten (seit 0.40)
             return self.antwort(200, {"ok": True, "computer": KI.liste(), "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
                                       "https": PultServer.tls is not None})
+        if pfad == "/api/ki/datei":                    # .mcpb als Download (seit 0.40.1), bis zum Einlösen, höchstens 1 h
+            x = ki_datei((q.get("id") or [""])[0])
+            if not x:
+                return self.antwort(404, {"ok": False})
+            return self.herunterladen(x[2], x[1], "application/octet-stream")
+        if pfad == "/api/ablage":                      # einmal abholen (seit 0.40.1)
+            x = ABLAGE.pop((q.get("id") or [""])[0], None)
+            if not x or x[0] < time.time():
+                return self.antwort(404, {"ok": False})
+            return self.herunterladen(x[3], x[1], x[2] + "; charset=utf-8")
         if pfad == "/api/protokoll":                   # seit 0.38
             return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste()})
         if pfad == "/api/layouts/versionen":
@@ -3040,7 +3100,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             name = (q.get("name") or [""])[0]
             if not S.NAME.fullmatch(name) or not os.path.exists(os.path.join(SICHERUNGEN, name)):
                 return self.antwort(404, {"ok": False})
-            return self.antwort(200, open(os.path.join(SICHERUNGEN, name), "rb").read(), "application/zip")
+            with open(os.path.join(SICHERUNGEN, name), "rb") as f:
+                return self.herunterladen(f.read(), "signagecast-" + name, "application/zip")
         if pfad == "/api/quellen/status":
             return self.antwort(200, {"ok": True, "status": qn.status()})
         if pfad == "/api/quellen/daten":
@@ -3063,7 +3124,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
     def do_POST(self):
         p = urllib.parse.urlparse(self.path).path
         try:
-            d = self.koerper(420_000_000 if p == "/api/sicherung/zip" else 12_000_000)
+            d = self.koerper(420_000_000 if p == "/api/sicherung/zip" else 100_000_000 if p == "/api/ablage" and self.api_erlaubt() else 12_000_000)
         except Exception:
             return self.antwort(400, {"ok": False, "fehler": "ungültige Anfrage"})
         m = re.fullmatch(r"/meldung/(strike|qualitaet|naechster|allgemein)", p)
@@ -3264,6 +3325,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
             self.protokoll_detail = {"text": l["name"]}
             return {"einstellungen": einst_aussen()}
+        if p == "/api/ablage":                        # Datei der Verwaltung zum Herunterladen ablegen (seit 0.40.1)
+            return {"id": ablegen(d.get("name"), d.get("typ"), d.get("inhalt"))}
         if p == "/api/ki/neu":                        # Computer für einen KI-Assistenten verbinden (seit 0.40)
             adresse = str(d.get("adresse") or "").strip()
             if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}|\[[0-9A-Fa-f:]{2,45}\]", adresse):
@@ -3278,12 +3341,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             self.protokoll_detail = {"text": x["name"]}
             a = {"computer": KI.liste(), "id": x["id"], "url": f"http://{adresse}:{WEBHOOK_PORT}/mcp"}
             if art == "desktop":
-                a["datei"] = base64.b64encode(mcpb_bauen(x, geheim, adresse)).decode()
+                a["datei"] = ki_datei_merken(x, mcpb_bauen(x, geheim, adresse))   # Name; laden über GET /api/ki/datei
             else:
                 a["schluessel"] = geheim               # nur dieses eine Mal – gespeichert ist nur der Prüfwert
             return a
         if p == "/api/ki/entfernen":
             x = KI.entfernen(str(d.get("id", "")))
+            KI_DATEIEN.pop(str(d.get("id", "")), None)
             self.protokoll_detail = {"text": x["name"] if x else "?"}
             return {"computer": KI.liste()}
         if p == "/api/meldung":                       # Laufschrift (seit 0.39, wie am Pult) – leer = alle Fernseher

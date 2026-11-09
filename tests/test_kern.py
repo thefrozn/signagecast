@@ -2347,3 +2347,99 @@ def _fremdes_zertifikat(ordner):
                     "-subj", "/CN=fremd", "-keyout", s, "-out", z], check=True, capture_output=True)
     with open(z) as f:
         return f.read()
+
+
+class Download0401(unittest.TestCase):
+    """Seit 0.40.1: Downloads der Verwaltung als echte Dateien vom Datendienst (Safari lädt in Cockpit keine blob:-Dateien)."""
+
+    def setUp(self):
+        import dienst as D, kizugang, threading
+        self.D = D
+        self.ordner = tempfile.mkdtemp()
+        self.alt = (D.KI, D.TLS_ORDNER, D.PultServer.tls, D.SICHERUNGEN)
+        D.KI = kizugang.Zugaenge(os.path.join(self.ordner, "ki.json"))
+        D.TLS_ORDNER = os.path.join(self.ordner, "tls")
+        D.SICHERUNGEN = os.path.join(self.ordner, "sicherungen")
+        D.KI_DATEIEN.clear(); D.ABLAGE.clear()
+        self.srv = D.Server(("127.0.0.1", 0), D.Bearbeiter)
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        self.basis = f"http://127.0.0.1:{self.srv.server_address[1]}"
+
+    def tearDown(self):
+        import shutil
+        self.srv.shutdown(); self.srv.server_close()
+        D = self.D
+        D.KI, D.TLS_ORDNER, D.PultServer.tls, D.SICHERUNGEN = self.alt
+        D.KI_DATEIEN.clear(); D.ABLAGE.clear()
+        shutil.rmtree(self.ordner, ignore_errors=True)
+
+    def holen(self, pfad, daten=None, kopf=True):
+        import urllib.request, urllib.error
+        r = urllib.request.Request(self.basis + pfad, data=json.dumps(daten).encode() if daten is not None else None,
+                                   headers={"X-SignageCast": "1", "Content-Type": "application/json"} if kopf else {})
+        try:
+            with urllib.request.urlopen(r, timeout=10) as a:
+                return a.status, a.headers, a.read()
+        except urllib.error.HTTPError as f:
+            return f.code, f.headers, f.read()
+
+    def test_ablage_einmal(self):
+        st, _, roh = self.holen("/api/ablage", {"name": "signagecast-layout-Lobby.json", "typ": "application/json", "inhalt": '{"ä": 1}'})
+        aid = json.loads(roh)["id"]
+        st, k, roh = self.holen("/api/ablage?id=" + aid, kopf=False)
+        self.assertEqual(st, 403)                                         # nur mit dem Kopf der Verwaltung
+        st, k, roh = self.holen("/api/ablage?id=" + aid)
+        self.assertEqual((st, roh.decode()), (200, '{"ä": 1}'))
+        self.assertEqual(k["Content-Disposition"], 'attachment; filename="signagecast-layout-Lobby.json"')
+        self.assertEqual(self.holen("/api/ablage?id=" + aid)[0], 404)    # nur einmal
+        for falsch in ({"name": "../x.json", "typ": "application/json", "inhalt": "x"},
+                       {"name": 'a".json', "typ": "application/json", "inhalt": "x"},
+                       {"name": "x.html", "typ": "text/html", "inhalt": "<script>"}):
+            self.assertFalse(json.loads(self.holen("/api/ablage", falsch)[2])["ok"])
+        for i in range(5):
+            self.holen("/api/ablage", {"name": f"a{i}.md", "typ": "text/markdown", "inhalt": "x"})
+        self.assertLessEqual(len(self.D.ABLAGE), self.D.ABLAGE_MAX)
+
+    def test_ki_datei(self):
+        import ssl, zipfile, io
+        D = self.D
+        if not D.tls_zertifikat():
+            self.skipTest("openssl fehlt")
+        D.PultServer.tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        a = json.loads(self.holen("/api/ki/neu", {"name": "Mac Book", "art": "desktop", "recht": "aendern", "adresse": "signagecast.local"})[2])
+        self.assertTrue(a["ok"])
+        self.assertEqual(a["datei"], "signagecast-mac-book.mcpb")
+        st, k, roh = self.holen("/api/ki/datei?id=" + a["id"])
+        self.assertEqual(st, 200)
+        self.assertEqual(k["Content-Type"], "application/octet-stream")
+        self.assertIn('filename="signagecast-mac-book.mcpb"', k["Content-Disposition"])
+        z = zipfile.ZipFile(io.BytesIO(roh))
+        self.assertEqual(json.loads(z.read("server/verbindung.json"))["id"], a["id"])
+        self.assertEqual(self.holen("/api/ki/datei?id=" + a["id"])[0], 200)          # „nochmal herunterladen“
+        D.KI_DATEIEN[a["id"]] = (time.time() - 1,) + D.KI_DATEIEN[a["id"]][1:]       # abgelaufen
+        self.assertEqual(self.holen("/api/ki/datei?id=" + a["id"])[0], 404)
+        b = json.loads(self.holen("/api/ki/neu", {"name": "Zwei", "art": "desktop", "recht": "lesen", "adresse": "signagecast.local"})[2])
+        self.holen("/api/ki/entfernen", {"id": b["id"]})
+        self.assertEqual(self.holen("/api/ki/datei?id=" + b["id"])[0], 404)          # entfernt = weg
+        c = json.loads(self.holen("/api/ki/neu", {"name": "Drei", "art": "code", "recht": "lesen", "adresse": "signagecast.local"})[2])
+        self.assertNotIn("datei", c)
+        self.assertNotIn(c["id"], D.KI_DATEIEN)
+
+    def test_sicherung_und_docker(self):
+        import verwaltung as V
+        os.makedirs(self.D.SICHERUNGEN)
+        with open(os.path.join(self.D.SICHERUNGEN, "manuell-2026-01-02_0304.zip"), "wb") as f:
+            f.write(b"PK\x05\x06" + b"\0" * 18)
+        st, k, roh = self.holen("/api/sicherung/datei?name=manuell-2026-01-02_0304.zip")
+        self.assertEqual((st, len(roh)), (200, 22))
+        self.assertEqual(k["Content-Disposition"], 'attachment; filename="signagecast-manuell-2026-01-02_0304.zip"')
+        self.assertEqual(set(V.LADEN.values()), {"/api/player/image", "/api/ki/datei", "/api/sicherung/datei", "/api/ablage"})
+        def lesen(f):
+            with open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", f), encoding="utf-8") as d:
+                return d.read()
+        tv = lesen("tv.js")
+        for laden, api in V.LADEN.items():
+            self.assertIn(f'"{api}": "{laden}"', tv)                     # Cockpit und Docker kennen dieselben Wege
+        for f in ("tv.js", "layout.js"):
+            js = lesen(f)
+            self.assertNotIn(".download =", js.replace("a.download = datei", ""))   # keine blob:-Downloads mehr

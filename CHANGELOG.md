@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.40.1 (2026-11-09)
+- **Downloads in Safari:** the file for Claude Desktop (`.mcpb`), backups, layout exports, older layout versions and the
+  layout guide for AI assistants were created in the browser (`blob:`) – Safari does not save such files inside the
+  Cockpit admin, nothing happened. They now come from SignageCast as real downloads, like the player image. The
+  `.mcpb` stays in memory only until its first start, at most one hour; files from the browser (layout export, guide)
+  only for one download within five minutes.
+
 ## v0.40.0 (2026-11-09)
 - **Connect AI assistants with one click – in your home network:** Settings → *AI assistants* → *Connect a computer*.
   For **Claude Desktop** you get a file (`.mcpb`) – double-click, *Install*, done. It talks HTTPS and trusts only the

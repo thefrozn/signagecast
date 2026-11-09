@@ -32,7 +32,8 @@ class Zugaenge:
         self.liste_ = []
         self.geschrieben = 0
         try:
-            d = json.load(open(pfad))
+            with open(pfad) as f:
+                d = json.load(f)
             if isinstance(d, list):
                 self.liste_ = [x for x in d if isinstance(x, dict) and x.get("id")]
         except (OSError, ValueError):

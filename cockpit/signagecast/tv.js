@@ -1211,20 +1211,35 @@ curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)
   zeichnen();
 }
 
-// ---------- Raspberry-Pi-Player (seit 0.23) ----------
-// Download des Images je Gerät: in Cockpit als „externer Kanal“ (https, der Browser speichert direkt, nichts im Speicher),
-// im Docker-Betrieb über /laden/player-image der eigenen Verwaltung.
-function plHerunterladen(kennung, datei) {
+// ---------- Downloads ----------
+// Echter Download vom Datendienst: in Cockpit als „externer Kanal“ (https, der Browser speichert direkt, nichts im Speicher),
+// im Docker-Betrieb über /laden/… der eigenen Verwaltung. Keine im Browser erzeugten Dateien (blob:) – die lädt Safari in
+// der Cockpit-Verwaltung nicht herunter (seit 0.40.1 für alle Downloads).
+const LADEN = { "/api/player/image": "/laden/player-image", "/api/ki/datei": "/laden/ki-datei", "/api/sicherung/datei": "/laden/sicherung",
+                "/api/ablage": "/laden/ablage" };
+function herunterladen(pfad, abfrage, datei, typ) {
+  const q = new URLSearchParams(abfrage).toString();
   let url;
-  if (CONTAINER) url = "/laden/player-image?t=" + encodeURIComponent(kennung);
+  if (CONTAINER) url = LADEN[pfad] + "?" + q;
   else {
-    const opt = { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: "/api/player/image?t=" + encodeURIComponent(kennung),
+    const opt = { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: pfad + "?" + q,
                   headers: { "X-SignageCast": "1" }, binary: "raw",
-                  external: { "content-disposition": `attachment; filename="${datei}"`, "content-type": datei.endsWith(".iso") ? "application/octet-stream" : "application/gzip" } };
+                  external: { "content-disposition": `attachment; filename="${datei}"`, "content-type": typ } };
     url = "/cockpit/channel/" + cockpit.transport.csrf_token + "?" + window.btoa(JSON.stringify(opt));
   }
   const a = document.createElement("a");
   a.href = url; a.download = datei; document.body.appendChild(a); a.click(); a.remove();
+}
+
+// Im Browser erzeugte Datei (Layout-Export, KI-Anleitung): kurz beim Datendienst ablegen, dann echt herunterladen.
+async function ablageLaden(datei, typ, text) {
+  const r = await senden("/api/ablage", { name: datei, typ, inhalt: text });
+  herunterladen("/api/ablage", { id: r.id }, datei, typ);
+}
+
+// ---------- Raspberry-Pi-Player (seit 0.23) ----------
+function plHerunterladen(kennung, datei) {
+  herunterladen("/api/player/image", { t: kennung }, datei, datei.endsWith(".iso") ? "application/octet-stream" : "application/gzip");
 }
 // Netzwerk-Auswahl (neu, Image erneut, WLAN ändern): Kabel | gespeichertes WLAN | neues WLAN
 function plNetz(px, gespeichert, mitKabel) {
@@ -2710,13 +2725,7 @@ async function kiSeite(inhalt) {
   let adresse = (!lokal && location.hostname) || d.eigene_ip || "";
   if (adresse.includes(":") && !adresse.startsWith("[")) adresse = `[${adresse}]`;
   const b64 = (t) => btoa(String.fromCharCode(...new TextEncoder().encode(t)));
-  const laden = (e) => {
-    const roh = Uint8Array.from(atob(e.datei), (c) => c.charCodeAt(0));
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([roh], { type: "application/zip" }));
-    a.download = `signagecast-${e.name.replace(/[^\w.-]+/g, "-").toLowerCase()}.mcpb`;
-    document.body.appendChild(a); a.click(); a.remove();
-  };
+  const laden = (e) => herunterladen("/api/ki/datei", { id: e.id }, e.datei, "application/octet-stream");   // seit 0.40.1
   const feld = (wert, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen || 2}" style="flex:1;font-family:monospace;font-size:12px">${esc(wert)}</textarea>
       <button class="knopf" data-kopieren>${esc(K.kopieren)}</button></div>`;
   const ergebnisHtml = (e) => {
@@ -2846,13 +2855,7 @@ async function sicherungSeite(inhalt) {
     $("#autoGeheim").onchange = () => { $("#autoPw").hidden = !$("#autoGeheim").checked; };
     const planSicht = () => { $("#wtag").hidden = $("#plan").value !== "woechentlich"; $("#uhr").hidden = $("#plan").value === "aus"; };
     $("#plan").onchange = planSicht; planSicht();
-    const laden = async (name) => {
-      const roh = await dienstBinaer.get("/api/sicherung/datei", { name }, { "X-SignageCast": "1" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([roh], { type: "application/zip" }));
-      a.download = `signagecast-${name}`;
-      document.body.appendChild(a); a.click(); a.remove();
-    };
+    const laden = async (name) => herunterladen("/api/sicherung/datei", { name }, `signagecast-${name}`, "application/zip");
     $("#erstellen").onclick = (e) => aktion(e.target, async () => {
       const geheim = $("#mitGeheim").checked;
       let pw = "";

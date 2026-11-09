@@ -332,10 +332,8 @@ async function layoutSeite(inhalt) {
       let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
       bilder[n] = `data:image/${n.endsWith(".png") ? "png" : "jpeg"};base64,` + btoa(bin);
     }
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 2, layout: l, bilder }, null, 1)], { type: "application/json" }));
-    a.download = `signagecast-layout-${l.name.replace(/[^\w-]+/g, "_")}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
+    await ablageLaden(`signagecast-layout-${l.name.replace(/[^A-Za-z0-9-]+/g, "_")}.json`, "application/json",
+                      JSON.stringify({ art: "signagecast-layout", version: 2, layout: l, bilder }, null, 1));
   }, null);
   const importieren = async (datei) => aktion(null, async () => {
     const roh = await datei.text();
@@ -367,12 +365,8 @@ async function layoutSeite(inhalt) {
     if (html) z.scrollIntoView({ block: "nearest" });
     return z;
   };
-  const herunterladen = (l) => {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 2, layout: l }, null, 1)], { type: "application/json" }));
-    a.download = `signagecast-layout-${l.name.replace(/[^\w-]+/g, "_")}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-  };
+  const versionLaden = (l) => ablageLaden(`signagecast-layout-${l.name.replace(/[^A-Za-z0-9-]+/g, "_")}.json`, "application/json",
+                                          JSON.stringify({ art: "signagecast-layout", version: 2, layout: l }, null, 1));
   const zeit = (t) => new Date(t * 1000).toLocaleString(E.sprache === "en" ? "en-GB" : "de-DE", { dateStyle: "short", timeStyle: "short" });
   const versionenZeigen = async (lid, name) => {
     const d = await holen("/api/layouts/versionen?id=" + encodeURIComponent(lid));
@@ -388,7 +382,7 @@ async function layoutSeite(inhalt) {
       }, L.wiederhergestellt);
     }; });
     document.querySelectorAll("[data-vd]").forEach((b) => { b.onclick = (ev) => aktion(ev.target, async () => {
-      herunterladen((await holen(`/api/layouts/version?id=${encodeURIComponent(lid)}&nr=${b.dataset.vd}`)).layout); }, null); });
+      await versionLaden((await holen(`/api/layouts/version?id=${encodeURIComponent(lid)}&nr=${b.dataset.vd}`)).layout); }, null); });
   };
   const geloeschteZeigen = (liste) => {
     extra(`<h2>${esc(L.geloeschte(liste.length))}</h2><div class="tabelle-rahmen"><table class="tabelle">${liste.map((g) => `<tr><td>${esc(g.name)}</td>
@@ -419,11 +413,7 @@ async function layoutSeite(inhalt) {
       try { await navigator.clipboard.writeText(anleitung); } catch (_) { t.focus(); t.select(); document.execCommand("copy"); }
       melden(L.kiKopiert);
     };
-    $("#lxDatei").onclick = () => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([anleitung], { type: "text/markdown" })); a.download = "signagecast-layout-ki.md";
-      document.body.appendChild(a); a.click(); a.remove();
-    };
+    $("#lxDatei").onclick = (e) => aktion(e.target, () => ablageLaden("signagecast-layout-ki.md", "text/markdown", anleitung), null);
     $("#lxEinfuegen").onclick = einfuegenZeigen;
   };
   const listeAlle = () => {
