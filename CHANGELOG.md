@@ -18,6 +18,8 @@
 - mpv no longer shows its idle logo (“Drop files or URLs to play here”, mpv 0.38+) over the player's notes; new images
   include an emoji font (e.g. ⏱ in “up next”); the TV page hides the mouse pointer after 3 s without movement.
 - Admin: section *Players* (instead of *Players (Raspberry Pi)*), *Pair a player* for Pis and PCs.
+- Server: the data service keeps its memory small after large image downloads (`MALLOC_ARENA_MAX=2`; before: up to
+  ~250 MB instead of ~50 MB until the next restart).
 
 ## v0.35.0 (2026-11-08)
 - **Overview: hide entries of the to-do list:** a ✕ next to each entry hides it without fixing it – tips for good,

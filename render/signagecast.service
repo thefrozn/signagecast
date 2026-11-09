@@ -6,6 +6,8 @@ Wants=network-online.target
 [Service]
 User=signagecast
 # optionale Einstellungen wie SC_STREAM_PORT=… (legt installieren.sh an, wenn beim Installieren angegeben)
+# glibc legt sonst pro Thread eigenen Speicher an und behält ihn nach großen Downloads (Images): bis zu ~250 MB statt ~40 MB
+Environment=MALLOC_ARENA_MAX=2
 EnvironmentFile=-/etc/signagecast/umgebung
 ExecStart=/usr/bin/python3 -I /opt/signagecast/app/dienst.py
 Restart=always
