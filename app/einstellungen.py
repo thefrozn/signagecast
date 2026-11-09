@@ -172,7 +172,7 @@ STANDARD = {
         "email": {"aktiv": False, "server": "", "port": 587, "sicherheit": "starttls", "benutzer": "", "passwort": "",
                   "absender": "", "empfaenger": ""},
         "ha": {"aktiv": False, "dienst": "notify.notify"},
-        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True, "leistung": True},
+        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True, "leistung": True, "internet": True},
     },
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
@@ -561,7 +561,10 @@ def pruefen(e):
                                        "passwort": _text(z.get("passwort", ""), 200, r"(pbkdf2\$\d+\$[0-9a-f]+\$[0-9a-f]+)?"),
                                        "fernseher": [x for x in (z.get("fernseher") or []) if isinstance(x, str) and re.fullmatch(r"[a-z][a-z0-9]{0,11}", x)
                                                      and (tv_ids is None or x in tv_ids)],
-                                       "alarm": bool(z.get("alarm", False))})          # darf das Notfall-Vollbild auslösen (seit 0.21)
+                                       "alarm": bool(z.get("alarm", False)),           # darf das Notfall-Vollbild auslösen (seit 0.21)
+                                       # seit 0.38: Laufschrift-Meldung senden, Layout vorübergehend umschalten, Fernseher an/aus (HA)
+                                       "meldung": bool(z.get("meldung", False)), "layout": bool(z.get("layout", False)),
+                                       "schalten": bool(z.get("schalten", False))})
         if "vorlagen" in pu: sp["vorlagen"] = [_text(v, 120) for v in (pu["vorlagen"] or [])[:20] if str(v).strip()]
         if "stimme" in pu: sp["stimme"] = pu["stimme"] if pu["stimme"] in ("kerstin", "thorsten") else "kerstin"
         for k in ("vorlesen", "gong"):

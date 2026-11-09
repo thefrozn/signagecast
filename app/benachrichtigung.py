@@ -24,6 +24,15 @@ TEXTE = {
         "player_aus": ("SignageCast: Player „{name}“ meldet sich nicht", "Der Raspberry-Pi-Player „{name}“ hat sich seit 5 Minuten "
                        "nicht gemeldet (Strom, Netz oder WLAN?)."),
         "player_wieder": ("SignageCast: Player „{name}“ wieder da", "Der Raspberry-Pi-Player „{name}“ meldet sich wieder."),
+        "internet": ("SignageCast: Internet nicht erreichbar", "Seit {seit} ist das Internet nicht erreichbar. Die Fernseher zeigen "
+                     "eigene Medien bzw. ein Ersatzbild statt der Live-Kameras."),
+        "internet_vorbei": ("SignageCast: Internet wieder erreichbar", "Das Internet war von {seit} bis {bis} nicht erreichbar. "
+                            "Die Live-Kameras laufen wieder."),
+        "bild_schwarz": ("SignageCast: „{tv}“ zeigt nur Schwarz", "Der Fernseher „{tv}“ zeigt seit einigen Minuten ein schwarzes Bild, "
+                         "obwohl die Wiedergabe läuft. Neu laden und Neustart haben nicht geholfen – bitte in der Verwaltung prüfen."),
+        "bild_steht": ("SignageCast: Bild von „{tv}“ steht", "Das Bild von „{tv}“ ändert sich seit einigen Minuten nicht, obwohl die Uhr "
+                       "laufen müsste. Neu laden und Neustart haben nicht geholfen – bitte in der Verwaltung prüfen."),
+        "bild_vorbei": ("SignageCast: „{tv}“ zeigt wieder ein Bild", "Der Fernseher „{tv}“ zeigt wieder ein normales Bild."),
     },
     "en": {
         "ausfall": ("SignageCast: “{tv}” failed", "Playback for the TV “{tv}” has failed (render chain incomplete)."),
@@ -42,6 +51,15 @@ TEXTE = {
         "player_aus": ("SignageCast: player “{name}” not responding", "The Raspberry Pi player “{name}” has not reported for "
                        "5 minutes (power, network or Wi-Fi?)."),
         "player_wieder": ("SignageCast: player “{name}” is back", "The Raspberry Pi player “{name}” reports again."),
+        "internet": ("SignageCast: internet not reachable", "The internet has not been reachable since {seit}. The TVs show own media "
+                     "or a fallback picture instead of the live cams."),
+        "internet_vorbei": ("SignageCast: internet reachable again", "The internet was not reachable from {seit} to {bis}. "
+                            "The live cams are running again."),
+        "bild_schwarz": ("SignageCast: “{tv}” shows only black", "The TV “{tv}” has shown a black picture for several minutes although "
+                         "playback is running. Reloading and restarting did not help – please check the admin."),
+        "bild_steht": ("SignageCast: picture of “{tv}” is frozen", "The picture of “{tv}” has not changed for several minutes although "
+                       "the clock should run. Reloading and restarting did not help – please check the admin."),
+        "bild_vorbei": ("SignageCast: “{tv}” shows a picture again", "The TV “{tv}” shows a normal picture again."),
     },
 }
 # Gründe aus ha.py (HAFehler.code) – auf Deutsch steht der Text von ha.py

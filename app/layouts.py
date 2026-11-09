@@ -22,13 +22,17 @@ WECHSEL = ["tageszeit", "tageszeit_wetter", "diashow"]
 
 # Bausteine: Typ -> erlaubte Optionen mit Prüffunktion und Standardwert
 def _b(w):  return bool(w)
-def _t(n):  return lambda w: str(w)[:n]
+def _t(n):
+    p = lambda w: str(w)[:n]
+    p.art = f"text (max {n} characters)"
+    return p
 def _ent(domains=None):
     def p(w):
         w = str(w or "").strip()
         if w and (not ENTITY.fullmatch(w) or (domains and w.split(".")[0] not in domains)):
             raise Meldung("l_entitaet", w=repr(w))
         return w
+    p.art = "Home Assistant entity id" + (f" ({', '.join(d + '.*' for d in domains)})" if domains else "") + ", empty = none"
     return p
 def _zahl(lo, hi):
     def p(w):
@@ -36,6 +40,7 @@ def _zahl(lo, hi):
         if not lo <= w <= hi:
             raise Meldung("e_bereich", w=w, lo=lo, hi=hi)
         return w
+    p.art = f"integer {lo}–{hi}"
     return p
 def _icon(w):
     w = str(w or "mdi-information-outline")
@@ -58,6 +63,7 @@ def _fl(lo, hi):
         if not lo <= w <= hi:
             raise Meldung("e_bereich", w=w, lo=lo, hi=hi)
         return w
+    p.art = "number"
     return p
 def _qid(w):
     w = str(w or "").strip()
@@ -81,6 +87,7 @@ def _wahl(*werte):
         if w not in werte:
             raise Meldung("l_wahl", werte=", ".join(werte))
         return w
+    p.art = "one of " + ", ".join(f'"{x}"' for x in werte)
     return p
 def _pdf(w):
     w = str(w or "")
@@ -97,6 +104,19 @@ def _symbole(w):
     return aus
 def _raeume(w):
     return [{"name": str(r.get("name", ""))[:30], "entity": _ent()(r.get("entity"))} for r in (w or [])[:8] if r.get("entity")]
+
+# Beschreibung der Werte für die Formatbeschreibung (seit 0.38, für Menschen und KI – siehe format_beschreibung)
+_b.art = "true or false"
+_icon.art = 'Material Design Icon name "mdi-…" (e.g. "mdi-thermometer")'
+_icon_leer.art = 'Material Design Icon name "mdi-…" or "" for none'
+_farbe.art = 'colour "#rrggbb" or "" for the default'
+_bild.art = 'file name of an uploaded picture ("" = none; the user uploads it later in the editor)'
+_qid.art = "id of one of your own data sources (Content → Data sources), \"\" = none"
+_pfad.art = 'path into the data source answer, e.g. "current.temp" or "items.0.title"'
+_url.art = "web address starting with http:// or https://"
+_pdf.art = '16 hex characters of an uploaded PDF ("" = none; the user uploads it later)'
+_symbole.art = 'list of rules {"text": "word in the title", "icon": "mdi-…", "farbe": "#rrggbb"} (max 12)'
+_raeume.art = 'list of {"name": "Living room", "entity": "sensor.living_room_temperature"} (max 8)'
 
 TYPEN = {
     "uhr":        {"sekunden": (_b, False)},
@@ -247,6 +267,217 @@ def pruefe_layout(l):
             "thema": {"schema": schema, "akzent": _farbe(th.get("akzent", "#3d8cd0")) or "#3d8cd0", "schrift": schrift},
             "elemente": elemente}
 
+
+# ---------- Import (seit 0.38): fehlertolerant, z. B. für Layouts, die eine KI geschrieben hat ----------
+def _neue_id(belegt, vorschlag, muster, laenge):
+    v = re.sub(r"[^a-z0-9]", "", str(vorschlag or "").lower())[:laenge]
+    if len(v) >= (2 if laenge == 16 and muster == "layout" else 1) and v not in belegt:
+        return v
+    basis = (v or ("layout" if muster == "layout" else "e"))[:laenge - 3]
+    for i in range(1, 1000):
+        k = f"{basis}{i}"[:laenge]
+        if k not in belegt:
+            return k
+    raise Meldung("l_imp_kein")
+
+
+def json_aus_text(text):
+    """JSON aus eingefügtem Text: auch mit ```json …```-Zaun oder Text davor/danach (typisch für Antworten einer KI)."""
+    import json
+    t = str(text or "").strip()
+    m = re.search(r"```(?:json)?\s*(.*?)```", t, re.S)
+    if m:
+        t = m.group(1).strip()
+    if not t.startswith(("{", "[")):
+        a = t.find("{")
+        if a < 0:
+            raise Meldung("l_imp_json", d="kein { gefunden")
+        t = t[a:t.rfind("}") + 1]
+    try:
+        return json.loads(t)
+    except ValueError as f:
+        raise Meldung("l_imp_json", d=str(f)[:120]) from None
+
+
+def import_pruefen(roh, belegte_ids=(), bild_da=lambda n: True, quellen=(), pdf_da=lambda n: True):
+    """Layout aus einer Datei oder einem eingefügten Text übernehmen: Was sich reparieren lässt, wird repariert und als
+    Hinweis gemeldet (unbekannte Bausteine weglassen, ungültige Werte auf den Standard, fehlende Kennungen vergeben,
+    fehlende Bilder leeren). Gibt (layout, hinweise) zurück; hinweise = Liste von Meldungen."""
+    if isinstance(roh, dict) and roh.get("art") in ("signagecast-layout", "tv-stream-layout") and isinstance(roh.get("layout"), dict):
+        roh = roh["layout"]
+    if isinstance(roh, dict) and isinstance(roh.get("layouts"), list) and len(roh["layouts"]) == 1:
+        roh = roh["layouts"][0]
+    if not isinstance(roh, dict) or not isinstance(roh.get("elemente"), list):
+        raise Meldung("l_imp_kein")
+    hinweise = []
+    l = {"id": _neue_id(set(belegte_ids), roh.get("id"), "layout", 16), "name": str(roh.get("name") or "Import")[:40]}
+    hg = dict(roh.get("hintergrund") or {}) if isinstance(roh.get("hintergrund"), dict) else {}
+    if hg.get("art", "wetter") not in ("wetter", "stil", "farbe", "bild"):
+        hinweise.append(Meldung("l_imp_wert", feld="hintergrund.art", w=str(hg.get("art"))[:40]))
+        hg["art"] = "wetter"
+    for feld in ("bild",):
+        if hg.get(feld) and (not re.fullmatch(r"[0-9a-f]{16}\.(jpg|png)", str(hg[feld])) or not bild_da(hg[feld])):
+            hinweise.append(Meldung("l_imp_bild", w=str(hg[feld])[:40])); hg[feld] = ""
+    bt = hg.get("bilder_tageszeit") if isinstance(hg.get("bilder_tageszeit"), dict) else {}
+    for z in list(bt):
+        if bt[z] and (not re.fullmatch(r"[0-9a-f]{16}\.(jpg|png)", str(bt[z])) or not bild_da(bt[z])):
+            hinweise.append(Meldung("l_imp_bild", w=str(bt[z])[:40])); bt[z] = ""
+    hg["bilder_tageszeit"] = bt
+    if hg.get("art") == "bild" and not hg.get("bild") and not any(bt.values()):
+        hg["art"] = "wetter"
+    if hg.get("farbe") and not FARBE.fullmatch(str(hg["farbe"])):
+        hinweise.append(Meldung("l_imp_wert", feld="hintergrund.farbe", w=str(hg["farbe"])[:40])); hg["farbe"] = "#202020"
+    l["hintergrund"] = hg
+    th = dict(roh.get("thema") or {}) if isinstance(roh.get("thema"), dict) else {}
+    for feld, erlaubt, std in (("schema", ("dunkel", "hell", "gedimmt"), "dunkel"), ("schrift", SCHRIFTEN, "Roboto")):
+        if feld in th and th[feld] not in erlaubt:
+            hinweise.append(Meldung("l_imp_wert", feld="thema." + feld, w=str(th[feld])[:40])); th[feld] = std
+    if th.get("akzent") and not FARBE.fullmatch(str(th["akzent"])):
+        hinweise.append(Meldung("l_imp_wert", feld="thema.akzent", w=str(th["akzent"])[:40])); th["akzent"] = "#3d8cd0"
+    l["thema"] = th
+    elemente, ids = [], set()
+    for nr, e in enumerate(roh["elemente"][:60], 1):
+        if not isinstance(e, dict):
+            continue
+        typ = e.get("typ")
+        if typ in ENTFERNT:
+            continue
+        if typ not in TYPEN:
+            hinweise.append(Meldung("l_imp_typ", nr=nr, typ=str(typ)[:30]))
+            continue
+        x = dict(e)
+        eid = str(x.get("id", ""))
+        if not re.fullmatch(r"[a-z0-9]{1,16}", eid) or eid in ids:
+            x["id"] = _neue_id(ids, eid or typ, "baustein", 16)
+        ids.add(x["id"])
+        name = f"{nr} ({typ})"
+        try:
+            for k in ("x", "y", "w", "h"):
+                x[k] = int(float(x.get(k, 0 if k in "xy" else 4)))
+        except (TypeError, ValueError):
+            hinweise.append(Meldung("l_imp_typ", nr=nr, typ=str(typ)[:30]))
+            continue
+        if x["x"] < 0 or x["y"] < 0 or x["x"] + x["w"] > SPALTEN or x["y"] + x["h"] > ZEILEN:
+            hinweise.append(Meldung("l_imp_raster", b=name))
+        opt_in = x.get("optionen") if isinstance(x.get("optionen"), dict) else {}
+        opt = {}
+        for k, w in opt_in.items():
+            if k not in TYPEN[typ]:
+                hinweise.append(Meldung("l_imp_option", b=name, o=str(k)[:30]))
+                continue
+            try:
+                opt[k] = TYPEN[typ][k][0](w)
+            except (Meldung, ValueError, TypeError):
+                bilddatei = k == "bild" or (typ == "pdf" and k == "datei")       # z. B. „logo.png“ einer KI: hochladen
+                hinweise.append(Meldung("l_imp_bild", w=str(w)[:40]) if bilddatei and w else
+                                Meldung("l_imp_wert", feld=f"{name}.{k}", w=str(w)[:40]))
+                continue
+            if k == "bild" and opt[k] and not bild_da(opt[k]):
+                hinweise.append(Meldung("l_imp_bild", w=opt[k])); opt[k] = ""
+            if k == "datei" and typ == "pdf" and opt[k] and not pdf_da(opt[k]):
+                hinweise.append(Meldung("l_imp_bild", w=opt[k])); opt[k] = ""
+            if k == "quelle" and opt[k] and opt[k] not in quellen:
+                hinweise.append(Meldung("l_imp_quelle", b=name, q=opt[k]))
+        x["optionen"] = opt
+        for k in ("textfarbe",):
+            if x.get(k) and not FARBE.fullmatch(str(x[k])):
+                hinweise.append(Meldung("l_imp_wert", feld=f"{name}.{k}", w=str(x[k])[:40])); x[k] = ""
+        try:
+            x["bedingung"] = _pruefe_bedingung(x.get("bedingung") if isinstance(x.get("bedingung"), dict) else None)
+        except (Meldung, ValueError, TypeError):
+            hinweise.append(Meldung("l_imp_bedingung", b=name)); x["bedingung"] = None
+        for k in ("ab", "bis"):
+            try:
+                x[k] = _zeitpunkt(x.get(k))
+            except Meldung:
+                hinweise.append(Meldung("l_imp_wert", feld=f"{name}.{k}", w=str(x.get(k))[:40])); x[k] = ""
+        elemente.append(x)
+    l["elemente"] = elemente
+    return pruefe_layout(l), hinweise
+
+
+# ---------- Formatbeschreibung (seit 0.38) – aus TYPEN erzeugt, damit sie nie veraltet ----------
+TYP_TEXT = {
+    "uhr": "clock (HH:MM)", "datum": "date", "temperatur": "current outside temperature",
+    "wetterlage": "current weather condition (icon and text)", "feuchte": "humidity", "wind": "wind speed and direction",
+    "vorhersage": "weather forecast for the next days", "raeume": "list of room temperatures from Home Assistant",
+    "kachel": "tile with one Home Assistant value (name, icon, value)",
+    "video": "live video window: rotating YouTube nature/wildlife live cams or own media (at most one per layout makes sense)",
+    "sender": "name of the current live cam or radio station", "text": "free text; laufband = scrolling ticker; "
+    "placeholders {source:path} insert values of own data sources", "logo": "picture (e.g. company logo)",
+    "kamera": "Home Assistant camera picture", "kalender": "calendar (Home Assistant calendar or iCal data source) as list or symbols",
+    "meldung": "message banner from a Home Assistant text entity", "flaeche": "coloured rectangle, e.g. as panel behind other elements",
+    "apiwert": "one value from an own data source", "apiliste": "list or feed from an own data source",
+    "apibild": "picture from an own data source", "anzeige": "gauge (bar or traffic light) for a value",
+    "countdown": "countdown to a date (ziel: YYYY-MM-DD or YYYY-MM-DDTHH:MM)", "qrcode": "QR code",
+    "webcam": "IP camera (own data source of type video)", "diagramm": "history chart of a value",
+    "unwetter": "official severe weather warnings (Germany, DWD)", "webseite": "web page (embedded or as screenshot)",
+    "pdf": "PDF shown page by page",
+}
+
+
+def _wert_json(w):
+    import json
+    return json.dumps(w, ensure_ascii=False)
+
+
+def format_beschreibung():
+    """Beschreibung des Layout-Formats als Markdown (Englisch – versteht jede KI; Feldnamen sind deutsch)."""
+    z = ["# SignageCast layout format", "",
+         "A layout describes what a TV shows. It is a JSON object. Screen 1920 × 1080 px, divided into a grid of "
+         f"**{SPALTEN} columns × {ZEILEN} rows** (one cell = 40 × 40 px). Every element has a position `x`, `y` (top-left "
+         "cell, 0-based) and a size `w`, `h` in cells. Elements may overlap; later elements in the list are drawn on top. "
+         "Unknown fields are ignored, invalid values fall back to the default on import (the admin lists every repair).",
+         "", "## Layout", "", "```json",
+         '{"art": "signagecast-layout", "version": 2, "layout": {', '  "id": "lobby", "name": "Lobby",',
+         '  "hintergrund": {"art": "stil", "stil": "natur"},', '  "thema": {"schema": "dunkel", "akzent": "#3d8cd0", "schrift": "Roboto"},',
+         '  "elemente": [', '    {"id": "uhr", "typ": "uhr", "x": 1, "y": 1, "w": 8, "h": 3},',
+         '    {"id": "video", "typ": "video", "x": 11, "y": 1, "w": 36, "h": 20, "karte": true}', "  ]}}", "```", "",
+         "The wrapper (`art`, `version`, `layout`) is optional – a bare layout object works too.", "",
+         "| Field | Meaning |", "|---|---|",
+         "| `id` | 2–16 characters a–z, 0–9 (a new one is assigned on import if it exists already) |",
+         "| `name` | display name, max 40 characters |",
+         '| `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture) |',
+         f"| `hintergrund.stil` | {', '.join(f'`{x}`' for x in STILE)} – picture changes with the time of day |",
+         '| `hintergrund.farbe` | `"#rrggbb"` for art `farbe` |',
+         '| `hintergrund.abdunkeln` | true = darken the picture a little so text stays readable |',
+         '| `hintergrund.nachts_dunkler` | true = darker at night |',
+         '| `thema.schema` | `"dunkel"` (light text on dark), `"hell"` (dark text on light), `"gedimmt"` (very dim, for night) |',
+         '| `thema.akzent` | accent colour `"#rrggbb"` |',
+         f"| `thema.schrift` | font: {', '.join(f'`{x}`' for x in SCHRIFTEN)} |",
+         "", "## Element", "", "| Field | Meaning | Default |", "|---|---|---|",
+         "| `id` | 1–16 characters a–z, 0–9, unique in the layout | – |",
+         f"| `typ` | element type, see below | – |",
+         f"| `x`, `y`, `w`, `h` | position and size in cells (x + w ≤ {SPALTEN}, y + h ≤ {ZEILEN}) | 0, 0, 4, 2 |",
+         "| `sichtbar` | false = hidden | true |",
+         "| `karte` | true = drawn on a semi-transparent card | true for kachel, vorhersage, kalender |",
+         f"| `ausrichtung` | text position: {', '.join(f'`{x}`' for x in AUSRICHTUNGEN)} | `links` |",
+         '| `schrift` | font of this element (see above), "" = layout font | "" |',
+         "| `gewicht` | " + ", ".join(f"`{x}`" for x in GEWICHTE if x) + ' or "" (normal) | "" |',
+         '| `textfarbe` | `"#rrggbb"`, "" = colour scheme | "" |',
+         "| `optionen` | options of the type, see below | defaults |",
+         '| `bedingung` | show only when …: `{"entity": "binary_sensor.door", "op": "an"}` or `{"quelle": "id", "pfad": "a.b", "op": ">", "wert": "5"}`; '
+         f"op: {', '.join(f'`{x}`' for x in OPERATOREN)} | null |",
+         '| `ab`, `bis` | show only in this period: `"YYYY-MM-DD"` or `"YYYY-MM-DDTHH:MM"` (local time) | "" |',
+         "", "## Element types and options", ""]
+    for typ, opts in TYPEN.items():
+        mw, mh = MINDEST.get(typ, (1, 1))
+        z.append(f"### `{typ}` – {TYP_TEXT.get(typ, typ)}")
+        z.append("")
+        z.append(f"Minimum size {mw} × {mh} cells." if (mw, mh) != (1, 1) else "No minimum size.")
+        if opts:
+            z += ["", "| Option | Value | Default |", "|---|---|---|"]
+            for k, (pf, std) in opts.items():
+                z.append(f"| `{k}` | {getattr(pf, 'art', '')} | `{_wert_json(std)}` |")
+        z.append("")
+    z += ["## Rules for good layouts", "",
+          "- Leave a margin of 1 cell at the screen edges (TVs often cut off the border).",
+          "- Text needs height: a clock of 3 rows is easy to read from 3 m, a text line needs at least 1 row.",
+          "- Only reference Home Assistant entities, data sources, pictures and PDFs that exist; otherwise leave them empty "
+          "(\"\") – the user fills them in the editor.",
+          "- Use `flaeche` with `deckkraft` 40–80 as a calm panel behind text on pictures or video.",
+          "- Answer with the JSON only.", ""]
+    return "\n".join(z)
 
 def tageszeit(sonnenhoehe_jetzt, sonnenhoehe_spaeter):
     """morgen / tag / abend / nacht aus dem Sonnenstand (später = in 10 min, zeigt ob die Sonne steigt)."""

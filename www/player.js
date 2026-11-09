@@ -16,6 +16,9 @@
 //   (Ereignisse "einspieler-start"/"einspieler-ende" an die Seite). Keine Strikes während eines Einspielers.
 // - Eigene Medien (seit 0.15): Bilder (für ihre Anzeigedauer) und Videos (ganz) laufen als Einschub wie Einspieler –
 //   Quelle je Fernseher „medien“ (nur eigene Medien im Kreis) oder „gemischt“ (bei jedem N-ten Stream-Wechsel ein Medium).
+// - Internet weg (seit 0.38, daten.offline vom Datendienst): keine Live-Kameras und keine Einspieler aus dem Netz,
+//   stattdessen alle eigenen Medien im Kreis (ersatz.medien) oder – ohne Medien – ein ruhiges Bild passend zur Tageszeit
+//   (ersatz.bild, liegt lokal). Keine Fehlermeldung am Fernseher, keine Strikes. Ist das Netz zurück, geht es normal weiter.
 // Zeit: Abweichung zur Zeitquelle (NTP, vom Datendienst gemessen) und optionale Zeitzone – für Uhr, Takt, Einspieler
 const ZEIT = { abweichung: 0, zone: null };
 function jetztMs() { return Date.now() + ZEIT.abweichung; }
@@ -67,6 +70,7 @@ class LivePlayer {
     this.einspielerListe = Array.isArray(d.einspieler) ? d.einspieler : [];
     this.medien = Array.isArray(d.medien) ? d.medien : [];
     this.medienModus = d.medien_modus || "youtube"; this.medienAlle = d.medien_alle || 3;
+    this.offline = !!d.offline; this.ersatz = d.ersatz || null;
     ZEIT.abweichung = d.zeit_abweichung_ms || 0;
     ZEIT.zone = d.zeitzone || null;
     const j = d.einspieler_jetzt;               // „Jetzt zeigen“ aus der Verwaltung
@@ -178,18 +182,39 @@ class LivePlayer {
     if (this.frame) { this.frame.remove(); this.frame = null; }
   }
 
-  medienStart() {                           // nächstes eigenes Medium als Einschub
-    const m = this.medien[this.medienPos++ % this.medien.length];
+  medienStart(liste) {                      // nächstes eigenes Medium als Einschub
+    liste = liste || this.medien;
+    const m = liste[this.medienPos++ % liste.length];
     const ton = m.art === "video" && this.ton === "tiere";
     this.einspieler = { id: "medium-" + m.id, name: m.name, art: m.art === "bild" ? "bild" : "video", url: m.url, ton,
                         dauer_s: m.dauer_s, medium: true, start: Date.now() };
     window.dispatchEvent(new CustomEvent("einspieler-start", { detail: { ton } }));
   }
 
+  // Internet weg: Ersatz statt Live-Kamera. true = tick ist fertig (Ersatzbild steht)
+  ersatzTick() {
+    const e = this.einspieler;
+    if (e && !e.medium && (e.art === "youtube" || /^https?:/i.test(e.url || ""))) this.einspielerEnde();   // braucht das Netz
+    const m = (this.ersatz && this.ersatz.medien) || [];
+    if (!this.einspieler && m.length) this.medienStart(m);
+    if (this.einspieler) return false;                 // eigenes Medium läuft wie ein Einspieler (siehe unten)
+    if (this.id !== "ersatz") {
+      if (this.frame) { this.frame.remove(); this.frame = null; }
+      if (this.video) { this.video.remove(); this.video = null; }
+      this.id = "ersatz"; this.z = null;
+    }
+    const bild = this.ersatz && this.ersatz.bild;
+    if (bild && this.ersatzUrl !== bild) { this.ersatzUrl = bild; this.leer.style.background = `#000 center / cover no-repeat url("${bild}")`; }
+    this.leer.textContent = ""; this.leer.style.display = "flex";
+    this.live.style.display = "none"; this.naechstes.style.display = "none";
+    return true;
+  }
+
   tick() {
     const T = this.texte();
+    if (this.offline && !this.aus && this.ersatzTick()) return;
     if (!this.einspieler && !this.aus && this.medienModus === "medien" && this.medien.length && !this.faelligPruefen()) this.medienStart();
-    if (!this.einspieler && !this.aus) {
+    if (!this.einspieler && !this.aus && !this.offline) {
       const e = this.faellig();
       if (e) {
         this.einspieler = { ...e, start: Date.now() };
@@ -290,6 +315,7 @@ class LivePlayer {
     this.z = { start: Date.now(), laeuft: false, puffer: 0, letzteZeit: null, letzteBewegung: Date.now(),
                qualitaet: null, angemeldet: false, status: null, stufe: null, startGemeldet: false, endeGemeldet: false,
                schlechtSeit: null, gutSeit: null };
+    if (this.ersatzUrl) { this.ersatzUrl = null; this.leer.style.background = ""; }      // Ersatzbild (Internet weg) vorbei
     this.leer.style.display = id ? "none" : "flex";
     if (!id) return;
     const f = document.createElement("iframe");

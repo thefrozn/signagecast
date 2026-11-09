@@ -35,6 +35,18 @@ const LTEXTE = {
     gespeichert: "Gespeichert – die Fernseher übernehmen es in bis zu 15 s", wirklichLoeschen: "Layout löschen?",
     benutzt: "wird benutzt von", nichtLoeschbar: "Das Layout wird noch von einem Fernseher benutzt (auch im Zeitplan).",
     letztes: "Das letzte Layout kann nicht gelöscht werden.", importOk: "Layout importiert – Speichern nicht vergessen",
+    versionen: "Versionen", versionenText: "Vor jeder Änderung hebt SignageCast die alte Fassung auf (je Layout die letzten 10). Wiederherstellen ersetzt das Layout – die jetzige Fassung wird dabei selbst zur Version.",
+    keineVersionen: "Noch keine älteren Fassungen.", wiederherstellen: "Wiederherstellen", herunterladen: "Herunterladen", schliessen: "Schließen",
+    bausteineN: (n) => n === 1 ? "1 Baustein" : `${n} Bausteine`, wiederhergestellt: "Fassung wiederhergestellt",
+    wirklichWiederherstellen: "Diese Fassung wiederherstellen? Die jetzige wird als Version aufgehoben.",
+    geloeschte: (n) => `Gelöschte Layouts (${n})`, geloeschtAm: "gelöscht",
+    einfuegen: "Text einfügen …", einfuegenText: "JSON eines Layouts hier einfügen – z. B. die Antwort einer KI. Text davor oder danach und ```-Zäune stören nicht.",
+    uebernehmen: "Übernehmen", kiHilfe: "Mit KI erstellen …",
+    kiText: "So lässt du ein Layout von einer KI (z. B. ChatGPT, Claude, Gemini) bauen: Anleitung kopieren, in die KI einfügen, deinen Wunsch an der markierten Stelle beschreiben, die Antwort (JSON) hier mit „Text einfügen …“ übernehmen. Danach im Editor Bilder hochladen und Entitäten wählen.",
+    kiKopieren: "Anleitung kopieren", kiKopiert: "Anleitung kopiert", kiDatei: "Als Datei laden",
+    kiWunsch: "MEIN WUNSCH: (hier beschreiben, z. B. „Wartezimmer einer Zahnarztpraxis, hell und ruhig, Logo oben links, große Uhr, Video rechts, unten ein Laufband mit Öffnungszeiten“)",
+    kiEinleitung: "Du gestaltest Bildschirm-Layouts für SignageCast. Erstelle genau ein Layout im unten beschriebenen JSON-Format. Texte auf dem Bildschirm auf Deutsch. Antworte nur mit dem JSON-Objekt.",
+    hinweiseTitel: "Beim Import angepasst:", importGespeichert: "Layout übernommen und gespeichert",
     ungespeichert: "Es gibt ungespeicherte Änderungen. Trotzdem wechseln?",
     typ: { uhr: "Uhr", datum: "Datum", temperatur: "Temperatur", wetterlage: "Wetterlage", feuchte: "Luftfeuchte", wind: "Wind",
            vorhersage: "Vorhersage", raeume: "Räume", kachel: "Kachel (HA-Wert)", video: "Live-Video", sender: "Radio-Sender",
@@ -107,6 +119,18 @@ const LTEXTE = {
     gespeichert: "Saved – the TVs pick it up within 15 s", wirklichLoeschen: "Delete layout?",
     benutzt: "used by", nichtLoeschbar: "This layout is still used by a TV (also in a schedule).",
     letztes: "The last layout cannot be deleted.", importOk: "Layout imported – don't forget to save",
+    versionen: "Versions", versionenText: "Before every change SignageCast keeps the old version (the last 10 per layout). Restoring replaces the layout – the current one becomes a version itself.",
+    keineVersionen: "No older versions yet.", wiederherstellen: "Restore", herunterladen: "Download", schliessen: "Close",
+    bausteineN: (n) => n === 1 ? "1 element" : `${n} elements`, wiederhergestellt: "Version restored",
+    wirklichWiederherstellen: "Restore this version? The current one is kept as a version.",
+    geloeschte: (n) => `Deleted layouts (${n})`, geloeschtAm: "deleted",
+    einfuegen: "Paste text …", einfuegenText: "Paste the JSON of a layout here – e.g. the answer of an AI. Text before or after it and ``` fences do no harm.",
+    uebernehmen: "Apply", kiHilfe: "Create with AI …",
+    kiText: "To have an AI (e.g. ChatGPT, Claude, Gemini) build a layout: copy the instructions, paste them into the AI, describe your wish at the marked place, and apply the answer (JSON) here with “Paste text …”. Then upload pictures and choose entities in the editor.",
+    kiKopieren: "Copy instructions", kiKopiert: "Instructions copied", kiDatei: "Download as file",
+    kiWunsch: "MY WISH: (describe it here, e.g. “waiting room of a dental practice, light and calm, logo top left, large clock, video on the right, a ticker with opening hours at the bottom”)",
+    kiEinleitung: "You design screen layouts for SignageCast. Create exactly one layout in the JSON format described below. Screen texts in English. Answer with the JSON object only.",
+    hinweiseTitel: "Adjusted on import:", importGespeichert: "Layout applied and saved",
     ungespeichert: "There are unsaved changes. Switch anyway?",
     typ: { uhr: "Clock", datum: "Date", temperatur: "Temperature", wetterlage: "Weather", feuchte: "Humidity", wind: "Wind",
            vorhersage: "Forecast", raeume: "Rooms", kachel: "Tile (HA value)", video: "Live video", sender: "Radio station",
@@ -314,9 +338,10 @@ async function layoutSeite(inhalt) {
     document.body.appendChild(a); a.click(); a.remove();
   }, null);
   const importieren = async (datei) => aktion(null, async () => {
-    const d = JSON.parse(await datei.text());
-    const l2 = ["signagecast-layout", "tv-stream-layout"].includes(d.art) ? d.layout : d;
-    if (!l2 || !Array.isArray(l2.elemente)) throw new Error("kein Layout");
+    const roh = await datei.text();
+    let d; try { d = JSON.parse(roh); } catch (_) { return uebernehmen({ text: roh }); }     // z. B. Antwort einer KI mit Text drumherum
+    const l2 = d && ["signagecast-layout", "tv-stream-layout"].includes(d.art) ? d.layout : d;
+    if (!l2 || !Array.isArray(l2.elemente)) return uebernehmen({ layout: d });             // der Dienst sagt, was fehlt
     // mitgelieferte Bilder hochladen und Namen im Layout anpassen (der Name ergibt sich aus dem Inhalt)
     const neu = {};
     for (const [n, daten] of Object.entries(d.bilder || {})) neu[n] = (await senden("/api/bilder", { daten })).bild;
@@ -325,10 +350,84 @@ async function layoutSeite(inhalt) {
     if (l2.hintergrund.bild) l2.hintergrund.bild = um(l2.hintergrund.bild);
     for (const k of Object.keys(l2.hintergrund.bilder_tageszeit || {})) l2.hintergrund.bilder_tageszeit[k] = um(l2.hintergrund.bilder_tageszeit[k]);
     for (const x of l2.elemente) if (x.optionen && x.optionen.bild) x.optionen.bild = um(x.optionen.bild);
-    l2.id = neueId(); LS.push(l2); await sofortSpeichern(); listeAlle();
-  }, L.importOk);
+    await uebernehmen({ layout: l2 });
+  }, null);
+  // Layout prüfen lassen (seit 0.38: fehlertolerant, nennt jede Reparatur), anhängen, speichern, Hinweise zeigen
+  const uebernehmen = async (anfrage) => {
+    const r = await senden("/api/layouts/pruefen", anfrage);
+    LS.push(r.layout); await sofortSpeichern(); listeAlle();
+    extra(r.hinweise.length ? `<p><b>${esc(L.importGespeichert)}: ${esc(r.layout.name)}</b></p><p>${esc(L.hinweiseTitel)}</p><ul>${r.hinweise.map((h) => `<li>${esc(meldungText(h, h.text))}</li>`).join("")}</ul>` : "", true);
+    melden(L.importGespeichert);
+  };
+  // Zusatzkarte über den Layouts (Versionen, Einfügen, KI-Anleitung, Hinweise nach dem Import)
+  const extra = (html, schliessbar) => {
+    const z = $("#lExtra"); if (!z) return null;
+    z.innerHTML = html ? `<div class="karte">${html}${schliessbar ? `<div class="zeile"><button class="knopf" id="lxZu">${esc(L.schliessen)}</button></div>` : ""}</div>` : "";
+    if ($("#lxZu")) $("#lxZu").onclick = () => { z.innerHTML = ""; };
+    if (html) z.scrollIntoView({ block: "nearest" });
+    return z;
+  };
+  const herunterladen = (l) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ art: "signagecast-layout", version: 2, layout: l }, null, 1)], { type: "application/json" }));
+    a.download = `signagecast-layout-${l.name.replace(/[^\w-]+/g, "_")}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  const zeit = (t) => new Date(t * 1000).toLocaleString(E.sprache === "en" ? "en-GB" : "de-DE", { dateStyle: "short", timeStyle: "short" });
+  const versionenZeigen = async (lid, name) => {
+    const d = await holen("/api/layouts/versionen?id=" + encodeURIComponent(lid));
+    extra(`<h2>${esc(L.versionen)}: ${esc(name)}</h2><p class="leise">${esc(L.versionenText)}</p>
+      ${d.versionen.length ? `<div class="tabelle-rahmen"><table class="tabelle">${d.versionen.map((v) => `<tr><td>${esc(zeit(v.zeit))}</td><td>${esc(v.wer)}</td>
+        <td>${esc(v.name)} · ${esc(L.bausteineN(v.bausteine))}</td><td><button class="knopf" data-vw="${v.nr}">${esc(L.wiederherstellen)}</button>
+        <button class="knopf" data-vd="${v.nr}">${esc(L.herunterladen)}</button></td></tr>`).join("")}</table></div>` : `<p class="leise">${esc(L.keineVersionen)}</p>`}`, true);
+    document.querySelectorAll("[data-vw]").forEach((b) => { b.onclick = (ev) => {
+      if (!confirm(L.wirklichWiederherstellen)) return;
+      aktion(ev.target, async () => {
+        await senden("/api/layouts/wiederherstellen", { id: lid, nr: Number(b.dataset.vw) });
+        E = (await holen("/api/einstellungen")).einstellungen; LS = JSON.parse(JSON.stringify(E.layouts)); listeAlle();
+      }, L.wiederhergestellt);
+    }; });
+    document.querySelectorAll("[data-vd]").forEach((b) => { b.onclick = (ev) => aktion(ev.target, async () => {
+      herunterladen((await holen(`/api/layouts/version?id=${encodeURIComponent(lid)}&nr=${b.dataset.vd}`)).layout); }, null); });
+  };
+  const geloeschteZeigen = (liste) => {
+    extra(`<h2>${esc(L.geloeschte(liste.length))}</h2><div class="tabelle-rahmen"><table class="tabelle">${liste.map((g) => `<tr><td>${esc(g.name)}</td>
+      <td class="leise">${esc(L.geloeschtAm)} ${esc(zeit(g.zeit))}</td><td><button class="knopf" data-gw="${esc(g.id)}">${esc(L.wiederherstellen)}</button>
+      <button class="knopf" data-gv="${esc(g.id)}" data-gn="${esc(g.name)}">${esc(L.versionen)}</button></td></tr>`).join("")}</table></div>`, true);
+    document.querySelectorAll("[data-gw]").forEach((b) => { b.onclick = (ev) => aktion(ev.target, async () => {
+      await senden("/api/layouts/wiederherstellen", { id: b.dataset.gw, nr: 0 });
+      E = (await holen("/api/einstellungen")).einstellungen; LS = JSON.parse(JSON.stringify(E.layouts)); listeAlle();
+    }, L.wiederhergestellt); });
+    document.querySelectorAll("[data-gv]").forEach((b) => { b.onclick = () => aktion(null, () => versionenZeigen(b.dataset.gv, b.dataset.gn), null); });
+  };
+  const einfuegenZeigen = () => {
+    extra(`<h2>${esc(L.einfuegen.replace(" …", ""))}</h2><p class="leise">${esc(L.einfuegenText)}</p>
+      <textarea id="lxText" rows="10" class="breit" spellcheck="false"></textarea>
+      <div class="zeile"><button class="knopf haupt" id="lxOk">${esc(L.uebernehmen)}</button></div>`, true);
+    $("#lxText").focus();
+    $("#lxOk").onclick = (ev) => aktion(ev.target, () => uebernehmen({ text: $("#lxText").value }), null);
+  };
+  const kiZeigen = async () => {
+    const format = await dienst.get("/api/layouts/format", {}, KOPF);
+    const anleitung = `${L.kiEinleitung}\n\n${L.kiWunsch}\n\n${format}`;
+    extra(`<h2>${esc(L.kiHilfe.replace(" …", ""))}</h2><p class="leise">${esc(L.kiText)}</p>
+      <textarea id="lxKi" rows="8" class="breit" readonly spellcheck="false">${esc(anleitung)}</textarea>
+      <div class="zeile"><button class="knopf haupt" id="lxKopieren">${esc(L.kiKopieren)}</button><button class="knopf" id="lxDatei">${esc(L.kiDatei)}</button>
+        <button class="knopf" id="lxEinfuegen">${esc(L.einfuegen)}</button></div>`, true);
+    $("#lxKopieren").onclick = async () => {
+      const t = $("#lxKi");
+      try { await navigator.clipboard.writeText(anleitung); } catch (_) { t.focus(); t.select(); document.execCommand("copy"); }
+      melden(L.kiKopiert);
+    };
+    $("#lxDatei").onclick = () => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([anleitung], { type: "text/markdown" })); a.download = "signagecast-layout-ki.md";
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+    $("#lxEinfuegen").onclick = einfuegenZeigen;
+  };
   const listeAlle = () => {
-    inhalt.innerHTML = `<div class="layoutkacheln">${LS.map((l, i) => {
+    inhalt.innerHTML = `<div id="lExtra"></div><div class="layoutkacheln">${LS.map((l, i) => {
       const n = nutzer(l.id);
       return `<div class="karte layoutkachel" data-i="${i}"><div class="mini"></div>
         <b class="lk-name">${esc(l.name)}</b>
@@ -336,10 +435,14 @@ async function layoutSeite(inhalt) {
         <div class="zeile"><button class="knopf haupt" data-a="b">${esc(L.bearbeitenL)}</button>
           <details class="mehr"><summary class="knopf">⋯</summary><div class="mehr-menue">
             <button class="knopf" data-a="k">${esc(L.duplizieren)}</button><button class="knopf" data-a="x">${esc(L.exportieren)}</button>
+            <button class="knopf" data-a="v">${esc(L.versionen)}</button>
             <button class="knopf gefahr" data-a="l">${esc(L.loeschen)}</button></div></details></div></div>`;
     }).join("")}
       <div class="karte layoutkachel neu" id="lNeuKachel"><button class="neu-knopf" id="lNeu"><i class="mdi mdi-plus-circle-outline"></i>${esc(L.neu)}</button>
-        <label class="leise importlink">${esc(L.importieren)} …<input type="file" id="lImport" accept=".json" hidden></label></div></div>`;
+        <label class="leise importlink">${esc(L.importieren)} …<input type="file" id="lImport" accept=".json,.txt" hidden></label>
+        <a href="#" class="leise importlink" id="lEinfuegen">${esc(L.einfuegen)}</a>
+        <a href="#" class="leise importlink" id="lKi">${esc(L.kiHilfe)}</a></div></div>
+      <p class="leise" id="lGeloescht"></p>`;
     inhalt.querySelectorAll(".layoutkachel[data-i]").forEach((k) => {
       const i = Number(k.dataset.i), l = LS[i];
       miniVorschau(k.querySelector(".mini"), l);
@@ -348,6 +451,7 @@ async function layoutSeite(inhalt) {
         const a = b.dataset.a;
         if (a === "b") return oeffnen(i);
         if (a === "x") return exportieren(l);
+        if (a === "v") return aktion(null, () => versionenZeigen(l.id, l.name), null);
         if (a === "k") return aktion(ev.target, async () => {
           const c = JSON.parse(JSON.stringify(l)); c.id = neueId(); c.name += " (2)"; LS.push(c); await sofortSpeichern(); listeAlle(); });
         if (a === "l") {
@@ -359,6 +463,14 @@ async function layoutSeite(inhalt) {
       }; });
     });
     $("#lImport").onchange = (e) => { if (e.target.files[0]) importieren(e.target.files[0]); };
+    $("#lEinfuegen").onclick = (e) => { e.preventDefault(); einfuegenZeigen(); };
+    $("#lKi").onclick = (e) => { e.preventDefault(); aktion(null, kiZeigen, null); };
+    holen("/api/layouts/versionen?id=").then((d) => {            // gelöschte Layouts, die sich zurückholen lassen
+      const z = $("#lGeloescht");
+      if (!z || !d.geloescht.length) return;
+      z.innerHTML = `<a href="#">${esc(L.geloeschte(d.geloescht.length))}</a>`;
+      z.querySelector("a").onclick = (e) => { e.preventDefault(); geloeschteZeigen(d.geloescht); };
+    }).catch(() => {});
     $("#lNeu").onclick = () => {
       $("#lNeuKachel").innerHTML = `<h3>${esc(L.neu)}</h3>
         <div class="zeile"><label>${esc(L.name)}</label><input type="text" id="lnName" data-frei></div>

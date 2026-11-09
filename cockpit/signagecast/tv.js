@@ -4,6 +4,8 @@
 "use strict";
 
 const KOPF = { "X-SignageCast": "1", "Content-Type": "application/json" };
+// Wer angemeldet ist – nur für das Änderungsprotokoll (seit 0.38); im Container gibt es nur einen Zugang
+try { if (cockpit.user) cockpit.user().then((u) => { if (u && /^[\w.@ -]{1,40}$/.test(u.name || "")) KOPF["X-SignageCast-Benutzer"] = u.name; }).catch(() => {}); } catch (_) { /* egal */ }
 const dienst = cockpit.http(8080, { address: "127.0.0.1" });
 const dienstBinaer = cockpit.http(8080, { address: "127.0.0.1", binary: true });
 const CONTAINER = !!cockpit.signagecastContainer;
@@ -15,7 +17,7 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -23,7 +25,8 @@ const TEXTE = {
           name: "Name", pwNeu: "neues Passwort", pwGesetzt: "Passwort gesetzt", pwFehlt: "noch kein Passwort", zugangNeu: "Zugang hinzufügen",
           entfernen: "Entfernen", vorlagen: "Vorlagen", vorlagenText: "Eine Vorlage je Zeile; „…“ markiert die Lücke für den Namen.",
           art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
-          darfAlarm: "darf das Notfall-Vollbild auslösen" },
+          darfAlarm: "darf das Notfall-Vollbild auslösen",
+          recht: { meldung: "darf Laufschrift-Meldungen senden", layout: "darf das Layout vorübergehend umschalten", schalten: "darf Fernseher ein- und ausschalten (HA)" } },
     al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Fernseher → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
           vorlagen: "Vorlagen (eine je Zeile)", ton: "Warnton alle 10 Sekunden (hörbar auf Fernsehern mit Ton oder Pult-Vorlesen)", an: "Jetzt auslösen", aus: "Beenden", alle: "alle Fernseher",
           wirklich: "Notfall-Vollbild wirklich jetzt auf den Fernsehern zeigen?", laeuft: (z, v) => `Notfall-Vollbild läuft seit ${z} Uhr (${v})`,
@@ -139,12 +142,40 @@ const TEXTE = {
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
             neu: "Neuen Link erzeugen", neuFrage: "Neuen Link erzeugen? Der bisherige gilt dann sofort nicht mehr – Geräte damit zeigen einen Fehler, bis der neue eingetragen ist.", neuOk: "Neuer Link erstellt",
             linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Fernseher – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
+    prot: { titel: "Änderungsprotokoll", text: "Wer hat wann was geändert – in der Verwaltung, am Pult, per Webhook oder durch SignageCast selbst. Festgehalten werden nur Art und Bereich, keine Werte (keine Passwörter, keine Texte von Durchsagen). Die letzten 500 Einträge; Teil der Sicherung.",
+            quelle: "Herkunft", alle: "alle", zeit: "Zeit", wer: "Wer", was: "Was", leer: "Noch keine Einträge.", mehr: "Ältere zeigen",
+            quellen: { verwaltung: "Verwaltung", pult: "Pult", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "nur Schwarz", steht: "Bild stand still" },
+            layouts: { neu: "neue Layouts", geaendert: "Layouts geändert", geloescht: "Layouts gelöscht" },
+            bereich: { fernseher: "Fernseher", layouts: "Layouts", video: "Video", medien: "Medien", quellen: "Datenquellen", radio: "Radio", einspieler: "Einspieler",
+                       kategorien: "Kategorien", standort: "Standort", anzeige: "Anzeige", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen",
+                       sicherung: "Sicherung", pult: "Durchsage-Pult", alarm: "Notfall-Vollbild", webhook: "Webhook", stream: "Stream", sprache: "Sprache", updates: "Updates" },
+            aktion: { einstellungen: "Einstellungen gespeichert", webhook_neu: "neuer Webhook-Schlüssel", medien_neu: "Medium hochgeladen", medien_loeschen: "Medium gelöscht",
+                      schalten: "Fernseher geschaltet", nach_einschalten: "Quelle/Seite am Fernseher ausprobiert", update: "Update angefordert",
+                      update_ergebnis: "Update", sicherung_erstellen: "Sicherung erstellt", sicherung_loeschen: "Sicherung gelöscht",
+                      sicherung_einspielen: "Sicherung eingespielt", quelle_datei: "Datei für Datenquelle hochgeladen", kategorie_loeschen: "Kategorie gelöscht",
+                      stream_neu: "Stream hinzugefügt", suche: "Suche gestartet", radio_neu: "Radiosender hinzugefügt", seite_neu_laden: "TV-Seite neu geladen",
+                      kette_neu: "Wiedergabe neu gestartet", ton_neu: "Ton und Stream neu gestartet", layout_wiederherstellen: "Layout-Version wiederhergestellt",
+                      stimme_laden: "Stimme geladen", probedurchsage: "Probedurchsage", einspieler_jetzt: "Einspieler jetzt gezeigt", stream_freigeben: "abgelehnten Stream freigegeben",
+                      alarm_an: "Notfall-Vollbild ausgelöst", alarm_aus: "Notfall-Vollbild beendet", durchsage: "Durchsage gesendet", meldung: "Laufschrift-Meldung gesendet",
+                      meldung_aus: "Laufschrift-Meldung beendet", layout: "Layout umgeschaltet", layout_aus: "Layout zurückgeschaltet",
+                      internet_weg: "Internet nicht erreichbar seit", internet_wieder: "Internet wieder da (Ausfall)",
+                      bild_neu_laden: "Bildprüfung: TV-Seite neu geladen", bild_kette_neu: "Bildprüfung: Wiedergabe neu gestartet",
+                      "stream_*": (a) => `Stream: ${{ aendern: "geändert", entfernen: "entfernt", zeigen: "jetzt gezeigt", "strikes-zuruecksetzen": "Strikes zurückgesetzt" }[a] || a}`,
+                      "radio_*": (a) => `Radiosender ${a === "entfernen" ? "entfernt" : "geändert"}`,
+                      "player_*": (a) => `Player: ${{ neu: "neu angelegt", koppeln: "gekoppelt", einstellungen: "Einstellungen", wlan: "WLAN", image: "Image erstellt", entfernen: "entfernt", aendern: "geändert", befehl: "Befehl", "link-neu": "neuer Link" }[a] || a}`,
+                      "terminal_*": (a) => a === "start" ? "Terminal geöffnet" : "Terminal beendet" } },
+    internet: "Internet", online: "erreichbar", offline: "nicht erreichbar", onlineText: "Live-Kameras laufen",
+    offlineSeit: (z) => `seit ${z} – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
+    bildBefund: { schwarz: "Bildprüfung: zeigt nur Schwarz", steht: "Bildprüfung: Bild steht still" },
+    pultLayout: (n, bis, von) => `Layout „${n}“ vom Pult (${von}) bis ${bis}`,
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
     todoAus: { tipp: "Ausblenden (dauerhaft, bis du ihn wieder einblendest)", update: "Ausblenden (bis zur nächsten Version)",
                warn: "Ausblenden (bis das Problem einmal behoben war – tritt es wieder auf, erscheint es wieder)" },
     todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
     todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
-    todo: { player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
+    todo: { internet: (s) => `Internet seit ${s} nicht erreichbar – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
+            bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
+            player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
             software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
@@ -202,7 +233,7 @@ const TEXTE = {
     bnTelegram: "Telegram", bnBotToken: "Bot-Token", bnChatId: "Chat-ID", bnEmail: "E-Mail (SMTP)", bnServer: "SMTP-Server", bnPort: "Port",
     bnSicherheit: "Verschlüsselung", bnBenutzer: "Benutzer", bnPasswort: "Passwort", bnAbsender: "Absender", bnEmpfaenger: "Empfänger (mit Komma trennen)",
     bnHA: "Home Assistant", bnDienst: "Benachrichtigungsdienst", bnAktiv: "aktiv", bnTest: "Testnachricht", bnTestOk: "Testnachricht gesendet",
-    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Fernseher ruckelt (zu wenige Bilder/s)" },
+    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Fernseher ruckelt (zu wenige Bilder/s)", internet: "Internet nicht erreichbar (Entwarnung mit Zeitraum)" },
     bnLetzte: "Zuletzt gesendet",
     whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Fernseher legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
     whAktiv: "Meldungen annehmen", whNeu: "Neuen Schlüssel erzeugen", whVorhanden: "Schlüssel gesetzt (••••)", whKeiner: "noch kein Schlüssel",
@@ -359,7 +390,7 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
@@ -367,7 +398,8 @@ const TEXTE = {
           name: "Name", pwNeu: "new password", pwGesetzt: "password set", pwFehlt: "no password yet", zugangNeu: "Add account",
           entfernen: "Remove", vorlagen: "Templates", vorlagenText: "One template per line; “…” marks the gap for the name.",
           art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud).",
-          darfAlarm: "may trigger the emergency screen" },
+          darfAlarm: "may trigger the emergency screen",
+          recht: { meldung: "may send ticker messages", layout: "may switch the layout for a while", schalten: "may switch TVs on and off (HA)" } },
     al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (TVs → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
           vorlagen: "Templates (one per line)", ton: "Warning tone every 10 seconds (audible on TVs with sound or panel read-aloud)", an: "Trigger now", aus: "End", alle: "all TVs",
           wirklich: "Really show the emergency screen on the TVs now?", laeuft: (z, v) => `Emergency screen showing since ${z} (${v === "Verwaltung" ? "admin" : v})`,
@@ -483,12 +515,40 @@ const TEXTE = {
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
             neu: "Create new link", neuFrage: "Create a new link? The current one stops working immediately – devices using it show an error until the new one is entered.", neuOk: "New link created",
             linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this TV – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
+    prot: { titel: "Change log", text: "Who changed what and when – in the admin, at the panel, via webhook or by SignageCast itself. Only the kind and area are recorded, no values (no passwords, no announcement texts). The last 500 entries; part of the backup.",
+            quelle: "Origin", alle: "all", zeit: "Time", wer: "Who", was: "What", leer: "No entries yet.", mehr: "Show older",
+            quellen: { verwaltung: "Admin", pult: "Panel", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "only black", steht: "picture frozen" },
+            layouts: { neu: "new layouts", geaendert: "layouts changed", geloescht: "layouts deleted" },
+            bereich: { fernseher: "TVs", layouts: "Layouts", video: "Video", medien: "Media", quellen: "Data sources", radio: "Radio", einspieler: "Clips",
+                       kategorien: "Categories", standort: "Location", anzeige: "Display", ha: "Home Assistant", benachrichtigung: "Notifications",
+                       sicherung: "Backup", pult: "Announcement panel", alarm: "Emergency screen", webhook: "Webhook", stream: "Stream", sprache: "Language", updates: "Updates" },
+            aktion: { einstellungen: "Settings saved", webhook_neu: "new webhook key", medien_neu: "Medium uploaded", medien_loeschen: "Medium deleted",
+                      schalten: "TV switched", nach_einschalten: "Source/page tried on the TV", update: "Update requested",
+                      update_ergebnis: "Update", sicherung_erstellen: "Backup created", sicherung_loeschen: "Backup deleted",
+                      sicherung_einspielen: "Backup restored", quelle_datei: "File for data source uploaded", kategorie_loeschen: "Category deleted",
+                      stream_neu: "Stream added", suche: "Search started", radio_neu: "Radio station added", seite_neu_laden: "TV page reloaded",
+                      kette_neu: "Playback restarted", ton_neu: "Sound and stream restarted", layout_wiederherstellen: "Layout version restored",
+                      stimme_laden: "Voice downloaded", probedurchsage: "Test announcement", einspieler_jetzt: "Clip shown now", stream_freigeben: "Rejected stream released",
+                      alarm_an: "Emergency screen triggered", alarm_aus: "Emergency screen ended", durchsage: "Announcement sent", meldung: "Ticker message sent",
+                      meldung_aus: "Ticker message ended", layout: "Layout switched", layout_aus: "Layout switched back",
+                      internet_weg: "Internet not reachable since", internet_wieder: "Internet back (outage)",
+                      bild_neu_laden: "Picture check: TV page reloaded", bild_kette_neu: "Picture check: playback restarted",
+                      "stream_*": (a) => `Stream: ${{ aendern: "changed", entfernen: "removed", zeigen: "shown now", "strikes-zuruecksetzen": "strikes reset" }[a] || a}`,
+                      "radio_*": (a) => `Radio station ${a === "entfernen" ? "removed" : "changed"}`,
+                      "player_*": (a) => `Player: ${{ neu: "created", koppeln: "paired", einstellungen: "settings", wlan: "Wi-Fi", image: "image created", entfernen: "removed", aendern: "changed", befehl: "command", "link-neu": "new link" }[a] || a}`,
+                      "terminal_*": (a) => a === "start" ? "Terminal opened" : "Terminal closed" } },
+    internet: "Internet", online: "reachable", offline: "not reachable", onlineText: "Live cams are running",
+    offlineSeit: (z) => `since ${z} – the TVs show own media or a fallback picture`,
+    bildBefund: { schwarz: "Picture check: shows only black", steht: "Picture check: picture frozen" },
+    pultLayout: (n, bis, von) => `Layout “${n}” from the panel (${von}) until ${bis}`,
     todoTitel: "To do", todoOk: "All good.",
     todoAus: { tipp: "Hide (for good, until you show it again)", update: "Hide (until the next version)",
                warn: "Hide (until the problem was solved once – if it comes back, it shows again)" },
     todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
     todoEin: "Show again", todoAusgeblendet: "hidden",
-    todo: { player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
+    todo: { internet: (s) => `Internet not reachable since ${s} – the TVs show own media or a fallback picture`,
+            bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
+            player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
             software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
@@ -546,7 +606,7 @@ const TEXTE = {
     bnTelegram: "Telegram", bnBotToken: "Bot token", bnChatId: "Chat ID", bnEmail: "E-mail (SMTP)", bnServer: "SMTP server", bnPort: "Port",
     bnSicherheit: "Encryption", bnBenutzer: "User", bnPasswort: "Password", bnAbsender: "Sender", bnEmpfaenger: "Recipients (comma separated)",
     bnHA: "Home Assistant", bnDienst: "Notify service", bnAktiv: "active", bnTest: "Test message", bnTestOk: "Test message sent",
-    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "TV stutters (too few frames/s)" },
+    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "TV stutters (too few frames/s)", internet: "Internet not reachable (all-clear with period)" },
     bnLetzte: "Last sent",
     whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the TVs – above any layout. Only with a secret key; the key is shown only once after it is created.",
     whAktiv: "Accept messages", whNeu: "Create new key", whVorhanden: "Key set (••••)", whKeiner: "no key yet",
@@ -614,6 +674,13 @@ const TEXTE = {
       l_vergleich: "unknown comparison", l_kennung: "invalid layout identifier {id}", l_hintergrund: "background: wetter, stil, farbe or bild",
       l_hg_bild: "invalid background picture", l_schema: "scheme light, dark or dimmed", l_schrift: "unknown font",
       l_baustein: "unknown element {typ}", l_baustein_id: "invalid or duplicate element identifier {id}",
+      l_imp_kein: "This is not a SignageCast layout (the list “elemente” is missing)", l_imp_json: "No valid JSON: {d}",
+      l_imp_typ: "Element {nr}: unknown type “{typ}” – left out", l_imp_raster: "Element {b}: reached beyond the edge – fitted in",
+      l_imp_option: "Element {b}: unknown option “{o}” – left out", l_imp_wert: "{feld}: invalid value “{w}” – default used",
+      l_imp_bild: "Picture/PDF “{w}” does not exist here – please upload it in the editor",
+      l_imp_quelle: "Element {b}: data source “{q}” does not exist here – please create it or choose one in the editor",
+      l_imp_bedingung: "Element {b}: invalid condition – left out", l_version_fehlt: "This version no longer exists",
+      p_recht: "This account may not do that", p_kein_schalten: "No switch from Home Assistant is set for this TV",
       z_uhrzeit: "Schedule: time as HH:MM", z_layout: "Schedule: unknown layout {id}",
       s_kein_link: "No YouTube video or channel link recognised", s_nicht_einbettbar: "This video may not be embedded (or does not exist)",
       s_ort: "invalid location ({k})",
@@ -876,7 +943,8 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, lay
                  streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: zweiTeile(pultSeite, webhookKarte),
-                 updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang") };
+                 updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
+                 protokoll: protokollSeite };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 // Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
@@ -884,7 +952,7 @@ const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "p
                   ["inhalte", ["layout", "quellen", "medien", "einspieler", "radio", "pult"]],
                   ["videoton", ["streams", "kategorien", "video", "suche"]],
                   ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "zugang"] : ["allgemein", "ha", "benachrichtigung"]],
-                  ["system", ["updates", "sicherung", "leistung"]]];
+                  ["system", ["updates", "sicherung", "leistung", "protokoll"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
 const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || BEREICHE[0];
@@ -1048,6 +1116,7 @@ async function pultSeite(inhalt) {
           <div class="zeile"><label>${esc(T.pu.name)}</label><input type="text" name="zName" value="${esc(z.name)}"></div>
           <div class="zeile">${E.fernseher.map((t) => `<label><input type="checkbox" name="zTv" value="${esc(t.id)}" ${z.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join(" ")}</div>
           <div class="zeile"><label><input type="checkbox" name="zAlarm" ${z.alarm ? "checked" : ""}> ${esc(T.pu.darfAlarm)}</label></div>
+          <div class="zeile">${["meldung", "layout", "schalten"].map((r) => `<label><input type="checkbox" name="zRecht" value="${r}" ${z[r] ? "checked" : ""}> ${esc(T.pu.recht[r])}</label>`).join(" ")}</div>
           <div class="zeile"><input type="password" name="zPw" placeholder="${esc(T.pu.pwNeu)}" autocomplete="new-password">
             <span class="leise">${esc(z.passwort ? T.pu.pwGesetzt : T.pu.pwFehlt)}</span><button class="knopf gefahr" name="zWeg">${esc(T.pu.entfernen)}</button></div></div>`).join("")}
         <div class="zeile"><button class="knopf" id="zNeu">${esc(T.pu.zugangNeu)}</button></div></div>
@@ -1075,6 +1144,7 @@ curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)
         z.name = el.querySelector("[name=zName]").value.trim() || "Pult";
         z.fernseher = [...el.querySelectorAll("[name=zTv]:checked")].map((c) => c.value);
         z.alarm = el.querySelector("[name=zAlarm]").checked;
+        el.querySelectorAll("[name=zRecht]").forEach((c) => { z[c.value] = c.checked; });
         const pw = el.querySelector("[name=zPw]").value;
         if (pw) z.passwort_neu = pw;
       });
@@ -1566,6 +1636,7 @@ const TODO_WARN = {
   allgemein: (w) => [T.todo.allgemein(w.grund, String(w.seit || "").slice(11)), "streams"], doppelt: (w) => [T.todo.doppelt(w.name), "leistung"],
   player: (w) => [T.todo.player(w.name), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
   bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
+  internet: (w) => [T.todo.internet(w.seit), "uebersicht"], bild: (w) => [T.todo.bild(w.name, w.befund), "leistung"],
 };
 async function todoZeichnen(s) {
   const l = [];
@@ -1640,10 +1711,14 @@ async function uebersicht(inhalt) {
         <div class="leise">${t.aktuell ? esc(t.aktuell.name) : ""}${w ? ` · <b class="${/hd/.test(w.stufe) ? "gut" : "schlecht"}">${esc(stufeText(w.stufe))}</b> ${esc((w.codec || "").split(".")[0])}${w.kbps ? " · " + Math.round(w.kbps / 1000) + " Mbit/s" : ""}` : ""}</div>
         <div class="leise">${esc(T.tonAnzeige)}: ${esc(T.tonArt[t.ton])}${t.sender ? " · ♪ " + esc(t.sender) : ""}${t.video ? "" : " · " + esc(T.videoZeigen) + ": " + esc(T.nein)}</div>
         ${((s.schalten || {})[t.id] || {}).ha ? (() => { const h = s.schalten[t.id].ha;
-          return `<div class="leise">${esc(T.geraetHa)}: <b class="${h.zustand === "an" ? "gut" : h.zustand === "aus" ? "" : "schlecht"}">${esc(T.haZustand[h.zustand] || h.zustand)}</b>${h.quelle ? " · " + esc(h.quelle) : ""}</div>`; })() : ""}</div>`;
+          return `<div class="leise">${esc(T.geraetHa)}: <b class="${h.zustand === "an" ? "gut" : h.zustand === "aus" ? "" : "schlecht"}">${esc(T.haZustand[h.zustand] || h.zustand)}</b>${h.quelle ? " · " + esc(h.quelle) : ""}</div>`; })() : ""}
+        ${t.bild === "schwarz" || t.bild === "steht" ? `<div class="schlecht">${esc(T.bildBefund[t.bild])}</div>` : ""}
+        ${t.pult_layout ? `<div class="leise">${esc(T.pultLayout(t.pult_layout.name, uhrzeit(t.pult_layout.bis), t.pult_layout.von))}</div>` : ""}</div>`;
     }).join("");
     const k = [
       [T.zuschauer, String(s.stream.zuschauer), ""],
+      [T.internet, s.netz && s.netz.offline ? `<span class="schlecht">${esc(T.offline)}</span>` : `<span class="gut">${esc(T.online)}</span>`,
+        esc(s.netz && s.netz.offline ? T.offlineSeit(uhrzeit(s.netz.seit)) : T.onlineText)],
       [T.wetterKarte, s.wetter.jetzt ? `${s.wetter.jetzt.temperatur} °C` : (s.wetter.quelle === "ha" ? "HA" : "–"),
         esc(s.wetter.quelle === "met" ? `MET Norway · ${s.wetter.abruf || ""}${s.wetter.fehler ? " · " + meldungText(s.wetter.fehler_m, s.wetter.fehler) : ""}` : T.wetterQuelleArt.ha)],
       [T.zeitKarte, s.zeit_quelle && s.zeit_quelle.abweichung_s != null ? `${s.zeit_quelle.abweichung_s > 0 ? "+" : ""}${s.zeit_quelle.abweichung_s} s` : "–",
@@ -2553,6 +2628,39 @@ async function einspielerSeite(inhalt) {
 }
 
 // ---------- Sicherung ----------
+// Änderungsprotokoll (seit 0.38): wer hat wann was geändert – Verwaltung, Pult, Webhook, System. Nur Art und Bereich.
+async function protokollSeite(inhalt) {
+  const d = await holen("/api/protokoll"), P = T.prot;
+  let filter = "", n = 100;
+  const aktionText = (x) => {
+    const k = x.aktion, m = k.match(/^(stream|radio|player|terminal)_(.+)$/);
+    return P.aktion[k] || (m && P.aktion[m[1] + "_*"] ? P.aktion[m[1] + "_*"](m[2]) : k);
+  };
+  const werText = (x) => x.wer === "Verwaltung" ? P.quellen.verwaltung : x.wer;
+  const detailText = (x) => {
+    if (/^bild_/.test(x.aktion)) return x.detail.replace(/: (schwarz|steht)$/, (_, b) => ": " + P.befund[b]);
+    if (x.aktion !== "einstellungen") return x.detail;
+    return x.detail.split("; ").map((teil) => {
+      const m = teil.match(/^layouts\.(neu|geaendert|geloescht): (.*)$/);
+      if (m) return `${P.layouts[m[1]]}: ${m[2]}`;
+      return teil.split(", ").map((b) => P.bereich[b] || b).join(", ");
+    }).join(" · ");
+  };
+  const zeichnen = () => {
+    const l = d.eintraege.filter((x) => !filter || x.quelle === filter);
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(P.titel)}</h2><p class="leise">${esc(P.text)}</p>
+      <div class="zeile"><label for="prFilter">${esc(P.quelle)}</label><select id="prFilter"><option value="">${esc(P.alle)}</option>
+        ${["verwaltung", "pult", "webhook", "system"].map((q) => `<option value="${q}" ${q === filter ? "selected" : ""}>${esc(P.quellen[q])}</option>`).join("")}</select></div>
+      ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(P.zeit)}</th><th>${esc(P.wer)}</th><th>${esc(P.was)}</th></tr></thead><tbody>
+        ${l.slice(0, n).map((x) => `<tr><td class="leise">${esc(x.zeit.slice(0, 16))}</td><td>${esc(werText(x))}${(P.quellen[x.quelle] || x.quelle) !== werText(x) ? `<br><span class="leise">${esc(P.quellen[x.quelle] || x.quelle)}</span>` : ""}</td>
+          <td>${esc(aktionText(x))}${x.detail ? `<br><span class="leise">${esc(detailText(x))}</span>` : ""}</td></tr>`).join("")}</tbody></table></div>
+        ${l.length > n ? `<div class="zeile"><button class="knopf" id="prMehr">${esc(P.mehr)}</button></div>` : ""}` : `<p class="leise">${esc(P.leer)}</p>`}</div>`;
+    $("#prFilter").onchange = (e) => { filter = e.target.value; n = 100; zeichnen(); };
+    if ($("#prMehr")) $("#prMehr").onclick = () => { n += 200; zeichnen(); };
+  };
+  zeichnen();
+}
+
 async function sicherungSeite(inhalt) {
   // Sicherung als ZIP (seit 0.12): Einstellungen, Streams, Strikes, Bilder, Verlauf. Mit Zugangsdaten und Passwörtern nur
   // AES-256-verschlüsselt mit starkem Passwort. Alte .json-Sicherungen lassen sich weiter einspielen.

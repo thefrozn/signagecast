@@ -22,7 +22,7 @@ that video, so the TV needs no app, no login and no updates.
 | **Content** | Layouts · Data sources · Media · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
 | **Live videos** | Streams · Categories · Rotation & quality · Search | Live cams; categories (edit, create, switch on/off for all TVs or per TV); minutes per stream, daylight, minimum quality and strikes; nightly search |
 | **Settings** | General · Home Assistant · Notifications (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; admin password |
-| **System** | Updates · Backup · Performance | Signed updates, maintenance window, encrypted backups, performance test, switching off the stream without viewers |
+| **System** | Updates · Backup · Performance · Log | Signed updates, maintenance window, encrypted backups, performance test, switching off the stream without viewers, change log |
 
 Every page has its own address (e.g. `…/index.html#benachrichtigung`). Unsaved changes are marked on their card;
 rarely needed options are folded under “Advanced”. On a new installation a short assistant asks for language,
@@ -77,6 +77,37 @@ TVs → *Carousel*: tick the layouts and set the minutes. Example: weather dashb
 
 ### Own pictures and videos instead of (or between) live cams
 Media → upload JPG/PNG/MP4 (H.264)/WebM. Then TVs → *Video source*: “own media” or “mixed” (every N-th item own media).
+
+### When the internet is gone (since 0.38)
+Nothing to set up. If YouTube is not reachable (checked once a minute, two failures in a row), the video window shows
+all your own media in a loop – upload a few calm pictures under *Media* for this – or, without media, a calm picture
+matching the time of day. No error appears on the TV; streams get no strikes. Overview → *Internet* shows the state;
+under Settings → Notifications the event *Internet not reachable* sends a message (via Home Assistant it arrives right
+away, Telegram/e-mail usually only with the all-clear, which names the period).
+
+### A TV shows only black or a frozen picture (since 0.38)
+SignageCast checks every running TV every 2 minutes on a tiny grey copy of the captured picture. Black three times in a
+row (unless the schedule says black) or no change three times in a row although the layout shows a clock: first the
+TV page is reloaded; if it happens again the playback is restarted and a notification is sent (event *TV failure*).
+Layouts without a clock may stand still (e.g. only text or a picture). TVs in direct mode (player shows the page
+itself) are not checked this way.
+
+### Undo a layout change, bring back a deleted layout (since 0.38)
+Layout → ⋯ on the layout → *Versions*: the last 10 versions with time and user; *Restore* replaces the layout (the
+current one becomes a version), *Download* saves one as file. Below the layouts, *Deleted layouts* brings back
+deleted ones.
+
+### Let an AI build a layout (since 0.38)
+Layout → *Create with AI …* → *Copy instructions*. Paste them into an AI (ChatGPT, Claude, Gemini …), describe your wish
+at the marked place (“MY WISH: …”), copy the answer, then Layout → *Paste text …* → *Apply*. SignageCast repairs what
+it can and lists it (unknown elements, invalid values, pictures that are not here yet). Then open the layout, upload
+pictures and choose Home Assistant entities. The format is described in [LAYOUT-FORMAT.md](LAYOUT-FORMAT.md) –
+generated from the code, so it is always current.
+
+### Who changed what? (since 0.38)
+System → *Log*: every change in the admin (with the Cockpit user), at the announcement panel, via webhook and by
+SignageCast itself (updates, picture check, internet outages). Only kind and area, never values – no passwords, no
+announcement texts. The last 500 entries; part of the backup.
 H.265 videos are refused – convert them first, e.g. `ffmpeg -i in.mp4 -c:v libx264 -crf 20 -c:a aac out.mp4`.
 
 ### Severe weather warnings (Germany)
@@ -129,6 +160,11 @@ TVs it may reach. At the reception open `http://<IP>:8890/pult`, log in, choose 
 is selected – type the name), tick “read aloud” and send. The call appears in the middle of the screen and is read
 after a chime; because of the stream it takes about 6–10 seconds. Names are not stored (memory only, 2 hours).
 TVs reachable by a panel account record real sound so that announcements can be heard.
+
+Since 0.38 an account can get more rights (tick them at the account): **ticker message** (runs along the bottom of the
+chosen TVs for 15 min – 12 h, optionally red), **switch layout for a while** (15 min – 12 h, before schedule and
+carousel, switches back by itself) and **switch TVs on/off** via Home Assistant (TVs with a switch entity). The panel
+shows what is currently set, with “switch back” / “end”. Every panel action is in the log (announcements without text).
 
 ### Show a web page that forbids embedding
 Many sites (news, dashboards, timetables) refuse to be embedded – the *Check* button in the layout editor tells you.
@@ -282,6 +318,16 @@ Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, oh
 Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
 
 Seit 0.37: **Kategorien bearbeiten und eigene anlegen** unter Live-Videos → **Kategorien**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
+
+Seit 0.38: **Internet weg** – das Videofenster zeigt eigene Medien im Kreis (ohne Medien ein ruhiges Bild zur
+Tageszeit) statt Schwarz oder Fehler, keine Strikes; Kachel *Internet* in der Übersicht, Ereignis „Internet nicht
+erreichbar“ (die Entwarnung nennt den Zeitraum). **Bildprüfung** – alle 2 min ein Miniaturbild je laufendem Fernseher:
+schwarz oder (mit sichtbarer Uhr) stehend, dreimal hintereinander → TV-Seite neu laden, beim nächsten Mal Wiedergabe neu
+starten und melden. **Änderungsprotokoll** (System → Protokoll: wer, wann, was – nie Werte), **Layout-Versionen**
+(⋯ → Versionen, die letzten 10, auch gelöschte Layouts) und **Layout mit KI bauen** (Layout → „Mit KI erstellen …“ →
+Anleitung kopieren, Antwort mit „Text einfügen …“ übernehmen; der Import repariert und nennt jede Änderung; Format in
+[LAYOUT-FORMAT.md](LAYOUT-FORMAT.md)). **Pult-Rechte** je Zugang: Laufschrift-Meldung, Layout vorübergehend
+umschalten, Fernseher über HA ein/aus.
 
 Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Medien (H.264, kein H.265),
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten

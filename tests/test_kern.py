@@ -1854,3 +1854,195 @@ def secrets_pub():
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Netz038(unittest.TestCase):
+    """Seit 0.38: Internet erreichbar? Zwei Fehlschläge in Folge = offline, ein Erfolg = wieder online."""
+
+    def test_zustaende(self):
+        import netz as NZ
+        alt = NZ.NOCHMAL_S
+        NZ.NOCHMAL_S = 0
+        try:
+            antworten = iter([False, True, False, False, True])
+            w = NZ.Wache(pruefen=lambda timeout=5: next(antworten))
+            self.assertTrue(w.einmal())                 # erst falsch, Wiederholung klappt -> online
+            self.assertFalse(w.offline)
+            self.assertFalse(w.einmal())                # zweimal falsch -> offline
+            self.assertTrue(w.offline)
+            self.assertIsNotNone(w.stand()["seit"])
+            self.assertFalse(w.jetzt_online())          # offline: ohne Prüfung False
+            self.assertTrue(w.einmal())                 # ein Erfolg genügt
+            self.assertEqual(w.stand(), {"offline": False, "seit": None})
+        finally:
+            NZ.NOCHMAL_S = alt
+
+
+class Ausgabe038(unittest.TestCase):
+    """Seit 0.38: Bildprüfung – schwarz oder stehend (nur mit sichtbarer Uhr), jeweils erst nach 3 Prüfungen."""
+    N = 160 * 90
+
+    def test_schwarz_und_bewegt(self):
+        import ausgabe as AG
+        self.assertTrue(AG.schwarz(bytes(self.N)))
+        self.assertTrue(AG.schwarz(bytes([200] * 20) + bytes(self.N - 20)))      # einzelne Punkte zählen nicht
+        self.assertFalse(AG.schwarz(bytes([85] * 500) + bytes(self.N - 500)))    # gedimmte Uhr auf Schwarz
+        a = bytes([100] * self.N)
+        self.assertFalse(AG.bewegt(a, bytes([110] * self.N)))                   # Kodier-Rauschen
+        self.assertTrue(AG.bewegt(a, bytes([200] * 10) + a[10:]))
+
+    def test_befunde(self):
+        import ausgabe as AG
+        p, sw, bild = AG.Pruefer(), bytes(self.N), bytes([90] * 3000) + bytes(self.N - 3000)
+        self.assertEqual([p.pruefen("tv", sw, False, False, 0) for _ in range(3)], ["", "", "schwarz"])
+        self.assertEqual(p.pruefen("tv", bild, False, False, 0), "ok")
+        self.assertEqual([p.pruefen("tv", sw, True, False, 0) for _ in range(4)][-1], "ok")       # Zeitplan „schwarz“
+        q = AG.Pruefer()
+        self.assertEqual([q.pruefen("tv", bild, False, True, 0) for _ in range(4)], ["ok", "ok", "ok", "steht"])
+        r = AG.Pruefer()
+        self.assertEqual([r.pruefen("tv", bild, False, False, 0) for _ in range(5)][-1], "ok")    # ohne Uhr darf es stehen
+        self.assertEqual(r.pruefen("tv", None, False, False, 0), "ok")                             # kein Bild: Befund bleibt
+
+
+class Protokoll038(unittest.TestCase):
+    """Seit 0.38: Änderungsprotokoll (ohne Werte) und Layout-Versionen (je Layout 10, gelöschte zurückholen)."""
+
+    def test_protokoll_begrenzt_und_einspielen(self):
+        import protokoll as PR
+        d = tempfile.mkdtemp()
+        p = PR.Protokoll(os.path.join(d, "p.json"))
+        for i in range(PR.MAX + 5):
+            p.eintragen("anna", "verwaltung", "einstellungen", f"x{i}")
+        self.assertEqual(len(p.liste()), PR.MAX)
+        self.assertEqual(p.liste()[0]["detail"], f"x{PR.MAX + 4}")
+        self.assertEqual(PR.Protokoll(os.path.join(d, "p.json")).liste(1)[0]["detail"], f"x{PR.MAX + 4}")
+        p.eintragen("<script>", "pult", "x")
+        self.assertEqual(p.liste(1)[0]["wer"], "?")
+        q = PR.Protokoll(os.path.join(d, "q.json"))
+        q.eintragen("bob", "pult", "durchsage")
+        q.einspielen(p.als_bytes())
+        self.assertEqual(len(q.liste()), PR.MAX)
+
+    def test_versionen(self):
+        import protokoll as PR
+        d = tempfile.mkdtemp()
+        v = PR.Versionen(os.path.join(d, "v.json"))
+        a = L.pruefe_layout({"id": "aa", "name": "A", "elemente": [{"id": "u", "typ": "uhr"}]})
+        b = L.pruefe_layout({"id": "bb", "name": "B", "elemente": []})
+        self.assertEqual(v.merken([a, b], [a, b], "x"), ([], [], []))           # unverändert: nichts aufheben
+        a2 = dict(a, name="A2")
+        self.assertEqual(v.merken([a, b], [a2, b], "anna"), (["A2"], [], []))
+        self.assertEqual(v.liste("aa")[0]["wer"], "anna")
+        self.assertEqual(v.holen("aa", 0)["name"], "A")
+        for i in range(12):
+            v.merken([dict(a2, name=f"n{i}")], [dict(a2, name=f"n{i + 1}")], "x")
+        self.assertEqual(len(v.liste("aa")), PR.VERSIONEN_MAX)
+        self.assertEqual(v.merken([a2, b], [a2], "x"), ([], ["B"], []))           # gelöscht -> zurückholbar
+        self.assertEqual([g["id"] for g in v.geloeschte()], ["bb"])
+        self.assertEqual(v.holen("bb", 0)["name"], "B")
+        v.merken([a2], [a2, b], "x")                                              # wiederhergestellt
+        self.assertEqual(v.geloeschte(), [])
+        w = PR.Versionen(os.path.join(d, "v.json"))
+        self.assertEqual(len(w.liste("aa")), PR.VERSIONEN_MAX)
+        with self.assertRaises(KeyError):
+            w.holen("aa", 99)
+        for i in range(PR.GELOESCHT_MAX + 3):                                     # gelöschte begrenzt
+            x = L.pruefe_layout({"id": f"z{i:02d}", "name": f"z{i}", "elemente": []})
+            w.merken([x], [], "x")
+        self.assertEqual(len(w.geloeschte()), PR.GELOESCHT_MAX)
+
+
+class LayoutImport038(unittest.TestCase):
+    """Seit 0.38: Layout aus Datei oder eingefügtem Text (z. B. von einer KI) – fehlertolerant, mit Hinweisen."""
+
+    def test_reparaturen(self):
+        roh = {"art": "signagecast-layout", "layout": {"id": "aa", "name": "KI", "thema": {"schrift": "Comic Sans", "schema": "bunt"},
+               "hintergrund": {"art": "video", "farbe": "rot"},
+               "elemente": [{"typ": "uhr", "x": 1, "y": 1, "w": 8, "h": 3}, {"typ": "wetterkarte"},
+                            {"id": "t", "typ": "text", "x": 40, "y": 0, "w": 20, "h": "2", "optionen": {"text": "Hallo", "groesse": 9}},
+                            {"id": "t", "typ": "logo", "optionen": {"bild": "0123456789abcdef.jpg"}},
+                            {"typ": "kachel", "optionen": {"entity": "kein entity"}, "bedingung": {"entity": "x", "op": "~"}},
+                            {"typ": "apiwert", "optionen": {"quelle": "fehlt"}}]}}
+        l, h = L.import_pruefen(roh, ["aa"], bild_da=lambda n: False, quellen=["da"])
+        self.assertNotEqual(l["id"], "aa")
+        self.assertEqual((l["thema"]["schrift"], l["thema"]["schema"], l["hintergrund"]["art"]), ("Roboto", "dunkel", "wetter"))
+        self.assertEqual([e["typ"] for e in l["elemente"]], ["uhr", "text", "logo", "kachel", "apiwert"])
+        self.assertEqual(len({e["id"] for e in l["elemente"]}), 5)
+        self.assertEqual(l["elemente"][1]["x"] + l["elemente"][1]["w"], 48)
+        self.assertEqual(l["elemente"][2]["optionen"]["bild"], "")
+        self.assertIsNone(l["elemente"][3]["bedingung"])
+        codes = [x.code for x in h]
+        for c in ("l_imp_wert", "l_imp_typ", "l_imp_raster", "l_imp_option", "l_imp_bild", "l_imp_bedingung", "l_imp_quelle"):
+            self.assertIn(c, codes)
+
+    def test_kein_layout_und_text(self):
+        with self.assertRaises(M.Meldung):
+            L.import_pruefen({"name": "x"})
+        self.assertEqual(L.json_aus_text('Gern!\n```json\n{"elemente": []}\n```\nViel Spaß'), {"elemente": []})
+        self.assertEqual(L.json_aus_text('Hier: {"elemente": [{"typ": "uhr"}]} – fertig'), {"elemente": [{"typ": "uhr"}]})
+        with self.assertRaises(M.Meldung):
+            L.json_aus_text("nichts")
+        l, h = L.import_pruefen({"layouts": [{"elemente": [{"typ": "uhr"}]}]})
+        self.assertEqual(h, [])
+
+    def test_format_vollstaendig_und_doku_aktuell(self):
+        t = L.format_beschreibung()
+        for typ in L.TYPEN:
+            self.assertIn(f"### `{typ}`", t)
+            self.assertIn(typ, L.TYP_TEXT)
+        doku = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "LAYOUT-FORMAT.md")
+        self.assertEqual(open(doku, encoding="utf-8").read(), t,
+                         "docs/LAYOUT-FORMAT.md neu erzeugen: python3 -c 'import layouts; print(layouts.format_beschreibung(), end=\"\")' (in app/)")
+
+    def test_vorlagen_lassen_sich_importieren(self):
+        for v in L.vorlagen():                     # Export/Import einer Vorlage ändert nichts
+            l, h = L.import_pruefen({"art": "signagecast-layout", "layout": v}, [])
+            self.assertEqual(h, [], v["id"])
+            self.assertEqual(l["elemente"], v["elemente"])
+
+
+class Dienst038(unittest.TestCase):
+    """Seit 0.38: Pult-Layout vor dem Zeitplan, Ersatz bei Internet-Ausfall, Protokoll aus der Verwaltung ohne Werte."""
+
+    def test_pult_rechte_einstellung(self):
+        z = E.pruefen({"pult": {"zugaenge": [{"id": "abcd", "name": "Empfang", "meldung": 1, "schalten": True}]}})["pult"]["zugaenge"][0]
+        self.assertEqual((z["meldung"], z["layout"], z["schalten"], z["alarm"]), (True, False, True, False))
+
+    def test_layout_vorrang(self):
+        import dienst as D
+        e = E.pruefen({"layouts": [L.standard(), L.vorlagen()[-1]],
+                       "fernseher": [{"id": "tv", "layout": "standard", "zeitplan": [{"von": "00:00", "bis": "23:59", "layout": "schwarz"}]}]})
+        t = e["fernseher"][0]
+        self.assertTrue(D.layout_fuer(t, e["layouts"]).get("schwarz"))
+        D.layout_vorrang["tv"] = {"layout": "nacht", "bis": time.time() + 60, "von": "Empfang"}
+        try:
+            self.assertEqual(D.layout_fuer(t, e["layouts"])["id"], "nacht")
+            D.layout_vorrang["tv"]["bis"] = time.time() - 1                      # abgelaufen
+            self.assertTrue(D.layout_fuer(t, e["layouts"]).get("schwarz"))
+        finally:
+            D.layout_vorrang.pop("tv", None)
+
+    def test_protokoll_ohne_werte(self):
+        import dienst as D
+        class H:
+            headers = {"X-SignageCast-Benutzer": "anna"}
+            protokoll_detail = {"layouts": {"geaendert": ["Lobby"], "geloescht": [], "neu": []}}
+        vorher = len(D.PROTOKOLL.liste())
+        D.protokoll_verwaltung(H(), "/api/einstellungen", {"ha": {"token": "GEHEIM"}, "layouts": []}, {})
+        x = D.PROTOKOLL.liste(1)[0]
+        self.assertEqual((x["wer"], x["aktion"]), ("anna", "einstellungen"))
+        self.assertEqual(x["detail"], "ha; layouts.geaendert: Lobby")
+        self.assertNotIn("GEHEIM", json.dumps(D.PROTOKOLL.liste()))
+        H.protokoll_detail = None
+        D.protokoll_verwaltung(H(), "/api/player/0123abcd/terminal/ein", {"text": "passwort"}, {})    # Eingaben nie
+        D.protokoll_verwaltung(H(), "/api/quellen/test", {}, {})
+        self.assertEqual(len(D.PROTOKOLL.liste()), vorher + 1)
+        D.protokoll_verwaltung(H(), "/api/streams/abcdefghijk/entfernen", {}, {})
+        self.assertEqual(D.PROTOKOLL.liste(1)[0]["aktion"], "stream_entfernen")
+        D.protokoll_verwaltung(H(), "/api/streams/abcdefghijk", {}, {})
+        self.assertEqual(D.PROTOKOLL.liste(1)[0]["aktion"], "stream_aendern")
+
+    def test_todo_kennungen(self):
+        import todo as TD
+        self.assertEqual(TD.art("internet"), "warn")
+        self.assertEqual(TD.art("bild:tv"), "warn")

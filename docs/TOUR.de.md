@@ -64,7 +64,9 @@ Sicherung aus, keine Benachrichtigung eingerichtet) – jeder Eintrag führt zur
 sie einmal behoben waren, seit 0.35). Darunter
 jeder Fernseher mit Zustand, aktuellem Stream, Auflösung und Ton, dann Zuschauer, Wetter, Zeitabgleich mit NTP („Zeit
 vom Host, synchronisiert“), Videokodierung (Grafikeinheit oder Software), Home Assistant, Streams in Rotation, CPU,
-RAM und Laufzeit.
+RAM und Laufzeit. Seit 0.38 zeigt eine Kachel, ob das **Internet** erreichbar ist (ohne zeigen die Fernseher eigene
+Medien oder ein ruhiges Bild), und die Karte eines Fernsehers sagt, wenn die **Bildprüfung** ein schwarzes oder
+stehendes Bild gefunden hat.
 
 ![Übersicht](tour/de/04-overview.jpg)
 
@@ -139,6 +141,13 @@ Jeder Baustein lässt sich auf einen **Zeitraum** begrenzen („Nur im Zeitraum 
 Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten verbieten, ergeben Layouts wie den Empfang oben.
 
 ![Layout-Editor: Text mit Zeitraum](tour/de/06b-editor-period.jpg)
+
+Seit 0.38 kopiert **„Mit KI erstellen …“** eine Anleitung mit dem vollständigen Layout-Format: in ChatGPT, Claude oder
+Gemini einfügen, Wunsch beschreiben, die Antwort mit **„Text einfügen …“** übernehmen – SignageCast repariert, was
+geht, und listet es auf. Im Menü „⋯“ hebt **Versionen** die letzten 10 Fassungen jedes Layouts auf (wiederherstellen
+oder herunterladen), *Gelöschte Layouts* unter den Kacheln holt gelöschte zurück.
+
+![Layouts mit der Anleitung für eine KI](tour/de/06c-layout-ai.jpg)
 
 ### 11. Datenquellen
 Eigene JSON-Schnittstellen, RSS-/Atom-Feeds, Bilder, iCal-Kalender und Kameras, vom Container im gewählten Abstand
@@ -218,6 +227,11 @@ Instanz.
 
 ![Sicherung mit Verschlüsselung](tour/de/14-backup.jpg)
 
+System → **Protokoll** (seit 0.38) zeigt, wer wann was geändert hat – in der Verwaltung, am Pult, per Webhook oder
+durch SignageCast selbst (Updates, Bildprüfung, Internet-Ausfälle). Nur Art und Bereich, nie Werte; Teil der Sicherung.
+
+![Änderungsprotokoll](tour/de/14a-log.jpg)
+
 ### 20. Docker / Podman
 Im Container-Image gibt es kein Cockpit: Dieselbe Verwaltung kommt mit eigener Anmeldung auf Port 19090; das
 Startpasswort steht im Container-Protokoll. Geändert wird es unter Einstellungen → Zugang.
@@ -246,10 +260,13 @@ Darunter: nach wie vielen Sekunden ohne Zuschauer der Videostream eines Fernsehe
 ![Leistungstest mit Empfehlungen](tour/de/18-performance.jpg)
 
 ### 24. Durchsagen, Notfall-Vollbild und Webhook
-Inhalte → Durchsagen: das Pult für den Empfang (`http://<IP>:8890/pult` – es kann nur Durchsagen senden und beenden),
+Inhalte → Durchsagen: das Pult für den Empfang (`http://<IP>:8890/pult` – es sendet und beendet Durchsagen,
+mehr nur mit weiteren Rechten des Zugangs),
 die Stimme (offline mit Piper: Kerstin oder Thorsten), Gong, Zugänge mit eigenem Passwort und den Fernsehern, die sie
 erreichen dürfen, und Vorlagen. Weiter unten das **Notfall-Vollbild** mit Vorlagen und Webhook-Befehlen und die
 **Meldung per Webhook**: Andere Systeme (z. B. Home Assistant) legen ein kurzes Banner auf die Fernseher, mit einem
-Schlüssel, der nur einmal angezeigt wird.
+Schlüssel, der nur einmal angezeigt wird. Seit 0.38 kann ein Pult-Zugang zusätzlich die Rechte bekommen,
+**Laufschrift-Meldungen** zu senden, **das Layout vorübergehend umzuschalten** und **Fernseher über Home Assistant
+ein- und auszuschalten**.
 
 ![Durchsagen, Notfall-Vollbild und Webhook](tour/de/19-announcements.jpg)

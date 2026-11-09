@@ -60,6 +60,8 @@ notification set up) – each entry links to the page where you fix it; the ✕ 
 solved once, since 0.35). Below, every TV with its state, current stream,
 resolution and sound, then viewers, weather source, time check against NTP (“time from the host, synchronised”), video
 encoding (graphics unit or software fallback), Home Assistant connection, streams in rotation, CPU, RAM and uptime.
+Since 0.38 a tile shows whether the **internet** is reachable (without it the TVs show own media or a calm picture),
+and a TV card says when the **picture check** found a black or frozen picture.
 
 ![Overview](tour/04-overview.jpg)
 
@@ -131,6 +133,13 @@ the canvas marks it. Elements such as **PDF** (up to 50 pages) and **web page** 
 that forbid embedding make layouts like the service desk above.
 
 ![Layout editor: text with a period](tour/06b-editor-period.jpg)
+
+Since 0.38 **“Create with AI …”** copies instructions with the complete layout format: paste them into ChatGPT, Claude
+or Gemini, describe your wish, and apply the answer with **“Paste text …”** – SignageCast repairs what it can and lists
+it. In the “⋯” menu, **Versions** keeps the last 10 versions of every layout (restore or download), and *Deleted
+layouts* below the tiles brings back deleted ones.
+
+![Layouts with the AI instructions](tour/06c-layout-ai.jpg)
 
 ### 11. Data sources
 Your own JSON APIs, RSS/Atom feeds, pictures, iCal calendars and cameras, fetched by the container at the interval you
@@ -209,6 +218,11 @@ daily or weekly; restore in the admin or when installing a new instance.
 
 ![Backup with encryption](tour/14-backup.jpg)
 
+System → **Log** (since 0.38) shows who changed what and when – in the admin, at the panel, via webhook or by
+SignageCast itself (updates, picture check, internet outages). Only kind and area, never values; part of the backup.
+
+![Change log](tour/14a-log.jpg)
+
 ### 20. Docker / Podman
 In the container image there is no Cockpit: the same admin page is served with its own login on port 19090; the
 initial password is printed in the container log. The password is changed under Settings → Access.
@@ -235,9 +249,11 @@ many seconds without viewers a TV's video stream switches off.
 ![Performance test with recommendations](tour/18-performance.jpg)
 
 ### 24. Announcements, emergency screen and webhook
-Content → Announcements: the panel for the reception (`http://<IP>:8890/pult` – it can only send and end
-announcements), the voice (offline with Piper: Kerstin or Thorsten), chime, accounts with their own password and the
+Content → Announcements: the panel for the reception (`http://<IP>:8890/pult` – it sends and ends
+announcements, nothing else unless the account has more rights), the voice (offline with Piper: Kerstin or Thorsten), chime, accounts with their own password and the
 TVs they may reach, and templates. Further down the **emergency screen** with its templates and webhook commands, and
 **messages via webhook**: other systems (e.g. Home Assistant) put a short banner on the TVs, with a key shown only once.
+Since 0.38 a panel account can also get the rights to send a **ticker message**, **switch the layout for a while** and
+**switch TVs on/off** via Home Assistant.
 
 ![Announcements, emergency screen and webhook](tour/19-announcements.jpg)

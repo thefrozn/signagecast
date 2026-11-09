@@ -60,6 +60,25 @@
       <p id="meldung" class="leise"></p>
     </div>
     <div class="karte"><h1 id="tZuletzt"></h1><ul id="liste"></ul></div>
+    <div class="karte" id="lauf" hidden>
+      <h1 id="tLauf"></h1>
+      <p class="leise" id="tLaufText"></p>
+      <input type="text" id="laufText" maxlength="200" autocomplete="off">
+      <div class="optionen"><label><input type="checkbox" id="laufWarnung"> <span id="tWarnung"></span></label>
+        <span class="leise" id="tLaufDauer"></span><select id="laufDauer"></select></div>
+      <button class="haupt" id="laufSenden"></button>
+    </div>
+    <div class="karte" id="lay" hidden>
+      <h1 id="tLayout"></h1>
+      <p class="leise" id="tLayoutText"></p>
+      <div class="optionen"><select id="layWahl"></select><span class="leise" id="tLayDauer"></span><select id="layDauer"></select></div>
+      <button class="haupt" id="laySetzen"></button>
+    </div>
+    <div class="karte" id="sch" hidden>
+      <h1 id="tSchalten"></h1>
+      <ul id="schListe"></ul>
+    </div>
+    <div class="karte" id="standKarte" hidden><h1 id="tStand"></h1><ul id="standListe"></ul></div>
     <div class="karte" id="notfall" hidden>
       <h1 id="tNotfall"></h1>
       <div id="alarmLaeuft" hidden><b id="alarmText"></b><br><span id="alarmSeit"></span>
@@ -74,6 +93,7 @@
 <script>
 "use strict";
 // Durchsage-Pult: nur Meldungen an die erlaubten Fernseher senden und beenden – keine Einstellungen.
+// Seit 0.38 je nach Rechten des Zugangs zusätzlich: Laufschrift-Meldung, Layout vorübergehend umschalten, Fernseher ein/aus (HA).
 const TX = {
   de: { titel: "Durchsage", anmeldenText: "Bitte mit dem Pult-Passwort anmelden.", anmelden: "Anmelden", abmelden: "Abmelden",
         an: "An:", alle: "alle", platzhalter: "Text der Durchsage, z. B. Frau Bauer, bitte in Behandlungsraum 2",
@@ -82,7 +102,15 @@ const TX = {
         keinText: "Bitte einen Text eingeben.", falsch: "Falsches Passwort.", d_stimme_fehlt: "Die Stimme ist noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult).", min: (n) => `${n} min`, abgelaufen: "Bitte neu anmelden.",
         notfall: "Notfall-Vollbild", notfallText: "Zeigt den Text rot über den ganzen Bildschirm aller gewählten Fernseher – bis jemand es hier beendet.",
         eigen: "oder eigener Text", ausloesen: "Notfall-Vollbild zeigen", wirklich: "Wirklich das Notfall-Vollbild auf den Fernsehern zeigen?",
-        beendenAlarm: "Notfall-Vollbild beenden", seit: (z, v) => `seit ${z} Uhr (${v})`, wirklichAus: "Notfall-Vollbild beenden?" },
+        beendenAlarm: "Notfall-Vollbild beenden", seit: (z, v) => `seit ${z} Uhr (${v})`, wirklichAus: "Notfall-Vollbild beenden?",
+        lauf: "Laufschrift-Meldung", laufText: "Ein Hinweis, der unten über die gewählten Fernseher läuft, z. B. „Heute ab 16 Uhr geschlossen“.",
+        laufPlatz: "Text der Meldung", warnung: "als Warnung (rot)", laufSenden: "Meldung zeigen", std: (n) => n === 1 ? "1 Stunde" : `${n} Stunden`,
+        layout: "Layout umschalten", layoutText: "Zeigt auf den gewählten Fernsehern vorübergehend ein anderes Layout – danach geht es von selbst zurück.",
+        laySetzen: "Layout zeigen", schalten: "Fernseher ein/aus", an: "Ein", aus: "Aus", keinSchalter: "kein Schalter in HA",
+        zustand: { an: "an", aus: "aus", weg: "nicht erreichbar", fehler: "Fehler" }, stand: "Gerade eingestellt",
+        layoutBis: (n, b) => `Layout „${n}“ bis ${b}`, meldungBis: (t, b) => `Meldung „${t}“ bis ${b}`, zurueck: "zurück", beendenKurz: "beenden",
+        gezeigt: "Erledigt – erscheint in etwa 15 Sekunden.", p_recht: "Dieser Zugang darf das nicht.", p_kein_schalten: "Für diesen Fernseher ist kein Schalter eingetragen.",
+        d_text_tv: "Bitte Text und mindestens einen Fernseher wählen." },
   en: { titel: "Announcement", anmeldenText: "Please log in with the panel password.", anmelden: "Log in", abmelden: "Log out",
         an: "To:", alle: "all", platzhalter: "Announcement text, e.g. Mrs Baker, please go to room 2",
         vorlesen: "read aloud", gong: "chime first", dauer: "Show for:", senden: "Send announcement", gesendet: "Sent – appears in about 10 seconds.",
@@ -90,7 +118,15 @@ const TX = {
         keinText: "Please enter a text.", falsch: "Wrong password.", d_stimme_fehlt: "The voice is not loaded yet (Admin → Settings → Announcement panel).", min: (n) => `${n} min`, abgelaufen: "Please log in again.",
         notfall: "Emergency screen", notfallText: "Shows the text in red across the whole screen of the chosen TVs – until someone ends it here.",
         eigen: "or own text", ausloesen: "Show emergency screen", wirklich: "Really show the emergency screen on the TVs?",
-        beendenAlarm: "End emergency screen", seit: (z, v) => `since ${z} (${v === "Verwaltung" ? "admin" : v})`, wirklichAus: "End the emergency screen?" },
+        beendenAlarm: "End emergency screen", seit: (z, v) => `since ${z} (${v === "Verwaltung" ? "admin" : v})`, wirklichAus: "End the emergency screen?",
+        lauf: "Ticker message", laufText: "A note that runs along the bottom of the chosen TVs, e.g. “Closed from 4 pm today”.",
+        laufPlatz: "Message text", warnung: "as warning (red)", laufSenden: "Show message", std: (n) => n === 1 ? "1 hour" : `${n} hours`,
+        layout: "Switch layout", layoutText: "Shows another layout on the chosen TVs for a while – then it switches back by itself.",
+        laySetzen: "Show layout", schalten: "TVs on/off", an: "On", aus: "Off", keinSchalter: "no switch in HA",
+        zustand: { an: "on", aus: "off", weg: "not reachable", fehler: "error" }, stand: "Currently set",
+        layoutBis: (n, b) => `Layout “${n}” until ${b}`, meldungBis: (t, b) => `Message “${t}” until ${b}`, zurueck: "switch back", beendenKurz: "end",
+        gezeigt: "Done – appears in about 15 seconds.", p_recht: "This account may not do that.", p_kein_schalten: "No switch is set for this TV.",
+        d_text_tv: "Please enter a text and choose at least one TV." },
 };
 let T = TX[(navigator.language || "de").startsWith("de") ? "de" : "en"], INFO = null;
 const $ = (s) => document.querySelector(s);
@@ -145,7 +181,69 @@ async function start() {
     $("#alarmVorlage").innerHTML = INFO.alarm_vorlagen.map((v, i) => `<option value="${i}">${esc(v)}</option>`).join("");
     $("#alarmEigen").placeholder = T.eigen; $("#alarmAn").textContent = T.ausloesen; $("#alarmAus").textContent = T.beendenAlarm;
   }
+  const R = INFO.rechte || {};
+  $("#lauf").hidden = !R.meldung; $("#lay").hidden = !R.layout; $("#sch").hidden = !R.schalten;
+  $("#standKarte").hidden = !(R.meldung || R.layout || R.schalten);
+  if (R.meldung) {
+    $("#tLauf").textContent = T.lauf; $("#tLaufText").textContent = T.laufText; $("#laufText").placeholder = T.laufPlatz;
+    $("#tWarnung").textContent = T.warnung; $("#tLaufDauer").textContent = T.dauer; $("#laufSenden").textContent = T.laufSenden;
+    $("#laufDauer").innerHTML = [900, 1800, 3600, 7200, 14400, 28800, 43200].map((x) => `<option value="${x}" ${x === 3600 ? "selected" : ""}>${x < 3600 ? T.min(x / 60) : T.std(x / 3600)}</option>`).join("");
+  }
+  if (R.layout) {
+    $("#tLayout").textContent = T.layout; $("#tLayoutText").textContent = T.layoutText; $("#tLayDauer").textContent = T.dauer;
+    $("#laySetzen").textContent = T.laySetzen;
+    $("#layWahl").innerHTML = INFO.layouts.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("");
+    $("#layDauer").innerHTML = [15, 30, 60, 120, 240, 480, 720].map((x) => `<option value="${x}" ${x === 60 ? "selected" : ""}>${x < 60 ? T.min(x) : T.std(x / 60)}</option>`).join("");
+  }
+  $("#tSchalten").textContent = T.schalten; $("#tStand").textContent = T.stand;
   liste(); setInterval(liste, 10000);
+}
+
+function gewaehlt() { return [...document.querySelectorAll("#tvs input[value]:checked")].map((c) => c.value); }
+function melden(r) {
+  const m = $("#meldung");
+  m.className = r && r.ok ? "gut" : "schlecht";
+  m.textContent = r && r.ok ? T.gezeigt : (r && (T[r.code] || r.fehler)) || "?";
+  m.scrollIntoView({ block: "nearest" });
+}
+async function laufSenden() {
+  const r = await api("meldung", { text: $("#laufText").value.trim(), fernseher: gewaehlt(), dauer_s: Number($("#laufDauer").value),
+                                   stil: $("#laufWarnung").checked ? "warnung" : "info" }).catch(() => null);
+  melden(r); if (r && r.ok) { $("#laufText").value = ""; stand(); }
+}
+async function laySetzen() {
+  const r = await api("layout", { layout: $("#layWahl").value, fernseher: gewaehlt(), minuten: Number($("#layDauer").value) }).catch(() => null);
+  melden(r); if (r && r.ok) stand();
+}
+// Was das Pult gerade eingestellt hat (Layout, Meldung) und Zustand der Fernseher aus HA – mit „zurück“/„beenden“
+async function stand() {
+  const R = (INFO && INFO.rechte) || {};
+  if (!(R.meldung || R.layout || R.schalten)) return;
+  let d; try { d = await api("stand"); } catch (_) { return; }
+  const zeit = (t) => new Date(t * 1000).toLocaleTimeString(INFO.sprache === "en" ? "en-GB" : "de-DE", { hour: "2-digit", minute: "2-digit" });
+  const name = (id) => (INFO.fernseher.find((t) => t.id === id) || {}).name || id;
+  const zeilen = [];
+  for (const f of d.fernseher) {
+    if (f.layout && R.layout) zeilen.push(`<li><span class="text">${esc(name(f.id))}<br><span class="leise">${esc(T.layoutBis(f.layout.name, zeit(f.layout.bis)))}</span></span>
+      <button data-lay="${esc(f.id)}">${esc(T.zurueck)}</button></li>`);
+    if (f.meldung && R.meldung) zeilen.push(`<li><span class="text">${esc(name(f.id))}<br><span class="leise">${esc(T.meldungBis(f.meldung.text, zeit(f.meldung.bis)))}</span></span>
+      <button data-lauf="${esc(f.id)}">${esc(T.beendenKurz)}</button></li>`);
+  }
+  $("#standListe").innerHTML = zeilen.join("") || `<li class="leise">–</li>`;
+  for (const b of document.querySelectorAll("[data-lay]")) b.onclick = async () => { await api("layout", { aus: true, fernseher: [b.dataset.lay] }).catch(() => null); stand(); };
+  for (const b of document.querySelectorAll("[data-lauf]")) b.onclick = async () => { await api("meldung", { aus: true, fernseher: [b.dataset.lauf] }).catch(() => null); stand(); };
+  if (R.schalten) {
+    $("#schListe").innerHTML = INFO.fernseher.map((t) => {
+      const z = (d.fernseher.find((f) => f.id === t.id) || {}).zustand;
+      return `<li><span class="text">${esc(t.name)}${z ? ` <span class="leise">(${esc(T.zustand[z] || z)})</span>` : ""}</span>
+        ${t.schalten ? `<button data-an="${esc(t.id)}">${esc(T.an)}</button><button data-aus="${esc(t.id)}">${esc(T.aus)}</button>` : `<span class="leise">${esc(T.keinSchalter)}</span>`}</li>`;
+    }).join("");
+    for (const b of document.querySelectorAll("[data-an],[data-aus]")) b.onclick = async () => {
+      b.disabled = true;
+      const r = await api("schalten", { tv: b.dataset.an || b.dataset.aus, an: !!b.dataset.an }).catch(() => null);
+      melden(r); b.disabled = false; setTimeout(stand, 9000);
+    };
+  }
 }
 
 // Notfall-Vollbild (seit 0.21): nur für Zugänge mit diesem Recht; Fernseher wie bei der Durchsage (keiner gewählt = alle erlaubten)
@@ -183,8 +281,10 @@ async function senden() {
   } catch (_) { /* Anmeldung wird gezeigt */ } finally { $("#senden").disabled = false; }
 }
 
+let listeNr = 0;
 async function liste() {
   alarmStand();
+  if (listeNr++ % 3 === 0) stand();                // Stand nur alle 30 s (und nach jeder Aktion)
   let d; try { d = await api("liste"); } catch (_) { return; }
   $("#liste").innerHTML = d.liste.length ? d.liste.map((x) => `<li class="${x.laeuft ? "" : "aus"}"><span class="leise">${esc(x.zeit)}</span>
     <span class="text">${esc(x.text)}<br><span class="leise">→ ${esc(x.tvs.join(", "))}</span></span>
@@ -197,6 +297,8 @@ $("#pw").onkeydown = (e) => { if (e.key === "Enter") anmelden(); };
 $("#senden").onclick = senden;
 $("#alarmAn").onclick = alarmAn;
 $("#alarmAus").onclick = alarmAus;
+$("#laufSenden").onclick = laufSenden;
+$("#laySetzen").onclick = laySetzen;
 $("#text").onkeydown = (e) => { if (e.key === "Enter") senden(); };
 $("#abmelden").onclick = async () => { await api("abmelden", {}).catch(() => {}); zeigeAnmeldung(); };
 start();

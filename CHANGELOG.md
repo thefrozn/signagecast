@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.38.0 (2026-11-09)
+- **When the internet is gone, the TVs stay calm:** SignageCast checks once a minute whether YouTube is reachable (one
+  TCP connection, only while a TV shows live videos). If not (twice in a row), the video window shows your own media
+  in a loop – or, without media, a calm picture matching the time of day – instead of black or an error. Clock,
+  calendars, Home Assistant values and announcements carry on. Streams get no strikes during the outage; clips from
+  the internet are skipped. When the internet is back, the live cams continue by themselves. Overview: new tile
+  *Internet*; to-do entry while it is gone; notification (event *Internet not reachable*) – the all-clear names the
+  period, because Telegram and e-mail usually cannot get through during the outage.
+- **Picture check – a TV that only shows black or a frozen picture:** every 2 minutes SignageCast looks at a tiny
+  grey copy (160 × 90) of what is being captured for each running TV – not at the stream, so it never keeps a stream
+  alive. Black (three times in a row, unless the schedule wants black) or no change although the layout has a visible
+  clock (three times in a row): first the TV page is reloaded, if it happens again the playback is restarted and you
+  get a notification (event *TV failure*). The overview and the to-do list show it.
+- **Change log:** System → *Log* shows who changed what and when – in the admin (Cockpit user), at the announcement
+  panel, via webhook or by SignageCast itself (updates, picture check, internet outage). Only the kind and area are
+  recorded, never values: no passwords, keys or announcement texts. The last 500 entries, part of the backup.
+- **Layout versions:** before every change the old version of a layout is kept (the last 10 per layout), also when
+  it is deleted. Layout → ⋯ → *Versions*: restore or download any version; *Deleted layouts* brings back a deleted
+  one. Part of the backup.
+- **Let an AI build a layout:** Layout → *Create with AI …* copies instructions with the complete layout format
+  (generated from the code, also in [docs/LAYOUT-FORMAT.md](docs/LAYOUT-FORMAT.md)); paste them into ChatGPT, Claude or
+  Gemini, describe your wish and apply the answer with *Paste text …*. Importing (file or text) is now forgiving:
+  unknown elements and options are left out, invalid values fall back to the default, elements beyond the edge are
+  fitted in, missing pictures and data sources are named – the admin lists every repair. Text around the JSON and
+  ``` fences do no harm. Export and import of layouts with their pictures (since 0.13) stay as they are.
+- **Announcement panel can do more** – three new rights per panel account (Content → Announcements):
+  - **Ticker message** at the bottom of the chosen TVs, e.g. “Closed from 4 pm today”, for 15 minutes to 12 hours,
+    optionally as warning (red); can be ended early.
+  - **Switch layout for a while** (15 minutes to 12 hours), e.g. a presentation layout in the lobby; it takes
+    precedence over schedule and carousel and switches back by itself (or with “switch back”).
+  - **Switch TVs on and off** via Home Assistant (TVs with a switch entity), with their current state.
+  The panel lists what is currently set. Every action is in the log (announcements without their text).
+- Panel: logged-in panel sessions may make more requests per minute (they poll regularly and often share one
+  address); login and webhook stay limited to 20 per minute.
+
 ## v0.37.0 (2026-11-09)
 - **Edit categories and create your own:** new page Live videos → *Categories*. Each category has a name, a group
   (animals / more topics), up to 6 own YouTube search terms, words that must appear in the title and “ignore

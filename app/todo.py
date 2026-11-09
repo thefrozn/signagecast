@@ -11,7 +11,7 @@
 import json, os, re, threading, time
 
 TIPPS = ("sicherung", "benachrichtigung", "software")
-WARN = re.compile(r"(ha|allgemein|wetter|sicherung_fehler|bn_fehler|(bildrate|doppelt):[a-z][a-z0-9]{0,11}|player:[0-9a-f]{8})")
+WARN = re.compile(r"(ha|allgemein|wetter|internet|sicherung_fehler|bn_fehler|(bildrate|doppelt|bild):[a-z][a-z0-9]{0,11}|player:[0-9a-f]{8})")
 UPDATE = re.compile(r"update:v?\d{1,3}\.\d{1,3}\.\d{1,3}")
 MAX = 100
 

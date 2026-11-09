@@ -48,7 +48,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 <td valign="top" width="50%">
 
 **Content**
-- Layout editor on a 48 × 27 grid with conditions, fonts and colours
+- Layout editor on a 48 × 27 grid with conditions, fonts and colours – or let an AI build a layout
 - Home Assistant values, own JSON/RSS sources, charts, calendars
 - IP cameras, web pages, PDFs, internet radio, clips at fixed times
 - Messages, announcements and a red emergency screen on all TVs
@@ -72,6 +72,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - Signed updates that roll back by themselves
 - Backup and restore, notifications via Telegram, e-mail or Home Assistant
 - Rendering runs only while someone watches
+- Picture check, calm fallback when the internet is gone, change log and layout versions
 
 </td>
 </tr>
@@ -108,8 +109,15 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   when a TV fails, an update or backup fails or Home Assistant is disconnected.
 - **Elements with a period** – e.g. “Closed from 23 Dec to 2 Jan” appears and disappears by itself.
 - **Emergency screen and announcement panel** – a red full-screen message on all TVs; a separate reception page that
-  sends calls like “Mrs Baker, please go to room 2”, read aloud offline (Piper).
+  sends calls like “Mrs Baker, please go to room 2”, read aloud offline (Piper) – and, if allowed, ticker messages,
+  a layout for a while and switching TVs on/off.
 - **Energy saving** – schedules switch a TV to night mode or black, and really off and on via Home Assistant.
+- **Built to run unattended** – when the internet is gone the video window shows your own media or a calm picture
+  instead of an error; a picture check notices a black or frozen TV and repairs it (reload, restart, notify).
+- **Change log and layout versions** – who changed what and when (admin, panel, webhook, system – never values); the
+  last 10 versions of every layout, also of deleted ones.
+- **Layouts from an AI** – copy the instructions with the complete [layout format](docs/LAYOUT-FORMAT.md) into
+  ChatGPT, Claude or Gemini and paste the answer; the import repairs what it can and tells you what.
 
 </details>
 

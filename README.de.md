@@ -49,7 +49,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 <td valign="top" width="50%">
 
 **Inhalte**
-- Layout-Editor im Raster 48 × 27 mit Bedingungen, Schriften und Farben
+- Layout-Editor im Raster 48 × 27 mit Bedingungen, Schriften und Farben – oder Layout von einer KI bauen lassen
 - Werte aus Home Assistant, eigene JSON-/RSS-Quellen, Diagramme, Kalender
 - IP-Kameras, Webseiten, PDFs, Internetradio, Einspieler zu festen Zeiten
 - Meldungen, Durchsagen und ein rotes Notfall-Vollbild auf allen Fernsehern
@@ -73,6 +73,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - Signierte Updates, die sich bei Problemen selbst zurückrollen
 - Sicherung und Wiederherstellung, Benachrichtigung per Telegram, E-Mail oder Home Assistant
 - Gezeichnet wird nur, während jemand zuschaut
+- Bildprüfung, ruhiges Ersatzbild ohne Internet, Änderungsprotokoll und Layout-Versionen
 
 </td>
 </tr>

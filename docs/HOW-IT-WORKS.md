@@ -35,6 +35,16 @@ see [NOTICE.md](../NOTICE.md).
 - **Web pages** are embedded live only if the site allows it (X-Frame-Options / frame-ancestors). The *screenshot* mode
   loads the page in a short-lived headless Chromium inside the container (fresh profile each time, no cookies or
   logins kept) only while a TV shows it, one page at a time at low priority. Please respect the site's terms of use.
+- **Internet check (since 0.38):** while a TV shows live videos, the data service opens one TCP connection to the
+  YouTube embed host every minute (no HTTP, no data). Two failures in a row = offline: the TV page gets `offline` and
+  shows own media or a local picture; strike reports are ignored meanwhile.
+- **Picture check (since 0.38):** every 2 minutes per running TV one frame of the virtual screen (Xvfb, what is
+  captured) is grabbed at 160 × 90 grey with `ffmpeg -f x11grab` at low priority – not from the stream, because a reader
+  there would count as a viewer and keep the chain running. Black or (with a visible clock) unchanged three times in a
+  row → reload the TV page; next time restart the chain and notify.
+- **Change log and layout versions (since 0.38):** `/var/lib/signagecast/protokoll.json` (last 500 entries, kind and
+  area only) and `layout-versionen.json` (10 per layout, 10 deleted layouts); both are in backups. The Cockpit user
+  name is sent along for the log only – access is decided by Cockpit as before.
 
 ## Updates and backups
 
@@ -78,6 +88,10 @@ Debian-Pakete.
 **Gut zu wissen:** Nur öffentliche YouTube-Seiten und der offizielle Einbett-Player, nichts wird umgangen. Datenquellen
 nur http/https mit Größen- und Zeitgrenzen; geheime Kopfzeilen bleiben im Container. Kameras liest nur MediaMTX im
 Container (H.264 nötig). Webseiten live nur, wo die Seite das Einbetten erlaubt, sonst als Bildschirmfoto.
+Seit 0.38: **Internet-Prüfung** (je Minute eine TCP-Verbindung zum YouTube-Player, nur wenn Live-Videos laufen; offline
+→ eigene Medien bzw. lokales Bild, keine Strikes), **Bildprüfung** (alle 2 min ein Graustufenbild 160 × 90 vom
+virtuellen Bildschirm, nicht vom Stream – schwarz oder mit Uhr stehend → neu laden, dann Kette neu starten und melden),
+**Protokoll** und **Layout-Versionen** in `/var/lib/signagecast/` (Teil der Sicherung).
 
 **Updates & Sicherung:** Reiter „Updates“ (System- und SignageCast-Updates per Knopf oder automatisch im Wartungsfenster,
 nur wenn niemand zuschaut; Rückkehr zur vorigen Version, automatisch bei Fehlern) und „Sicherung“ (ZIP, mit Zugangsdaten

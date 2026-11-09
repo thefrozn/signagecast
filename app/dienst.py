@@ -40,6 +40,9 @@ import todo as TD                             # noqa: E402
 import pdf as PDF                             # noqa: E402
 import player as PL                           # noqa: E402
 import fernwartung as FW                      # noqa: E402
+import netz as NZ                             # noqa: E402
+import protokoll as PR                        # noqa: E402
+import ausgabe as AG                          # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -116,6 +119,21 @@ def bn_behalten(neu, auch_leer=False):
 
 qn = Q.Quellen(lambda: einst(), os.path.join(DATEN, "verlauf.json"))
 TODO = TD.Liste(os.path.join(DATEN, "todo.json"))   # ausgeblendete Einträge von „Zu erledigen“ (seit 0.35)
+NETZ = NZ.Wache(bedarf=lambda: einst()["video"]["aktiv"] and any(t["video"] for t in einst()["fernseher"]))   # Internet? (seit 0.38)
+PROTOKOLL = PR.Protokoll(os.path.join(DATEN, "protokoll.json"))          # wer hat wann was geändert (seit 0.38)
+VERSIONEN = PR.Versionen(os.path.join(DATEN, "layout-versionen.json"))   # alte Fassungen der Layouts (seit 0.38)
+layout_vorrang = {}                                # tv -> {"layout", "bis", "von"}: vom Pult gewählt (seit 0.38, nur im Speicher)
+
+
+def layout_fuer(t, layouts=None):
+    """Layout, das der Fernseher jetzt zeigt: vom Pult vorübergehend gewähltes vor Zeitplan, Karussell und Grundlayout."""
+    layouts = layouts if layouts is not None else einst()["layouts"]
+    v = layout_vorrang.get(t["id"])
+    if v and v["bis"] > time.time():
+        l = next((x for x in layouts if x["id"] == v["layout"]), None)
+        if l:
+            return l
+    return L.aktuelles_layout(t, layouts, time.strftime("%H:%M"))
 
 
 ha = HA(lambda: einst()["ha"]["url"])
@@ -505,6 +523,10 @@ webhook_versuche = {}                             # IP -> [Zeitpunkte] (höchste
 
 
 def meldung_fuer(tv_id):
+    """Laufschrift-Meldung: vom Pult (seit 0.38, je Fernseher) vor der aus dem Webhook."""
+    p = zustand.get("meldung_pult")
+    if p and p["bis"] > time.time() and tv_id in p["tvs"]:
+        return {"text": p["text"], "stil": p["stil"], "bis": p["bis"]}
     m = zustand.get("meldung_extern")
     if not m or m["bis"] < time.time() or (m.get("tv") and m["tv"] != tv_id):
         return None
@@ -587,7 +609,7 @@ def alarm_laden():
 alarm = {"jetzt": alarm_laden()}
 
 
-def alarm_ausloesen(text, tvs, von):
+def alarm_ausloesen(text, tvs, von, quelle="pult"):
     """tvs leer = alle Fernseher."""
     text = " ".join(str(text or "").split())[:200]
     if not text:
@@ -603,12 +625,14 @@ def alarm_ausloesen(text, tvs, von):
     ds_melden()
     schalten_neu.set()                           # ausgeschaltete Fernseher sofort einschalten
     print(f"Notfall-Vollbild ausgelöst von {a['von']}", flush=True)
+    PROTOKOLL.eintragen(a["von"], quelle, "alarm_an", text)
     return a
 
 
-def alarm_beenden(von):
+def alarm_beenden(von, quelle="pult"):
     if alarm["jetzt"]:
         print(f"Notfall-Vollbild beendet von {str(von)[:40]}", flush=True)
+        PROTOKOLL.eintragen(von, quelle, "alarm_aus")
     alarm["jetzt"] = None
     ds_melden()
     try:
@@ -658,8 +682,11 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         jetzt, ip = time.time(), self.client_address[0]
         liste = [t for t in webhook_versuche.get(ip, []) if jetzt - t < 60]
-        webhook_versuche[ip] = liste + [jetzt]
-        if len(liste) >= 20:
+        webhook_versuche[ip] = (liste + [jetzt])[-200:]
+        # 20 Anfragen je Minute und Adresse (gegen Raten von Passwort/Schlüssel); angemeldete Pult-Sitzungen fragen
+        # regelmäßig nach (Liste, Notfall, Stand) und teilen sich evtl. eine Adresse – für sie 120 (seit 0.38)
+        grenze = 120 if u.path.startswith("/pult/") and u.path != "/pult/anmelden" and pult_zugang(self) else 20
+        if len(liste) >= grenze:
             return self.antwort(429, {"ok": False, "fehler": "zu viele Anfragen"})
         # Leistungstest auf dem Abspielgerät (seit 0.18): http wie der Stream – aus der https-Verwaltung blockiert der Browser
         if u.path == "/test" and self.command == "GET":
@@ -688,14 +715,14 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             return self.antwort(403, {"ok": False})
         if u.path == "/alarm":                    # Notfall-Vollbild (seit 0.21): {"text": …} auslösen, {"aus": true} beenden
             if daten.get("aus") or (q.get("aus") or [""])[0] in ("1", "true"):
-                alarm_beenden("Webhook")
+                alarm_beenden("Webhook", "webhook")
                 return self.antwort(200, {"ok": True, "beendet": True})
             if self.command != "POST":
                 return self.antwort(405, {"ok": False})
             tv = str(daten.get("tv", (q.get("tv") or [""])[0]))[:12]
             try:
                 text = daten.get("text") or (q.get("text") or [""])[0] or (einst()["alarm"]["vorlagen"] or [""])[0]
-                a = alarm_ausloesen(text, [tv] if tv else [], "Webhook")
+                a = alarm_ausloesen(text, [tv] if tv else [], "Webhook", "webhook")
             except M.Meldung:
                 return self.antwort(400, {"ok": False, "fehler": "text fehlt"})
             return self.antwort(200, {"ok": True, "id": a["id"]})
@@ -737,7 +764,10 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         p = einst()["pult"]
         if pfad == "/pult/info":
             return self.antwort(200, {"ok": True, "zugang": z["name"], "sprache": einst()["sprache"] or "de",
-                                      "fernseher": [{"id": t["id"], "name": t["name"]} for t in pult_fernseher(z)],
+                                      "fernseher": [{"id": t["id"], "name": t["name"], "schalten": bool(t["ha_schalten"])}
+                                                    for t in pult_fernseher(z)],
+                                      "rechte": {k: bool(z.get(k)) for k in ("meldung", "layout", "schalten")},
+                                      "layouts": [{"id": l["id"], "name": l["name"]} for l in einst()["layouts"]] if z.get("layout") else [],
                                       "vorlagen": p["vorlagen"], "vorlesen": p["vorlesen"] and DS.bereit(p["stimme"]),
                                       "gong": p["gong"], "dauer_s": p["dauer_s"],
                                       "alarm": z.get("alarm", False), "alarm_vorlagen": einst()["alarm"]["vorlagen"] if z.get("alarm") else []})
@@ -752,6 +782,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
                 dauer = max(10, min(3600, int(daten.get("dauer_s") or p["dauer_s"])))
                 did = durchsage_senden(daten.get("text", ""), tvs, bool(daten.get("vorlesen")) and p["vorlesen"],
                                        bool(daten.get("gong", p["gong"])), dauer, z["name"])
+                PROTOKOLL.eintragen(z["name"], "pult", "durchsage", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs))
             except (ValueError, RuntimeError, subprocess.TimeoutExpired) as f:
                 return self.antwort(200, {"ok": False, "fehler": str(f)[:200], "code": getattr(f, "code", "")})
             return self.antwort(200, {"ok": True, "id": did})
@@ -775,6 +806,64 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
                         return self.antwort(200, {"ok": False, "fehler": str(f), "code": f.code})
             a = alarm["jetzt"]
             return self.antwort(200, {"ok": True, "aktiv": bool(a), **({"text": a["text"], "zeit": a["zeit"], "von": a["von"]} if a else {})})
+        if pfad == "/pult/stand":                 # seit 0.38: was das Pult je Fernseher eingestellt hat, Zustand aus HA
+            jetzt, mp = time.time(), zustand.get("meldung_pult")
+            return self.antwort(200, {"ok": True, "fernseher": [{
+                "id": t["id"], "layout": ({"name": layout_fuer(t)["name"], "bis": int(v["bis"]), "von": v["von"]}
+                                          if (v := layout_vorrang.get(t["id"])) and v["bis"] > jetzt else None),
+                "meldung": {"text": mp["text"], "bis": int(mp["bis"])} if mp and mp["bis"] > jetzt and t["id"] in mp["tvs"] else None,
+                "zustand": ((schalten_stand.get(t["id"]) or {}).get("ha") or {}).get("zustand")} for t in pult_fernseher(z)]})
+        if pfad == "/pult/meldung" and self.command == "POST":
+            if not z.get("meldung"):
+                return self.antwort(403, {"ok": False, "code": "p_recht"})
+            tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
+            mp = zustand.get("meldung_pult")
+            if daten.get("aus"):
+                if mp:
+                    mp["tvs"] = [x for x in mp["tvs"] if x not in (tvs or erlaubt)]
+                PROTOKOLL.eintragen(z["name"], "pult", "meldung_aus", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in (tvs or erlaubt)))
+                return self.antwort(200, {"ok": True})
+            text = " ".join(str(daten.get("text", "")).split())[:200]
+            if not text or not tvs:
+                return self.antwort(200, {"ok": False, "code": "d_text_tv"})
+            dauer = max(60, min(12 * 3600, int(daten.get("dauer_s") or 3600)))
+            zustand["meldung_pult"] = {"text": text, "bis": time.time() + dauer, "tvs": tvs, "von": z["name"],
+                                       "stil": "warnung" if daten.get("stil") == "warnung" else "info"}
+            PROTOKOLL.eintragen(z["name"], "pult", "meldung", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs))
+            return self.antwort(200, {"ok": True})
+        if pfad == "/pult/layout" and self.command == "POST":
+            if not z.get("layout"):
+                return self.antwort(403, {"ok": False, "code": "p_recht"})
+            tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
+            if daten.get("aus"):
+                for x in tvs or erlaubt:
+                    layout_vorrang.pop(x, None)
+                PROTOKOLL.eintragen(z["name"], "pult", "layout_aus", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in (tvs or erlaubt)))
+                schalten_neu.set()
+                return self.antwort(200, {"ok": True})
+            l = next((x for x in einst()["layouts"] if x["id"] == daten.get("layout")), None)
+            if not l or not tvs:
+                return self.antwort(200, {"ok": False, "code": "d_text_tv"})
+            minuten = max(5, min(12 * 60, int(daten.get("minuten") or 60)))
+            for x in tvs:
+                layout_vorrang[x] = {"layout": l["id"], "bis": time.time() + minuten * 60, "von": z["name"]}
+            PROTOKOLL.eintragen(z["name"], "pult", "layout", f"{l['name']} → " + ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs)
+                                + f" ({minuten} min)")
+            schalten_neu.set()                    # war der Fernseher im Zeitplan „schwarz“: einschalten
+            return self.antwort(200, {"ok": True})
+        if pfad == "/pult/schalten" and self.command == "POST":
+            if not z.get("schalten"):
+                return self.antwort(403, {"ok": False, "code": "p_recht"})
+            t = next((t for t in pult_fernseher(z) if t["id"] == daten.get("tv")), None)
+            if not t or not t["ha_schalten"]:
+                return self.antwort(200, {"ok": False, "code": "p_kein_schalten"})
+            try:
+                tv_schalten(t, bool(daten.get("an")))
+            except (HAFehler, M.Meldung) as f:
+                return self.antwort(200, {"ok": False, "fehler": str(f)[:200], "code": getattr(f, "code", "")})
+            threading.Timer(8, zustand_abfragen).start()
+            PROTOKOLL.eintragen(z["name"], "pult", "schalten", f"{t['name']} – {'an' if daten.get('an') else 'aus'}")
+            return self.antwort(200, {"ok": True})
         if pfad == "/pult/abmelden" and self.command == "POST":
             for k in [k for k, v in pult_sitzungen.items() if v["zugang"] == z["id"] and k in (self.headers.get("Cookie") or "")]:
                 pult_sitzungen.pop(k, None)
@@ -1079,6 +1168,8 @@ def benachrichtigung_schleife():
             u = update_status() or {}
             if u.get("ts") != gesehen_update:
                 gesehen_update = u.get("ts")
+                if u.get("meldung"):                       # seit 0.38: Ergebnis jedes Updates ins Protokoll
+                    PROTOKOLL.eintragen("SignageCast", "system", "update_ergebnis", f"{u.get('aktion') or ''}: {u.get('meldung')}")
                 if u.get("phase") == "fehler" or (u.get("phase") == "zurueck" and u.get("aktion") != "zurueck"):
                     melder.melden(f"update-{u.get('ts')}", "update", "update", aktion=u.get("aktion"), meldung=u.get("meldung"),
                                   zeit=u.get("zeit"))
@@ -1112,6 +1203,16 @@ def benachrichtigung_schleife():
                     melder.melden("leistung-" + t["id"], "leistung", "leistung", tv=t["name"], fps=f"{schnitt:.0f}")
                 elif schnitt is not None and schnitt >= 22 or not kette_laeuft(t["id"]):
                     melder.vorbei("leistung-" + t["id"], "leistung_vorbei", tv=t["name"])
+            # Internet weg (seit 0.38): Telegram/E-Mail kommen dann meist nicht an (HA schon) – die Entwarnung nennt
+            # deshalb den Zeitraum. Je Ausfall ein Eintrag im Protokoll.
+            if NETZ.offline_seit and time.time() - NETZ.offline_seit > 300 and not zustand.get("internet_weg"):
+                zustand["internet_weg"] = time.strftime("%H:%M", time.localtime(NETZ.offline_seit))
+                melder.melden("internet", "internet", "internet", seit=zustand["internet_weg"])
+                PROTOKOLL.eintragen("SignageCast", "system", "internet_weg", zustand["internet_weg"])
+            elif not NETZ.offline and zustand.get("internet_weg"):
+                melder.vorbei("internet", "internet_vorbei", seit=zustand["internet_weg"], bis=time.strftime("%H:%M"))
+                PROTOKOLL.eintragen("SignageCast", "system", "internet_wieder", f"{zustand['internet_weg']}–{time.strftime('%H:%M')}")
+                zustand["internet_weg"] = None
             if einst()["ha"]["url"] and zustand["ha_fehler"]:
                 ha_weg = ha_weg or time.time()
                 if time.time() - ha_weg > 300:
@@ -1124,6 +1225,127 @@ def benachrichtigung_schleife():
                 melder.vorbei("ha", "ha_vorbei")
         except Exception as ex:
             print("Benachrichtigung:", ex, flush=True)
+
+
+# ---------- Änderungsprotokoll (seit 0.38) ----------
+def verwaltung_wer(handler):
+    """Wer in der Verwaltung angemeldet ist: Cockpit schickt den Benutzernamen mit (nur zur Anzeige – zugreifen darf
+    ohnehin nur die angemeldete Verwaltung), im Container gibt es nur einen Zugang."""
+    return PR.wer_pruefen(handler.headers.get("X-SignageCast-Benutzer"))
+
+
+PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion (die Verwaltung übersetzt sie)
+    "/api/einstellungen": "einstellungen", "/api/medien/teil": "medien_neu", "/api/webhook/neu": "webhook_neu", "/api/medien/loeschen": "medien_loeschen",
+    "/api/fernseher/schalten": "schalten", "/api/fernseher/nach-einschalten": "nach_einschalten",
+    "/api/updates/anfrage": "update", "/api/sicherung/erstellen": "sicherung_erstellen", "/api/sicherung/loeschen": "sicherung_loeschen",
+    "/api/sicherung/zip": "sicherung_einspielen", "/api/sicherung": "sicherung_einspielen", "/api/quellen/datei": "quelle_datei",
+    "/api/kategorien/loeschen": "kategorie_loeschen", "/api/streams": "stream_neu", "/api/suche/starten": "suche",
+    "/api/radio/sender": "radio_neu", "/api/aktion/seite-neu-laden": "seite_neu_laden", "/api/aktion/kette-neu-starten": "kette_neu",
+    "/api/aktion/ton-neu": "ton_neu", "/api/layouts/wiederherstellen": "layout_wiederherstellen", "/api/pult/stimme-laden": "stimme_laden",
+    "/api/pult/probe": "probedurchsage", "/api/player/neu": "player_neu", "/api/player/koppeln": "player_koppeln",
+    "/api/player/einstellungen": "player_einstellungen", "/api/player/wlan-vergessen": "player_wlan", "/api/player/sammel-image": "player_image",
+}
+PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennung mit {0} = erste Gruppe
+    (re.compile(r"/api/streams/([\w-]{11}|UC[\w-]{22})(?:/([a-z-]+))?"), "stream_{1}"),
+    (re.compile(r"/api/abgelehnt/([\w-]{11}|UC[\w-]{22})/freigeben"), "stream_freigeben"),
+    (re.compile(r"/api/radio/sender/([a-z0-9]{4,12})(?:/(entfernen))?"), "radio_{1}"),
+    (re.compile(r"/api/einspieler/([a-z0-9]{4,12})/jetzt"), "einspieler_jetzt"),
+    (re.compile(r"/api/player/([0-9a-f]{8})/terminal/(start|ende)"), "terminal_{1}"),       # nie die Eingaben („ein“)
+    (re.compile(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image|link-neu)"), "player_{1}"),
+]
+EINST_BEREICHE_STILL = {"assistent_fertig"}        # zählt nicht als Änderung
+
+
+def protokoll_verwaltung(handler, p, d, antwort):
+    """Erfolgreiche Änderung aus der Verwaltung ins Protokoll – nur Art und Bereich, nie Werte (keine Geheimnisse)."""
+    aktion, detail = PROTOKOLL_PFADE.get(p), ""
+    if not aktion:
+        for muster, k in PROTOKOLL_MUSTER:
+            m = muster.fullmatch(p)
+            if m:
+                aktion = k.format(*m.groups()).replace("_None", "_aendern")
+                break
+    if not aktion:
+        return
+    if p == "/api/medien/teil" and not d.get("fertig"):
+        return
+    extra = handler.protokoll_detail or {}
+    if aktion == "einstellungen":
+        teile = sorted(k for k in d if k not in EINST_BEREICHE_STILL and k != "layouts")
+        detail = ", ".join(teile)
+        lay = extra.get("layouts") or {}
+        for k in ("neu", "geaendert", "geloescht"):
+            if lay.get(k):
+                detail += ("; " if detail else "") + f"layouts.{k}: " + ", ".join(lay[k])
+        if not detail:
+            return                                 # nichts geändert (z. B. Layouts unverändert gespeichert)
+    elif extra.get("text"):
+        detail = extra["text"]
+    elif d.get("tv") and fernseher(str(d["tv"])):
+        detail = fernseher(str(d["tv"]))["name"] + (" – an" if d.get("an") is True else " – aus" if d.get("an") is False else "")
+    elif aktion.startswith("stream"):
+        sid = re.sub(r"^/api/(streams|abgelehnt)/?", "", p).split("/")[0] or ""
+        x = streams.alle()["streams"].get(sid) if sid else None
+        detail = (x or {}).get("name") or (antwort.get("stream") or {}).get("name") or sid
+    elif aktion == "update":
+        detail = str(d.get("aktion", ""))[:30]
+    elif aktion.startswith(("player_", "terminal_")):
+        m = re.search(r"/api/player/([0-9a-f]{8})", p)
+        g = next((g for g in PL.daten["geraete"] if m and g["id"] == m.group(1)), None)
+        detail = g["name"] if g else ""
+    PROTOKOLL.eintragen(verwaltung_wer(handler), "verwaltung", aktion, detail)
+
+
+# ---------- Bildprüfung (seit 0.38): schwarzes oder eingefrorenes Bild erkennen und selbst beheben ----------
+AUSGABE = AG.Pruefer()
+ausgabe_massnahme = {}                             # tv -> {"n": Maßnahmen seit dem letzten guten Befund, "befund"}
+
+
+def ausgabe_schleife():
+    """Alle 2 min je laufendem Fernseher ein Miniaturbild vom virtuellen Bildschirm prüfen (app/ausgabe.py).
+    Befund schwarz/steht: 1. TV-Seite neu laden; 2. kommt er wieder: Kette neu starten und melden; danach nur melden."""
+    time.sleep(90)
+    while True:
+        try:
+            e = einst()
+            jetzt = time.strftime("%Y-%m-%dT%H:%M")
+            for t in e["fernseher"]:
+                if not kette_laeuft(t["id"]):
+                    AUSGABE.vergessen(t["id"])
+                    if time.time() - (ausgabe_massnahme.get(t["id"]) or {}).get("zeit", 0) > 600:
+                        ausgabe_massnahme.pop(t["id"], None)      # niemand schaut mehr (nicht: gerade neu gestartet)
+                    continue
+                lay = layout_fuer(t, e["layouts"])
+                uhr = any(x["typ"] == "uhr" and x["sichtbar"] and not x["bedingung"] and L.im_zeitraum(x, jetzt)
+                          for x in lay.get("elemente", []))
+                aw, ah = aufnahme_fuer(t)
+                befund = AUSGABE.pruefen(t["id"], AG.aufnehmen(anzeige_nr(t), aw, ah), bool(lay.get("schwarz")),
+                                         uhr and not alarm_fuer(t["id"]), time.time())
+                if befund in ("schwarz", "steht"):
+                    n = (ausgabe_massnahme.get(t["id"]) or {}).get("n", 0) + 1
+                    ausgabe_massnahme[t["id"]] = {"n": n, "befund": befund, "zeit": time.time()}
+                    AUSGABE.vergessen(t["id"])            # nach der Maßnahme neu zählen
+                    if n == 1:
+                        ok = False
+                        try:
+                            ok = wache.seite_neu_laden(wache.BASIS_PORT + t["nr"])
+                        except Exception:
+                            pass
+                        print(f"Bildprüfung {t['id']}: {befund} – TV-Seite neu geladen ({ok})", flush=True)
+                        PROTOKOLL.eintragen("SignageCast", "system", "bild_neu_laden", f"{t['name']}: {befund}")
+                    else:
+                        if n == 2:
+                            kette_neu_starten(t["id"])
+                            print(f"Bildprüfung {t['id']}: {befund} – Kette neu gestartet", flush=True)
+                            PROTOKOLL.eintragen("SignageCast", "system", "bild_kette_neu", f"{t['name']}: {befund}")
+                        melder.melden("bild-" + t["id"], "ausfall", "bild_" + befund, tv=t["name"])
+                elif befund == "ok":
+                    if ausgabe_massnahme.pop(t["id"], None):
+                        print(f"Bildprüfung {t['id']}: wieder in Ordnung", flush=True)
+                    melder.vorbei("bild-" + t["id"], "bild_vorbei", tv=t["name"])
+        except Exception as ex:                    # nie die Schleife verlieren
+            print("Bildprüfung:", repr(ex), flush=True)
+        time.sleep(AG.TAKT_S)
 
 
 def unwetter_schleife():
@@ -1190,7 +1412,7 @@ def webbild_auftraege():
     e, aus = einst(), []
     for t in e["fernseher"]:
         if kette_laeuft(t["id"]):
-            lay = L.aktuelles_layout(t, e["layouts"], time.strftime("%H:%M"))
+            lay = layout_fuer(t, e["layouts"])
             jetzt = time.strftime("%Y-%m-%dT%H:%M")
             aus += [a for a in (webbild_auftrag(x) for x in lay.get("elemente", []) if x["sichtbar"] and L.im_zeitraum(x, jetzt)) if a]
     return aus
@@ -1219,7 +1441,7 @@ schalten_stand = {}                               # tv -> {"soll", "zeit", "fehl
 
 
 def schalten_soll(t):
-    lay = L.aktuelles_layout(t, einst()["layouts"], time.strftime("%H:%M"))
+    lay = layout_fuer(t)
     return "an" if alarm_fuer(t["id"]) or not lay.get("schwarz") else "aus"
 
 
@@ -1361,15 +1583,16 @@ def tv_daten(tv_id):
     if not t:
         return {"ok": False, "fehler": "unbekannter Fernseher"}
     v = e["video"]
-    layout = L.aktuelles_layout(t, e["layouts"], time.strftime("%H:%M"))
+    layout = layout_fuer(t, e["layouts"])
     hat_video = any(x["typ"] == "video" and x["sichtbar"] for x in layout.get("elemente", []))
     vr = streams.vorrang if streams.vorrang and streams.vorrang["bis"] > time.time() \
         and streams.vorrang.get("tv") in (None, t["id"]) else None
     sender = next((x for x in e["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
     liste = [x for x in streams.liste if x["kategorie"] not in t["kategorien_aus"]] \
         if v["aktiv"] and t["video"] and hat_video and t["video_quelle"] != "medien" else []
-    medien = [{"id": m["id"], "name": m["name"], "art": m["art"], "url": f"/medien/{m['datei']}", "dauer_s": m["dauer_s"]}
-              for m in e["medien"] if m["aktiv"]] if t["video"] and hat_video and t["video_quelle"] != "youtube" else []
+    alle_medien = [{"id": m["id"], "name": m["name"], "art": m["art"], "url": f"/medien/{m['datei']}", "dauer_s": m["dauer_s"]}
+                   for m in e["medien"] if m["aktiv"]] if t["video"] and hat_video else []
+    medien = alle_medien if t["video_quelle"] != "youtube" else []
     with sperre:
         teil = dict(zustand["ha_teil"])
     kal = {k: w for k, w in zustand["kalender"].items()
@@ -1402,6 +1625,9 @@ def tv_daten(tv_id):
                      for x in layout.get("elemente", []) if x["typ"] == "pdf" and x["optionen"]["datei"]},
                 jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M"), alarm=alarm_fuer(t["id"]),
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
+                # Internet weg (seit 0.38): statt der Live-Kameras eigene Medien im Kreis, sonst ein ruhiges Bild
+                offline=NETZ.offline, ersatz={"medien": alle_medien, "bild": "bilder/stile/" + (
+                    layout["hintergrund"]["stil"] if layout.get("hintergrund", {}).get("art") == "stil" else "natur") + f"-{tz}.jpg"},
                 unwetter=(zustand.get("unwetter") or {}).get("liste", []),
                 meldung_extern=meldung_fuer(t["id"]),
                 durchsage=durchsage_fuer(t["id"]), streams=liste, allgemein=streams.allgemein_aktiv(), vorrang=vr if liste else None, versatz=t["nr"],
@@ -1634,6 +1860,10 @@ def todo_warnungen(e):
         w.append({"key": "bn_fehler"})
     if e["anzeige"]["wetter_quelle"] == "met" and met.fehler:
         w.append({"key": "wetter"})
+    if NETZ.offline:                                       # seit 0.38
+        w.append({"key": "internet", "seit": time.strftime("%H:%M", time.localtime(NETZ.offline_seit))})
+    w += [{"key": "bild:" + t["id"], "name": t["name"], "befund": ausgabe_massnahme[t["id"]]["befund"]}
+          for t in e["fernseher"] if ausgabe_massnahme.get(t["id"])]
     return w
 
 
@@ -1676,6 +1906,7 @@ def status():
         "doppelt_hoch": [t["name"] for t in doppelt_hoch(e)],
         "bildrate_niedrig": [t["name"] for t in bildrate_niedrig(e)],
         "todo_warn": todo_warnungen(e), "todo_aus": TODO.liste(),
+        "netz": NETZ.stand(),                                       # seit 0.38
         "fernseher": [fernseher_status(t) for t in e["fernseher"]],
         "player": [{"id": g["id"], "name": g["name"], "online": PL.online(g["id"]), "gesehen": PL.gesehen(g["id"])}
                    for g in PL.daten["geraete"]],
@@ -1696,9 +1927,12 @@ def fernseher_status(t):
     return {"id": t["id"], "name": t["name"], "laeuft": kette_laeuft(t["id"]), "wache": w,
             "aktuell": {"video_id": w["id"], "name": next((x["name"] for x in streams.liste if x["video_id"] == w["id"]), w["id"])}
             if w else None, "ton": t["ton"], "sender": sender if t["ton"] == "radio" else None, "video": t["video"],
-            "layout": L.aktuelles_layout(t, einst()["layouts"], time.strftime("%H:%M"))["name"],
+            "layout": layout_fuer(t)["name"],
             "radio_neu_verbunden": zustand.get("radio_neu", {}).get(t["id"], 0),
-            "encoder": encoder_fuer(t), "kodier_fehler": zustand["kodier_fehler"].get(t["id"])}
+            "encoder": encoder_fuer(t), "kodier_fehler": zustand["kodier_fehler"].get(t["id"]),
+            "bild": AUSGABE.befund(t["id"]) if kette_laeuft(t["id"]) else "",                  # seit 0.38: Bildprüfung
+            "pult_layout": (lambda v: {"name": layout_fuer(t)["name"], "bis": int(v["bis"]), "von": v["von"]}
+                            if v and v["bis"] > time.time() else None)(layout_vorrang.get(t["id"]))}
 
 
 def eigene_ip():
@@ -2099,6 +2333,8 @@ def sicherung_zip(mit_geheimnissen, passwort=None):
         with qn.verlauf.sperre:
             dateien["verlauf.json"] = json.dumps(qn.verlauf.reihen).encode()
     dateien["todo.json"] = TODO.als_bytes()      # ausgeblendete Einträge von „Zu erledigen“ (seit 0.35)
+    dateien["protokoll.json"] = PROTOKOLL.als_bytes()            # seit 0.38
+    dateien["layout-versionen.json"] = VERSIONEN.als_bytes()
     # eigene Medien: Bilder immer, Videos nur bis MEDIEN_SICHERUNG_MAX insgesamt (sonst wird die ZIP unhandlich)
     ausgelassen, summe = [], 0
     for m in sorted(einst()["medien"], key=lambda x: x["art"] != "bild"):
@@ -2153,6 +2389,10 @@ def sicherung_zip_einspielen(roh, passwort=None, mit_strikes=True):
         qn.verlauf.speichern()
     if "todo.json" in dateien:
         TODO.einspielen(dateien["todo.json"])
+    if "protokoll.json" in dateien:                # seit 0.38: Einträge der Sicherung und eigene zusammen
+        PROTOKOLL.einspielen(dateien["protokoll.json"])
+    if "layout-versionen.json" in dateien:
+        VERSIONEN.einspielen(dateien["layout-versionen.json"])
     if "verwaltung.json" in dateien and CONTAINER:
         vw = os.path.join(os.path.dirname(E.PFAD), "verwaltung.json")
         fd = os.open(vw, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
@@ -2466,6 +2706,18 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
                                       "wechsel": L.WECHSEL})
+        if pfad == "/api/protokoll":                   # seit 0.38
+            return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste()})
+        if pfad == "/api/layouts/versionen":
+            lid = (q.get("id") or [""])[0]
+            return self.antwort(200, {"ok": True, "versionen": VERSIONEN.liste(lid), "geloescht": VERSIONEN.geloeschte()})
+        if pfad == "/api/layouts/version":
+            try:
+                return self.antwort(200, {"ok": True, "layout": VERSIONEN.holen((q.get("id") or [""])[0], int((q.get("nr") or ["-1"])[0]))})
+            except (KeyError, ValueError):
+                return self.antwort(404, {"ok": False})
+        if pfad == "/api/layouts/format":              # Formatbeschreibung für Menschen und KI (Markdown)
+            return self.antwort(200, L.format_beschreibung().encode(), "text/markdown; charset=utf-8")
         if pfad == "/api/pult":
             return self.antwort(200, {"ok": True, "stimmen": {k: dict(v, bereit=DS.bereit(k)) for k, v in DS.STIMMEN.items()},
                                       "laden": DS.stand, "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
@@ -2613,6 +2865,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 ok = streams.allgemein_melden(str(d.get("grund", "")), bool(d.get("ende")))
                 if ok:
                     streams.liste_bauen()         # zurückgenommene Pausen gelten sofort
+            elif m.group(1) == "strike" and not NETZ.jetzt_online():
+                ok = False                        # seit 0.38: Internet weg – nicht die Schuld des Streams
+                NETZ.neu.set()
             elif m.group(1) == "strike":
                 ok = streams.strike(vid, str(d.get("grund", "")))
                 if ok:
@@ -2623,7 +2878,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if not p.startswith("/api/") or not self.api_erlaubt():
             return self.antwort(403, {"ok": False})
         try:
-            return self.antwort(200, dict(self.api_post(p, d) or {}, ok=True))
+            self.protokoll_detail = None
+            antwort = dict(self.api_post(p, d) or {}, ok=True)
+            try:
+                protokoll_verwaltung(self, p, d, antwort)
+            except Exception as ex:               # das Protokoll darf nie eine Änderung scheitern lassen
+                print("Protokoll:", repr(ex), flush=True)
+            return self.antwort(200, antwort)
         except (E.Fehler, ValueError, KeyError, HAFehler) as ex:
             # 200 mit ok=false: die Verwaltung zeigt den Text direkt an
             m = M.als_dict(ex)
@@ -2679,8 +2940,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                     name, n = PDF.umwandeln(roh, PDF_ORDNER)
                 finally:
                     os.remove(roh)
+                self.protokoll_detail = {"text": "PDF"}
                 return {"pdf": name, "seiten": n}
             art, datei, dauer = hochladen.fertig(str(d["kennung"]))
+            self.protokoll_detail = {"text": str(d.get("name") or datei)[:60]}
             medium = {"id": MED.neue_kennung(), "name": str(d.get("name") or datei)[:60], "art": art, "datei": datei,
                       "dauer_s": dauer, "aktiv": True}
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"medien": einst()["medien"] + [medium]}))
@@ -2700,9 +2963,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return {"einstellungen": einst_aussen()}
         if p == "/api/alarm":                    # Notfall-Vollbild aus der Verwaltung
             if d.get("aus"):
-                alarm_beenden("Verwaltung")
+                alarm_beenden(verwaltung_wer(self), "verwaltung")
                 return {"jetzt": None}
-            return {"jetzt": alarm_ausloesen(d.get("text", ""), d.get("fernseher") or [], "Verwaltung")}
+            return {"jetzt": alarm_ausloesen(d.get("text", ""), d.get("fernseher") or [], verwaltung_wer(self), "verwaltung")}
         if p == "/api/fernseher/schalten":        # Ein-/Ausschalten über HA ausprobieren
             t = fernseher(str(d.get("tv", "")))
             if not t or not t["ha_schalten"]:
@@ -2769,6 +3032,26 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 s["naechster"] = 0
                 qn.neu.set()
             return {}
+        if p == "/api/layouts/pruefen":                # Import (seit 0.38): Datei oder eingefügter Text, fehlertolerant
+            roh = L.json_aus_text(d["text"]) if isinstance(d.get("text"), str) else d.get("layout")
+            e = einst()
+            l, hinweise = L.import_pruefen(roh, [x["id"] for x in e["layouts"]], bild_da=lambda n: os.path.exists(os.path.join(BILDER, n)),
+                                           quellen=[q["id"] for q in e["quellen"]],
+                                           pdf_da=lambda n: bool(PDF.seiten(PDF_ORDNER, n)))
+            return {"layout": l, "hinweise": [M.als_dict(h) for h in hinweise]}
+        if p == "/api/layouts/wiederherstellen":       # alte Fassung zurückholen (seit 0.38) – auch ein gelöschtes Layout
+            lid, nr = str(d.get("id", "")), d.get("nr")
+            try:
+                l = VERSIONEN.holen(lid, nr)
+            except KeyError:
+                raise M.Meldung("l_version_fehlt") from None
+            e = einst()
+            neu = [l if x["id"] == lid else x for x in e["layouts"]] if any(x["id"] == lid for x in e["layouts"]) else e["layouts"] + [l]
+            alt_layouts = e["layouts"]
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"layouts": neu}))
+            VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
+            self.protokoll_detail = {"text": l["name"]}
+            return {"einstellungen": einst_aussen()}
         if p == "/api/kategorien/loeschen":           # eigene Kategorie löschen, ihre Streams in eine andere (seit 0.37)
             kid, ziel = str(d.get("id", "")), str(d.get("ziel") or "neu")
             ks = einst()["kategorien"]
@@ -2782,7 +3065,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             neu_liste.set()
             return {"einstellungen": einst_aussen(), "verschoben": n}
         if p == "/api/einstellungen":
+            alt_layouts = einst()["layouts"]
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
+            if "layouts" in d:                           # seit 0.38: alte Fassungen aufheben (Versionen)
+                g, w, n = VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
+                self.protokoll_detail = {"layouts": {"geaendert": g, "geloescht": w, "neu": n}}
             if "kategorien" in d:                        # Wörter geändert: gefundene Streams neu einsortieren
                 streams.einsortieren()
             for tv_id in render_schreiben(einst()):          # neue Kodierung: laufende Kette neu (kurz schwarz)
@@ -3001,7 +3288,7 @@ def main():
     for ziel in (ha_schleife, streams_schleife, vorab_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
-                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife):
+                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife, NETZ.schleife, ausgabe_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]
