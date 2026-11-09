@@ -49,6 +49,16 @@ see [NOTICE.md](../NOTICE.md).
   assistant via SSH (or `docker exec -i`). It only calls the local admin API (127.0.0.1:8080) and offers content tools
   – no system functions. Preview pictures: `/api/vorschau/bild` runs a short-lived headless Chromium on
   `/?tv=…&layout=…&vorschau=1` (960 × 540, one at a time, low priority).
+- **MCP in the home network (since 0.40):** the panel/webhook server (port 8890, `PultServer`) peeks at the first byte
+  of each connection – `0x16` (TLS handshake) → https with a self-made certificate (`/var/lib/signagecast/tls/`, EC
+  P-256, 10 years, `openssl` once), otherwise http as before. `POST /mcp` (Streamable HTTP, JSON answers, `202` for
+  notifications, `GET` → 405) runs `mcp.verarbeiten()` in the service process with `Authorization: Bearer <key>`;
+  `app/kizugang.py` keeps the connected computers in `ki-zugaenge.json` (600, only SHA-256 of keys and codes, not in
+  backups). Claude Desktop gets an `.mcpb` (ZIP: `manifest.json`, `server/index.js` = `app/mcp_bruecke.js`,
+  `server/verbindung.json` with URL, certificate and a one-time code); the bridge pins the certificate (`ca`), swaps
+  the code at `POST /mcp/koppeln` for a key and keeps it in `~/.signagecast/mcp-<id>.json` (600). Wrong keys/codes:
+  1 s delay, 10 per minute and address → 429. Requests with `Origin` → 403. Right *lesen* → only tools without
+  changes, in the list and when called.
 
 ## Updates and backups
 

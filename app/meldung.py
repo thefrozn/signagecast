@@ -126,6 +126,10 @@ DE = {
     "l_version_fehlt": "Diese Version gibt es nicht mehr",
     "p_recht": "Dieser Zugang darf das nicht",
     "p_kein_schalten": "Für diesen Fernseher ist kein Schalter aus Home Assistant eingetragen",
+    "ki_name": "Bitte einen Namen für den Computer angeben (Buchstaben, Ziffern, Leerzeichen, . @ -)",
+    "ki_doppelt": "Es gibt schon einen Computer mit diesem Namen",
+    "ki_max": "Höchstens {n} Computer",
+    "ki_adresse": "Ungültige Adresse dieses Rechners",
     "z_uhrzeit": "Zeitplan: Uhrzeit als HH:MM",
     "z_layout": "Zeitplan: unbekanntes Layout {id}",
     # Video-Streams, Radio, Durchsagen

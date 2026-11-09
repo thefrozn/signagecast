@@ -50,7 +50,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 
 **Inhalte**
 - Layout-Editor im Raster 48 × 27 mit Bedingungen, Schriften und Farben – oder Layout von einer KI bauen lassen
-- Inhalte direkt von Claude & Co. verwalten lassen ([MCP-Schnittstelle](docs/MCP.md#deutsch-kurz))
+- Inhalte direkt von Claude & Co. verwalten lassen – Computer per Klick verbinden und wieder entfernen ([MCP-Schnittstelle](docs/MCP.md#deutsch-kurz))
 - Werte aus Home Assistant, eigene JSON-/RSS-Quellen, Diagramme, Kalender
 - IP-Kameras, Webseiten, PDFs, Internetradio, Einspieler zu festen Zeiten
 - Meldungen, Durchsagen und ein rotes Notfall-Vollbild auf allen Fernsehern

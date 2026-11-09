@@ -2173,3 +2173,177 @@ class McpDoku039(unittest.TestCase):
         doku = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "MCP.md"), encoding="utf-8").read()
         for name in mcp.WERKZEUGE:
             self.assertIn(f"`{name}`", doku, name)
+
+
+class Ki040(unittest.TestCase):
+    """Seit 0.40: MCP im Heimnetz – verbundene Computer, http/https auf dem Pult-Port, Datei für Claude Desktop."""
+
+    def setUp(self):
+        import kizugang, mcp
+        self.KZ, self.mcp = kizugang, mcp
+        self.ordner = tempfile.mkdtemp()
+        self.alt_anfrage = mcp.anfrage
+        def anfrage(methode, pfad, daten=None, roh=False):
+            self.wer = mcp._lokal.wer
+            if pfad == "/api/einstellungen":
+                return {"einstellungen": {"layouts": [L.standard()], "medien": [], "quellen": [], "fernseher": []}}
+            if pfad == "/api/meldung":
+                return {"ok": True}
+            raise mcp.Fehler("unerwartet " + pfad)
+        mcp.anfrage = anfrage
+
+    def tearDown(self):
+        self.mcp.anfrage = self.alt_anfrage
+
+    def test_zugaenge(self):
+        z = self.KZ.Zugaenge(os.path.join(self.ordner, "ki.json"))
+        self.assertFalse(z.vorhanden())
+        for falsch in ("", "a/b", "   ", "<script>"):
+            with self.assertRaises(self.KZ.Fehler):
+                z.neu(falsch, "code", "aendern")
+        with self.assertRaises(self.KZ.Fehler):
+            z.neu("Laptop", "telnet", "aendern")
+        x, schluessel = z.neu("Laptop Büro", "code", "lesen")
+        with self.assertRaises(self.KZ.Fehler):
+            z.neu("laptop büro", "code", "lesen")                      # doppelt
+        self.assertTrue(schluessel.startswith("sc_") and len(schluessel) > 40)
+        self.assertNotIn(schluessel, open(os.path.join(self.ordner, "ki.json")).read())   # nur der Prüfwert
+        self.assertEqual(oct(os.stat(os.path.join(self.ordner, "ki.json")).st_mode & 0o777), "0o600")
+        self.assertEqual(z.pruefen(schluessel, "10.0.0.5")["name"], "Laptop Büro")
+        self.assertIsNone(z.pruefen(schluessel + "x"))
+        self.assertIsNone(z.pruefen(""))
+        self.assertNotIn("token", json.dumps(z.liste()))
+        # Claude Desktop: Einmal-Code, erst nach dem Einlösen ein Schlüssel
+        d, code = z.neu("Mac", "desktop", "aendern")
+        self.assertIsNone(z.pruefen(code))
+        self.assertTrue(next(x for x in z.liste() if x["id"] == d["id"])["wartet"])
+        e, s2 = z.einloesen(code, "10.0.0.6")
+        self.assertEqual(e["id"], d["id"])
+        self.assertEqual(z.einloesen(code), (None, None))               # nur einmal
+        self.assertEqual(z.pruefen(s2)["recht"], "aendern")
+        # abgelaufener Code
+        f, code3 = z.neu("Alt", "desktop", "aendern")
+        next(x for x in z.liste_ if x["id"] == f["id"])["code_bis"] = time.time() - 1
+        self.assertEqual(z.einloesen(code3), (None, None))
+        self.assertTrue(next(x for x in z.liste() if x["id"] == f["id"])["abgelaufen"])
+        # Neu laden, entfernen = sofort ungültig
+        z2 = self.KZ.Zugaenge(os.path.join(self.ordner, "ki.json"))
+        self.assertEqual(z2.pruefen(schluessel)["id"], x["id"])
+        z2.entfernen(x["id"])
+        self.assertIsNone(z2.pruefen(schluessel))
+        self.assertIsNone(self.KZ.Zugaenge(os.path.join(self.ordner, "ki.json")).pruefen(schluessel))
+
+    def test_nur_lesen(self):
+        m = self.mcp
+        alle = m.verarbeiten({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}, "MCP A")["result"]["tools"]
+        lesen = m.verarbeiten({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}, "MCP A", True)["result"]["tools"]
+        self.assertGreater(len(alle), len(lesen))
+        self.assertTrue(all(t["annotations"]["readOnlyHint"] for t in lesen))
+        a = m.verarbeiten({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "send_ticker", "arguments": {"text": "x"}}}, "MCP A", True)
+        self.assertTrue(a["result"]["isError"])
+        a = m.verarbeiten({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "send_ticker", "arguments": {"text": "x"}}}, "MCP Laptop")
+        self.assertFalse(a["result"].get("isError"))
+        self.assertEqual(self.wer, "MCP Laptop")
+        self.assertEqual(getattr(m._lokal, "wer", m.WER), m.WER)                    # nach der Anfrage zurückgesetzt
+        self.assertIsNone(m.verarbeiten({"jsonrpc": "2.0", "method": "notifications/initialized"}, "x"))
+        stapel = m.verarbeiten([{"jsonrpc": "2.0", "id": 1, "method": "ping"}, {"jsonrpc": "2.0", "method": "notifications/x"}], "x")
+        self.assertEqual(len(stapel), 1)
+        self.assertEqual(m.verarbeiten("quatsch", "x")["error"]["code"], -32600)
+
+    def test_http_und_https(self):
+        import dienst as D, ssl, threading, urllib.request, urllib.error, zipfile, io, shutil, subprocess
+        alt = (D.KI, D.TLS_ORDNER, D.PultServer.tls, D.WEBHOOK_PORT)
+        D.KI = self.KZ.Zugaenge(os.path.join(self.ordner, "ki.json"))
+        D.TLS_ORDNER = os.path.join(self.ordner, "tls")
+        D.KI_FEHLVERSUCHE.clear()
+        tls = D.tls_zertifikat()
+        if not tls:
+            self.skipTest("openssl fehlt")
+        k = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); k.load_cert_chain(*tls)
+        D.PultServer.tls = k
+        srv = D.PultServer(("127.0.0.1", 0), D.WebhookBearbeiter)
+        port = srv.server_address[1]
+        D.WEBHOOK_PORT = port
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        kunde = ssl.create_default_context(cafile=tls[0]); kunde.check_hostname = False
+
+        def post(pfad, daten, schluessel=None, https=False, kopf=None):
+            h = {"Content-Type": "application/json", **(kopf or {})}
+            if schluessel:
+                h["Authorization"] = "Bearer " + schluessel
+            r = urllib.request.Request(f"{'https' if https else 'http'}://127.0.0.1:{port}{pfad}", data=json.dumps(daten).encode(), headers=h)
+            try:
+                with urllib.request.urlopen(r, timeout=10, context=kunde if https else None) as a:
+                    return a.status, a.read()
+            except urllib.error.HTTPError as f:
+                return f.code, f.read()
+        try:
+            init = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}
+            self.assertEqual(post("/mcp", init)[0], 404)                        # kein Computer verbunden = aus
+            x, s = D.KI.neu("Laptop", "code", "aendern")
+            self.assertEqual(post("/mcp", init)[0], 401)
+            self.assertEqual(post("/mcp", init, "sc_falsch")[0], 401)
+            st, roh = post("/mcp", init, s)
+            self.assertEqual((st, json.loads(roh)["result"]["serverInfo"]["name"]), (200, "signagecast"))
+            self.assertEqual(post("/mcp", {"jsonrpc": "2.0", "method": "notifications/initialized"}, s)[0], 202)
+            self.assertEqual(post("/mcp", init, s, kopf={"Origin": "http://boese.example"})[0], 403)
+            st, roh = post("/mcp", init, s, https=True)                          # dasselbe über https auf demselben Port
+            self.assertEqual(st, 200)
+            self.assertEqual(post("/meldung", {"text": "x"})[0], 403)            # Webhook weiter wie bisher (ohne Schlüssel)
+            # Claude Desktop: Datei bauen, Code einlösen
+            d, code = D.KI.neu("Mac", "desktop", "lesen")
+            datei = zipfile.ZipFile(io.BytesIO(D.mcpb_bauen(d, code, "127.0.0.1")))
+            man = json.loads(datei.read("manifest.json"))
+            for feld in ("manifest_version", "name", "version", "description", "author", "server"):
+                self.assertIn(feld, man)
+            self.assertEqual(man["server"]["mcp_config"]["args"], ["${__dirname}/server/index.js"])
+            v = json.loads(datei.read("server/verbindung.json"))
+            self.assertEqual((v["url"], v["code"]), (f"https://127.0.0.1:{port}/mcp", code))
+            self.assertIn("BEGIN CERTIFICATE", v["zertifikat"])
+            self.assertNotIn("PRIVATE", json.dumps(v))
+            node = os.environ.get("SC_TEST_NODE") or shutil.which("node")
+            if node:                                                             # Brücke wirklich laufen lassen
+                ziel = os.path.join(self.ordner, "ext"); datei.extractall(ziel)
+                heim = os.path.join(self.ordner, "heim"); os.makedirs(heim)
+                ein = "".join(json.dumps(n) + "\n" for n in (init, {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                                                              {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}))
+                r = subprocess.run([node, os.path.join(ziel, "server", "index.js")], input=ein, capture_output=True, text=True,
+                                   timeout=30, env={**os.environ, "HOME": heim, "USERPROFILE": heim})
+                aus = [json.loads(z) for z in r.stdout.splitlines()]
+                self.assertEqual([a["id"] for a in aus], [1, 2], r.stderr)
+                self.assertTrue(all(t["annotations"]["readOnlyHint"] for t in aus[1]["result"]["tools"]))   # Recht „lesen“
+                with open(os.path.join(heim, ".signagecast", f"mcp-{d['id']}.json")) as f:
+                    gespeichert = json.load(f)
+                self.assertEqual(D.KI.pruefen(gespeichert["schluessel"])["name"], "Mac")
+                self.assertEqual(oct(os.stat(os.path.join(heim, ".signagecast", f"mcp-{d['id']}.json")).st_mode & 0o777), "0o600")
+                # entfernt → klare Meldung statt Absturz
+                D.KI.entfernen(d["id"]); D.KI_FEHLVERSUCHE.clear()
+                r = subprocess.run([node, os.path.join(ziel, "server", "index.js")], input=json.dumps(init) + "\n", capture_output=True,
+                                   text=True, timeout=30, env={**os.environ, "HOME": heim, "USERPROFILE": heim})
+                self.assertIn("nicht (mehr) verbunden", json.loads(r.stdout)["error"]["message"])
+                # fremdes Zertifikat → keine Verbindung (kein Mitlesen)
+                v["zertifikat"] = _fremdes_zertifikat(self.ordner)
+                with open(os.path.join(ziel, "server", "verbindung.json"), "w") as f:
+                    json.dump(v, f)
+                shutil.rmtree(os.path.join(heim, ".signagecast"))
+                r = subprocess.run([node, os.path.join(ziel, "server", "index.js")], input=json.dumps(init) + "\n", capture_output=True,
+                                   text=True, timeout=30, env={**os.environ, "HOME": heim, "USERPROFILE": heim})
+                self.assertIn("Zertifikat", json.loads(r.stdout)["error"]["message"])
+            # Fehlversuche bremsen
+            D.KI_FEHLVERSUCHE.clear()
+            for _ in range(10):
+                D.KI_FEHLVERSUCHE.setdefault("127.0.0.1", []).append(time.time())
+            self.assertEqual(post("/mcp", init, s)[0], 429)
+        finally:
+            srv.shutdown(); srv.server_close()
+            D.KI, D.TLS_ORDNER, D.PultServer.tls, D.WEBHOOK_PORT = alt
+            D.KI_FEHLVERSUCHE.clear()
+
+
+def _fremdes_zertifikat(ordner):
+    import subprocess
+    z, s = os.path.join(ordner, "fremd.pem"), os.path.join(ordner, "fremd.key")
+    subprocess.run(["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1", "-nodes", "-days", "1",
+                    "-subj", "/CN=fremd", "-keyout", s, "-out", z], check=True, capture_output=True)
+    with open(z) as f:
+        return f.read()

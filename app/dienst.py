@@ -5,7 +5,7 @@
 # Im Docker-/Podman-Container (SC_BETRIEB=container) gibt es kein Cockpit: dann liefert verwaltung.py die Verwaltung
 # selbst aus (eigene Anmeldung, Port SC_VERWALTUNG_PORT) und reicht ihre Anfragen hierher weiter.
 # Nur Python-Standardbibliothek.
-import glob, json, os, re, secrets, shutil, signal, socket, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import glob, json, os, re, secrets, shutil, signal, socket, ssl, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +26,29 @@ class Server(ThreadingHTTPServer):
         if isinstance(sys.exc_info()[1], (BrokenPipeError, ConnectionResetError)):
             return
         super().handle_error(request, client_address)
+
+
+class PultServer(Server):
+    """Port des Pults/Webhooks (seit 0.40 auch MCP im Heimnetz): versteht http und https auf demselben Port. Ob eine
+    Verbindung TLS spricht, steht im ersten Byte (0x16 = Handshake). Ohne Zertifikat (tls=None) nur http."""
+    tls = None
+
+    def finish_request(self, request, client_address):
+        verpackt = None
+        try:
+            request.settimeout(120)
+            if self.tls and request.recv(1, socket.MSG_PEEK) == b"\x16":
+                request = verpackt = self.tls.wrap_socket(request, server_side=True)
+        except (OSError, ValueError):
+            return
+        try:
+            self.RequestHandlerClass(request, client_address, self)
+        finally:
+            if verpackt is not None:
+                try:
+                    verpackt.close()
+                except OSError:
+                    pass
 import hardware as HW                         # noqa: E402
 import meldung as M                           # noqa: E402
 import sicherung as S                         # noqa: E402
@@ -43,6 +66,8 @@ import fernwartung as FW                      # noqa: E402
 import netz as NZ                             # noqa: E402
 import protokoll as PR                        # noqa: E402
 import ausgabe as AG                          # noqa: E402
+import kizugang as KZ                         # noqa: E402
+import mcp as MCP                             # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,6 +147,7 @@ TODO = TD.Liste(os.path.join(DATEN, "todo.json"))   # ausgeblendete Einträge vo
 NETZ = NZ.Wache(bedarf=lambda: einst()["video"]["aktiv"] and any(t["video"] for t in einst()["fernseher"]))   # Internet? (seit 0.38)
 PROTOKOLL = PR.Protokoll(os.path.join(DATEN, "protokoll.json"))          # wer hat wann was geändert (seit 0.38)
 VERSIONEN = PR.Versionen(os.path.join(DATEN, "layout-versionen.json"))   # alte Fassungen der Layouts (seit 0.38)
+KI = KZ.Zugaenge(os.path.join(DATEN, "ki-zugaenge.json"))                 # verbundene Computer für MCP im Heimnetz (seit 0.40)
 layout_vorrang = {}                                # tv -> {"layout", "bis", "von"}: vom Pult gewählt (seit 0.38, nur im Speicher)
 
 
@@ -703,6 +729,73 @@ def pult_fernseher(z):
     return [t for t in einst()["fernseher"] if not z["fernseher"] or t["id"] in z["fernseher"]]
 
 
+# ---------- KI-Assistenten im Heimnetz (MCP über HTTP/HTTPS, seit 0.40) ----------
+TLS_ORDNER = os.path.join(DATEN, "tls")
+KI_FEHLVERSUCHE = {}                              # IP -> [Zeitpunkte] falscher Schlüssel/Code (höchstens 10 je Minute)
+MCP_MAX = 16_000_000                              # ein Bild (10 MB) als base64 passt hinein
+
+
+def tls_zertifikat():
+    """Selbst erzeugtes Zertifikat für https auf dem Pult-Port (einmalig, 10 Jahre). Gibt (cert_pfad, key_pfad) oder None.
+    Die Brücke für Claude Desktop vertraut genau diesem Zertifikat – neu erzeugt = Computer neu verbinden."""
+    cert, key = os.path.join(TLS_ORDNER, "zertifikat.pem"), os.path.join(TLS_ORDNER, "schluessel.pem")
+    if os.path.exists(cert) and os.path.exists(key):
+        return cert, key
+    try:
+        os.makedirs(TLS_ORDNER, mode=0o700, exist_ok=True)
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1", "-nodes",
+                        "-days", "3650", "-subj", "/CN=SignageCast", "-addext", "subjectAltName=DNS:signagecast,DNS:signagecast.local",
+                        "-keyout", key + ".tmp", "-out", cert + ".tmp"], check=True, capture_output=True, timeout=60)
+        os.chmod(key + ".tmp", 0o600)
+        os.replace(key + ".tmp", key)
+        os.replace(cert + ".tmp", cert)
+        print("TLS-Zertifikat für den Pult-Port erzeugt", flush=True)
+        return cert, key
+    except (OSError, subprocess.SubprocessError) as f:
+        print(f"TLS-Zertifikat nicht erzeugt ({f}) – KI-Assistenten nur über http", flush=True)
+        return None
+
+
+def ki_fehlversuch(ip):
+    jetzt = time.time()
+    KI_FEHLVERSUCHE[ip] = [t for t in KI_FEHLVERSUCHE.get(ip, []) if jetzt - t < 60][-20:] + [jetzt]
+    time.sleep(1)
+
+
+def ki_gesperrt(ip):
+    return len([t for t in KI_FEHLVERSUCHE.get(ip, []) if time.time() - t < 60]) >= 10
+
+
+def mcpb_bauen(eintrag, code, adresse):
+    """Erweiterung für Claude Desktop (.mcpb = ZIP mit manifest.json, Brücke und Verbindung) – im Speicher."""
+    import io, zipfile
+    with open(os.path.join(TLS_ORDNER, "zertifikat.pem")) as f:
+        cert = f.read()
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_bruecke.js")) as f:
+        bruecke = f.read()
+    url = f"https://{adresse}:{WEBHOOK_PORT}/mcp"
+    version = re.sub(r"[^0-9.]", "", VERSION) or "0.0.0"
+    manifest = {
+        "manifest_version": "0.3", "name": "signagecast", "display_name": "SignageCast",
+        "version": version if version.count(".") == 2 else "0.0.0",
+        "description": "Manage the content of your SignageCast TVs (layouts, ticker, announcements, streams) – in your home network.",
+        "author": {"name": "SignageCast", "url": f"https://github.com/{PROJEKT}"},
+        "homepage": f"https://github.com/{PROJEKT}", "documentation": f"https://github.com/{PROJEKT}/blob/main/docs/MCP.md",
+        "license": "MIT",
+        "server": {"type": "node", "entry_point": "server/index.js",
+                   "mcp_config": {"command": "node", "args": ["${__dirname}/server/index.js"]}},
+        "tools_generated": True,
+        "compatibility": {"platforms": ["darwin", "win32", "linux"], "runtimes": {"node": ">=16.0.0"}},
+    }
+    verbindung = {"url": url, "id": eintrag["id"], "name": eintrag["name"], "code": code, "zertifikat": cert}
+    puffer = io.BytesIO()
+    with zipfile.ZipFile(puffer, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False))
+        z.writestr("server/index.js", bruecke)
+        z.writestr("server/verbindung.json", json.dumps(verbindung, indent=1))
+    return puffer.getvalue()
+
+
 class WebhookBearbeiter(BaseHTTPRequestHandler):
     """Nur /meldung, nur mit Schlüssel (Authorization: Bearer … oder ?token=…). Alles andere: 404."""
     def log_message(self, *a):
@@ -904,7 +997,56 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.anzeige():
             return
+        if urllib.parse.urlparse(self.path).path == "/mcp":
+            # MCP über HTTP: kein Ereignis-Strom (SSE) vom Server – laut Spezifikation dann 405
+            return self.antwort(405 if KI.vorhanden() else 404, {"ok": False})
         self.bearbeiten({})
+
+    def do_DELETE(self):
+        return self.antwort(405 if urllib.parse.urlparse(self.path).path == "/mcp" and KI.vorhanden() else 404, {"ok": False})
+
+    def mcp(self, pfad, n):
+        """MCP im Heimnetz (seit 0.40): nur für verbundene Computer (Einstellungen → KI-Assistenten).
+        POST /mcp mit Authorization: Bearer <Schlüssel>; POST /mcp/koppeln tauscht den Einmal-Code der Claude-Desktop-Datei."""
+        ip = self.client_address[0]
+        if not KI.vorhanden():
+            return self.antwort(404, {"ok": False})
+        if self.headers.get("Origin"):           # Webseiten im Browser haben hier nichts zu suchen (DNS-Rebinding, CSRF)
+            return self.antwort(403, {"ok": False})
+        if ki_gesperrt(ip):
+            return self.antwort(429, {"ok": False, "fehler": "zu viele Fehlversuche"})
+        if pfad == "/mcp/koppeln":
+            if n > 4096:
+                return self.antwort(413, {"ok": False})
+            try:
+                d = json.loads(self.rfile.read(n) or b"{}")
+            except ValueError:
+                d = {}
+            x, schluessel = KI.einloesen(str(d.get("code", "")) if isinstance(d, dict) else "", ip)
+            if not x:
+                ki_fehlversuch(ip)
+                return self.antwort(403, {"ok": False})
+            PROTOKOLL.eintragen(x["name"], "system", "ki_gekoppelt", ip)
+            return self.antwort(200, {"ok": True, "schluessel": schluessel})
+        x = KI.pruefen((self.headers.get("Authorization") or "").removeprefix("Bearer ").strip(), ip)
+        if not x:
+            ki_fehlversuch(ip)
+            roh = json.dumps({"ok": False, "fehler": "unbekannter Computer"}).encode()
+            self.send_response(401); self.send_header("Content-Type", "application/json")
+            self.send_header("WWW-Authenticate", 'Bearer realm="SignageCast"'); self.send_header("Content-Length", str(len(roh)))
+            self.end_headers(); self.wfile.write(roh)
+            return
+        if n > MCP_MAX:
+            return self.antwort(413, {"ok": False})
+        try:
+            m = json.loads(self.rfile.read(n) or b"null")
+        except ValueError:
+            return self.antwort(400, {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "kein JSON"}})
+        a = MCP.verarbeiten(m, "MCP " + x["name"], x["recht"] == "lesen")
+        if a is None:                            # nur Benachrichtigungen/Antworten
+            self.send_response(202); self.send_header("Content-Length", "0"); self.end_headers()
+            return
+        return self.antwort(200, a)
 
     # --- Direktmodus (seit 0.24): der Pi zeigt die TV-Seite selbst ---
     def anzeige(self):
@@ -1060,6 +1202,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
+        if urllib.parse.urlparse(self.path).path in ("/mcp", "/mcp/koppeln"):
+            return self.mcp(urllib.parse.urlparse(self.path).path, n)
         if urllib.parse.urlparse(self.path).path.startswith("/player/"):
             if n > 8_000_000:
                 return self.antwort(413, {"ok": False})
@@ -1276,6 +1420,7 @@ PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion 
     "/api/pult/probe": "probedurchsage", "/api/player/neu": "player_neu", "/api/player/koppeln": "player_koppeln",
     "/api/player/einstellungen": "player_einstellungen", "/api/player/wlan-vergessen": "player_wlan", "/api/player/sammel-image": "player_image",
     "/api/meldung": "meldung", "/api/layout-vorrang": "layout", "/api/durchsage": "durchsage",
+    "/api/ki/neu": "ki_neu", "/api/ki/entfernen": "ki_entfernen",
 }
 PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennung mit {0} = erste Gruppe
     (re.compile(r"/api/streams/([\w-]{11}|UC[\w-]{22})(?:/([a-z-]+))?"), "stream_{1}"),
@@ -2763,6 +2908,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "schriften": L.SCHRIFTEN, "operatoren": L.OPERATOREN, "raster": [L.SPALTEN, L.ZEILEN],
                                       "ausrichtungen": L.AUSRICHTUNGEN, "stile": L.STILE, "tageszeiten": L.TAGESZEITEN,
                                       "wechsel": L.WECHSEL})
+        if pfad == "/api/ki":                          # verbundene Computer für KI-Assistenten (seit 0.40)
+            return self.antwort(200, {"ok": True, "computer": KI.liste(), "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
+                                      "https": PultServer.tls is not None})
         if pfad == "/api/protokoll":                   # seit 0.38
             return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste()})
         if pfad == "/api/layouts/versionen":
@@ -3116,6 +3264,28 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
             self.protokoll_detail = {"text": l["name"]}
             return {"einstellungen": einst_aussen()}
+        if p == "/api/ki/neu":                        # Computer für einen KI-Assistenten verbinden (seit 0.40)
+            adresse = str(d.get("adresse") or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}|\[[0-9A-Fa-f:]{2,45}\]", adresse):
+                raise M.Meldung("ki_adresse")
+            art = str(d.get("art", ""))
+            if art == "desktop" and PultServer.tls is None:
+                art = ""                                 # ohne Zertifikat keine Datei für Claude Desktop
+            try:
+                x, geheim = KI.neu(d.get("name"), art, str(d.get("recht", "")))
+            except KZ.Fehler as f:
+                raise M.Meldung(str(f), n=KZ.MAX) from None
+            self.protokoll_detail = {"text": x["name"]}
+            a = {"computer": KI.liste(), "id": x["id"], "url": f"http://{adresse}:{WEBHOOK_PORT}/mcp"}
+            if art == "desktop":
+                a["datei"] = base64.b64encode(mcpb_bauen(x, geheim, adresse)).decode()
+            else:
+                a["schluessel"] = geheim               # nur dieses eine Mal – gespeichert ist nur der Prüfwert
+            return a
+        if p == "/api/ki/entfernen":
+            x = KI.entfernen(str(d.get("id", "")))
+            self.protokoll_detail = {"text": x["name"] if x else "?"}
+            return {"computer": KI.liste()}
         if p == "/api/meldung":                       # Laufschrift (seit 0.39, wie am Pult) – leer = alle Fernseher
             tvs = [str(x) for x in (d.get("fernseher") or [t["id"] for t in einst()["fernseher"]])]
             if d.get("aus"):
@@ -3367,7 +3537,16 @@ def main():
         render_schreiben(einst())
     threading.Thread(target=kodierung, daemon=True).start()
     try:
-        webhook_server = Server(("0.0.0.0", WEBHOOK_PORT), WebhookBearbeiter)
+        tls = tls_zertifikat()
+        if tls:
+            try:
+                k = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                k.minimum_version = ssl.TLSVersion.TLSv1_2
+                k.load_cert_chain(*tls)
+                PultServer.tls = k
+            except (OSError, ssl.SSLError) as f:
+                print(f"TLS für den Pult-Port nicht verfügbar: {f}", flush=True)
+        webhook_server = PultServer(("0.0.0.0", WEBHOOK_PORT), WebhookBearbeiter)
         threading.Thread(target=webhook_server.serve_forever, daemon=True).start()
     except OSError as f:
         print(f"Webhook-Port {WEBHOOK_PORT} nicht verfügbar: {f}", flush=True)

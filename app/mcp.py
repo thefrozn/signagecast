@@ -4,13 +4,15 @@
 # Model Context Protocol über stdio (JSON-RPC 2.0, eine Nachricht je Zeile). Der Assistent startet den Server per SSH
 # auf dem SignageCast-Rechner, z. B.  ssh tvadmin@signagecast.local signagecast-mcp  – angemeldet wird mit dem
 # SSH-Schlüssel, es gibt keinen neuen Port und keinen Token. Im Container: docker exec -i signagecast signagecast-mcp.
+# Seit 0.40 zusätzlich im Heimnetz über HTTP(S) auf dem Port des Pults (/mcp, Datendienst ruft verarbeiten() auf) –
+# nur für Computer, die in der Verwaltung verbunden wurden (kizugang.py).
 #
 # Der Server spricht nur mit der API des Datendienstes (127.0.0.1:8080, wie die Verwaltung). Er kann Inhalte lesen und
 # ändern – Layouts, Zuweisung an Fernseher, Zeitplan, Karussell, Laufschrift, Durchsagen, Bilder, Streams, Datenquellen
 # – aber bewusst nichts am System: keine Updates, keine Sicherungen, keine Player/Terminals, keine Passwörter oder
 # Schlüssel. Jede Änderung steht im Änderungsprotokoll („MCP <Benutzer>“); Layouts bekommen vorher eine Version.
 # Nur Python-Standardbibliothek.
-import base64, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
+import base64, json, os, re, sys, threading, time, urllib.error, urllib.parse, urllib.request
 
 PROTOKOLL_VERSIONEN = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
 DIENST = f"http://127.0.0.1:{os.environ.get('SC_PORT', '8080')}"
@@ -18,6 +20,8 @@ BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSION = (open(os.path.join(BASIS, "VERSION")).read().strip() if os.path.exists(os.path.join(BASIS, "VERSION")) else "dev")
 BILD_MAX = 10 * 1024 * 1024
 WER = "MCP " + re.sub(r"[^\w.@-]", "", os.environ.get("SUDO_USER") or os.environ.get("USER") or os.environ.get("LOGNAME") or "ssh")[:30]
+
+_lokal = threading.local()        # je Anfrage (HTTP, seit 0.40): wer, nur_lesen
 
 ANLEITUNG = (
     "SignageCast shows layouts on TVs. Typical flow: status → list_layouts / get_layout → change or create a layout with "
@@ -33,7 +37,7 @@ class Fehler(Exception):
 
 # ---------- Zugriff auf den Datendienst ----------
 def anfrage(methode, pfad, daten=None, roh=False):
-    kopf = {"X-SignageCast": "1", "X-SignageCast-Benutzer": WER}
+    kopf = {"X-SignageCast": "1", "X-SignageCast-Benutzer": getattr(_lokal, "wer", WER)}
     inhalt = None
     if daten is not None:
         inhalt = json.dumps(daten).encode()
@@ -427,26 +431,31 @@ WERKZEUGE = {
 }
 
 
-# ---------- MCP über stdio ----------
+# ---------- MCP-Nachrichten ----------
 def antwort(mid, ergebnis=None, fehler=None):
     m = {"jsonrpc": "2.0", "id": mid}
     if fehler:
         m["error"] = fehler
     else:
         m["result"] = ergebnis
-    sys.stdout.write(json.dumps(m, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
+    return m
+
+
+def nur_lesen():
+    return bool(getattr(_lokal, "nur_lesen", False))
 
 
 def werkzeug_liste():
     return [{"name": n, "description": b, "inputSchema": sch,
              "annotations": {"readOnlyHint": not aendert, "destructiveHint": n.startswith(("delete_", "remove_")), "openWorldHint": False}}
-            for n, (_, b, sch, aendert) in WERKZEUGE.items()]
+            for n, (_, b, sch, aendert) in WERKZEUGE.items() if not (aendert and nur_lesen())]
 
 
 def aufrufen(name, args):
     if name not in WERKZEUGE:
         return {"content": [{"type": "text", "text": f"unbekanntes Werkzeug {name}"}], "isError": True}
+    if WERKZEUGE[name][3] and nur_lesen():
+        return {"content": [{"type": "text", "text": "This computer may only read (SignageCast admin → AI assistants)."}], "isError": True}
     try:
         erg = WERKZEUGE[name][0](args or {})
     except Fehler as f:
@@ -460,13 +469,18 @@ def aufrufen(name, args):
 
 
 def bearbeiten(m):
+    """Eine JSON-RPC-Nachricht → Antwort (dict) oder None bei Benachrichtigungen."""
+    if not isinstance(m, dict):
+        return antwort(None, fehler={"code": -32600, "message": "ungültige Anfrage"})
     mid, methode, p = m.get("id"), m.get("method"), m.get("params") or {}
+    if not isinstance(p, dict):
+        return antwort(mid, fehler={"code": -32602, "message": "params"})
     if methode == "initialize":
         v = p.get("protocolVersion")
         return antwort(mid, {"protocolVersion": v if v in PROTOKOLL_VERSIONEN else PROTOKOLL_VERSIONEN[0],
                              "capabilities": {"tools": {"listChanged": False}},
                              "serverInfo": {"name": "signagecast", "title": "SignageCast", "version": VERSION},
-                             "instructions": ANLEITUNG})
+                             "instructions": ANLEITUNG + (" This computer may only read." if nur_lesen() else "")})
     if mid is None:                                   # Benachrichtigungen (z. B. notifications/initialized)
         return None
     if methode == "ping":
@@ -478,6 +492,31 @@ def bearbeiten(m):
     return antwort(mid, fehler={"code": -32601, "message": f"unbekannte Methode {methode}"})
 
 
+def sicher_bearbeiten(x):
+    try:
+        return bearbeiten(x)
+    except Exception as f:                             # nie abbrechen – der Assistent bekommt den Fehler
+        return antwort(x.get("id") if isinstance(x, dict) else None, fehler={"code": -32603, "message": str(f)[:300]})
+
+
+def verarbeiten(m, wer, lesen_nur=False):
+    """Für MCP über HTTP (seit 0.40): eine Nachricht oder ein Stapel → Antwort(en) oder None. wer steht im Protokoll."""
+    _lokal.wer, _lokal.nur_lesen = wer, lesen_nur
+    try:
+        if isinstance(m, list):
+            a = [x for x in (sicher_bearbeiten(y) for y in m[:50]) if x]
+            return a or None
+        return sicher_bearbeiten(m)
+    finally:
+        _lokal.wer, _lokal.nur_lesen = WER, False
+
+
+def schreiben(m):
+    if m is not None:
+        sys.stdout.write(json.dumps(m, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+
+
 def main():
     for zeile in sys.stdin:
         zeile = zeile.strip()
@@ -486,13 +525,10 @@ def main():
         try:
             m = json.loads(zeile)
         except ValueError:
-            antwort(None, fehler={"code": -32700, "message": "kein JSON"})
+            schreiben(antwort(None, fehler={"code": -32700, "message": "kein JSON"}))
             continue
         for x in (m if isinstance(m, list) else [m]):
-            try:
-                bearbeiten(x)
-            except Exception as f:                     # nie abbrechen – der Assistent bekommt den Fehler
-                antwort(x.get("id") if isinstance(x, dict) else None, fehler={"code": -32603, "message": str(f)[:300]})
+            schreiben(sicher_bearbeiten(x))
 
 
 if __name__ == "__main__":

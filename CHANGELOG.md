@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.40.0 (2026-11-09)
+- **Connect AI assistants with one click – in your home network:** Settings → *AI assistants* → *Connect a computer*.
+  For **Claude Desktop** you get a file (`.mcpb`) – double-click, *Install*, done. It talks HTTPS and trusts only the
+  certificate of your SignageCast; it holds a one-time code (valid one hour), no permanent key. For **Claude Code**,
+  **Cursor** and **VS Code** you get a ready command or install link with the computer's own key (shown once).
+- **Every computer can be removed again:** the list shows name, program, right (*change content* or *only read*) and
+  when it was last used; *Remove* cuts the access off immediately. No computer connected = the interface is off.
+  Connecting, the first start of Claude Desktop and removing are in the log; changes appear as “MCP *computer*”.
+- The panel port (8890) now understands http and https on the same port (certificate created once, 10 years). MCP
+  over HTTP (`/mcp`, Streamable HTTP with JSON answers) only with a key; wrong keys are slowed down and blocked after
+  10 per minute; requests from web pages (header `Origin`) are refused. SSH stays as an alternative.
+- Computers with the right *only read* see only the reading tools.
+
 ## v0.39.0 (2026-11-09)
 - **MCP server – manage the content with Claude or another AI assistant:** `signagecast-mcp` speaks the Model Context
   Protocol over stdio; the assistant starts it via SSH (`ssh -T tvadmin@<IP> signagecast-mcp`) – no new port, no token,

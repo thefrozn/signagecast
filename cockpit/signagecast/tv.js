@@ -17,7 +17,7 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -142,6 +142,24 @@ const TEXTE = {
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
             neu: "Neuen Link erzeugen", neuFrage: "Neuen Link erzeugen? Der bisherige gilt dann sofort nicht mehr – Geräte damit zeigen einen Fehler, bis der neue eingetragen ist.", neuOk: "Neuer Link erstellt",
             linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Fernseher – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
+    ki: { titel: "KI-Assistenten im Heimnetz", text: "Claude oder ein anderer KI-Assistent verwaltet die Inhalte direkt: Layouts bauen und ändern, Vorschau ansehen, Laufschrift, Durchsagen, Streams. Jeder Computer bekommt einen eigenen Zugang, den du hier jederzeit entfernen kannst – er gilt dann sofort nicht mehr. Nur im Heimnetz; jede Änderung steht im Protokoll („MCP <Computer>“).",
+          liste: "Verbundene Computer", keine: "Noch kein Computer verbunden – die Schnittstelle ist aus.", name: "Name des Computers", programm: "Programm", recht: "Darf",
+          rechte: { aendern: "Inhalte ändern", lesen: "nur lesen" }, arten: { desktop: "Claude Desktop", code: "Claude Code", cursor: "Cursor", vscode: "VS Code" },
+          zuletzt: "Zuletzt benutzt", nie: "noch nie", wartet: "wartet auf den ersten Start der Datei (1 Stunde gültig)", abgelaufen: "Datei nicht rechtzeitig gestartet – entfernen und neu verbinden",
+          entfernen: "Entfernen", entfernenFrage: (n) => `Computer „${n}“ entfernen? Der KI-Assistent dort hat danach sofort keinen Zugriff mehr.`, entfernt: "Entfernt – kein Zugriff mehr",
+          neu: "Computer verbinden", adresse: "Adresse dieses Rechners", adresseText: "So erreicht der Computer SignageCast im Heimnetz (IP oder Name).", verbinden: "Verbinden",
+          namePlatz: "z. B. Laptop Büro", keinHttps: "Für Claude Desktop fehlt das Zertifikat (openssl) – bitte Claude Code, Cursor oder VS Code wählen oder per SSH verbinden.",
+          fertig: (n) => `„${n}“ ist eingetragen.`,
+          desktop: ["Die Datei wurde heruntergeladen – doppelt anklicken (oder in Claude Desktop: Einstellungen → Erweiterungen → hineinziehen) und „Installieren“ wählen.",
+                    "Innerhalb einer Stunde Claude Desktop starten bzw. die Erweiterung einschalten – beim ersten Start verbindet sie sich und ist danach dauerhaft eingerichtet.",
+                    "Fragen, z. B.: „Zeig mir den Status von SignageCast und ein Vorschaubild.“"],
+          desktopSicher: "Verschlüsselt (HTTPS); die Datei vertraut nur diesem SignageCast. Sie enthält keinen dauerhaften Schlüssel – nach dem ersten Start ist sie wertlos.",
+          nochmal: "Datei nochmal herunterladen",
+          befehl: "Im Terminal ausführen:", link: "In Cursor öffnen", linkText: "Cursor fragt nach und trägt den Server ein. Alternativ den Eintrag für die mcp.json kopieren:",
+          einmal: "Der Schlüssel wird nur jetzt angezeigt. Wer ihn hat, kann die Inhalte ändern – nicht weitergeben; bei Verlust den Computer entfernen.",
+          unverschluesselt: "Diese Programme verbinden sich im Heimnetz unverschlüsselt (wie das Pult) – nur in einem vertrauenswürdigen Netz verwenden. Verschlüsselt: Claude Desktop oder SSH (siehe Anleitung).",
+          vscodeWin: "Windows-PowerShell verschluckt Anführungszeichen – dort besser den Eintrag in die mcp.json kopieren:",
+          kopieren: "Kopieren", kopiert: "Kopiert", anleitung: "Anleitung (auch Verbindung per SSH)" },
     prot: { titel: "Änderungsprotokoll", text: "Wer hat wann was geändert – in der Verwaltung, am Pult, per Webhook oder durch SignageCast selbst. Festgehalten werden nur Art und Bereich, keine Werte (keine Passwörter, keine Texte von Durchsagen). Die letzten 500 Einträge; Teil der Sicherung.",
             quelle: "Herkunft", alle: "alle", zeit: "Zeit", wer: "Wer", was: "Was", leer: "Noch keine Einträge.", mehr: "Ältere zeigen",
             quellen: { verwaltung: "Verwaltung", pult: "Pult", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "nur Schwarz", steht: "Bild stand still" },
@@ -160,6 +178,7 @@ const TEXTE = {
                       meldung_aus: "Laufschrift-Meldung beendet", layout: "Layout umgeschaltet", layout_aus: "Layout zurückgeschaltet",
                       internet_weg: "Internet nicht erreichbar seit", internet_wieder: "Internet wieder da (Ausfall)",
                       bild_neu_laden: "Bildprüfung: TV-Seite neu geladen", bild_kette_neu: "Bildprüfung: Wiedergabe neu gestartet",
+                      ki_neu: "Computer für KI-Assistenten verbunden", ki_entfernen: "Computer für KI-Assistenten entfernt", ki_gekoppelt: "Claude Desktop hat sich verbunden",
                       "stream_*": (a) => `Stream: ${{ aendern: "geändert", entfernen: "entfernt", zeigen: "jetzt gezeigt", "strikes-zuruecksetzen": "Strikes zurückgesetzt" }[a] || a}`,
                       "radio_*": (a) => `Radiosender ${a === "entfernen" ? "entfernt" : "geändert"}`,
                       "player_*": (a) => `Player: ${{ neu: "neu angelegt", koppeln: "gekoppelt", einstellungen: "Einstellungen", wlan: "WLAN", image: "Image erstellt", entfernen: "entfernt", aendern: "geändert", befehl: "Befehl", "link-neu": "neuer Link" }[a] || a}`,
@@ -390,7 +409,7 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
@@ -515,6 +534,24 @@ const TEXTE = {
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
             neu: "Create new link", neuFrage: "Create a new link? The current one stops working immediately – devices using it show an error until the new one is entered.", neuOk: "New link created",
             linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this TV – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
+    ki: { titel: "AI assistants in your home network", text: "Claude or another AI assistant manages the content directly: build and change layouts, look at a preview, ticker, announcements, streams. Every computer gets its own access, which you can remove here at any time – it stops working immediately. Home network only; every change is in the log (“MCP <computer>”).",
+          liste: "Connected computers", keine: "No computer connected yet – the interface is off.", name: "Name of the computer", programm: "Program", recht: "May",
+          rechte: { aendern: "change content", lesen: "only read" }, arten: { desktop: "Claude Desktop", code: "Claude Code", cursor: "Cursor", vscode: "VS Code" },
+          zuletzt: "Last used", nie: "never", wartet: "waiting for the first start of the file (valid 1 hour)", abgelaufen: "File not started in time – remove and connect again",
+          entfernen: "Remove", entfernenFrage: (n) => `Remove computer “${n}”? The AI assistant there loses access immediately.`, entfernt: "Removed – no more access",
+          neu: "Connect a computer", adresse: "Address of this machine", adresseText: "How the computer reaches SignageCast in your home network (IP or name).", verbinden: "Connect",
+          namePlatz: "e.g. office laptop", keinHttps: "Claude Desktop needs a certificate (openssl), which is missing – please choose Claude Code, Cursor or VS Code, or connect via SSH.",
+          fertig: (n) => `“${n}” has been added.`,
+          desktop: ["The file has been downloaded – double-click it (or in Claude Desktop: Settings → Extensions → drag it in) and choose “Install”.",
+                    "Start Claude Desktop or enable the extension within one hour – on its first start it connects and then stays set up.",
+                    "Ask, e.g.: “Show me the status of SignageCast and a preview picture.”"],
+          desktopSicher: "Encrypted (HTTPS); the file trusts only this SignageCast. It contains no permanent key – after the first start it is worthless.",
+          nochmal: "Download the file again",
+          befehl: "Run in a terminal:", link: "Open in Cursor", linkText: "Cursor asks and adds the server. Or copy the entry for mcp.json:",
+          einmal: "The key is shown only now. Whoever has it can change the content – do not share it; if it is lost, remove the computer.",
+          unverschluesselt: "These programs connect unencrypted in your home network (like the panel) – use them only in a trusted network. Encrypted: Claude Desktop or SSH (see guide).",
+          vscodeWin: "Windows PowerShell swallows quotes – there, better copy the entry into mcp.json:",
+          kopieren: "Copy", kopiert: "Copied", anleitung: "Guide (also connecting via SSH)" },
     prot: { titel: "Change log", text: "Who changed what and when – in the admin, at the panel, via webhook or by SignageCast itself. Only the kind and area are recorded, no values (no passwords, no announcement texts). The last 500 entries; part of the backup.",
             quelle: "Origin", alle: "all", zeit: "Time", wer: "Who", was: "What", leer: "No entries yet.", mehr: "Show older",
             quellen: { verwaltung: "Admin", pult: "Panel", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "only black", steht: "picture frozen" },
@@ -533,6 +570,7 @@ const TEXTE = {
                       meldung_aus: "Ticker message ended", layout: "Layout switched", layout_aus: "Layout switched back",
                       internet_weg: "Internet not reachable since", internet_wieder: "Internet back (outage)",
                       bild_neu_laden: "Picture check: TV page reloaded", bild_kette_neu: "Picture check: playback restarted",
+                      ki_neu: "Computer for AI assistants connected", ki_entfernen: "Computer for AI assistants removed", ki_gekoppelt: "Claude Desktop connected",
                       "stream_*": (a) => `Stream: ${{ aendern: "changed", entfernen: "removed", zeigen: "shown now", "strikes-zuruecksetzen": "strikes reset" }[a] || a}`,
                       "radio_*": (a) => `Radio station ${a === "entfernen" ? "removed" : "changed"}`,
                       "player_*": (a) => `Player: ${{ neu: "created", koppeln: "paired", einstellungen: "settings", wlan: "Wi-Fi", image: "image created", entfernen: "removed", aendern: "changed", befehl: "command", "link-neu": "new link" }[a] || a}`,
@@ -681,6 +719,8 @@ const TEXTE = {
       l_imp_quelle: "Element {b}: data source “{q}” does not exist here – please create it or choose one in the editor",
       l_imp_bedingung: "Element {b}: invalid condition – left out", l_version_fehlt: "This version no longer exists",
       p_recht: "This account may not do that", p_kein_schalten: "No switch from Home Assistant is set for this TV",
+      ki_name: "Please enter a name for the computer (letters, digits, spaces, . @ -)", ki_doppelt: "There is already a computer with this name",
+      ki_max: "At most {n} computers", ki_adresse: "Invalid address of this machine",
       z_uhrzeit: "Schedule: time as HH:MM", z_layout: "Schedule: unknown layout {id}",
       s_kein_link: "No YouTube video or channel link recognised", s_nicht_einbettbar: "This video may not be embedded (or does not exist)",
       s_ort: "invalid location ({k})",
@@ -944,14 +984,14 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, lay
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: zweiTeile(pultSeite, webhookKarte),
                  updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
-                 protokoll: protokollSeite };
+                 protokoll: protokollSeite, ki: kiSeite };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 // Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]],
                   ["inhalte", ["layout", "quellen", "medien", "einspieler", "radio", "pult"]],
                   ["videoton", ["streams", "kategorien", "video", "suche"]],
-                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "zugang"] : ["allgemein", "ha", "benachrichtigung"]],
+                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "ki", "zugang"] : ["allgemein", "ha", "benachrichtigung", "ki"]],
                   ["system", ["updates", "sicherung", "leistung", "protokoll"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
@@ -2657,6 +2697,105 @@ async function protokollSeite(inhalt) {
         ${l.length > n ? `<div class="zeile"><button class="knopf" id="prMehr">${esc(P.mehr)}</button></div>` : ""}` : `<p class="leise">${esc(P.leer)}</p>`}</div>`;
     $("#prFilter").onchange = (e) => { filter = e.target.value; n = 100; zeichnen(); };
     if ($("#prMehr")) $("#prMehr").onclick = () => { n += 200; zeichnen(); };
+  };
+  zeichnen();
+}
+
+// KI-Assistenten im Heimnetz (seit 0.40): Computer verbinden (Datei für Claude Desktop, Befehl/Link für Claude Code,
+// Cursor, VS Code) und wieder entfernen. Der Schlüssel wird nur direkt nach dem Verbinden gezeigt.
+async function kiSeite(inhalt) {
+  const K = T.ki;
+  let d = await holen("/api/ki"), ergebnis = null;
+  const lokal = /^(localhost|127\.|\[?::1)/.test(location.hostname);
+  let adresse = (!lokal && location.hostname) || d.eigene_ip || "";
+  if (adresse.includes(":") && !adresse.startsWith("[")) adresse = `[${adresse}]`;
+  const b64 = (t) => btoa(String.fromCharCode(...new TextEncoder().encode(t)));
+  const laden = (e) => {
+    const roh = Uint8Array.from(atob(e.datei), (c) => c.charCodeAt(0));
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([roh], { type: "application/zip" }));
+    a.download = `signagecast-${e.name.replace(/[^\w.-]+/g, "-").toLowerCase()}.mcpb`;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  const feld = (wert, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen || 2}" style="flex:1;font-family:monospace;font-size:12px">${esc(wert)}</textarea>
+      <button class="knopf" data-kopieren>${esc(K.kopieren)}</button></div>`;
+  const ergebnisHtml = (e) => {
+    if (!e) return "";
+    let h = `<div class="karte"><h2>✓ ${esc(K.fertig(e.name))}</h2>`;
+    if (e.art === "desktop") {
+      h += `<ol>${K.desktop.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><p class="leise">🔒 ${esc(K.desktopSicher)}</p>
+        <div class="zeile"><button class="knopf" id="kiNochmal">${esc(K.nochmal)}</button></div>`;
+    } else {
+      const kopf = { Authorization: "Bearer " + e.schluessel };
+      if (e.art === "code") {
+        h += `<p>${esc(K.befehl)}</p>` + feld(`claude mcp add --transport http signagecast ${e.url} --header "Authorization: Bearer ${e.schluessel}"`, 3);
+      } else if (e.art === "cursor") {
+        const cfg = { url: e.url, headers: kopf };
+        h += `<div class="zeile"><a class="knopf haupt" href="cursor://anysphere.cursor-deeplink/mcp/install?name=signagecast&config=${encodeURIComponent(b64(JSON.stringify(cfg)))}">${esc(K.link)}</a></div>
+          <p class="leise">${esc(K.linkText)}</p>` + feld(JSON.stringify({ mcpServers: { signagecast: cfg } }, null, 1), 6);
+      } else {
+        const cfg = { type: "http", url: e.url, headers: kopf };
+        h += `<p>${esc(K.befehl)}</p>` + feld(`code --add-mcp '${JSON.stringify(Object.assign({ name: "signagecast" }, cfg))}'`, 3)
+          + `<p class="leise">${esc(K.vscodeWin)}</p>` + feld(JSON.stringify({ servers: { signagecast: cfg } }, null, 1), 6);
+      }
+      h += `<p class="warn">⚠ ${esc(K.einmal)}</p><p class="leise">${esc(K.unverschluesselt)}</p>`;
+    }
+    return h + `</div>`;
+  };
+  const zeichnen = () => {
+    const c = d.computer;
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(K.titel)}</h2><p class="leise">${esc(K.text)}</p>
+        <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/MCP.md" target="_blank" rel="noopener">${esc(K.anleitung)}</a></p></div>
+      ${ergebnisHtml(ergebnis)}
+      <div class="karte"><h2>${esc(K.liste)}</h2>
+        ${c.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(K.name)}</th><th>${esc(K.programm)}</th><th>${esc(K.recht)}</th><th>${esc(K.zuletzt)}</th><th></th></tr></thead><tbody>
+          ${c.map((x) => `<tr><td><b>${esc(x.name)}</b><br><span class="leise">${esc(x.erstellt)}</span></td><td>${esc(K.arten[x.art] || x.art)}</td><td>${esc(K.rechte[x.recht])}</td>
+            <td>${x.wartet ? `<span class="leise">${esc(K.wartet)}</span>` : x.abgelaufen ? `<span class="schlecht">${esc(K.abgelaufen)}</span>`
+              : `${esc(x.zuletzt || K.nie)}${x.ip ? `<br><span class="leise">${esc(x.ip)}</span>` : ""}`}</td>
+            <td><button class="knopf gefahr" data-weg="${esc(x.id)}">${esc(K.entfernen)}</button></td></tr>`).join("")}</tbody></table></div>`
+          : `<p class="leise">${esc(K.keine)}</p>`}</div>
+      <div class="karte"><h2>${esc(K.neu)}</h2>
+        <div class="zeile"><label for="kiName">${esc(K.name)}</label><input type="text" id="kiName" maxlength="30" placeholder="${esc(K.namePlatz)}"></div>
+        <div class="zeile"><label for="kiArt">${esc(K.programm)}</label><select id="kiArt">
+          ${["desktop", "code", "cursor", "vscode"].map((a) => `<option value="${a}" ${a === "desktop" && !d.https ? "disabled" : ""}>${esc(K.arten[a])}</option>`).join("")}</select></div>
+        ${d.https ? "" : `<p class="leise">${esc(K.keinHttps)}</p>`}
+        <div class="zeile"><label for="kiRecht">${esc(K.recht)}</label><select id="kiRecht">
+          ${["aendern", "lesen"].map((r) => `<option value="${r}">${esc(K.rechte[r])}</option>`).join("")}</select></div>
+        <div class="zeile"><label for="kiAdresse">${esc(K.adresse)}</label><input type="text" id="kiAdresse" value="${esc(adresse)}"></div>
+        <p class="leise">${esc(K.adresseText)}</p>
+        <div class="zeile"><button class="knopf haupt" id="kiVerbinden">${esc(K.verbinden)}</button></div></div>`;
+    if (!d.https) $("#kiArt").value = "code";
+    inhalt.querySelectorAll("[data-kopieren]").forEach((k) => {
+      k.onclick = async () => {
+        const f = k.parentElement.querySelector("textarea");
+        f.select();
+        try { await navigator.clipboard.writeText(f.value); } catch (_) { document.execCommand("copy"); }
+        k.textContent = K.kopiert;
+        setTimeout(() => { k.textContent = K.kopieren; }, 2000);
+      };
+    });
+    if ($("#kiNochmal")) $("#kiNochmal").onclick = () => laden(ergebnis);
+    inhalt.querySelectorAll("[data-weg]").forEach((k) => {
+      k.onclick = () => {
+        const x = d.computer.find((y) => y.id === k.dataset.weg);
+        if (!x || !confirm(K.entfernenFrage(x.name))) return;
+        aktion(k, async () => {
+          d.computer = (await senden("/api/ki/entfernen", { id: x.id })).computer;
+          if (ergebnis && ergebnis.id === x.id) ergebnis = null;
+          zeichnen();
+        }, K.entfernt);
+      };
+    });
+    $("#kiVerbinden").onclick = (e) => aktion(e.target, async () => {
+      const name = $("#kiName").value.trim(), art = $("#kiArt").value;
+      adresse = $("#kiAdresse").value.trim();
+      const r = await senden("/api/ki/neu", { name, art, recht: $("#kiRecht").value, adresse });
+      d.computer = r.computer;
+      ergebnis = { id: r.id, name: d.computer.find((y) => y.id === r.id).name, art: r.datei ? "desktop" : art, url: r.url, schluessel: r.schluessel, datei: r.datei };
+      if (r.datei) laden(ergebnis);
+      zeichnen();
+      inhalt.scrollIntoView({ behavior: "smooth" });
+    }, null);
   };
   zeichnen();
 }

@@ -42,7 +42,7 @@ fi
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free libmfx-gen1.2 mesa-va-drivers \
   pulseaudio pulseaudio-utils fonts-roboto-unhinted fonts-dejavu-core fonts-open-sans fonts-lato fonts-montserrat \
-  fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 python3-pyzipper curl ca-certificates procps minisign poppler-utils \
+  fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 python3-pyzipper curl ca-certificates openssl procps minisign poppler-utils \
   cockpit-ws cockpit-system cockpit-bridge >/dev/null
 
 echo "== MediaMTX $MTX_VERSION"
