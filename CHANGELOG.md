@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.37.0 (2026-11-09)
 - **Edit categories and create your own:** new page Live videos → *Categories*. Each category has a name, a group
   (animals / more topics), up to 6 own YouTube search terms, words that must appear in the title and “ignore
   day/night”; you see how many streams it holds and on which TVs it is off, and switch it for all TVs or per TV. Own
