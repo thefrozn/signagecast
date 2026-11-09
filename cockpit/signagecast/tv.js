@@ -2748,8 +2748,8 @@ async function kiSeite(inhalt) {
         <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/MCP.md" target="_blank" rel="noopener">${esc(K.anleitung)}</a></p></div>
       ${ergebnisHtml(ergebnis)}
       <div class="karte"><h2>${esc(K.liste)}</h2>
-        ${c.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(K.name)}</th><th>${esc(K.programm)}</th><th>${esc(K.recht)}</th><th>${esc(K.zuletzt)}</th><th></th></tr></thead><tbody>
-          ${c.map((x) => `<tr><td><b>${esc(x.name)}</b><br><span class="leise">${esc(x.erstellt)}</span></td><td>${esc(K.arten[x.art] || x.art)}</td><td>${esc(K.rechte[x.recht])}</td>
+        ${c.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(K.name)}</th><th>${esc(K.programm)}</th><th>${esc(K.zuletzt)}</th><th></th></tr></thead><tbody>
+          ${c.map((x) => `<tr><td><b>${esc(x.name)}</b><br><span class="leise">${esc(x.erstellt)}</span></td><td>${esc(K.arten[x.art] || x.art)}<br><span class="leise">${esc(K.rechte[x.recht])}</span></td>
             <td>${x.wartet ? `<span class="leise">${esc(K.wartet)}</span>` : x.abgelaufen ? `<span class="schlecht">${esc(K.abgelaufen)}</span>`
               : `${esc(x.zuletzt || K.nie)}${x.ip ? `<br><span class="leise">${esc(x.ip)}</span>` : ""}`}</td>
             <td><button class="knopf gefahr" data-weg="${esc(x.id)}">${esc(K.entfernen)}</button></td></tr>`).join("")}</tbody></table></div>`
