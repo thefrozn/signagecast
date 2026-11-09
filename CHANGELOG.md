@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.36.0 (2026-11-08)
+## v0.36.0 (2026-11-09)
 - **PC as player (experimental):** an ordinary PC, mini PC or thin client (x86-64 with UEFI, Secure Boot may stay on)
   becomes a player from a USB stick – without touching its disk – and shows the page itself in direct mode (default
   for PCs). New PC image (Debian 13 live, built with every release, signed, SBOM): one file that is both an ISO (Ventoy,
