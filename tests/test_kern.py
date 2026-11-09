@@ -1412,42 +1412,71 @@ class Kategorien037(unittest.TestCase):
         self.assertTrue(self.s.alle()["streams"]["kkkkkkkkkkk"]["kategorie_fest"])
 
 
-class Quelle037(unittest.TestCase):
-    """Seit 0.37: nach dem Einschalten über HA die Quelle wählen."""
+class NachEinschalten037(unittest.TestCase):
+    """Seit 0.37: nach dem Einschalten über HA Quelle wählen und/oder die TV-Seite öffnen; Zustand an/aus anzeigen."""
+
+    def tv(self, **k):
+        return E.pruefen({"fernseher": [dict({"id": "tv", "ha_schalten": "media_player.tv"}, **k)]})["fernseher"][0]
+
+    def mit_ha(self, zustaende, fn):
+        import dienst as D
+        gesendet, it = [], iter(zustaende)
+        class HA:
+            def get(self, pfad): return next(it)
+            def post(self, pfad, d): gesendet.append((pfad, d))
+        alt, alt_ip = D.ha, D.eigene_ip
+        try:
+            D.ha, D.eigene_ip = HA(), lambda: "10.0.0.5"
+            return fn(D), gesendet
+        finally:
+            D.ha, D.eigene_ip = alt, alt_ip
 
     def test_einstellung(self):
-        t = E.pruefen({"fernseher": [{"id": "tv", "ha_schalten": "media_player.tv", "ha_quelle": "HDMI 2"}]})["fernseher"][0]
-        self.assertEqual(t["ha_quelle"], "HDMI 2")
-        self.assertEqual(E.pruefen({"fernseher": [{"id": "tv"}]})["fernseher"][0]["ha_quelle"], "")
+        t = self.tv(ha_quelle="HDMI 2", ha_oeffnen="eigen", ha_dienst="script.turn_on", ha_daten='{"variables": {"u": "{url}"}}')
+        self.assertEqual((t["ha_quelle"], t["ha_oeffnen"], t["ha_dienst"]), ("HDMI 2", "eigen", "script.turn_on"))
+        self.assertEqual(self.tv()["ha_oeffnen"], "")
+        with self.assertRaises(E.Fehler):
+            self.tv(ha_daten="[1, 2]")
+        with self.assertRaises(E.Fehler):
+            self.tv(ha_dienst="kein dienst")
 
-    def test_wartet_und_waehlt(self):
-        import dienst as D
-        zustaende = iter([{"state": "off", "attributes": {}},
-                          {"state": "on", "attributes": {"source_list": ["HDMI 1", "HDMI 2"], "source": "HDMI 1"}}])
-        gesendet = []
-        alt = D.ha
-        class HA:
-            def get(self, pfad): return next(zustaende)
-            def post(self, pfad, d): gesendet.append((pfad, d))
-        try:
-            D.ha = HA()
-            self.assertIsNone(D.quelle_waehlen("tv", "media_player.tv", "HDMI 2", warten=5, takt=0))
-        finally:
-            D.ha = alt
-        self.assertEqual(gesendet, [("/api/services/media_player/select_source", {"entity_id": "media_player.tv", "source": "HDMI 2"})])
-        self.assertIsNone(D.schalten_stand["tv"]["quelle"]["fehler"])
+    def test_wartet_quelle_dann_lg(self):
+        t = self.tv(ha_quelle="HDMI 2", ha_oeffnen="lg")
+        fehler, gesendet = self.mit_ha([{"state": "off", "attributes": {}},
+                                        {"state": "on", "attributes": {"source_list": ["HDMI 1", "HDMI 2"], "source": "HDMI 1"}}],
+                                       lambda D: D.nach_einschalten(t, warten=5, takt=0))
+        self.assertIsNone(fehler)
+        self.assertEqual(gesendet, [
+            ("/api/services/media_player/select_source", {"entity_id": "media_player.tv", "source": "HDMI 2"}),
+            ("/api/services/webostv/command", {"entity_id": "media_player.tv", "command": "system.launcher/open",
+                                               "payload": {"target": "http://10.0.0.5:8888/tv"}})])
 
-    def test_unbekannte_quelle(self):
+    def test_android_und_eigen(self):
+        t = self.tv(ha_oeffnen="android")
+        _, g = self.mit_ha([{"state": "on", "attributes": {}}], lambda D: D.nach_einschalten(t, warten=0))
+        self.assertEqual(g, [("/api/services/androidtv/adb_command", {"entity_id": "media_player.tv",
+                              "command": "am start -a android.intent.action.VIEW -d http://10.0.0.5:8888/tv"})])
+        t = self.tv(ha_oeffnen="eigen", ha_dienst="script.turn_on", ha_daten='{"variables": {"adresse": "{url}", "tv": "{entity}"}}')
+        _, g = self.mit_ha([{"state": "on", "attributes": {}}], lambda D: D.nach_einschalten(t, warten=0))
+        self.assertEqual(g, [("/api/services/script/turn_on", {"variables": {"adresse": "http://10.0.0.5:8888/tv", "tv": "media_player.tv"},
+                                                              "entity_id": "media_player.tv"})])
+
+    def test_unbekannte_quelle_und_aus(self):
+        t = self.tv(ha_quelle="HDMI 3")
+        fehler, g = self.mit_ha([{"state": "on", "attributes": {"source_list": ["HDMI 1"]}}] * 3,
+                                lambda D: D.nach_einschalten(t, warten=0))
+        self.assertEqual((fehler, g), ("unbekannte Quelle", []))
+        fehler, g = self.mit_ha([{"state": "off", "attributes": {}}], lambda D: D.nach_einschalten(self.tv(ha_quelle="HDMI 1"), warten=0))
+        self.assertEqual((fehler, g), ("nicht bereit", []))
+
+    def test_zustand(self):
         import dienst as D
-        alt = D.ha
-        class HA:
-            def get(self, pfad): return {"state": "on", "attributes": {"source_list": ["HDMI 1"]}}
-            def post(self, pfad, d): raise AssertionError("darf nicht senden")
-        try:
-            D.ha = HA()
-            self.assertEqual(D.quelle_waehlen("tv", "media_player.tv", "HDMI 3", warten=0.05, takt=0.01), "unbekannte Quelle")
-        finally:
-            D.ha = alt
+        D.zustand["einstellungen"] = E.pruefen({"ha": {"url": "http://ha.local:8123"},
+                                                "fernseher": [{"id": "tv", "ha_schalten": "media_player.tv"}]})
+        D.schalten_stand["tv"] = {"soll": "an"}
+        for roh, erwartet in (("on", "an"), ("standby", "aus"), ("unavailable", "weg")):
+            self.mit_ha([{"state": roh, "attributes": {"source": "HDMI 2"}}], lambda D: D.zustand_abfragen())
+            self.assertEqual(D.schalten_stand["tv"]["ha"]["zustand"], erwartet)
 
 
 class Themen032(unittest.TestCase):

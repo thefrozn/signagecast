@@ -11,10 +11,15 @@
   words match the title (bears, birds, sea …). Existing finds are sorted on the next search or when categories are
   saved; a category set by hand stays. Settings and backups carry the categories; streams of a missing category go to
   *Newly found*.
-- **Select the source after switching on via Home Assistant:** per TV under *Switch via HA* a new field “Source after
-  switching on” (media_player only, e.g. “HDMI 2” where the player is connected); “Get sources from HA” lists what
-  the TV offers. After switching on (schedule, emergency screen or test button) SignageCast waits up to 90 s until the
-  TV is ready and selects the source; the last result is shown on the TV card.
+- **Home Assistant: TV state, source and TV page after switching on** – per TV under *Switch via HA*:
+  - **State:** SignageCast asks HA once a minute whether the TV is on, off or unreachable (and which source it shows)
+    and shows it on the TV card and in the overview.
+  - **Select source** after switching on (media_player, e.g. “HDMI 2” where the player is connected); “Get sources
+    from HA” lists what the TV offers.
+  - **Then open the TV page:** LG webOS (browser with the TV address), Android TV / Google TV / Fire TV (integration
+    “Android TV” with ADB) or your own HA service with `{url}` / `{entity}` in its data (e.g. a script for Samsung).
+  - After switching on (schedule, emergency screen or test button) SignageCast waits up to 90 s until the TV is ready;
+    “Run now (test)” runs it immediately, the last result is shown on the card.
 - Fix: found streams whose title starts with “LIVE – …” got an empty name.
 
 ## v0.36.2 (2026-11-09)

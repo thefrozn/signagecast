@@ -285,6 +285,21 @@ def _text(w, maxlen=200, muster=None):
 ENTITY = r"[a-z_]+\.[a-z0-9_]+"
 
 
+def _ha_daten(w):
+    """Daten für einen eigenen HA-Dienst (seit 0.37): JSON-Objekt als Text, höchstens 1000 Zeichen."""
+    w = str(w or "").strip()
+    if not w:
+        return ""
+    if len(w) > 1000:
+        raise Fehler("e_ha_daten")
+    try:
+        if not isinstance(json.loads(w), dict):
+            raise ValueError
+    except ValueError:
+        raise Fehler("e_ha_daten")
+    return w
+
+
 def _zeitplan(z, layout_ids):
     try:
         return L.pruefe_zeitplan(z, layout_ids)
@@ -386,6 +401,11 @@ def pruefen(e):
                           "ha_schalten": _text(t.get("ha_schalten") or "", 100, r"((media_player|switch|remote)\.[a-z0-9_]+)?"),
                           # seit 0.37: nach dem Einschalten diese Quelle wählen (nur media_player, z. B. „HDMI 2“)
                           "ha_quelle": _text(t.get("ha_quelle") or "", 60, r"[^\x00-\x1f]*"),
+                          # seit 0.37: danach die TV-Seite öffnen – lg (webOS-Browser), android (ADB, Android/Google/Fire TV),
+                          # eigen (beliebiger HA-Dienst, {url} und {entity} in den Daten werden ersetzt)
+                          "ha_oeffnen": t.get("ha_oeffnen") if t.get("ha_oeffnen") in ("", "lg", "android", "eigen") else "",
+                          "ha_dienst": _text(t.get("ha_dienst") or "", 80, r"([a-z_]+\.[a-z0-9_]+)?"),
+                          "ha_daten": _ha_daten(t.get("ha_daten")),
                           # seit 0.15: Quelle des Videofensters und Layout-Karussell
                           "video_quelle": t.get("video_quelle") if t.get("video_quelle") in ("youtube", "medien", "gemischt") else "youtube",
                           "medien_alle": _zahl(t.get("medien_alle", 3), 1, 20, int),

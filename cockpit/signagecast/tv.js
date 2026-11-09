@@ -159,11 +159,22 @@ const TEXTE = {
     kennung: "Kennung (a–z, 0–9, steht in der Adresse)", fernseherNeu: "Fernseher hinzufügen", fernseherWeg: "Fernseher entfernen",
     schalten: "Über HA schalten", schaltenText: "Entität des Fernsehers in Home Assistant (media_player, switch oder remote). Beginnt im Zeitplan „schwarz“, wird er ausgeschaltet, danach wieder eingeschaltet – nur beim Wechsel, Einschalten von Hand bleibt also. Einschalten klappt nur, wenn es in HA geht (Samsung/LG oft nur mit Wake-on-LAN). Erst speichern, dann testen.",
     schaltenAus: "Aus (Test)", schaltenAn: "An (Test)", schaltenOk: "An Home Assistant geschickt",
-    quelle: "Quelle nach dem Einschalten", quellenHolen: "Quellen aus HA holen",
-    quelleText: "Optional, nur für media_player: z. B. „HDMI 2“ (dort hängt der Player) oder die App mit der TV-Seite. SignageCast wartet nach dem Einschalten, bis der Fernseher bereit ist (bis 90 s), und wählt dann die Quelle.",
+    haQuelle: "Quelle wählen", quellenHolen: "Quellen aus HA holen",
+    quelleText: "Optional, nur für media_player: z. B. „HDMI 2“ (dort hängt der Player). SignageCast wartet nach dem Einschalten (Zeitplan, Notfall, Test-Knopf), bis der Fernseher bereit ist (bis 90 s), wählt die Quelle und öffnet danach auf Wunsch die TV-Seite.",
     quelleNurMp: "Quellen gibt es nur bei media_player-Entitäten", keineQuellen: "Home Assistant meldet für dieses Gerät keine Quellen (oft erst, wenn es eingeschaltet ist).",
     quellenGefunden: (l, a) => `Quellen: ${l} – gerade: ${a}`,
-    quelleZuletzt: (q) => `Zuletzt ${q.zeit}: „${q.name}“ ${q.fehler ? "nicht gewählt (" + q.fehler + ")" : "gewählt"}.`,
+    nachEin: "Nach dem Einschalten", nachTest: "Jetzt ausführen (Test)",
+    oeffnen: "Danach TV-Seite öffnen", haDienst: "HA-Dienst",
+    oeffnenArt: { "": "nein", lg: "LG webOS – Browser", android: "Android TV / Google TV / Fire TV (ADB)", eigen: "Eigener HA-Dienst" },
+    oeffnenText: {
+      lg: (u) => `Öffnet den Browser des Fernsehers mit ${u} (Integration „LG webOS TV“).`,
+      android: (u) => `Öffnet ${u} im Standard-Browser (Integration „Android TV“ mit ADB, nicht „Android TV Remote“). Besser: eine Kiosk-App als Standard-Browser.`,
+      eigen: (u) => `Ruft den Dienst mit diesen Daten (JSON) auf; {url} wird zu ${u}, {entity} zur Entität. Fehlt entity_id, wird die Entität ergänzt. Für Samsung z. B. ein Skript in HA.`,
+    },
+    haZustand: { an: "an", aus: "aus", weg: "nicht erreichbar", fehler: "HA-Fehler" }, geraetHa: "Gerät (HA)",
+    haZustandNoch: "Zustand laut Home Assistant: wird abgefragt (einmal je Minute) …",
+    haZustandLang: (z, roh, q, zeit) => `Zustand laut Home Assistant: ${z} (${roh}${q ? ", Quelle " + q : ""}), Stand ${zeit}.`,
+    nachZuletzt: (n) => `Zuletzt ${n.zeit}: ${n.fehler ? "nicht ausgeführt – " + n.fehler : (n.schritte.length ? n.schritte.map((x) => x === "quelle" ? "Quelle gewählt" : "Seite geöffnet").join(", ") : "nichts nötig")}`,
     wirklichTvWeg: "Diesen Fernseher entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Fernseher",
     tvHinweis: "Ton, Sender, Lautstärke und Videos wirken sofort; Ausgabe und Bitrate beim nächsten Start des Streams.",
     meineSender: "Meine Sender", keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
@@ -492,11 +503,22 @@ const TEXTE = {
     kennung: "Identifier (a–z, 0–9, part of the address)", fernseherNeu: "Add TV", fernseherWeg: "Remove TV",
     schalten: "Switch via HA", schaltenText: "The TV's entity in Home Assistant (media_player, switch or remote). When “black” starts in the schedule it is switched off, afterwards on again – only at the change, so switching on by hand stays. Switching on only works if HA can do it (Samsung/LG often only with Wake-on-LAN). Save first, then test.",
     schaltenAus: "Off (test)", schaltenAn: "On (test)", schaltenOk: "Sent to Home Assistant",
-    quelle: "Source after switching on", quellenHolen: "Get sources from HA",
-    quelleText: "Optional, media_player only: e.g. “HDMI 2” (where the player is connected) or the app showing the TV page. After switching on SignageCast waits until the TV is ready (up to 90 s), then selects the source.",
+    haQuelle: "Select source", quellenHolen: "Get sources from HA",
+    quelleText: "Optional, media_player only: e.g. “HDMI 2” (where the player is connected). After switching on (schedule, emergency, test button) SignageCast waits until the TV is ready (up to 90 s), selects the source and then opens the TV page if wanted.",
     quelleNurMp: "Sources exist only for media_player entities", keineQuellen: "Home Assistant reports no sources for this device (often only while it is on).",
     quellenGefunden: (l, a) => `Sources: ${l} – current: ${a}`,
-    quelleZuletzt: (q) => `Last ${q.zeit}: “${q.name}” ${q.fehler ? "not selected (" + q.fehler + ")" : "selected"}.`,
+    nachEin: "After switching on", nachTest: "Run now (test)",
+    oeffnen: "Then open TV page", haDienst: "HA service",
+    oeffnenArt: { "": "no", lg: "LG webOS – browser", android: "Android TV / Google TV / Fire TV (ADB)", eigen: "Own HA service" },
+    oeffnenText: {
+      lg: (u) => `Opens the TV's browser with ${u} (integration “LG webOS TV”).`,
+      android: (u) => `Opens ${u} in the default browser (integration “Android TV” with ADB, not “Android TV Remote”). Better: a kiosk app as default browser.`,
+      eigen: (u) => `Calls the service with this data (JSON); {url} becomes ${u}, {entity} the entity. Without entity_id the entity is added. For Samsung e.g. a script in HA.`,
+    },
+    haZustand: { an: "on", aus: "off", weg: "unreachable", fehler: "HA error" }, geraetHa: "Device (HA)",
+    haZustandNoch: "State according to Home Assistant: being queried (once a minute) …",
+    haZustandLang: (z, roh, q, zeit) => `State according to Home Assistant: ${z} (${roh}${q ? ", source " + q : ""}), as of ${zeit}.`,
+    nachZuletzt: (n) => `Last ${n.zeit}: ${n.fehler ? "not done – " + n.fehler : (n.schritte.length ? n.schritte.map((x) => x === "quelle" ? "source selected" : "page opened").join(", ") : "nothing needed")}`,
     wirklichTvWeg: "Remove this TV? Its address will stop working.", weitererTv: "Another TV",
     tvHinweis: "Sound, station, volume and videos apply immediately; output and bitrate at the next stream start.",
     meineSender: "My stations", keineSender: "No stations yet – load suggestions below or enter your own address.",
@@ -606,6 +628,8 @@ const TEXTE = {
       pdf_zeit: "Converting takes longer than {s} s – please use a smaller PDF", pdf_kaputt: "PDF not readable: {d}",
       al_text: "Text for the emergency screen missing",
       sch_entitaet: "No entity for switching is set for this TV",
+      sch_keine_ip: "The address of this server is unknown (Docker: set SC_HOST_IP)", sch_nichts: "Nothing is set for this TV after switching on",
+      e_ha_daten: "Data for the HA service must be a JSON object (at most 1000 characters)",
       sch_an_nicht: "Home Assistant cannot switch {e} on – the device does not offer it (Samsung/LG often only with Wake-on-LAN)",
       sch_aus_nicht: "Home Assistant cannot switch {e} off – the device does not offer it",
       pi_ssid: "Wi-Fi name missing or longer than 32 characters", pi_wlan_pw: "Wi-Fi password: 8 to 63 characters",
@@ -1614,7 +1638,9 @@ async function uebersicht(inhalt) {
       return `<div class="karte"><div class="leise">${esc(t.name)} · /${esc(t.id)}</div>
         <div class="wert">${t.laeuft ? `<span class="gut">${esc(T.laeuft)}</span>` : esc(T.aus)}</div>
         <div class="leise">${t.aktuell ? esc(t.aktuell.name) : ""}${w ? ` · <b class="${/hd/.test(w.stufe) ? "gut" : "schlecht"}">${esc(stufeText(w.stufe))}</b> ${esc((w.codec || "").split(".")[0])}${w.kbps ? " · " + Math.round(w.kbps / 1000) + " Mbit/s" : ""}` : ""}</div>
-        <div class="leise">${esc(T.tonAnzeige)}: ${esc(T.tonArt[t.ton])}${t.sender ? " · ♪ " + esc(t.sender) : ""}${t.video ? "" : " · " + esc(T.videoZeigen) + ": " + esc(T.nein)}</div></div>`;
+        <div class="leise">${esc(T.tonAnzeige)}: ${esc(T.tonArt[t.ton])}${t.sender ? " · ♪ " + esc(t.sender) : ""}${t.video ? "" : " · " + esc(T.videoZeigen) + ": " + esc(T.nein)}</div>
+        ${((s.schalten || {})[t.id] || {}).ha ? (() => { const h = s.schalten[t.id].ha;
+          return `<div class="leise">${esc(T.geraetHa)}: <b class="${h.zustand === "an" ? "gut" : h.zustand === "aus" ? "" : "schlecht"}">${esc(T.haZustand[h.zustand] || h.zustand)}</b>${h.quelle ? " · " + esc(h.quelle) : ""}</div>`; })() : ""}</div>`;
     }).join("");
     const k = [
       [T.zuschauer, String(s.stream.zuschauer), ""],
@@ -2219,6 +2245,18 @@ function kodierungAnbinden(k, sta) {
   w("encoder").onchange = zeigen; zeigen();
   w("kodStandard").onclick = () => { w("encoder").value = "auto"; w("preset").value = "veryfast"; w("tune").value = "zerolatency"; w("bframes").value = 0; zeigen(); };
 }
+// Zustand des Fernsehers laut Home Assistant (seit 0.37) und Ergebnis von „nach dem Einschalten“
+function haZustandText(sta, t, lang) {
+  const h = (((sta || {}).schalten || {})[t.id] || {}).ha;
+  if (!t.ha_schalten || !h) return lang && t.ha_schalten ? T.haZustandNoch : "";
+  const kurz = T.haZustand[h.zustand] || h.zustand;
+  if (!lang) return kurz;
+  return T.haZustandLang(kurz, h.roh, h.quelle, new Date(h.zeit * 1000).toLocaleTimeString(ORT(), { hour: "2-digit", minute: "2-digit" }));
+}
+function nachText(sta, t) {
+  const n = (((sta || {}).schalten || {})[t.id] || {}).nach;
+  return n ? T.nachZuletzt(n) : "";
+}
 async function fernseherSeite(inhalt) {
   const st = await holen("/api/ha/einrichtung");
   let sta = await holen("/api/status").catch(() => ({}));
@@ -2243,12 +2281,20 @@ async function fernseherSeite(inhalt) {
           <div class="zeile"><label>${esc(T.karussellAn)}</label>${schalter("k_aktiv", (t.karussell || {}).aktiv)}
             <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" style="width:80px"></div>
           ${E.layouts.map((l) => `<label style="margin-right:12px"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
-        <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
+        <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}${haZustandText(sta, t) ? " · " + esc(haZustandText(sta, t)) : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
           <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
             <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div>
-          <div class="zeile"><label>${esc(T.quelle)}</label><input type="text" name="ha_quelle" value="${esc(t.ha_quelle || "")}" list="quellen-${esc(t.id)}" placeholder="HDMI 2" spellcheck="false">
+          <p class="leise" name="haZustand">${esc(haZustandText(sta, t, true))}</p>
+          <h4>${esc(T.nachEin)}</h4>
+          <div class="zeile"><label>${esc(T.haQuelle)}</label><input type="text" name="ha_quelle" value="${esc(t.ha_quelle || "")}" list="quellen-${esc(t.id)}" placeholder="HDMI 2" spellcheck="false">
             <datalist id="quellen-${esc(t.id)}"></datalist><button class="knopf" name="quellenHolen">${esc(T.quellenHolen)}</button></div>
-          <p class="leise" name="quelleInfo">${esc(T.quelleText)}${((sta.schalten || {})[t.id] || {}).quelle ? " " + esc(T.quelleZuletzt((sta.schalten[t.id].quelle))) : ""}</p></details>
+          <p class="leise" name="quelleInfo">${esc(T.quelleText)}</p>
+          <div class="zeile"><label>${esc(T.oeffnen)}</label><select name="ha_oeffnen">${["", "lg", "android", "eigen"].map((x) =>
+            `<option value="${x}" ${x === (t.ha_oeffnen || "") ? "selected" : ""}>${esc(T.oeffnenArt[x])}</option>`).join("")}</select></div>
+          <div name="eigenTeil"><div class="zeile"><label>${esc(T.haDienst)}</label><input type="text" name="ha_dienst" value="${esc(t.ha_dienst || "")}" placeholder="script.turn_on" spellcheck="false"></div>
+            <textarea name="ha_daten" rows="3" spellcheck="false" placeholder='{"entity_id": "script.tv_seite", "variables": {"adresse": "{url}"}}'>${esc(t.ha_daten || "")}</textarea></div>
+          <p class="leise" name="oeffnenInfo"></p>
+          <div class="zeile"><button class="knopf" name="nachTest">${esc(T.nachTest)}</button><span class="leise" name="nachErg">${esc(nachText(sta, t))}</span></div></details>
         <h3>${esc(T.abschnitt.video)}</h3>
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
@@ -2282,6 +2328,17 @@ async function fernseherSeite(inhalt) {
       k.querySelector("[name=video_quelle]").onchange = alleSichtbar; alleSichtbar();
       kodierungAnbinden(k, sta);
       k.querySelector("[name=lautstaerke]").oninput = (e) => { k.querySelector("[name=lw]").textContent = e.target.value + " %"; };
+      const oeffnenSichtbar = () => {
+        const art = k.querySelector("[name=ha_oeffnen]").value;
+        k.querySelector("[name=eigenTeil]").style.display = art === "eigen" ? "" : "none";
+        k.querySelector("[name=oeffnenInfo]").textContent = art ? T.oeffnenText[art](`http://${ip}:${st.stream_port || 8888}/${t.id}`) : "";
+      };
+      k.querySelector("[name=ha_oeffnen]").onchange = oeffnenSichtbar; oeffnenSichtbar();
+      k.querySelector("[name=nachTest]").onclick = (ev) => aktion(ev.target, async () => {
+        const r = await senden("/api/fernseher/nach-einschalten", { tv: t.id });
+        k.querySelector("[name=nachErg]").textContent = nachText({ schalten: { [t.id]: { nach: r.nach } } }, t);
+        if (r.fehler) throw new Error(r.fehler);
+      }, T.schaltenOk);
       k.querySelector("[name=quellenHolen]").onclick = (ev) => aktion(ev.target, async () => {
         const ent = k.querySelector("[name=ha_schalten]").value.trim();
         const r = await holen("/api/ha/quellen?entity=" + encodeURIComponent(ent));
@@ -2304,7 +2361,8 @@ async function fernseherSeite(inhalt) {
                aufnahme: Number(w("aufnahme").value), bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
                encoder: w("encoder").value, preset: w("preset").value, tune: w("tune").value, bframes: Number(w("bframes").value) || 0,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),
-               ha_quelle: w("ha_quelle").value.trim(),
+               ha_quelle: w("ha_quelle").value.trim(), ha_oeffnen: w("ha_oeffnen").value, ha_dienst: w("ha_dienst").value.trim(),
+               ha_daten: w("ha_daten").value.trim(),
                karussell: { aktiv: w("k_aktiv").checked, minuten: Number(w("k_min").value) || 5,
                             layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
                zeitplan: [...k.querySelectorAll("[name=zeiten] .zeile")].map((z) => ({ von: z.querySelector("[name=zvon]").value,

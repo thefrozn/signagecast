@@ -59,9 +59,15 @@ delete your own category you choose where its streams go; it disappears from all
 
 ### Switch the TV on and off via Home Assistant
 TVs → TV card → *Switch via HA*: the TV's entity (`media_player`, `switch` or `remote`). When “black” starts in the
-schedule the TV is switched off, when it ends switched on again (also for the emergency screen). Since 0.37 a
-media_player can additionally get a **source after switching on** (e.g. `HDMI 2` where the player is connected) –
-“Get sources from HA” shows the names the TV offers.
+schedule the TV is switched off, when it ends switched on again (also for the emergency screen). Since 0.37:
+- the card and the overview show whether the TV is **on, off or unreachable** according to HA (asked once a minute);
+- **after switching on** SignageCast waits until the TV is ready (up to 90 s) and can **select a source** (media_player,
+  e.g. `HDMI 2` where the player is connected – “Get sources from HA” shows the names) and then **open the TV page**:
+  *LG webOS* (opens the browser with the TV address, integration “LG webOS TV”), *Android TV / Google TV / Fire TV*
+  (integration “Android TV” with ADB; a kiosk app as default browser works best) or an *own HA service* – its data is
+  JSON, `{url}` becomes the TV address and `{entity}` the entity (e.g. a script for Samsung TVs, whose standard
+  integration cannot open web addresses);
+- “Run now (test)” runs this immediately while the TV is on.
 
 ### Show something different at night
 TVs → *Schedule*: add a time range with another layout or “black”. A schedule always wins over the carousel.

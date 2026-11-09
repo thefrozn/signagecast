@@ -1231,37 +1231,94 @@ def tv_schalten(t, an):
         if f.detail.startswith("400 "):            # HA: Entität bietet turn_on/turn_off nicht an (z. B. Samsung ohne WoL)
             raise M.Meldung("sch_an_nicht" if an else "sch_aus_nicht", e=ent) from None
         raise
-    if an and t.get("ha_quelle") and ent.startswith("media_player."):
-        threading.Thread(target=quelle_waehlen, args=(t["id"], ent, t["ha_quelle"]), daemon=True).start()
+    if an and (t.get("ha_quelle") and ent.startswith("media_player.") or t.get("ha_oeffnen")):
+        threading.Thread(target=nach_einschalten, args=(t,), daemon=True).start()
 
 
 QUELLE_WARTEN_S = 90                               # so lange darauf warten, dass der Fernseher nach dem Einschalten bereit ist
+AUS_ZUSTAENDE = ("off", "standby")
+WEG_ZUSTAENDE = ("unavailable", "unknown")
 
 
-def quelle_waehlen(tv_id, ent, quelle, warten=QUELLE_WARTEN_S, takt=3):
-    """Seit 0.37: nach dem Einschalten die Quelle wählen (z. B. „HDMI 2“, an dem der Player hängt, oder die Browser-App).
-    Wartet, bis HA den Fernseher als eingeschaltet meldet und die Quelle anbietet; Ergebnis in schalten_stand."""
-    ende, fehler = time.time() + warten, "nicht bereit"
-    while time.time() < ende:
+def tv_adresse(t):
+    ip = eigene_ip()
+    if not ip:
+        raise M.Meldung("sch_keine_ip")
+    return f"http://{ip}:{HLS_PORT}/{t['id']}"
+
+
+def oeffnen_aufruf(t):
+    """(Dienst, Daten), mit denen HA die TV-Seite auf dem Fernseher öffnet (seit 0.37)."""
+    ent, url = t["ha_schalten"], tv_adresse(t)
+    if t["ha_oeffnen"] == "lg":                   # LG webOS: Browser mit Adresse
+        return "webostv.command", {"entity_id": ent, "command": "system.launcher/open", "payload": {"target": url}}
+    if t["ha_oeffnen"] == "android":              # Android TV / Google TV / Fire TV (Integration androidtv, ADB)
+        return "androidtv.adb_command", {"entity_id": ent, "command": f"am start -a android.intent.action.VIEW -d {url}"}
+    if t["ha_oeffnen"] == "eigen" and t["ha_dienst"]:
+        daten = json.loads(json.dumps(json.loads(t["ha_daten"] or "{}")).replace("{url}", url).replace("{entity}", ent))
+        daten.setdefault("entity_id", ent)
+        return t["ha_dienst"], daten
+    return None
+
+
+def nach_einschalten(t, warten=QUELLE_WARTEN_S, takt=3):
+    """Seit 0.37: nach dem Einschalten Quelle wählen (z. B. „HDMI 2“) und/oder die TV-Seite öffnen. Wartet, bis HA den
+    Fernseher als eingeschaltet meldet (und die Quelle anbietet). Ergebnis in schalten_stand[tv]["nach"]."""
+    ent, quelle = t["ha_schalten"], t.get("ha_quelle") if t["ha_schalten"].startswith("media_player.") else ""
+    ende, fehler, schritte = time.time() + warten, "nicht bereit", []
+    while True:
         try:
             s = ha.get(f"/api/states/{ent}")
-            liste = (s.get("attributes") or {}).get("source_list") or []
-            if s.get("state") not in ("off", "unavailable", "unknown", "standby") and (not liste or quelle in liste):
-                if (s.get("attributes") or {}).get("source") != quelle:
-                    time.sleep(takt)                  # frisch eingeschaltete Fernseher nehmen Befehle erst kurz danach an
+            a = s.get("attributes") or {}
+            liste = a.get("source_list") or []
+            if quelle and liste and quelle not in liste:
+                fehler = "unbekannte Quelle"
+            elif s.get("state") not in AUS_ZUSTAENDE + WEG_ZUSTAENDE:
+                if warten:
+                    time.sleep(takt)              # frisch eingeschaltete Fernseher nehmen Befehle erst kurz danach an
+                if quelle and a.get("source") != quelle:
                     ha.post("/api/services/media_player/select_source", {"entity_id": ent, "source": quelle})
+                    schritte.append("quelle")
+                aufruf = oeffnen_aufruf(t) if t.get("ha_oeffnen") else None
+                if aufruf:
+                    if quelle:
+                        time.sleep(takt)
+                    ha.post("/api/services/" + aufruf[0].replace(".", "/", 1), aufruf[1])
+                    schritte.append("oeffnen")
                 fehler = None
                 break
-            if liste and quelle not in liste:
-                fehler = "unbekannte Quelle"
+        except M.Meldung as ex:
+            fehler = M.als_dict(ex)["text"]
+            break
         except Exception as ex:
             fehler = str(ex)[:200]
+        if time.time() >= ende:
+            break
         time.sleep(takt)
-    st = schalten_stand.setdefault(tv_id, {"soll": "an", "entity": ent, "zeit": None, "fehler": None, "versuche": 0})
-    st["quelle"] = {"name": quelle, "zeit": time.strftime("%H:%M"), "fehler": fehler}
+    st = schalten_stand.setdefault(t["id"], {"soll": "an", "entity": ent, "zeit": None, "fehler": None, "versuche": 0})
+    st["nach"] = {"zeit": time.strftime("%H:%M"), "fehler": fehler, "schritte": schritte, "quelle": quelle, "oeffnen": t.get("ha_oeffnen", "")}
     if fehler:
-        print(f"Fernseher {tv_id}: Quelle {quelle!r} nicht gewählt:", fehler, flush=True)
+        print(f"Fernseher {t['id']}: nach dem Einschalten nicht ausgeführt:", fehler, flush=True)
     return fehler
+
+
+def zustand_abfragen():
+    """Seit 0.37: Zustand der Fernseher laut HA (an / aus / weg) – einmal je Minute, nur mit eingetragener Entität."""
+    if not einst()["ha"]["url"]:
+        return
+    for t in einst()["fernseher"]:
+        if not t["ha_schalten"]:
+            continue
+        st = schalten_stand.get(t["id"])
+        if st is None:
+            continue
+        try:
+            s = ha.get(f"/api/states/{t['ha_schalten']}")
+            roh = str(s.get("state", ""))
+            st["ha"] = {"zustand": "aus" if roh in AUS_ZUSTAENDE else "weg" if roh in WEG_ZUSTAENDE else "an", "roh": roh[:30],
+                        "quelle": str((s.get("attributes") or {}).get("source") or "")[:60], "zeit": int(time.time())}
+        except Exception as ex:
+            st["ha"] = {"zustand": "fehler", "roh": str(ex)[:120], "quelle": "", "zeit": int(time.time())}
 
 
 def schalten_einmal(erster=False):
@@ -1284,10 +1341,16 @@ def schalten_einmal(erster=False):
 
 
 def schalten_schleife():
-    erster = True
+    erster, zuletzt = True, 0
     while True:
         schalten_einmal(erster)
         erster = False
+        if time.time() - zuletzt >= 60:
+            zuletzt = time.time()
+            try:
+                zustand_abfragen()
+            except Exception as ex:
+                print("Zustand der Fernseher:", ex, flush=True)
         schalten_neu.wait(30)
         schalten_neu.clear()
 
@@ -2645,7 +2708,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if not t or not t["ha_schalten"]:
                 raise M.Meldung("sch_entitaet")
             tv_schalten(t, bool(d.get("an")))
+            threading.Timer(8, zustand_abfragen).start()   # Zustand kurz danach neu abfragen (Anzeige in der Karte)
             return {}
+        if p == "/api/fernseher/nach-einschalten":   # Quelle/Seite öffnen jetzt ausprobieren (seit 0.37), Fernseher muss an sein
+            t = fernseher(str(d.get("tv", "")))
+            if not t or not t["ha_schalten"]:
+                raise M.Meldung("sch_entitaet")
+            if not t["ha_oeffnen"] and not (t["ha_quelle"] and t["ha_schalten"].startswith("media_player.")):
+                raise M.Meldung("sch_nichts")
+            fehler = nach_einschalten(t, warten=0)
+            return {"fehler": fehler, "nach": schalten_stand[t["id"]]["nach"]}
         if p == "/api/updates/anfrage":
             update_anfragen(str(d.get("aktion", "")))
             return {}

@@ -139,6 +139,9 @@ DE = {
     "pdf_kaputt": "PDF nicht lesbar: {d}",
     "al_text": "Text für das Notfall-Vollbild fehlt",
     "sch_entitaet": "Für diesen Fernseher ist keine Entität zum Schalten eingetragen",
+    "sch_keine_ip": "Die Adresse dieses Servers ist unbekannt (Docker: SC_HOST_IP setzen)",
+    "sch_nichts": "Für diesen Fernseher ist nach dem Einschalten nichts eingestellt",
+    "e_ha_daten": "Daten für den HA-Dienst müssen ein JSON-Objekt sein (höchstens 1000 Zeichen)",
     "sch_an_nicht": "Home Assistant kann {e} nicht einschalten – das Gerät bietet es nicht an (Samsung/LG oft nur mit Wake-on-LAN)",
     "sch_aus_nicht": "Home Assistant kann {e} nicht ausschalten – das Gerät bietet es nicht an",
     # seit 0.23: Raspberry-Pi-Player
