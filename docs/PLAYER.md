@@ -148,7 +148,8 @@ fallback to the stream.
 **Differences to the Pi:** the system is a **live system** – always write-protected, power cuts do no harm. There are
 **no system updates**: new software (also browser security fixes) comes with a new image – *Download image again*, rewrite
 the stick. The player software itself updates from your server as usual. Usually **no HDMI-CEC** (TV on/off). The
-picture can go to any connector (HDMI, DisplayPort, DVI, VGA); sound goes to the HDMI/DisplayPort output with a screen.
+picture can go to any connector (HDMI, DisplayPort, DVI, VGA); sound goes to the HDMI/DisplayPort output with a screen. Mouse
+and keyboard are ignored (also on the Pi in direct mode, since 0.36.1) – no pointer on the screen.
 
 **How it is built:** Debian 13 (amd64) with live-boot, built by GitHub Actions with every release
 (`player/pc/bauen.sh`, SBOM next to it). One file is both an ISO and a USB image: ISO9660 with the system and the
@@ -348,7 +349,8 @@ Fernwartung, Kopplungscode, Rückfall auf den Stream.
 gibt **keine Systemupdates**: neue Software (auch Sicherheitsupdates des Browsers) kommt mit einem neuen Image –
 *Image erneut herunterladen*, Stick neu beschreiben. Die Player-Software selbst aktualisiert sich wie gewohnt vom Server.
 Meist **kein HDMI-CEC** (TV ein/aus). Das Bild geht an jeden Anschluss (HDMI, DisplayPort, DVI, VGA), der Ton an den
-HDMI-/DisplayPort-Ausgang mit Bildschirm.
+HDMI-/DisplayPort-Ausgang mit Bildschirm. Maus und Tastatur
+werden nicht beachtet (seit 0.36.1, im Direktmodus auch am Pi) – kein Mauszeiger im Bild.
 
 **Aufbau:** Debian 13 (amd64) mit live-boot, gebaut von GitHub Actions zu jedem Release (`player/pc/bauen.sh`, SBOM
 daneben). Eine Datei ist ISO und USB-Image zugleich: ISO9660 mit dem System und dem Platzhalter `signagecast.json`,

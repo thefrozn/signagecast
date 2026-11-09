@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.36.1 (2026-11-09)
+- **Direct mode without mouse pointer:** with a mouse attached (or in a VM) the pointer stayed in the middle of the
+  screen, and over a YouTube video it kept the title and pause symbol visible. Agent 1.6 (players update it from the
+  server) starts the kiosk without input devices – mouse and keyboard are not needed; the TV page passes no mouse
+  events into video and web page frames, so YouTube no longer shows its controls when a pointer is over it (also for
+  browser devices).
+
 ## v0.36.0 (2026-11-09)
 - **PC as player (experimental):** an ordinary PC, mini PC or thin client (x86-64 with UEFI, Secure Boot may stay on)
   becomes a player from a USB stick – without touching its disk – and shows the page itself in direct mode (default

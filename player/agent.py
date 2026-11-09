@@ -21,7 +21,7 @@
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.5"
+VERSION = "1.6"
 PC = os.path.exists("/etc/signagecast-pc")       # PC-Player (seit 1.5)
 BOOT = os.environ.get("SC_BOOT", "/boot/firmware")
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
@@ -607,9 +607,11 @@ pcm.sc_lautstaerke {{ type softvol; slave.pcm "{art}:CARD={karte},DEV={dev}"; co
         uid, gid = benutzer_ids()
         try:
             # cage selbst ohne WAYLAND_DISPLAY: sonst sucht wlroots eine vorhandene Wayland-Sitzung, statt den Bildschirm
-            # zu nehmen („Could not connect to remote display“); ohne Tastatur/Maus trotzdem starten
+            # zu nehmen („Could not connect to remote display“). Nur der Bildschirm, keine Eingabegeräte (seit 1.6): eine
+            # angesteckte Maus (oder die einer VM) zeigt sonst cages Zeiger mitten im Bild, bis sie bewegt wird – der Kiosk
+            # braucht weder Maus noch Tastatur
             umg = {k: v for k, v in self._umgebung().items() if k != "WAYLAND_DISPLAY"}
-            umg.update(WLR_BACKENDS="drm,libinput", WLR_LIBINPUT_NO_DEVICES="1")
+            umg.update(WLR_BACKENDS="drm")
             self.proc = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                                          user=uid, group=gid, extra_groups=gruppen(), env=umg, start_new_session=True)
         except (OSError, KeyError, TypeError) as f:
