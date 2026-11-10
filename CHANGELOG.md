@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.42.1 (2026-11-10)
+- **Fix: Raspberry Pi players with Wi-Fi did not connect** – no network and no setup hotspot. Raspberry Pi OS keeps
+  Wi-Fi switched off in NetworkManager until a region is set (normally done by Raspberry Pi Imager's OS customisation,
+  which is greyed out for SignageCast images); the agent only lifted the rfkill block. Agent 1.9 switches Wi-Fi on
+  before it sets up the networks and before the hotspot, and the Pi image has it switched on from the start.
+- Images already written fix themselves: connect a LAN cable once, the Pi fetches agent 1.9 from SignageCast and Wi-Fi
+  works from then on – no new image needed.
+
 ## v0.42.0 (2026-11-10)
 - **Remote sites by login link – no OAuth client needed:** *Settings → Remote sites* → *Set up Tailscale* (SignageCast
   installs the official package itself, signing key pinned) → *Connect to Tailscale* (log in in a new window) →

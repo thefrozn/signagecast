@@ -21,7 +21,7 @@
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.8"
+VERSION = "1.9"
 PC = os.path.exists("/etc/signagecast-pc")       # PC-Player (seit 1.5)
 BOOT = os.environ.get("SC_BOOT", "/boot/firmware")
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
@@ -264,11 +264,18 @@ def psk(ssid, passwort):
     return hashlib.pbkdf2_hmac("sha1", passwort.encode(), ssid.encode(), 4096, 32).hex()
 
 
+def wlan_einschalten():
+    """Funk freigeben (seit 1.9). Raspberry Pi OS lässt WLAN im NetworkManager aus, bis eine Region gesetzt ist
+    (WirelessEnabled=false; sonst schaltet der Imager es mit der OS-Anpassung ein) – rfkill allein reicht nicht."""
+    lauf("rfkill", "unblock", "wifi")
+    lauf("nmcli", "radio", "wifi", "on")
+
+
 def wlan_verbindungen(netze, land):
     """Bekannte WLANs als NetworkManager-Verbindungen nur im Speicher (save no) – bei jedem Start neu aus der Konfiguration."""
     if land:
         lauf("iw", "reg", "set", land)
-    lauf("rfkill", "unblock", "wifi")
+    wlan_einschalten()
     _, aus = lauf("nmcli", "-t", "-f", "NAME", "connection", "show")
     for name in aus.splitlines():
         if name.startswith("sc-wlan-"):
@@ -1089,6 +1096,7 @@ class Hotspot:
     def starten(self):
         if self.aktiv:
             return
+        wlan_einschalten()
         self.netze = wlan_suchen()
         pw = self.p.k.get("hotspot_pw") or "signagecast"
         lauf("nmcli", "connection", "delete", "sc-hotspot")

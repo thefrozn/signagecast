@@ -79,6 +79,10 @@ systemctl enable seatd.service
 # Hotspot: jede Adresse zeigt auf den Pi – Handys öffnen die Einrichtungsseite dann von selbst
 mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 echo 'address=/#/10.42.0.1' > /etc/NetworkManager/dnsmasq-shared.d/signagecast.conf
+# WLAN im NetworkManager an: Raspberry Pi OS lässt es aus, bis eine Region gesetzt ist (sonst macht das der Imager mit der
+# OS-Anpassung, die bei diesem Image ausgegraut ist). Der Agent setzt die Region selbst und schaltet beim Start nochmals ein.
+mkdir -p /var/lib/NetworkManager
+printf '[main]\nNetworkingEnabled=true\nWirelessEnabled=true\nWWANEnabled=true\n' > /var/lib/NetworkManager/NetworkManager.state
 # Protokoll nur im RAM (schont die Karte), Hardware-Watchdog startet einen hängenden Pi neu
 mkdir -p /etc/systemd/journald.conf.d /etc/systemd/system.conf.d
 printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=32M\n' > /etc/systemd/journald.conf.d/signagecast.conf

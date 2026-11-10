@@ -195,6 +195,7 @@ A player at another place (office, holiday flat) reaches SignageCast through **T
 |---|---|
 | “Server not reachable” on the TV | Port 8890 published (Docker/NAS)? Under *Advanced* the server address must be the IP in your home network. |
 | QR code appears again after setup | Wrong Wi-Fi password – scan again. 5 GHz-only networks: Pi 3 B and Zero 2 W only support 2.4 GHz. |
+| Pi with Wi-Fi never shows up, no hotspot either (images before 0.42.1) | Raspberry Pi OS keeps Wi-Fi switched off until a region is set. Connect a LAN cable once: the Pi fetches the new agent (1.9) from SignageCast, which switches Wi-Fi on – from then on Wi-Fi works, also after restarts. |
 | Black screen, Pi online | Check *Video* in the admin; Pi 3/Zero 2 W: set the TV to H.264 / Full HD; try *Video decoding: CPU only*. |
 | Under-voltage warning | Use the official power supply and a short cable. |
 | TV on/off does nothing | Enable CEC on the TV; some TVs only switch on via CEC from standby, not when fully off. |
@@ -403,6 +404,7 @@ Anleitung: [REMOTE.md](REMOTE.md#deutsch-kurz).
 |---|---|
 | „Server nicht erreichbar“ auf dem Fernseher | Port 8890 freigegeben (Docker/NAS)? Unter *Erweitert* muss die Server-Adresse die IP im Heimnetz sein. |
 | QR-Code erscheint nach der Einrichtung wieder | WLAN-Passwort falsch – erneut scannen. Reine 5-GHz-Netze: Pi 3 B und Zero 2 W können nur 2,4 GHz. |
+| Pi mit WLAN taucht nie auf, auch kein Hotspot (Images vor 0.42.1) | Raspberry Pi OS lässt WLAN aus, bis eine Region gesetzt ist. Einmal ein LAN-Kabel einstecken: der Pi holt den neuen Agenten (1.9) von SignageCast, der WLAN einschaltet – danach geht WLAN, auch nach Neustarts. |
 | Schwarzes Bild, Pi online | In der Verwaltung *Video* ansehen; Pi 3/Zero 2 W: Fernseher auf H.264 / Full HD; *Video-Dekodierung: nur CPU* probieren. |
 | Warnung Unterspannung | Offizielles Netzteil und kurzes Kabel nehmen. |
 | TV ein/aus tut nichts | CEC am Fernseher einschalten; manche Fernseher lassen sich per CEC nur aus dem Standby einschalten. |

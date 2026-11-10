@@ -1852,6 +1852,48 @@ def secrets_pub():
     return pow(2, secrets.randbits(320), PL.DH_P)
 
 
+class Wlan0421(unittest.TestCase):
+    """0.42.1: Raspberry Pi OS lässt WLAN im NetworkManager aus, bis eine Region gesetzt ist – der Agent schaltet es ein."""
+    def setUp(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        self.agent = agent
+
+    def test_funk_an_vor_den_netzen(self):
+        agent, aufrufe = self.agent, []
+        alt = agent.lauf
+        agent.lauf = lambda *a, **kw: (aufrufe.append(a), (0, ""))[1]
+        try:
+            agent.wlan_verbindungen([{"ssid": "Netz", "psk": "a" * 64}], "DE")
+        finally:
+            agent.lauf = alt
+        self.assertIn(("nmcli", "radio", "wifi", "on"), aufrufe)
+        self.assertIn(("rfkill", "unblock", "wifi"), aufrufe)
+        an = aufrufe.index(("nmcli", "radio", "wifi", "on"))
+        neu = next(i for i, a in enumerate(aufrufe) if a[:3] == ("nmcli", "connection", "add"))
+        self.assertLess(an, neu)
+
+    def test_hotspot_schaltet_funk_ein(self):
+        agent, aufrufe = self.agent, []
+        alt = agent.lauf, agent.wlan_suchen
+        agent.lauf = lambda *a, **kw: (aufrufe.append(a), (1, "Fehler"))[1]     # Hotspot scheitert danach – egal
+        agent.wlan_suchen = lambda: []
+        try:
+            import types
+            h = agent.Hotspot(types.SimpleNamespace(k={"name": "Test", "hotspot_pw": "x" * 10}, t=agent.TEXTE["de"]))
+            try:
+                h.starten()
+            except Exception:
+                pass
+        finally:
+            agent.lauf, agent.wlan_suchen = alt
+        self.assertEqual(aufrufe[1], ("nmcli", "radio", "wifi", "on"))
+
+    def test_image_schaltet_wlan_ein(self):
+        bau = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player", "bauen.sh")).read()
+        self.assertIn("WirelessEnabled=true", bau)
+
+
 if __name__ == "__main__":
     unittest.main()
 
