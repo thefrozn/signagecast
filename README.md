@@ -177,3 +177,13 @@ Questions, bugs and ideas: [GitHub issues](https://github.com/thefrozn/signageca
 ## License
 
 MIT – see [LICENSE](LICENSE). Pictures, icons and the logo font: see [NOTICE.md](NOTICE.md).
+
+## Liability and warranty
+
+SignageCast is free of charge and provided without consideration; you use it at your own risk. Liability is limited to
+intent and gross negligence and to injury to life, body or health, as far as mandatory law requires (for defects only
+if fraudulently concealed). No warranty for availability or freedom from errors, for content and services of third
+parties (e.g. YouTube streams, data sources, weather, Tailscale), or for damage to devices, data or networks. Make a
+backup before updates; remote access, remote maintenance and connected services are the responsibility of whoever
+runs them. The disclaimer of the [MIT license](LICENSE) applies in addition, as far as it is valid under the applicable
+law (for users in Germany: German law, see the German version in [README.de.md](README.de.md#haftung-und-gewährleistung)).

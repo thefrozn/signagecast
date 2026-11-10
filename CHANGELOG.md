@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- README (en/de): section *Liability and warranty* / *Haftung und Gewährleistung*.
+
 ## v0.42.1 (2026-11-10)
 - **Fix: Raspberry Pi players with Wi-Fi did not connect** – no network and no setup hotspot. Raspberry Pi OS keeps
   Wi-Fi switched off in NetworkManager until a region is set (normally done by Raspberry Pi Imager's OS customisation,

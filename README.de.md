@@ -135,3 +135,13 @@ Fragen, Fehler und Ideen: [GitHub-Issues](https://github.com/thefrozn/signagecas
 ## Lizenz
 
 MIT – siehe [LICENSE](LICENSE). Bilder, Symbole und die Schrift des Logos: siehe [NOTICE.md](NOTICE.md).
+
+## Haftung und Gewährleistung
+
+SignageCast ist kostenlos und wird ohne Gegenleistung bereitgestellt; die Nutzung erfolgt auf eigene Gefahr. Gehaftet
+wird nur für Vorsatz und grobe Fahrlässigkeit sowie für Schäden aus der Verletzung von Leben, Körper oder Gesundheit,
+soweit das Gesetz dies zwingend vorschreibt (für Mängel nur bei arglistigem Verschweigen). Keine Gewähr für
+Verfügbarkeit und Fehlerfreiheit, für Inhalte und Dienste Dritter (z. B. YouTube-Streams, Datenquellen, Wetter,
+Tailscale) sowie für Schäden an Geräten, Daten oder Netzen. Vor Updates eine Sicherung anlegen; Fernzugriff,
+Fernwartung und angebundene Dienste liegen in der Verantwortung des Betreibers. Die Haftungsregeln der
+[MIT-Lizenz](LICENSE) gelten daneben, soweit sie nach deutschem Recht wirksam sind.
