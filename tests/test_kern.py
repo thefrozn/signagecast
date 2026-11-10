@@ -2443,3 +2443,248 @@ class Download0401(unittest.TestCase):
         for f in ("tv.js", "layout.js"):
             js = lesen(f)
             self.assertNotIn(".download =", js.replace("a.download = datei", ""))   # keine blob:-Downloads mehr
+
+
+class Fernnetz041(unittest.TestCase):
+    """Seit 0.41: Player an anderem Standort über Tailscale/Headscale – Einmal-Schlüssel, Entfernen, Agent."""
+
+    def setUp(self):
+        import threading, fernnetz, player as PL
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        self.FN, self.PL = fernnetz, PL
+        self.ordner = tempfile.mkdtemp()
+        self.anfragen = anfragen = []
+        self.zaehler = [0]
+        test = self
+
+        class Api(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def antwort(self, d, code=200):
+                roh = json.dumps(d).encode()
+                self.send_response(code); self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(roh))); self.end_headers(); self.wfile.write(roh)
+
+            def bearbeiten(self):
+                n = int(self.headers.get("Content-Length") or 0)
+                roh = self.rfile.read(n).decode() if n else ""
+                anfragen.append((self.command, self.path, roh, self.headers.get("Authorization", "")))
+                p = self.path
+                if p == "/api/v2/oauth/token":
+                    return self.antwort({"access_token": "zugriff", "expires_in": 3600})
+                if self.command == "POST" and p == "/api/v2/tailnet/-/keys":
+                    test.zaehler[0] += 1
+                    return self.antwort({"id": f"k{test.zaehler[0]}", "key": f"tskey-auth-{test.zaehler[0]}"})
+                if p in ("/api/v2/tailnet/-/devices", "/api/v1/node") and self.command == "GET":
+                    if p.startswith("/api/v2"):
+                        return self.antwort({"devices": [{"nodeId": "nSRV", "hostname": "signagecast", "addresses": ["100.64.0.1"]},
+                                                         {"nodeId": "nP1", "hostname": "sc-x", "addresses": ["100.64.0.7", "fd7a:115c:a1e0::7"]}]})
+                    return self.antwort({"nodes": [{"id": "1", "givenName": "signagecast", "ipAddresses": ["100.64.0.1"]},
+                                                   {"id": "3", "givenName": "sc-x", "ipAddresses": ["100.64.0.7"]}]})
+                if p == "/api/v1/preauthkey" and self.command == "POST":
+                    return self.antwort({"preAuthKey": {"id": "5", "key": "hskey-5"}})
+                if self.command == "DELETE" or p == "/api/v1/preauthkey/expire":
+                    return self.antwort({})
+                return self.antwort({"message": "unbekannt"}, 404)
+
+            do_GET = do_POST = do_DELETE = bearbeiten
+
+        self.api = ThreadingHTTPServer(("127.0.0.1", 0), Api)
+        threading.Thread(target=self.api.serve_forever, daemon=True).start()
+        self.basis = f"http://127.0.0.1:{self.api.server_address[1]}"
+        self.alt_ts = fernnetz.TS_API
+        fernnetz.TS_API = self.basis + "/api/v2"
+
+    def tearDown(self):
+        import shutil
+        self.FN.TS_API = self.alt_ts
+        self.api.shutdown(); self.api.server_close()
+        shutil.rmtree(self.ordner, ignore_errors=True)
+
+    def neues_netz(self, art="tailscale"):
+        f = self.FN.Fernnetz(os.path.join(self.ordner, "fernnetz.json"))
+        if art == "tailscale":
+            f.speichern({"art": "tailscale", "server": "100.64.0.1", "client_id": "kCLIENT123", "client_secret": "tskey-client-geheim"})
+        else:
+            f.speichern({"art": "headscale", "server": "100.64.0.1", "url": self.basis, "api_key": "hs-geheim-123", "benutzer": "2"})
+        return f
+
+    def test_einstellungen(self):
+        FN = self.FN
+        f = FN.Fernnetz(os.path.join(self.ordner, "fernnetz.json"))
+        self.assertFalse(f.aktiv())
+        for falsch, code in (({"art": "tailscale", "server": "10.0.0.5", "client_id": "kCLIENT", "client_secret": "x" * 10}, "fn_server"),
+                             ({"art": "tailscale", "server": "100.64.0.1", "client_id": "kCLIENT", "client_secret": ""}, "fn_zugang"),
+                             ({"art": "headscale", "server": "100.64.0.1", "url": "ftp://x", "api_key": "x" * 10}, "fn_zugang"),
+                             ({"art": "headscale", "server": "100.64.0.1", "url": "https://hs.example.org", "api_key": "x" * 10, "benutzer": "anna"}, "fn_benutzer"),
+                             ({"art": "tailscale", "server": "100.64.0.1", "client_id": "kCLIENT", "client_secret": "x" * 10, "tag": "player"}, "fn_tag"),
+                             ({"art": "vpn"}, "fn_art")):
+            with self.assertRaises(FN.Fehler) as e:
+                f.speichern(falsch)
+            self.assertEqual(e.exception.code, code)
+        f = self.neues_netz()
+        self.assertTrue(f.aktiv())
+        self.assertEqual(os.stat(f.pfad).st_mode & 0o777, 0o600)
+        self.assertEqual(f.aussen()["client_secret"], FN.MASKE)
+        f.speichern({"client_secret": FN.MASKE, "tag": ""})          # •••• lässt das Geheimnis, wie es ist
+        self.assertEqual(FN.Fernnetz(f.pfad).k["client_secret"], "tskey-client-geheim")
+        self.assertEqual(f.k["tag"], FN.TAG_STD)
+        r = f.regel(8890, 8888)
+        self.assertEqual(r["acls"][0], {"action": "accept", "src": ["tag:signagecast-player"], "dst": ["100.64.0.1:8890,8888"]})
+
+    def test_tailscale(self):
+        f = self.neues_netz()
+        self.assertEqual(f.pruefen()["server_name"], "signagecast")
+        schluessel, kid = f.schluessel("SignageCast Praxis/Süd")
+        self.assertEqual((schluessel, kid), ("tskey-auth-1", "k1"))
+        post = [a for a in self.anfragen if a[1] == "/api/v2/tailnet/-/keys"][0]
+        d = json.loads(post[2])
+        self.assertEqual(d["capabilities"]["devices"]["create"], {"reusable": False, "ephemeral": False, "preauthorized": True,
+                                                                   "tags": ["tag:signagecast-player"]})
+        self.assertEqual(d["expirySeconds"], 7 * 86400)
+        self.assertEqual(d["description"], "SignageCast Praxis-S-d")
+        self.assertEqual(post[3], "Bearer zugriff")
+        self.assertEqual(len([a for a in self.anfragen if a[1] == "/api/v2/oauth/token"]), 1)    # Token wird wiederverwendet
+        self.assertIn("client_secret=tskey-client-geheim", [a for a in self.anfragen if a[1] == "/api/v2/oauth/token"][0][2])
+        self.assertEqual(f.entfernen("100.64.0.7"), "sc-x")
+        self.assertIn(("DELETE", "/api/v2/device/nP1"), [(a[0], a[1]) for a in self.anfragen])
+        self.assertIsNone(f.entfernen("100.64.0.99"))
+        f.schluessel_zurueck("k1")
+        self.assertIn(("DELETE", "/api/v2/tailnet/-/keys/k1"), [(a[0], a[1]) for a in self.anfragen])
+        f.speichern({"server": "100.64.0.2"})
+        with self.assertRaises(self.FN.Fehler) as e:
+            f.pruefen()
+        self.assertEqual(e.exception.code, "fn_server_fehlt")
+        f.speichern({"client_id": "kANDERS99"})                     # neuer Zugang: neues Token holen
+        f.geraete()
+        self.assertEqual(len([a for a in self.anfragen if a[1] == "/api/v2/oauth/token"]), 2)
+
+    def test_headscale(self):
+        f = self.neues_netz("headscale")
+        self.assertEqual(f.pruefen()["geraete"], 2)
+        self.assertEqual(f.schluessel("SignageCast X"), ("hskey-5", "5"))
+        d = json.loads([a for a in self.anfragen if a[1] == "/api/v1/preauthkey"][0][2])
+        self.assertEqual((d["user"], d["aclTags"], d["reusable"], d["ephemeral"]), ("2", ["tag:signagecast-player"], False, False))
+        self.assertTrue(d["expiration"].endswith("Z"))
+        self.assertEqual([a[3] for a in self.anfragen][-1], "Bearer hs-geheim-123")
+        self.assertEqual(f.entfernen("100.64.0.7"), "sc-x")
+        self.assertIn(("DELETE", "/api/v1/node/3"), [(a[0], a[1]) for a in self.anfragen])
+        f.schluessel_zurueck("5")
+        self.assertEqual(json.loads([a for a in self.anfragen if a[1] == "/api/v1/preauthkey/expire"][0][2]), {"id": "5"})
+
+    def test_ueber_den_dienst(self):
+        """Image mit „anderer Standort“: Schlüssel ins Image, alter zurückgezogen, bei Fehler kein Schlüssel übrig; Entfernen."""
+        import threading, urllib.request
+        import dienst as D
+        PL = self.PL
+        PL.DATEI, PL.ORDNER, PL.GRUND = os.path.join(self.ordner, "player.json"), os.path.join(self.ordner, "p"), os.path.join(self.ordner, "p", "basis")
+        PL.daten.clear(); PL.daten.update(PL._leer()); PL.stand.clear(); PL.einmal.clear()
+        alt = (D.FERN, PL.basis_meta)
+        D.FERN = self.neues_netz()
+        srv = D.Server(("127.0.0.1", 0), D.Bearbeiter)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        def post(pfad, d):
+            r = urllib.request.Request(f"http://127.0.0.1:{srv.server_address[1]}{pfad}", data=json.dumps(d).encode(),
+                                       headers={"X-SignageCast": "1", "Content-Type": "application/json"})
+            with urllib.request.urlopen(r, timeout=20) as a:
+                return json.load(a)
+        try:
+            gid = post("/api/player/neu", {"name": "Praxis", "modell": "pi45"})["geraet"]
+            r = post(f"/api/player/{gid}/image", {"fern": True, "server": "http://signagecast.local:8890"})
+            self.assertFalse(r["ok"])                                  # kein Grundimage – Schlüssel wieder weg
+            self.assertIn(("DELETE", "/api/v2/tailnet/-/keys/k1"), [(a[0], a[1]) for a in self.anfragen])
+            PL.basis_meta = lambda art="pi": {"version": "0.41.0"}
+            r = post(f"/api/player/{gid}/image", {"fern": True, "server": "http://signagecast.local:8890"})
+            self.assertTrue(r["ok"], r)
+            e = PL.einmal[r["kennung"]]
+            self.assertEqual(e["server"], "http://100.64.0.1:8890")
+            k = json.loads(PL.konfig(PL.geraet(gid), [], e["server"], "de", "", fern=e["fern"]))
+            self.assertEqual(k["fern"], {"art": "tailscale", "schluessel": "tskey-auth-2", "login": ""})
+            self.assertEqual(PL.geraet(gid)["fern"]["kennung"], "k2")
+            self.assertNotIn("tskey", json.dumps(PL.daten))           # der Schlüssel selbst wird nicht gespeichert
+            post(f"/api/player/{gid}/image", {"fern": True})
+            self.assertIn(("DELETE", "/api/v2/tailnet/-/keys/k2"), [(a[0], a[1]) for a in self.anfragen])   # unbenutzter alter
+            r = post(f"/api/player/{gid}/image", {"fern": False})      # ohne: normales Image, kein neuer Schlüssel
+            self.assertEqual(self.zaehler[0], 3)
+            PL.melden(PL.geraet(gid), {"fern": {"ip": "100.64.0.7", "weg": "direkt"}}, "100.64.0.7", None, None)
+            self.assertEqual(PL.geraet(gid)["fern"]["ip"], "100.64.0.7")
+            self.assertEqual(post(f"/api/player/{gid}/entfernen", {})["fern"], "entfernt")
+            self.assertIn(("DELETE", "/api/v2/device/nP1"), [(a[0], a[1]) for a in self.anfragen])
+            gid = post("/api/player/neu", {"name": "Sammel", "modell": "pi45"})["geraet"]
+            self.assertEqual(post("/api/player/sammel-image", {"fern": True})["code"], "fn_nur_geraet")
+            D.FERN = self.FN.Fernnetz(os.path.join(self.ordner, "leer.json"))
+            self.assertEqual(post(f"/api/player/{gid}/image", {"fern": True})["code"], "fn_aus")
+        finally:
+            srv.shutdown(); srv.server_close()
+            D.FERN, PL.basis_meta = alt
+            PL.daten.clear(); PL.daten.update(PL._leer()); PL.einmal.clear()
+
+    def test_agent(self):
+        """Agent: tailscaled starten, mit dem Schlüssel aus einer Datei beitreten, Schlüssel löschen, Zustand sichern, melden."""
+        import types, stat
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        o = self.ordner
+        bin_ = os.path.join(o, "bin"); os.makedirs(bin_)
+        with open(os.path.join(bin_, "tailscaled"), "w") as f:
+            f.write("#!/bin/sh\nexec sleep 30\n")
+        with open(os.path.join(bin_, "tailscale"), "w") as f:
+            f.write(f"""#!{sys.executable}
+import json, os, sys
+o = {o!r}
+a = sys.argv[1:]
+open(o + "/aufrufe", "a").write(" ".join(a) + "\\n")
+if "status" in a:
+    if not os.path.exists(o + "/drin"):
+        print(json.dumps({{"BackendState": "NeedsLogin"}})); sys.exit(0)
+    print(json.dumps({{"BackendState": "Running", "Self": {{"TailscaleIPs": ["100.64.0.7", "fd7a:115c:a1e0::7"]}},
+                      "Peer": {{"x": {{"TailscaleIPs": ["100.64.0.1"], "CurAddr": "203.0.113.5:41641", "Relay": "fra"}}}}}}))
+elif "up" in a:
+    datei = [x for x in a if x.startswith("--auth-key=file:")][0].split(":", 1)[1]
+    if open(datei).read() != "tskey-auth-2": sys.exit(1)
+    open(o + "/drin", "w").write("1")
+    open(o + "/ts/tailscaled.state", "w").write("{{zustand}}")
+""")
+        for n in ("tailscaled", "tailscale"):
+            os.chmod(os.path.join(bin_, n), stat.S_IRWXU)
+        alt = (os.environ["PATH"], agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK, agent.konfig_speichern, agent.netz, agent.schreiben_sicher)
+        os.environ["PATH"] = bin_ + os.pathsep + os.environ["PATH"]
+        agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK = os.path.join(o, "ts"), os.path.join(o, "ts.sock")
+        gespeichert = []
+        agent.konfig_speichern = lambda k: gespeichert.append(json.loads(json.dumps(k)))
+        agent.netz = lambda: ("kabel", "", None, "10.0.0.9")
+        def schreiben(pfad, inhalt):
+            with open(pfad, "wb") as d:
+                d.write(inhalt)
+        agent.schreiben_sicher = schreiben
+        p = types.SimpleNamespace(k={"server": "http://100.64.0.1:8890", "hostname": "sc-praxis",
+                                     "fern": {"art": "tailscale", "schluessel": "tskey-auth-2", "login": ""}})
+        f = agent.Fernnetz(p)
+        f.zustand = os.path.join(o, "ts", "tailscaled.state")
+        f.dauerhaft = os.path.join(o, "boot-tailscale.state")
+        try:
+            t = time.time()
+            f.schritt(t)
+            self.assertIsNotNone(f.proc)
+            f.schritt(t + 1)
+            f.faden.join(10)
+            self.assertEqual(gespeichert[-1]["fern"], {"art": "tailscale", "login": ""})     # Schlüssel verbraucht und gelöscht
+            self.assertFalse(os.path.exists(os.path.join(o, "ts", "schluessel")))
+            with open(os.path.join(o, "aufrufe")) as d:
+                up = [z for z in d.read().splitlines() if z.split()[1:2] == ["up"]][0]
+            self.assertIn("--hostname=sc-praxis --accept-dns=false --accept-routes=false", up)
+            self.assertNotIn("tskey", up)                              # nie auf der Befehlszeile
+            f.schritt(t + 30)
+            self.assertEqual(f.bericht(), {"ip": "100.64.0.7", "weg": "direkt", "art": "tailscale", "fehler": ""})
+            with open(f.dauerhaft) as d:
+                self.assertEqual(d.read(), "{zustand}")
+            p.k["fern"]["login"] = "https://hs.example.org"
+            self.assertIn("--login-server=https://hs.example.org", f.optionen(p.k["fern"]))
+            p.k.pop("fern")
+            self.assertIsNone(f.bericht())
+        finally:
+            if f.proc:
+                f.proc.kill(); f.proc.wait()
+            os.environ["PATH"], agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK, agent.konfig_speichern, agent.netz, agent.schreiben_sicher = alt

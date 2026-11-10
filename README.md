@@ -64,6 +64,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - Raspberry Pi or PC from a ready image, managed centrally
 - Direct mode: the player shows the page itself, no encoding on the server
 - Browser device: a secret link for a smart TV or kiosk browser
+- Players at another site through Tailscale or Headscale ([REMOTE.md](docs/REMOTE.md))
 
 </td>
 <td valign="top">

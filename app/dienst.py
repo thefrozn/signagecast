@@ -67,6 +67,7 @@ import netz as NZ                             # noqa: E402
 import protokoll as PR                        # noqa: E402
 import ausgabe as AG                          # noqa: E402
 import kizugang as KZ                         # noqa: E402
+import fernnetz as FN                         # noqa: E402
 import mcp as MCP                             # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
@@ -148,6 +149,25 @@ NETZ = NZ.Wache(bedarf=lambda: einst()["video"]["aktiv"] and any(t["video"] for 
 PROTOKOLL = PR.Protokoll(os.path.join(DATEN, "protokoll.json"))          # wer hat wann was geändert (seit 0.38)
 VERSIONEN = PR.Versionen(os.path.join(DATEN, "layout-versionen.json"))   # alte Fassungen der Layouts (seit 0.38)
 KI = KZ.Zugaenge(os.path.join(DATEN, "ki-zugaenge.json"))                 # verbundene Computer für MCP im Heimnetz (seit 0.40)
+FERN = FN.Fernnetz(os.path.join(DATEN, "fernnetz.json"))                  # Player an anderem Standort per Tailscale/Headscale (seit 0.41)
+
+
+def fern(aufruf, *a):
+    """Fernnetz-Aufruf; Fehler als Meldung für die Verwaltung."""
+    try:
+        return aufruf(*a)
+    except FN.Fehler as f:
+        raise M.Meldung(f.code, d=f.innen) from None
+
+
+def eigene_tailnet_ip():
+    """Tailnet-Adresse dieses Servers, falls Tailscale hier läuft (nur als Vorschlag in der Verwaltung)."""
+    try:
+        r = subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True, timeout=3)
+        ip = r.stdout.strip().splitlines()[0] if r.returncode == 0 and r.stdout.strip() else ""
+        return ip if FN._adresse_ok(ip) else ""
+    except (OSError, subprocess.SubprocessError, IndexError):
+        return ""
 layout_vorrang = {}                                # tv -> {"layout", "bis", "von"}: vom Pult gewählt (seit 0.38, nur im Speicher)
 
 
@@ -1450,6 +1470,7 @@ def verwaltung_wer(handler):
 
 
 PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion (die Verwaltung übersetzt sie)
+    "/api/fernnetz": "fernnetz",
     "/api/einstellungen": "einstellungen", "/api/medien/teil": "medien_neu", "/api/webhook/neu": "webhook_neu", "/api/medien/loeschen": "medien_loeschen",
     "/api/fernseher/schalten": "schalten", "/api/fernseher/nach-einschalten": "nach_einschalten",
     "/api/updates/anfrage": "update", "/api/sicherung/erstellen": "sicherung_erstellen", "/api/sicherung/loeschen": "sicherung_loeschen",
@@ -2961,6 +2982,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if pfad == "/api/ki":                          # verbundene Computer für KI-Assistenten (seit 0.40)
             return self.antwort(200, {"ok": True, "computer": KI.liste(), "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
                                       "https": PultServer.tls is not None})
+        if pfad == "/api/fernnetz":                    # Fernstandorte (seit 0.41) – Geheimnisse nur als ••••
+            return self.antwort(200, {"ok": True, "fernnetz": FERN.aussen(), "regel": FERN.regel(WEBHOOK_PORT, HLS_PORT),
+                                      "tailnet_ip": eigene_tailnet_ip(), "port": WEBHOOK_PORT, "stream_port": HLS_PORT})
         if pfad == "/api/ki/datei":                    # .mcpb als Download (seit 0.40.1), bis zum Einlösen, höchstens 1 h
             x = ki_datei((q.get("id") or [""])[0])
             if not x:
@@ -2997,7 +3021,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(), "basis_pc": PL.basis_info("pc"),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
-                                      "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend()})
+                                      "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend(),
+                                      "fern": {"art": FERN.k["art"], "server": FERN.k["server"]} if FERN.aktiv() else None})
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/aus", pfad)
         if m:                                        # Fernwartung: lange Anfrage nach Ausgabe (seit 0.33)
             return self.antwort(200, dict(FW.ausgabe(m.group(1), (q.get("sid") or [""])[0], (q.get("ab") or ["0"])[0]), ok=True))
@@ -3325,6 +3350,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
             self.protokoll_detail = {"text": l["name"]}
             return {"einstellungen": einst_aussen()}
+        if p == "/api/fernnetz":                      # Fernstandorte speichern (seit 0.41)
+            fern(FERN.speichern, d)
+            self.protokoll_detail = {"text": FERN.k["art"]}
+            return {"fernnetz": FERN.aussen(), "regel": FERN.regel(WEBHOOK_PORT, HLS_PORT)}
+        if p == "/api/fernnetz/pruefen":
+            return {"pruefung": fern(FERN.pruefen)}
         if p == "/api/ablage":                        # Datei der Verwaltung zum Herunterladen ablegen (seit 0.40.1)
             return {"id": ablegen(d.get("name"), d.get("typ"), d.get("inhalt"))}
         if p == "/api/ki/neu":                        # Computer für einen KI-Assistenten verbinden (seit 0.40)
@@ -3523,6 +3554,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/player/koppeln":                # Code vom Fernseher eingeben (seit 0.25)
             return {"geraet": PL.koppeln(d.get("code"), {"name": d.get("name", ""), "tv": d.get("tv", "")}, tvs)["id"]}
         if p == "/api/player/sammel-image":           # Image für mehrere Geräte, ohne Schlüssel (seit 0.25; PC seit 0.36)
+            if d.get("fern"):                        # anderer Standort nur je Gerät (kein Schlüssel für viele)
+                raise M.Meldung("fn_nur_geraet")
             kennung = PL.herunterladen_vorbereiten("", d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")),
                                                    art=d.get("art"), form=d.get("form", "gz"))
             return {"kennung": kennung, "datei": PL.dateiname_fuer(kennung)}
@@ -3546,14 +3579,52 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if art == "aendern":
             PL.aendern(gid, d, tvs)
         elif art == "entfernen":
-            PL.entfernen(gid)
+            g = PL.entfernen(gid)
+            f = (g or {}).get("fern")
+            if f:                                    # seit 0.41: auch aus dem Tailnet (sonst bliebe nur der Weg zum Server)
+                try:
+                    if not FERN.aktiv() or FERN.k["art"] != f.get("art"):
+                        raise FN.Fehler("fn_aus")
+                    name = FERN.entfernen(f.get("ip")) if f.get("ip") else None
+                    if not f.get("ip"):
+                        FERN.schluessel_zurueck(f.get("kennung"))
+                    return {"fern": "entfernt" if name or not f.get("ip") else "nicht_gefunden"}
+                except FN.Fehler as x:
+                    print("Fernnetz beim Entfernen:", x.code, x.innen, flush=True)
+                    return {"fern": "fehler", "fern_text": str(M.Meldung(x.code, d=x.innen))}
         elif art == "befehl":
             PL.befehl(gid, str(d.get("art", "")))
         elif art == "wlan":
             PL.wlan_wechseln(gid, d.get("wlan") or {})
         elif art == "image":
-            kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), str(d.get("server") or player_server()), bool(d.get("fernwartung")),
-                                                   form=d.get("form", "gz"))
+            server, f = str(d.get("server") or player_server()), None
+            if d.get("fern"):                        # seit 0.41: anderer Standort – Einmal-Schlüssel fürs Tailnet
+                g = PL.geraet(gid)
+                if not g or g.get("modell") == PL.BROWSER:
+                    raise M.Meldung("pi_unbekannt" if not g else "pi_browser_befehl")
+                if not FERN.aktiv():
+                    raise M.Meldung("fn_aus")
+                schluessel, kid = fern(FERN.schluessel, "SignageCast " + g["name"])
+                f = {"art": FERN.k["art"], "schluessel": schluessel, "kennung": kid,
+                     "login": FERN.k["url"] if FERN.k["art"] == "headscale" else ""}
+                server = f"http://{FERN.k['server']}:{WEBHOOK_PORT}"
+            try:
+                kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), server, bool(d.get("fernwartung")),
+                                                       form=d.get("form", "gz"), fern=f)
+            except M.Meldung:
+                if f:                                    # Schlüssel nicht ungenutzt liegen lassen
+                    try:
+                        FERN.schluessel_zurueck(f["kennung"])
+                    except FN.Fehler:
+                        pass
+                raise
+            if f:
+                alt = PL.fern_merken(gid, f)
+                if alt and alt != f["kennung"]:
+                    try:
+                        FERN.schluessel_zurueck(alt)         # voriger Schlüssel, nie benutzt
+                    except FN.Fehler as x:
+                        print("Fernnetz: alter Schlüssel nicht zurückgezogen:", x.code, x.innen, flush=True)
             return {"kennung": kennung, "datei": PL.dateiname_fuer(kennung)}
         elif art == "link-neu":                      # Browser-Gerät: neuer Link, der alte gilt nicht mehr (seit 0.36)
             PL.link_neu(gid)

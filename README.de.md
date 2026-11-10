@@ -65,6 +65,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - Raspberry Pi oder PC aus einem fertigen Image, zentral verwaltet
 - Direktmodus: der Player zeigt die Seite selbst, der Server muss nichts kodieren
 - Browser-Gerät: ein geheimer Link für Smart-TV oder Kiosk-Browser
+- Player an anderen Standorten über Tailscale oder Headscale ([REMOTE.md](docs/REMOTE.md#deutsch-kurz))
 
 </td>
 <td valign="top">

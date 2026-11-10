@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.41.0 (2026-11-10)
+- **Players at another site – through Tailscale or Headscale:** *Settings → Remote sites* (Tailscale with an OAuth
+  client, or your own Headscale). When creating the image of a player, tick *At another site*: SignageCast creates a
+  one-time key (single use, pre-approved, tagged, 7 days) and writes it into the image together with its own tailnet
+  address. On its first start the player joins the tailnet, deletes the key and talks to SignageCast through the
+  tunnel – display, commands and the terminal work as at home, no port is opened anywhere. *Remove* also deletes the
+  player from the tailnet. The card shows the tailnet address and whether the connection is direct or through a relay.
+- Pi and PC images contain Tailscale (official package, signing key pinned in the build); the agent (1.7) only starts
+  it for players at another site, without logs to Tailscale, without DNS and routes from the tailnet, and keeps the
+  login across restarts and write protection.
+- The access data is kept only in `fernnetz.json` (mode 600) – masked in the admin, not in backups, not available to
+  AI assistants. The page suggests an access rule so players may only reach SignageCast. Guide:
+  [docs/REMOTE.md](docs/REMOTE.md).
+
 ## v0.40.1 (2026-11-09)
 - **Downloads in Safari:** the file for Claude Desktop (`.mcpb`), backups, layout exports, older layout versions and the
   layout guide for AI assistants were created in the browser (`blob:`) – Safari does not save such files inside the

@@ -46,6 +46,7 @@ echo "== Player einbauen"
 install -d "$A/root/usr/lib/signagecast-player"
 install -m 755 "$HIER/agent.py" "$HIER/start.sh" "$A/root/usr/lib/signagecast-player/"
 install -m 644 "$HIER/signagecast-player.service" "$A/root/etc/systemd/system/"
+install -m 644 "$HIER/tailscale.sh" "$A/root/tmp/tailscale.sh"
 chroot "$A/root" /bin/sh -eu <<'CHROOT'
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
@@ -55,6 +56,9 @@ apt-get install -y -q --no-install-recommends mpv qrencode overlayroot iw rfkill
 apt-get install -y -q --no-install-recommends cage seatd grim wlr-randr alsa-utils fonts-dejavu-core fonts-noto-color-emoji
 apt-get install -y -q --no-install-recommends chromium || apt-get install -y -q --no-install-recommends chromium-browser
 command -v chromium >/dev/null || command -v chromium-browser >/dev/null
+# Anderer Standort (seit 0.41): Tailscale, Dienst gesperrt – der Agent startet es nur bei Bedarf
+sh /tmp/tailscale.sh
+rm /tmp/tailscale.sh
 update-initramfs -u -k all
 apt-get clean
 rm -rf /var/lib/apt/lists/*

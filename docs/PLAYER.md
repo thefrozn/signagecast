@@ -167,6 +167,11 @@ or just a browser in full screen. *Add player* → model **Browser device** → 
 - The link only opens this TV's page, never the admin. Treat it like a password; port 8890 is unencrypted HTTP – only
   in your own network. *Create new link* makes the old one invalid immediately, *Remove* as well.
 
+## Player at another site (since 0.41)
+
+A player at another place (office, holiday flat) reaches SignageCast through **Tailscale** or **Headscale** – tick
+*At another site* when creating its image. Set up once under *Settings → Remote sites*. Guide: [REMOTE.md](REMOTE.md).
+
 ## How it works (short)
 
 - The image is the official **Raspberry Pi OS Lite (64 bit)** plus `mpv`, `qrencode`, `overlayroot`, for direct mode
@@ -368,6 +373,12 @@ als Startseite eintragen.
 - Kein Image, kein Bildschirmfoto, kein Rückfall auf den Stream, keine Fernwartung.
 - Der Link öffnet nur die Seite dieses Fernsehers, nie die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist
   unverschlüsseltes HTTP – nur im eigenen Netz. *Neuen Link erzeugen* macht den alten sofort ungültig, *Entfernen* ebenso.
+
+## Player an einem anderen Standort (seit 0.41)
+
+Ein Player an einem anderen Ort (Praxis, Ferienwohnung) erreicht SignageCast über **Tailscale** oder **Headscale** –
+beim Image das Häkchen *An einem anderen Standort* setzen. Einmal einrichten unter *Einstellungen → Fernstandorte*.
+Anleitung: [REMOTE.md](REMOTE.md#deutsch-kurz).
 
 ## Technik (kurz)
 

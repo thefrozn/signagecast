@@ -202,9 +202,11 @@ def aendern(gid, d, tvs):
 
 
 def entfernen(gid):
-    """Gerät löschen: Sein Schlüssel gilt nicht mehr; der Pi zeigt „in der Verwaltung entfernt“."""
+    """Gerät löschen: Sein Schlüssel gilt nicht mehr; der Pi zeigt „in der Verwaltung entfernt“. Gibt das Gerät zurück
+    (für das Entfernen aus dem Tailnet, seit 0.41)."""
+    g = geraet(gid)
     with sperre:
-        daten["geraete"] = [g for g in daten["geraete"] if g["id"] != gid]
+        daten["geraete"] = [x for x in daten["geraete"] if x["id"] != gid]
         daten["entfernt"] = ([gid] + daten["entfernt"])[:100]
         speichern(daten)
     stand.pop(gid, None)
@@ -216,6 +218,7 @@ def entfernen(gid):
             os.unlink(os.path.join(ORDNER, gid + endung))
         except OSError:
             pass
+    return g
 
 
 def link_neu(gid):
@@ -422,6 +425,10 @@ def melden(g, bericht, ip, stream, bildschirm):
         alt = stand.get(g["id"]) or {}
         stand[g["id"]] = {"zeit": time.time(), "bericht": bericht, "ip": ip, "seit": alt.get("seit") if alt.get("zeit", 0) > time.time() - ONLINE_S * 2 else time.time()}
         offen = befehle.pop(g["id"], [])
+        fip = str((bericht.get("fern") or {}).get("ip") or "")[:45] if isinstance(bericht.get("fern"), dict) else ""
+        if fip and g.get("fern") and g["fern"].get("ip") != fip:
+            g["fern"]["ip"] = fip
+            speichern(daten)
         ws = g.get("wlan_soll")
         if ws and int(bericht.get("wlan_rev") or 0) >= ws["rev"]:
             g["wlan_soll"] = None
@@ -628,7 +635,7 @@ def sammel_hotspot_pw():
         return daten["sammel_hotspot_pw"]
 
 
-def konfig(g, netze, server, sprache, zeitzone, fernwartung=False):
+def konfig(g, netze, server, sprache, zeitzone, fernwartung=False, fern=None):
     """Gerätedatei für die Boot-Partition – genau PLATZ Byte (JSON, Rest Leerzeichen). g = None: Image für mehrere Pis
     (ohne Schlüssel – der Pi koppelt sich per Code)."""
     k = {"art": "signagecast-player", "v": 1, "server": server,
@@ -636,6 +643,8 @@ def konfig(g, netze, server, sprache, zeitzone, fernwartung=False):
          "wlan": netze}
     if fernwartung:                                    # seit 0.33: Terminal aus der Verwaltung erlaubt (ab Werk aus)
         k["fernwartung"] = True
+    if fern and g:                                     # seit 0.41: anderer Standort – Tailnet beitreten (Einmal-Schlüssel)
+        k["fern"] = {"art": fern["art"], "schluessel": fern["schluessel"], "login": fern.get("login", "")}
     if g:
         k.update(id=g["id"], schluessel=g["schluessel"], name=g["name"], hostname=hostname(g), wlan_rev=g.get("wlan_rev", 0),
                  hotspot_pw=g["hotspot_pw"], schreibschutz=g["schreibschutz"],
@@ -656,7 +665,7 @@ def image_art(g, art=None):
     return "pc" if art == "pc" else "pi"
 
 
-def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form="gz"):
+def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form="gz", fern=None):
     """Einmal-Kennung (30 min) für den Download; das WLAN lebt nur bis dahin im Speicher, wenn es nicht gespeichert wird.
     gid = "": Image für mehrere Geräte (Kopplung per Code). form: gz (.img.gz, USB-Stick/SD-Karte) oder iso (PC: roh,
     für Ventoy, CD und VMs)."""
@@ -665,6 +674,8 @@ def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form=
         raise Fehler("pi_unbekannt")
     if g and g.get("modell") == BROWSER:
         raise Fehler("pi_browser_befehl")
+    if fern and not g:                                 # anderer Standort nur mit Image je Gerät – kein Schlüssel für viele
+        raise Fehler("fn_nur_geraet")
     art = image_art(g, art)
     meta = basis_meta(art)
     if not meta:
@@ -683,8 +694,22 @@ def herunterladen_vorbereiten(gid, w, server, fernwartung=False, art=None, form=
         del einmal[k]
     kennung = secrets.token_urlsafe(18)
     einmal[kennung] = {"id": gid, "netze": [netz] if netz else [], "server": server, "bis": jetzt + 1800, "fernwartung": bool(fernwartung),
-                       "art": art, "form": "iso" if art == "pc" and form == "iso" else "gz"}
+                       "art": art, "form": "iso" if art == "pc" and form == "iso" else "gz", "fern": fern}
     return kennung
+
+
+def fern_merken(gid, fern):
+    """Nach einem Image für einen anderen Standort: Art und Kennung des Einmal-Schlüssels (nicht der Schlüssel selbst).
+    Gibt die Kennung des vorigen Schlüssels zurück (zum Zurückziehen, falls unbenutzt)."""
+    with sperre:
+        g = geraet(gid)
+        if not g:
+            return None
+        alt = g.get("fern") or {}
+        g["fern"] = {"art": fern["art"], "kennung": fern.get("kennung", ""), "erstellt": time.strftime("%Y-%m-%d %H:%M"),
+                     "ip": alt.get("ip", "")}
+        speichern(daten)
+    return alt.get("kennung") if not alt.get("ip") else None
 
 
 def _version(v):
@@ -714,7 +739,7 @@ def image_schreiben(kennung, schreiben, sprache, zeitzone):
     g, meta = geraet(e["id"]) if e["id"] else None, basis_meta(art)
     if (e["id"] and not g) or not meta:
         raise Fehler("pi_kein_image")
-    neu = konfig(g, e["netze"], e["server"], sprache, zeitzone, e.get("fernwartung", False))
+    neu = konfig(g, e["netze"], e["server"], sprache, zeitzone, e.get("fernwartung", False), e.get("fern"))
     off, marke = meta["platzhalter"]["offset"], meta["platzhalter"]["marke"].encode() + b"-0000"
     ende = off + PLATZ
     dec, gz, pos, alt = lzma.LZMADecompressor(), zlib.compressobj(1, zlib.DEFLATED, 31), 0, b""

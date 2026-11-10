@@ -222,6 +222,8 @@ and manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi
 [Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
 Since 0.33 a Pi that allows it opens a **terminal** (root shell in the browser) from its card – off by default,
 see [Remote maintenance](PLAYER.md#remote-maintenance--terminal-in-the-browser-since-033).
+Since 0.41 a player can stand **at another site** and reach SignageCast through Tailscale or Headscale
+(*Settings → Remote sites*, then tick *At another site* for its image) – see [REMOTE.md](REMOTE.md).
 
 ### Output and capture size
 TVs → **Video stream**, per TV:
@@ -320,6 +322,8 @@ It is never shown again. Create a new one and update the senders.
 
 Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Player – fertiges Image je Bildschirm mit WLAN,
 zentrale Verwaltung; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
+Seit 0.41 auch **an anderen Standorten** über Tailscale oder Headscale (Einstellungen → Fernstandorte, beim Image
+„An einem anderen Standort“) – [REMOTE.md](REMOTE.md#deutsch-kurz).
 
 Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, ohne sie zu erledigen – Tipps dauerhaft, „Neue Version“ nur für diese Version, Probleme bis sie einmal behoben waren (tritt es wieder auf, erscheint es wieder). „Startpasswort ändern“ lässt sich nicht ausblenden; Benachrichtigungen kommen weiter.
 

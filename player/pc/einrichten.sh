@@ -13,6 +13,9 @@ printf '[Login]\nNAutoVTs=0\nReserveVT=0\n' > /etc/systemd/logind.conf.d/signage
 systemctl mask ctrl-alt-del.target
 passwd -l root >/dev/null
 systemctl enable signagecast-player.service NetworkManager.service systemd-timesyncd.service
+# Anderer Standort (seit 0.41): Tailscale, Dienst gesperrt – der Agent startet es nur bei Bedarf
+sh /tmp/tailscale.sh
+rm /tmp/tailscale.sh
 # seatd: Gruppe video darf den Bildschirm nehmen (Benutzer signage ist darin) – Debians Dienst startet schon mit „-g video“
 grep -q -- '-g video' /usr/lib/systemd/system/seatd.service
 systemctl enable seatd.service

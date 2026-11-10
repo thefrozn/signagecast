@@ -17,7 +17,7 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -142,6 +142,20 @@ const TEXTE = {
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
             neu: "Neuen Link erzeugen", neuFrage: "Neuen Link erzeugen? Der bisherige gilt dann sofort nicht mehr – Geräte damit zeigen einen Fehler, bis der neue eingetragen ist.", neuOk: "Neuer Link erstellt",
             linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Fernseher – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
+    fern: { titel: "Player an anderem Standort", text: "Ein Pi oder PC an einem anderen Ort (Praxis, Ferienwohnung, Filiale) erreicht SignageCast über Tailscale – oder über Headscale, wenn du es selbst betreibst. Der Player tritt beim ersten Start mit einem Einmal-Schlüssel bei; Anzeige, Befehle und das Terminal laufen dann wie zu Hause. An keinem Router wird ein Port geöffnet.",
+          anleitung: "Anleitung: Tailscale auf diesem Server einrichten, OAuth-Client, Zugriffsregel", art: "Dienst", arten: { aus: "aus", tailscale: "Tailscale", headscale: "Headscale (selbst betrieben)" },
+          server: "SignageCast im Tailnet", serverText: "Die Tailnet-IP dieses Servers (100.x.y.z). Tailscale muss hier laufen – siehe Anleitung.", vorschlag: (ip) => `Erkannt: ${ip} – übernehmen`,
+          clientId: "OAuth-Client-ID", clientSecret: "OAuth-Client-Secret", clientText: "In der Tailscale-Verwaltung unter Settings → Trust credentials → OAuth client anlegen: Rechte „Auth Keys: Write“ und „Devices Core: Write“, Tag wie unten.",
+          url: "Headscale-Adresse", apiKey: "API-Schlüssel", apiText: "headscale apikeys create --expiration 365d", benutzer: "Benutzer-ID (optional)",
+          tag: "Tag der Player", tagText: "Die Player bekommen diesen Tag. In der Zugriffsregel darf er nur SignageCast erreichen.",
+          pruefen: "Verbindung prüfen", geprueft: (n, name) => `Verbindung ok – ${n} Geräte im Tailnet, SignageCast als „${name}“ gefunden.`,
+          regel: "Zugriffsregel (ACL) – Vorschlag", regelText: "In die Zugriffsregeln deines Tailnets übernehmen. Achtung: Ein Abschnitt „acls“ ersetzt die Standardregel „alle dürfen alles“ – deine bisherigen Regeln (z. B. für deine eigenen Geräte) gehören mit hinein.",
+          box: "An einem anderen Standort (über Tailscale)", boxHs: "An einem anderen Standort (über Headscale)",
+          boxText: (ip) => `Der Player tritt beim ersten Start mit einem Einmal-Schlüssel (7 Tage gültig) dem Tailnet bei und spricht SignageCast unter ${ip} an. Nur mit dem Image für genau dieses Gerät.`,
+          zeile: "Anderer Standort", wartet: "Image erstellt – noch nicht beigetreten", direkt: "direkt", relay: (r) => `über Relay ${r}`,
+          fehler: { fehlt: "Image vor 0.41 ohne Tailscale – neues Image erstellen", abgemeldet: "vom Tailnet abgemeldet – neues Image erstellen", startet: "startet …" },
+          entfernt: "Player entfernt – auch aus dem Tailnet", nichtGefunden: "Player entfernt – im Tailnet nicht (mehr) gefunden",
+          entferntFehler: (t) => `Player entfernt, aber nicht aus dem Tailnet: ${t} – bitte dort von Hand löschen` },
     ki: { titel: "KI-Assistenten im Heimnetz", text: "Claude oder ein anderer KI-Assistent verwaltet die Inhalte direkt: Layouts bauen und ändern, Vorschau ansehen, Laufschrift, Durchsagen, Streams. Jeder Computer bekommt einen eigenen Zugang, den du hier jederzeit entfernen kannst – er gilt dann sofort nicht mehr. Nur im Heimnetz; jede Änderung steht im Protokoll („MCP <Computer>“).",
           liste: "Verbundene Computer", keine: "Noch kein Computer verbunden – die Schnittstelle ist aus.", name: "Name des Computers", programm: "Programm", recht: "Darf",
           rechte: { aendern: "Inhalte ändern", lesen: "nur lesen" }, arten: { desktop: "Claude Desktop", code: "Claude Code", cursor: "Cursor", vscode: "VS Code" },
@@ -178,7 +192,7 @@ const TEXTE = {
                       meldung_aus: "Laufschrift-Meldung beendet", layout: "Layout umgeschaltet", layout_aus: "Layout zurückgeschaltet",
                       internet_weg: "Internet nicht erreichbar seit", internet_wieder: "Internet wieder da (Ausfall)",
                       bild_neu_laden: "Bildprüfung: TV-Seite neu geladen", bild_kette_neu: "Bildprüfung: Wiedergabe neu gestartet",
-                      ki_neu: "Computer für KI-Assistenten verbunden", ki_entfernen: "Computer für KI-Assistenten entfernt", ki_gekoppelt: "Claude Desktop hat sich verbunden",
+                      ki_neu: "Computer für KI-Assistenten verbunden", ki_entfernen: "Computer für KI-Assistenten entfernt", ki_gekoppelt: "Claude Desktop hat sich verbunden", fernnetz: "Fernstandorte geändert",
                       "stream_*": (a) => `Stream: ${{ aendern: "geändert", entfernen: "entfernt", zeigen: "jetzt gezeigt", "strikes-zuruecksetzen": "Strikes zurückgesetzt" }[a] || a}`,
                       "radio_*": (a) => `Radiosender ${a === "entfernen" ? "entfernt" : "geändert"}`,
                       "player_*": (a) => `Player: ${{ neu: "neu angelegt", koppeln: "gekoppelt", einstellungen: "Einstellungen", wlan: "WLAN", image: "Image erstellt", entfernen: "entfernt", aendern: "geändert", befehl: "Befehl", "link-neu": "neuer Link" }[a] || a}`,
@@ -409,7 +423,7 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
@@ -534,6 +548,20 @@ const TEXTE = {
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
             neu: "Create new link", neuFrage: "Create a new link? The current one stops working immediately – devices using it show an error until the new one is entered.", neuOk: "New link created",
             linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this TV – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
+    fern: { titel: "Players at another site", text: "A Pi or PC at another place (office, holiday flat, branch) reaches SignageCast through Tailscale – or through Headscale if you run it yourself. The player joins with a one-time key on its first start; display, commands and the terminal then work as at home. No port is opened on any router.",
+          anleitung: "Guide: set up Tailscale on this server, OAuth client, access rule", art: "Service", arten: { aus: "off", tailscale: "Tailscale", headscale: "Headscale (self-hosted)" },
+          server: "SignageCast in the tailnet", serverText: "The tailnet IP of this server (100.x.y.z). Tailscale must run here – see the guide.", vorschlag: (ip) => `Detected: ${ip} – use it`,
+          clientId: "OAuth client ID", clientSecret: "OAuth client secret", clientText: "In the Tailscale admin under Settings → Trust credentials → create an OAuth client: scopes “Auth Keys: Write” and “Devices Core: Write”, tag as below.",
+          url: "Headscale address", apiKey: "API key", apiText: "headscale apikeys create --expiration 365d", benutzer: "User ID (optional)",
+          tag: "Tag of the players", tagText: "The players get this tag. In the access rule it may only reach SignageCast.",
+          pruefen: "Check connection", geprueft: (n, name) => `Connection ok – ${n} devices in the tailnet, SignageCast found as “${name}”.`,
+          regel: "Access rule (ACL) – suggestion", regelText: "Add this to the access rules of your tailnet. Careful: an “acls” section replaces the default rule “everyone may do everything” – include your existing rules (e.g. for your own devices).",
+          box: "At another site (through Tailscale)", boxHs: "At another site (through Headscale)",
+          boxText: (ip) => `On its first start the player joins the tailnet with a one-time key (valid 7 days) and talks to SignageCast at ${ip}. Only with the image for exactly this device.`,
+          zeile: "Other site", wartet: "Image created – not joined yet", direkt: "direct", relay: (r) => `through relay ${r}`,
+          fehler: { fehlt: "Image before 0.41 without Tailscale – create a new image", abgemeldet: "logged out of the tailnet – create a new image", startet: "starting …" },
+          entfernt: "Player removed – also from the tailnet", nichtGefunden: "Player removed – not (or no longer) found in the tailnet",
+          entferntFehler: (t) => `Player removed, but not from the tailnet: ${t} – please delete it there by hand` },
     ki: { titel: "AI assistants in your home network", text: "Claude or another AI assistant manages the content directly: build and change layouts, look at a preview, ticker, announcements, streams. Every computer gets its own access, which you can remove here at any time – it stops working immediately. Home network only; every change is in the log (“MCP <computer>”).",
           liste: "Connected computers", keine: "No computer connected yet – the interface is off.", name: "Name of the computer", programm: "Program", recht: "May",
           rechte: { aendern: "change content", lesen: "only read" }, arten: { desktop: "Claude Desktop", code: "Claude Code", cursor: "Cursor", vscode: "VS Code" },
@@ -570,7 +598,7 @@ const TEXTE = {
                       meldung_aus: "Ticker message ended", layout: "Layout switched", layout_aus: "Layout switched back",
                       internet_weg: "Internet not reachable since", internet_wieder: "Internet back (outage)",
                       bild_neu_laden: "Picture check: TV page reloaded", bild_kette_neu: "Picture check: playback restarted",
-                      ki_neu: "Computer for AI assistants connected", ki_entfernen: "Computer for AI assistants removed", ki_gekoppelt: "Claude Desktop connected",
+                      ki_neu: "Computer for AI assistants connected", ki_entfernen: "Computer for AI assistants removed", ki_gekoppelt: "Claude Desktop connected", fernnetz: "Remote sites changed",
                       "stream_*": (a) => `Stream: ${{ aendern: "changed", entfernen: "removed", zeigen: "shown now", "strikes-zuruecksetzen": "strikes reset" }[a] || a}`,
                       "radio_*": (a) => `Radio station ${a === "entfernen" ? "removed" : "changed"}`,
                       "player_*": (a) => `Player: ${{ neu: "created", koppeln: "paired", einstellungen: "settings", wlan: "Wi-Fi", image: "image created", entfernen: "removed", aendern: "changed", befehl: "command", "link-neu": "new link" }[a] || a}`,
@@ -721,6 +749,13 @@ const TEXTE = {
       p_recht: "This account may not do that", p_kein_schalten: "No switch from Home Assistant is set for this TV",
       ki_name: "Please enter a name for the computer (letters, digits, spaces, . @ -)", ki_doppelt: "There is already a computer with this name",
       ki_max: "At most {n} computers", ki_adresse: "Invalid address of this machine",
+      fn_art: "Unknown kind for remote sites", fn_server: "Address of SignageCast in the tailnet: the tailnet IP (100.x.y.z)",
+      fn_tag: "Tag as tag:name (lower-case letters, digits, hyphen)", fn_zugang: "Access data incomplete",
+      fn_benutzer: "Headscale user: the number (ID) from “headscale users list” – or leave empty",
+      fn_api: "Tailscale/Headscale refuses: {d}", fn_nicht_erreichbar: "Tailscale/Headscale not reachable: {d}",
+      fn_aus: "Remote sites are not set up (Settings → Remote sites)",
+      fn_server_fehlt: "SignageCast ({d}) is not in this tailnet – check the address or set up Tailscale on this server",
+      fn_nur_geraet: "Another site only works with the image for exactly this device (not with a pairing code)",
       z_uhrzeit: "Schedule: time as HH:MM", z_layout: "Schedule: unknown layout {id}",
       s_kein_link: "No YouTube video or channel link recognised", s_nicht_einbettbar: "This video may not be embedded (or does not exist)",
       s_ort: "invalid location ({k})",
@@ -984,14 +1019,14 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, lay
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: zweiTeile(pultSeite, webhookKarte),
                  updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
-                 protokoll: protokollSeite, ki: kiSeite };
+                 protokoll: protokollSeite, ki: kiSeite, fern: fernSeite };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 // Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]],
                   ["inhalte", ["layout", "quellen", "medien", "einspieler", "radio", "pult"]],
                   ["videoton", ["streams", "kategorien", "video", "suche"]],
-                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "ki", "zugang"] : ["allgemein", "ha", "benachrichtigung", "ki"]],
+                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "ki", "fern", "zugang"] : ["allgemein", "ha", "benachrichtigung", "ki", "fern"]],
                   ["system", ["updates", "sicherung", "leistung", "protokoll"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
@@ -1262,6 +1297,10 @@ function plNetzAnbinden(wurzel, px) {
 }
 
 // ---------- Fernwartung (seit 0.33): Terminal zum Pi, gezeichnet mit xterm.js (wie das Terminal in Cockpit) ----------
+// Anderer Standort (seit 0.41) – nur, wenn Fernstandorte eingerichtet sind (P = Antwort von /api/player)
+const fernBox = (P, id, an) => !P.fern ? "" : `<div class="zeile"><label><input type="checkbox" id="${id}" ${an ? "checked" : ""}> ${esc(P.fern.art === "headscale" ? T.fern.boxHs : T.fern.box)}</label></div>
+  <p class="leise">${esc(T.fern.boxText(P.fern.server))}</p>`;
+const fernAntwort = (r) => r && r.fern ? melden(r.fern === "entfernt" ? T.fern.entfernt : r.fern === "nicht_gefunden" ? T.fern.nichtGefunden : T.fern.entferntFehler(r.fern_text), r.fern === "fehler") : null;
 const fwBox = (id, an) => `<div class="zeile"><label><input type="checkbox" id="${id}" ${an ? "checked" : ""}> ${esc(T.pl.fw.image)}</label></div>
   <p class="leise">${esc(T.pl.fw.imageText)}</p>`;
 let xtermGeladen = null;
@@ -1397,6 +1436,7 @@ async function playerSeite(inhalt) {
         <div data-nur-image><p class="leise" data-nur-pi>${esc(T.pl.ram)}</p>
           ${plNetz("n", P.wlan, true)}
           ${fwBox("plFw")}
+          ${fernBox(P, "plFern")}
           ${formWahl("plForm")}</div>
         <div class="zeile"><button class="knopf haupt" id="plErstellen" ${bereit ? "" : "disabled"}>${esc(T.pl.erstellen)}</button></div>
         <div id="plSchritte" hidden></div>
@@ -1460,7 +1500,7 @@ async function playerSeite(inhalt) {
         if (m !== "browser") {
           const wlan = netzNeu();
           let d;
-          try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, form: $("#plForm").value, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
+          try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, fern: !!($("#plFern") && $("#plFern").checked), form: $("#plForm").value, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
           catch (f) { await senden(`/api/player/${r.geraet}/entfernen`); throw f; }        // ohne Image kein halbes Gerät zurücklassen
           plHerunterladen(d.kennung, d.datei);
           $("#plSchritte").innerHTML = schritteHtml(m === "pc"); $("#plSchritte").hidden = false;
@@ -1534,6 +1574,11 @@ async function playerSeite(inhalt) {
       [T.pl.video, b.modus_ist === "direkt" ? T.pl.direktModus : v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
       [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
       [T.pl.update, b.letztes_update ? zeit(b.letztes_update.zeit) + (b.letztes_update.ok ? "" : " – " + T.pl.fehlgeschlagen) : "–"]] : [];
+    if (g.fern) {                         // anderer Standort (seit 0.41)
+      const f = b.fern || {};
+      zeilen.push([T.fern.zeile, f.fehler ? "⚠ " + (T.fern.fehler[f.fehler] || f.fehler) : f.ip ? `${f.ip}${f.weg ? " · " + (f.weg === "direkt" ? T.fern.direkt : T.fern.relay(f.weg.replace(/^relay:/, ""))) : ""}`
+        : g.fern.ip ? g.fern.ip : T.fern.wartet]);
+    }
     return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
       ${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
@@ -1570,7 +1615,7 @@ async function playerSeite(inhalt) {
       <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
         ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
       <details class="erweitert" data-image><summary>${esc(T.pl.imageNeu)}</summary><p class="leise">${esc(T.pl.imageNeuText)}</p>
-        ${plNetz("i" + g.id, P.wlan, true)}${fwBox("plIFw" + g.id, g.fernwartung)}${pc ? formWahl("plIForm" + g.id) : ""}<div class="zeile"><button class="knopf" data-image-laden ${bereitFuer(g.modell) ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
+        ${plNetz("i" + g.id, P.wlan, true)}${fwBox("plIFw" + g.id, g.fernwartung)}${fernBox(P, "plIFern" + g.id, !!g.fern)}${pc ? formWahl("plIForm" + g.id) : ""}<div class="zeile"><button class="knopf" data-image-laden ${bereitFuer(g.modell) ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
         <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
   };
   const bilderLaden = () => inhalt.querySelectorAll("img[data-bild]").forEach(async (i) => {
@@ -1610,11 +1655,12 @@ async function playerSeite(inhalt) {
         await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); P = await holen("/api/player"); listeZeichnen(); }, T.pl.wlanGesendet);
       k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {
         const fo = k.querySelector(`#plIForm${g.id}`);
-        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), fernwartung: k.querySelector(`#plIFw${g.id}`).checked, form: fo ? fo.value : "gz", server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
+        const fe = k.querySelector(`#plIFern${g.id}`);
+        const d = await senden(`/api/player/${g.id}/image`, { wlan: imageLesen(), fernwartung: k.querySelector(`#plIFw${g.id}`).checked, fern: !!(fe && fe.checked), form: fo ? fo.value : "gz", server: P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}` });
         plHerunterladen(d.kennung, d.datei); }, T.pl.laedtHerunter);
       k.querySelector("[data-entfernen]").onclick = (e) => {
         if (!confirm(T.pl.entfernenFrage(g.name))) return;
-        aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holen("/api/player"); listeZeichnen(); });
+        aktion(e.target, async () => { const r = await senden(`/api/player/${g.id}/entfernen`); P = await holen("/api/player"); listeZeichnen(); fernAntwort(r); }, g.fern ? null : undefined);
       };
     }
   };
@@ -2718,6 +2764,57 @@ async function protokollSeite(inhalt) {
 
 // KI-Assistenten im Heimnetz (seit 0.40): Computer verbinden (Datei für Claude Desktop, Befehl/Link für Claude Code,
 // Cursor, VS Code) und wieder entfernen. Der Schlüssel wird nur direkt nach dem Verbinden gezeigt.
+// ---------- Fernstandorte (seit 0.41): Player an einem anderen Ort über Tailscale/Headscale ----------
+async function fernSeite(inhalt) {
+  const F = T.fern;
+  let d = await holen("/api/fernnetz"), pruefung = null;
+  const zeichnen = () => {
+    const k = d.fernnetz, art = k.art;
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(F.titel)}</h2><p class="leise">${esc(F.text)}</p>
+        <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/REMOTE.md" target="_blank" rel="noopener">${esc(F.anleitung)}</a></p>
+        <div class="zeile"><label for="fnArt">${esc(F.art)}</label><select id="fnArt">${["aus", "tailscale", "headscale"].map((a) =>
+          `<option value="${a}" ${a === art ? "selected" : ""}>${esc(F.arten[a])}</option>`).join("")}</select></div>
+        <div id="fnFelder" ${art === "aus" ? "hidden" : ""}>
+          <div class="zeile"><label for="fnServer">${esc(F.server)}</label><input type="text" id="fnServer" value="${esc(k.server)}" placeholder="100.64.0.1" inputmode="decimal"></div>
+          <p class="leise">${esc(F.serverText)}${d.tailnet_ip && d.tailnet_ip !== k.server ? ` <button class="knopf klein" id="fnVorschlag">${esc(F.vorschlag(d.tailnet_ip))}</button>` : ""}</p>
+          <div data-fn="tailscale" ${art === "tailscale" ? "" : "hidden"}>
+            <div class="zeile"><label for="fnCid">${esc(F.clientId)}</label><input type="text" id="fnCid" value="${esc(k.client_id)}" autocomplete="off"></div>
+            <div class="zeile"><label for="fnCsec">${esc(F.clientSecret)}</label><input type="password" id="fnCsec" value="${esc(k.client_secret)}" autocomplete="new-password"></div>
+            <p class="leise">${esc(F.clientText)}</p></div>
+          <div data-fn="headscale" ${art === "headscale" ? "" : "hidden"}>
+            <div class="zeile"><label for="fnUrl">${esc(F.url)}</label><input type="text" id="fnUrl" value="${esc(k.url)}" placeholder="https://headscale.example.org"></div>
+            <div class="zeile"><label for="fnKey">${esc(F.apiKey)}</label><input type="password" id="fnKey" value="${esc(k.api_key)}" autocomplete="new-password"></div>
+            <p class="leise"><code>${esc(F.apiText)}</code></p>
+            <div class="zeile"><label for="fnBen">${esc(F.benutzer)}</label><input type="text" id="fnBen" value="${esc(k.benutzer)}" inputmode="numeric"></div></div>
+          <div class="zeile"><label for="fnTag">${esc(F.tag)}</label><input type="text" id="fnTag" value="${esc(k.tag)}"></div>
+          <p class="leise">${esc(F.tagText)}</p></div>
+        <div class="zeile"><button class="knopf haupt" id="fnSpeichern">${esc(T.speichern)}</button>
+          ${art !== "aus" && k.server ? `<button class="knopf" id="fnPruefen">${esc(F.pruefen)}</button>` : ""}</div>
+        ${pruefung ? `<p class="gut">✓ ${esc(F.geprueft(pruefung.geraete, pruefung.server_name))}</p>` : ""}</div>
+      ${art !== "aus" ? `<div class="karte"><h2>${esc(F.regel)}</h2><p class="leise">${esc(F.regelText)}</p>
+        <textarea readonly rows="9" style="width:100%;font-family:monospace;font-size:12px">${esc(JSON.stringify(d.regel, null, 2))}</textarea></div>` : ""}`;
+    const sicht = () => {
+      const a = $("#fnArt").value;
+      $("#fnFelder").hidden = a === "aus";
+      inhalt.querySelectorAll("[data-fn]").forEach((x) => { x.hidden = x.dataset.fn !== a; });
+    };
+    $("#fnArt").onchange = sicht;
+    if ($("#fnVorschlag")) $("#fnVorschlag").onclick = () => { $("#fnServer").value = d.tailnet_ip; };
+    $("#fnSpeichern").onclick = (e) => aktion(e.target, async () => {
+      const r = await senden("/api/fernnetz", { art: $("#fnArt").value, server: $("#fnServer").value.trim(), tag: $("#fnTag").value.trim(),
+        client_id: $("#fnCid").value.trim(), client_secret: $("#fnCsec").value, url: $("#fnUrl").value.trim(), api_key: $("#fnKey").value,
+        benutzer: $("#fnBen").value.trim() });
+      d.fernnetz = r.fernnetz; d.regel = r.regel; pruefung = null;
+      zeichnen();
+    });
+    if ($("#fnPruefen")) $("#fnPruefen").onclick = (e) => aktion(e.target, async () => {
+      pruefung = (await senden("/api/fernnetz/pruefen", {})).pruefung;
+      zeichnen();
+    }, null);
+  };
+  zeichnen();
+}
+
 async function kiSeite(inhalt) {
   const K = T.ki;
   let d = await holen("/api/ki"), ergebnis = null;

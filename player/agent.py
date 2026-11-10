@@ -21,7 +21,7 @@
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.6"
+VERSION = "1.7"
 PC = os.path.exists("/etc/signagecast-pc")       # PC-Player (seit 1.5)
 BOOT = os.environ.get("SC_BOOT", "/boot/firmware")
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
@@ -917,6 +917,119 @@ class Terminal:
 
 
 # ---------- Hotspot und Einrichtungsseite ----------
+class Fernnetz:
+    """Anderer Standort (seit 1.7 / SignageCast 0.41): Tailscale oder Headscale. Steht „fern“ in signagecast.json, startet
+    der Agent tailscaled selbst (der Systemdienst ist im Image aus) und tritt beim ersten Mal mit dem Einmal-Schlüssel bei;
+    danach wird der Schlüssel aus der Datei gelöscht. tailscaled hält seinen Zustand unter /run (Schreibschutz); der Agent
+    kopiert ihn bei Änderungen auf die Boot-/Datenpartition und beim Start zurück – so übersteht die Anmeldung Neustarts.
+    Keine Protokolle an Tailscale (--no-logs-no-support), kein DNS und keine Routen aus dem Tailnet."""
+    ORDNER = LAUF + "/tailscale"
+    SOCK = LAUF + "/tailscaled.sock"
+
+    def __init__(self, player):
+        self.p, self.proc, self.naechster, self.geprueft, self.gesichert = player, None, 0, 0, ""
+        self.faden = None
+        self.info, self.fehler = {}, ""
+        self.dauerhaft = BOOT + "/signagecast/tailscale.state"
+        self.zustand = self.ORDNER + "/tailscaled.state"
+
+    def gewuenscht(self):
+        return isinstance(self.p.k.get("fern"), dict)
+
+    def ts(self, *a, zeit=20):
+        return lauf("tailscale", "--socket=" + self.SOCK, *a, zeit=zeit)
+
+    def starten(self):
+        if not shutil.which("tailscaled") or not shutil.which("tailscale"):
+            self.fehler = "fehlt"                 # Image vor 0.41 – neues Image nötig
+            return
+        os.makedirs(self.ORDNER, mode=0o700, exist_ok=True)
+        if not os.path.exists(self.zustand) and os.path.exists(self.dauerhaft):
+            shutil.copyfile(self.dauerhaft, self.zustand)
+            os.chmod(self.zustand, 0o600)
+            self.gesichert = datei_hash(self.zustand)
+        self.proc = subprocess.Popen(["tailscaled", "--state=" + self.zustand, "--statedir=" + self.ORDNER,
+                                      "--socket=" + self.SOCK, "--port=0", "--no-logs-no-support"],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=dict(os.environ, TS_NO_LOGS_NO_SUPPORT="true"))
+        log("Fernnetz: tailscaled gestartet")
+
+    def optionen(self, f):
+        """Immer dieselben Optionen – tailscale up lehnt sonst ab („requires mentioning all non-default flags“)."""
+        arg = ["--hostname=" + (self.p.k.get("hostname") or "sc-player"), "--accept-dns=false", "--accept-routes=false"]
+        return arg + (["--login-server=" + f["login"]] if f.get("login") else [])
+
+    def beitreten(self, f):
+        datei = self.ORDNER + "/schluessel"
+        fd = os.open(datei, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as d:
+            d.write(f["schluessel"])
+        try:
+            code, aus = self.ts("up", "--auth-key=file:" + datei, "--timeout=90s", *self.optionen(f), zeit=120)
+        finally:
+            os.unlink(datei)
+        if code == 0:
+            log("Fernnetz: beigetreten")
+            f.pop("schluessel", None)             # verbraucht – nicht im Klartext liegen lassen
+            konfig_speichern(self.p.k)
+        else:
+            self.fehler = "anmeldung: " + aus[-160:]
+            log("Fernnetz: Beitritt fehlgeschlagen:", aus[-300:])
+
+    def schritt(self, jetzt):
+        if not self.gewuenscht() or self.fehler == "fehlt":
+            return
+        if self.proc is None or self.proc.poll() is not None:
+            if jetzt >= self.naechster and netz()[0] in ("kabel", "wlan"):
+                self.naechster = jetzt + 30
+                self.starten()
+            return
+        if jetzt - self.geprueft < 20:
+            return
+        self.geprueft = jetzt
+        code, aus = self.ts("status", "--json", zeit=10)
+        try:
+            st = json.loads(aus) if code in (0, 1) and aus.startswith("{") else {}
+        except ValueError:
+            st = {}
+        lage = st.get("BackendState", "")
+        f = self.p.k["fern"]
+        if self.faden and self.faden.is_alive():
+            return
+        if lage == "NeedsLogin" and f.get("schluessel"):
+            self.faden = threading.Thread(target=self.beitreten, args=(f,), daemon=True)     # bis 2 min – Anzeige läuft weiter
+            self.faden.start()
+            return
+        if lage == "Stopped":
+            self.ts("up", "--timeout=30s", *self.optionen(f), zeit=40)
+            return
+        if lage != "Running":
+            self.fehler = "abgemeldet" if lage == "NeedsLogin" else (lage.lower() or "startet")
+            self.info = {}
+            return
+        self.fehler = ""
+        eigen = (st.get("Self") or {}).get("TailscaleIPs") or []
+        ziel = urllib.parse.urlparse(self.p.k.get("server", "")).hostname or ""
+        weg = ""
+        for peer in (st.get("Peer") or {}).values():
+            if ziel in (peer.get("TailscaleIPs") or []):
+                weg = "direkt" if peer.get("CurAddr") else ("relay:" + peer["Relay"] if peer.get("Relay") else "")
+                break
+        self.info = {"ip": next((a for a in eigen if "." in a), ""), "weg": weg}
+        h = datei_hash(self.zustand)
+        if h and h != self.gesichert:             # Anmeldung neu oder Schlüssel erneuert: dauerhaft sichern
+            try:
+                with open(self.zustand, "rb") as d:
+                    schreiben_sicher(self.dauerhaft, d.read())
+                self.gesichert = h
+            except OSError as x:
+                log("Fernnetz: Zustand nicht gesichert:", x)
+
+    def bericht(self):
+        if not self.gewuenscht():
+            return None
+        return dict(self.info, art=self.p.k["fern"].get("art", ""), fehler=self.fehler)
+
+
 class Hotspot:
     def __init__(self, player):
         self.p, self.aktiv, self.server, self.netze, self.fehler = player, False, None, [], ""
@@ -1048,6 +1161,7 @@ class Player:
         self.letzte_meldung, self.wlan_laeuft, self.versuche, self.erkennen_bis, self.hotspot_seit = 0, False, 0, 0, 0
         self.kopplung, self.koppel_pause = None, 0     # laufende Kopplung (Image für mehrere Pis)
         self.terminal, self.fw_hinweis_an = None, False    # Fernwartung (seit 1.3)
+        self.fern = Fernnetz(self)                         # anderer Standort (seit 1.7)
 
     # --- Einrichtung beim Start ---
     def einrichten(self):
@@ -1151,7 +1265,8 @@ class Player:
                 "netze": [n["ssid"] for n in self.k.get("wlan") or []], "letztes_update": self.k.get("letztes_update"),
                 "ergebnisse": self.ergebnisse[:10], "browser": Browser.verfuegbar(), "modus_ist": "direkt" if self.browser.laeuft() else "stream",
                 "rueckfall": self.rueckfall if time.time() < self.rueckfall_bis else "",
-                "fernwartung": bool(self.k.get("fernwartung")), "terminal": bool(self.terminal and self.terminal.offen)}
+                "fernwartung": bool(self.k.get("fernwartung")), "terminal": bool(self.terminal and self.terminal.offen),
+                "fern": self.fern.bericht()}
 
     def melden_versuch(self):
         try:
@@ -1317,6 +1432,10 @@ class Player:
     # --- Hauptschleife ---
     def schritt(self):
         jetzt = time.time()
+        try:
+            self.fern.schritt(jetzt)
+        except Exception as f:                  # das Fernnetz darf die Anzeige nie aufhalten
+            log("Fernnetz:", repr(f)[:200])
         intervall = max(5, min(120, int(self.soll.get("intervall", 15))))
         if self.k.get("schluessel") and (jetzt - self.letzte_meldung >= intervall or (self.ergebnisse and jetzt - self.kontakt < 60)):
             self.letzte_meldung = jetzt
@@ -1521,7 +1640,8 @@ class Player:
 
 def datei_hash(pfad):
     try:
-        return hashlib.sha256(open(pfad, "rb").read()).hexdigest()
+        with open(pfad, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
     except OSError:
         return ""
 

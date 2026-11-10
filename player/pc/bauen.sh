@@ -42,6 +42,7 @@ mmdebstrap --variant=minbase --architectures=amd64 --components="main contrib no
   --customize-hook='mkdir -p "$1/usr/lib/signagecast-player"' \
   --customize-hook="copy-in $PLAYER/agent.py $PLAYER/start.sh $HIER/medium.sh /usr/lib/signagecast-player/" \
   --customize-hook="copy-in $PLAYER/signagecast-player.service /etc/systemd/system/" \
+  --customize-hook="copy-in $PLAYER/tailscale.sh /tmp/" \
   --customize-hook="chroot \"\$1\" /bin/sh -eu < $HIER/einrichten.sh" \
   trixie "$A/root" \
   "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware" \
