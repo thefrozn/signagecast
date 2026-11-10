@@ -176,7 +176,7 @@ def tailscale_hier():
     konto = ((d.get("User") or {}).get(str(s.get("UserID"))) or {}).get("LoginName", "")
     return {"ip": next((a for a in ips if FN._adresse_ok(a)), ""), "tun": bool(d.get("TUN")),
             "laeuft": d.get("BackendState") == "Running", "zustand": d.get("BackendState", ""),
-            "url": d.get("AuthURL", "") if str(d.get("AuthURL", "")).startswith("https://") else "",
+            "url": d.get("AuthURL", "") if re.match(r"https?://", str(d.get("AuthURL", ""))) else "",
             "name": s.get("HostName", ""), "konto": konto, "tailnet": (d.get("CurrentTailnet") or {}).get("Name", "")}
 
 

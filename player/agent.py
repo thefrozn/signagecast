@@ -1039,7 +1039,7 @@ class Fernnetz:
         link = f.get("art") == "link"
         if link:                                  # bis zur Anmeldung über das Heimnetz melden (Link an die Verwaltung)
             self.p.server.ersatz = None if lage == "Running" else (f.get("lan") or None)
-            self.url = st.get("AuthURL", "") if lage == "NeedsLogin" and str(st.get("AuthURL", "")).startswith("https://") else ""
+            self.url = st.get("AuthURL", "") if lage == "NeedsLogin" and re.match(r"https?://", str(st.get("AuthURL", ""))) else ""
             if lage == "NeedsLogin" and self.p.zustand != "gesperrt":
                 self.link_anmelden(f)
         if lage == "Stopped":
