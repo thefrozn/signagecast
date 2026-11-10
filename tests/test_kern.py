@@ -2573,6 +2573,49 @@ class Fernnetz041(unittest.TestCase):
         f.schluessel_zurueck("5")
         self.assertEqual(json.loads([a for a in self.anfragen if a[1] == "/api/v1/preauthkey/expire"][0][2]), {"id": "5"})
 
+    def test_link_modus(self):
+        """Seit 0.42: Anmelde-Link statt OAuth – Server per tailscale up, Player ohne Schlüssel, Entfernen ohne API."""
+        import threading, urllib.request
+        import dienst as D
+        PL = self.PL
+        PL.DATEI, PL.ORDNER, PL.GRUND = os.path.join(self.ordner, "player.json"), os.path.join(self.ordner, "p"), os.path.join(self.ordner, "p", "basis")
+        PL.daten.clear(); PL.daten.update(PL._leer()); PL.stand.clear(); PL.einmal.clear()
+        alt = (D.FERN, PL.basis_meta, D.tailscale_hier)
+        D.FERN = self.FN.Fernnetz(os.path.join(self.ordner, "fernnetz.json"))
+        PL.basis_meta = lambda art="pi": {"version": "0.42.0"}
+        hier = {"ip": "100.64.0.1", "tun": True, "laeuft": False, "zustand": "NeedsLogin", "url": "", "name": "signagecast", "konto": "", "tailnet": ""}
+        D.tailscale_hier = lambda: dict(hier)
+        srv = D.Server(("127.0.0.1", 0), D.Bearbeiter)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        def post(pfad, d):
+            r = urllib.request.Request(f"http://127.0.0.1:{srv.server_address[1]}{pfad}", data=json.dumps(d).encode(),
+                                       headers={"X-SignageCast": "1", "Content-Type": "application/json"})
+            with urllib.request.urlopen(r, timeout=20) as a:
+                return json.load(a)
+        try:
+            self.assertEqual(post("/api/fernnetz", {"art": "link"})["code"], "fn_nicht_verbunden")
+            hier.update(laeuft=True, zustand="Running")
+            r = post("/api/fernnetz", {"art": "link", "server": "100.99.0.9"})
+            self.assertEqual((r["fernnetz"]["art"], r["fernnetz"]["server"]), ("link", "100.64.0.1"))   # eigene Adresse
+            self.assertEqual(r["regel"]["acls"][1], {"action": "accept", "src": ["autogroup:member"], "dst": ["*:*"]})
+            self.assertEqual(post("/api/fernnetz/pruefen", {})["pruefung"]["server_name"], "signagecast")
+            self.assertTrue(post("/api/fernnetz/anmelden", {})["hier"]["laeuft"])                       # schon verbunden
+            gid = post("/api/player/neu", {"name": "Praxis", "modell": "pc"})["geraet"]
+            r = post(f"/api/player/{gid}/image", {"fern": True, "server": "http://signagecast.local:8890"})
+            self.assertTrue(r["ok"], r)
+            e = PL.einmal[r["kennung"]]
+            self.assertEqual(e["server"], "http://100.64.0.1:8890")
+            k = json.loads(PL.konfig(PL.geraet(gid), [], e["server"], "de", "", fern=e["fern"]))
+            self.assertEqual(k["fern"], {"art": "link", "lan": "http://signagecast.local:8890", "tag": "tag:signagecast-player"})
+            self.assertEqual(self.anfragen, [])                                      # keine API-Aufrufe im Link-Modus
+            PL.melden(PL.geraet(gid), {"fern": {"ip": "100.64.0.8", "weg": "direkt"}}, "100.64.0.8", None, None)
+            self.assertEqual(post(f"/api/player/{gid}/entfernen", {}), {"fern": "link", "fern_ip": "100.64.0.8", "ok": True})
+        finally:
+            srv.shutdown(); srv.server_close()
+            D.FERN, PL.basis_meta, D.tailscale_hier = alt
+            PL.daten.clear(); PL.daten.update(PL._leer()); PL.einmal.clear()
+
     def test_ueber_den_dienst(self):
         """Image mit „anderer Standort“: Schlüssel ins Image, alter zurückgezogen, bei Fehler kein Schlüssel übrig; Entfernen."""
         import threading, urllib.request
@@ -2702,3 +2745,67 @@ elif "up" in a:
             if f.proc:
                 f.proc.kill(); f.proc.wait()
             os.environ["PATH"], agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK, agent.konfig_speichern, agent.netz, agent.schreiben_sicher = alt
+
+    def test_agent_link(self):
+        """Agent im Link-Modus: Tag abgelehnt → ohne Tag, Link melden (über das Heimnetz), danach Tailnet; entfernt → abmelden."""
+        import types, stat
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent
+        o = self.ordner
+        bin_ = os.path.join(o, "bin"); os.makedirs(bin_)
+        with open(os.path.join(bin_, "tailscaled"), "w") as f:
+            f.write("#!/bin/sh\nexec sleep 30\n")
+        with open(os.path.join(bin_, "tailscale"), "w") as f:
+            f.write(f"""#!{sys.executable}
+import json, os, sys, time
+o = {o!r}
+a = sys.argv[1:]
+open(o + "/aufrufe", "a").write(" ".join(a) + "\\n")
+if "status" in a:
+    if os.path.exists(o + "/drin"):
+        print(json.dumps({{"BackendState": "Running", "Self": {{"TailscaleIPs": ["100.64.0.9"]}}, "Peer": {{}}}}))
+    else:
+        print(json.dumps({{"BackendState": "NeedsLogin", "AuthURL": "https://login.tailscale.com/a/test123"}}))
+elif "up" in a:
+    if any(x.startswith("--advertise-tags") for x in a):
+        sys.stderr.write("requested tags [tag:signagecast-player] are invalid or not permitted\\n"); sys.exit(1)
+    time.sleep(20)
+elif "logout" in a:
+    open(o + "/abgemeldet", "w").write("1")
+""")
+        for n in ("tailscaled", "tailscale"):
+            os.chmod(os.path.join(bin_, n), stat.S_IRWXU)
+        alt = (os.environ["PATH"], agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK, agent.netz)
+        os.environ["PATH"] = bin_ + os.pathsep + os.environ["PATH"]
+        agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK = os.path.join(o, "ts"), os.path.join(o, "ts.sock")
+        agent.netz = lambda: ("kabel", "", None, "10.0.0.9")
+        k = {"server": "http://100.64.0.1:8890", "hostname": "sc-praxis", "schluessel": "00" * 32, "id": "abcd1234",
+             "fern": {"art": "link", "lan": "http://signagecast.local:8890", "tag": "tag:signagecast-player"}}
+        p = types.SimpleNamespace(k=k, server=agent.Server(k), zustand="start")
+        f = agent.Fernnetz(p)
+        f.zustand, f.dauerhaft = os.path.join(o, "ts", "tailscaled.state"), os.path.join(o, "boot.state")
+        try:
+            t = time.time()
+            f.schritt(t)
+            f.schritt(t + 30)                                          # NeedsLogin: Anmeldung mit Tag starten
+            self.assertEqual(p.server.basis(), "http://signagecast.local:8890")       # bis dahin übers Heimnetz
+            f.anmeldung.wait(10)
+            f.schritt(t + 60)                                          # Tag abgelehnt → ohne Tag
+            self.assertTrue(f.ohne_tag)
+            self.assertNotIn("--advertise-tags=tag:signagecast-player", f.optionen(k["fern"]))
+            self.assertEqual(f.bericht()["url"], "https://login.tailscale.com/a/test123")
+            self.assertTrue(f.bericht()["ohne_tag"])
+            open(os.path.join(o, "drin"), "w").close()                 # Nutzer hat freigegeben
+            f.schritt(t + 90)
+            self.assertEqual(p.server.basis(), "http://100.64.0.1:8890")
+            self.assertEqual((f.bericht()["ip"], f.bericht()["url"]), ("100.64.0.9", ""))
+            f.abmelden()                                               # in der Verwaltung entfernt (410)
+            f.abmelden()
+            with open(os.path.join(o, "aufrufe")) as d:
+                self.assertEqual(d.read().count(" logout"), 1)
+            self.assertTrue(os.path.exists(os.path.join(o, "abgemeldet")))
+        finally:
+            for x in (f.anmeldung, f.proc):
+                if x and x.poll() is None:
+                    x.kill(); x.wait()
+            os.environ["PATH"], agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK, agent.netz = alt

@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.42.0 (2026-11-10)
+- **Remote sites by login link – no OAuth client needed:** *Settings → Remote sites* → *Set up Tailscale* (SignageCast
+  installs the official package itself, signing key pinned) → *Connect to Tailscale* (log in in a new window) →
+  *Switch on*. A player at another site logs in by link on its first start: *Approve player* on its card while it is
+  still at home, or a QR code on the TV at the other site. Removed players log themselves out of Tailscale.
+- The suggested access rule is complete (players only reach SignageCast, your own devices everything) and can be
+  copied with one click, with a link to the Tailscale rule editor. A player that logged in without the tag (rule
+  missing) is flagged on its card.
+- Agent 1.8: reports through the home network until it has joined, falls back to joining without tag, logs out when
+  removed. The OAuth client and Headscale stay available as advanced options; Headscale also works with login links.
+
 ## v0.41.0 (2026-11-10)
 - **Players at another site – through Tailscale or Headscale:** *Settings → Remote sites* (Tailscale with an OAuth
   client, or your own Headscale). When creating the image of a player, tick *At another site*: SignageCast creates a

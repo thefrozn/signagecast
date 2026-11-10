@@ -12,7 +12,7 @@
 # Nur Python-Standardbibliothek.
 import ipaddress, json, os, re, threading, time, urllib.error, urllib.parse, urllib.request
 
-ARTEN = ("aus", "tailscale", "headscale")
+ARTEN = ("aus", "link", "tailscale", "headscale")    # link (seit 0.42): Tailscale per Anmelde-Link, ohne API-Zugang
 TS_API = "https://api.tailscale.com/api/v2"
 SCHLUESSEL_TAGE = 7
 TAG_STD = "tag:signagecast-player"
@@ -72,9 +72,12 @@ class Fernnetz:
                 raise Fehler("fn_server")
             if not re.fullmatch(r"tag:[a-z0-9][a-z0-9-]{0,49}", neu["tag"]):
                 raise Fehler("fn_tag")
-            if art == "tailscale" and not (re.fullmatch(r"[\w-]{4,80}", neu["client_id"]) and len(neu["client_secret"]) >= 8):
+            if art == "link":                          # keine Zugangsdaten – Server und Player melden sich per Link an;
+                if neu["url"] and not re.fullmatch(r"https?://[A-Za-z0-9.\-\[\]:]+(/[\w./-]*)?", neu["url"]):
+                    raise Fehler("fn_zugang")          # url: eigener Login-Server (Headscale), sonst Tailscale
+            elif art == "tailscale" and not (re.fullmatch(r"[\w-]{4,80}", neu["client_id"]) and len(neu["client_secret"]) >= 8):
                 raise Fehler("fn_zugang")
-            if art == "headscale":
+            elif art == "headscale":
                 if not re.fullmatch(r"https?://[A-Za-z0-9.\-\[\]:]+(/[\w./-]*)?", neu["url"]) or len(neu["api_key"]) < 8:
                     raise Fehler("fn_zugang")
                 if neu["benutzer"] and not neu["benutzer"].isdigit():
@@ -171,7 +174,7 @@ class Fernnetz:
         return a.get("key", ""), str(a.get("id", ""))
 
     def schluessel_zurueck(self, kennung):
-        if not kennung or not self.aktiv():
+        if not kennung or not self.aktiv() or self.k["art"] == "link":
             return
         if self.k["art"] == "tailscale":
             self._ts("DELETE", "/tailnet/-/keys/" + urllib.parse.quote(kennung, safe=""))
@@ -180,7 +183,7 @@ class Fernnetz:
 
     def entfernen(self, adresse):
         """Gerät mit dieser Tailnet-Adresse löschen. Gibt seinen Namen zurück oder None (nicht gefunden)."""
-        if not adresse or not self.aktiv():
+        if not adresse or not self.aktiv() or self.k["art"] == "link":
             return None
         for gid, name, adressen, _ in self.geraete():
             if adresse in adressen:
@@ -195,7 +198,8 @@ class Fernnetz:
         """Vorschlag für die Zugriffsregel (ACL): Player dürfen nur SignageCast erreichen."""
         ziel = self.k["server"] or "<server>"
         return {"tagOwners": {self.k["tag"]: ["autogroup:admin"], "tag:signagecast-server": ["autogroup:admin"]},
-                "acls": [{"action": "accept", "src": [self.k["tag"]], "dst": [f"{ziel}:{port},{stream_port}"]}]}
+                "acls": [{"action": "accept", "src": [self.k["tag"]], "dst": [f"{ziel}:{port},{stream_port}"]},
+                         {"action": "accept", "src": ["autogroup:member"], "dst": ["*:*"]}]}     # eigene Geräte wie bisher
 
 
 def _adresse_ok(a):

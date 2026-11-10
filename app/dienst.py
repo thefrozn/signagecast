@@ -171,9 +171,43 @@ def tailscale_hier():
         return None
     if not isinstance(d, dict) or "TUN" not in d:
         return None
-    ips = (d.get("Self") or {}).get("TailscaleIPs") or []
+    s = d.get("Self") or {}
+    ips = s.get("TailscaleIPs") or []
+    konto = ((d.get("User") or {}).get(str(s.get("UserID"))) or {}).get("LoginName", "")
     return {"ip": next((a for a in ips if FN._adresse_ok(a)), ""), "tun": bool(d.get("TUN")),
-            "laeuft": d.get("BackendState") == "Running"}
+            "laeuft": d.get("BackendState") == "Running", "zustand": d.get("BackendState", ""),
+            "url": d.get("AuthURL", "") if str(d.get("AuthURL", "")).startswith("https://") else "",
+            "name": s.get("HostName", ""), "konto": konto, "tailnet": (d.get("CurrentTailnet") or {}).get("Name", "")}
+
+
+TS_ANMELDUNG = {"proc": None}
+
+
+def tailscale_anmelden():
+    """Server per Link ins Tailnet (seit 0.42): tailscale up im Hintergrund (als Dienst-Benutzer – dafür setzt die
+    Einrichtung --operator), dann den Anmelde-Link aus tailscale status lesen. Der Nutzer öffnet ihn und meldet sich an."""
+    h = tailscale_hier()
+    if not h:
+        raise M.Meldung("fn_kein_tailscale")
+    if not h["tun"]:
+        raise M.Meldung("fn_userspace")
+    if h["laeuft"]:
+        return h
+    p = TS_ANMELDUNG["proc"]
+    if not p or p.poll() is not None:
+        TS_ANMELDUNG["proc"] = p = subprocess.Popen(
+            ["tailscale", "up", "--accept-dns=false", "--hostname=" + (h["name"] or "signagecast"), "--timeout=900s"]
+            + (["--login-server=" + FERN.k["url"]] if FERN.k["url"] else []),
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    for _ in range(30):
+        time.sleep(0.5)
+        h = tailscale_hier() or h
+        if h["url"] or h["laeuft"]:
+            return h
+        if p.poll() is not None:
+            fehler = (p.stderr.read() or "")[-300:]
+            raise M.Meldung("fn_operator" if re.search(r"access denied|operator|permission", fehler, re.I) else "fn_anmeldung", d=fehler.strip())
+    raise M.Meldung("fn_anmeldung", d="kein Anmelde-Link")
 
 
 def fern_sicher():
@@ -465,7 +499,7 @@ def einspieler_schleife():
 
 # ---------- Updates (LXC/nativ): Anfrage an das root-Skript werkzeug/aktualisieren.sh ----------
 UPDATE_ANFRAGE = os.path.join(DATEN, "update-anfrage")
-UPDATE_AKTIONEN = ("pruefen", "system", "sicherheit", "signagecast", "zurueck")
+UPDATE_AKTIONEN = ("pruefen", "system", "sicherheit", "signagecast", "zurueck", "tailscale")
 
 
 def updates_moeglich():
@@ -2999,7 +3033,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             h = tailscale_hier()
             return self.antwort(200, {"ok": True, "fernnetz": FERN.aussen(), "regel": FERN.regel(WEBHOOK_PORT, HLS_PORT),
                                       "tailnet_ip": (h or {}).get("ip", ""), "userspace": bool(h and not h["tun"]),
-                                      "port": WEBHOOK_PORT, "stream_port": HLS_PORT})
+                                      "hier": h, "einrichtung": update_status("tailscale"), "tun": os.path.exists("/dev/net/tun"),
+                                      "einrichten_moeglich": updates_moeglich(), "port": WEBHOOK_PORT, "stream_port": HLS_PORT})
         if pfad == "/api/ki/datei":                    # .mcpb als Download (seit 0.40.1), bis zum Einlösen, höchstens 1 h
             x = ki_datei((q.get("id") or [""])[0])
             if not x:
@@ -3368,12 +3403,24 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/fernnetz":                      # Fernstandorte speichern (seit 0.41)
             if str(d.get("art", "aus")) != "aus":
                 fern_sicher()
+            if d.get("art") == "link":               # seit 0.42: Adresse = die eigene im Tailnet
+                h = tailscale_hier()
+                if not h or not h["laeuft"]:
+                    raise M.Meldung("fn_nicht_verbunden")
+                d = dict(d, server=h["ip"])
             fern(FERN.speichern, d)
             self.protokoll_detail = {"text": FERN.k["art"]}
             return {"fernnetz": FERN.aussen(), "regel": FERN.regel(WEBHOOK_PORT, HLS_PORT)}
         if p == "/api/fernnetz/pruefen":
             fern_sicher()
+            if FERN.k["art"] == "link":                # ohne API: der Server selbst ist verbunden
+                h = tailscale_hier()
+                if not h or not h["laeuft"] or h["ip"] != FERN.k["server"]:
+                    raise M.Meldung("fn_server_fehlt", d=FERN.k["server"])
+                return {"pruefung": {"geraete": None, "server_name": h["name"], "server_online": True}}
             return {"pruefung": fern(FERN.pruefen)}
+        if p == "/api/fernnetz/anmelden":             # seit 0.42: Server per Link ins Tailnet
+            return {"hier": tailscale_anmelden()}
         if p == "/api/ablage":                        # Datei der Verwaltung zum Herunterladen ablegen (seit 0.40.1)
             return {"id": ablegen(d.get("name"), d.get("typ"), d.get("inhalt"))}
         if p == "/api/ki/neu":                        # Computer für einen KI-Assistenten verbinden (seit 0.40)
@@ -3599,6 +3646,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         elif art == "entfernen":
             g = PL.entfernen(gid)
             f = (g or {}).get("fern")
+            if f and f.get("art") == "link":         # seit 0.42: kein API-Zugang – der Player meldet sich selbst ab
+                return {"fern": "link", "fern_ip": f.get("ip", "")}
             if f:                                    # seit 0.41: auch aus dem Tailnet (sonst bliebe nur der Weg zum Server)
                 try:
                     if not FERN.aktiv() or FERN.k["art"] != f.get("art"):
@@ -3623,15 +3672,18 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 if not FERN.aktiv():
                     raise M.Meldung("fn_aus")
                 fern_sicher()
-                schluessel, kid = fern(FERN.schluessel, "SignageCast " + g["name"])
-                f = {"art": FERN.k["art"], "schluessel": schluessel, "kennung": kid,
-                     "login": FERN.k["url"] if FERN.k["art"] == "headscale" else ""}
+                if FERN.k["art"] == "link":          # seit 0.42: Player meldet sich per Link an (kein Schlüssel)
+                    f = {"art": "link", "lan": server, "tag": FERN.k["tag"], "kennung": "", "login": FERN.k["url"]}
+                else:
+                    schluessel, kid = fern(FERN.schluessel, "SignageCast " + g["name"])
+                    f = {"art": FERN.k["art"], "schluessel": schluessel, "kennung": kid,
+                         "login": FERN.k["url"] if FERN.k["art"] == "headscale" else ""}
                 server = f"http://{FERN.k['server']}:{WEBHOOK_PORT}"
             try:
                 kennung = PL.herunterladen_vorbereiten(gid, d.get("wlan"), server, bool(d.get("fernwartung")),
                                                        form=d.get("form", "gz"), fern=f)
             except M.Meldung:
-                if f:                                    # Schlüssel nicht ungenutzt liegen lassen
+                if f and f["kennung"]:                   # Schlüssel nicht ungenutzt liegen lassen
                     try:
                         FERN.schluessel_zurueck(f["kennung"])
                     except FN.Fehler:

@@ -21,7 +21,7 @@
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.7"
+VERSION = "1.8"
 PC = os.path.exists("/etc/signagecast-pc")       # PC-Player (seit 1.5)
 BOOT = os.environ.get("SC_BOOT", "/boot/firmware")
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
@@ -43,6 +43,7 @@ TEXTE = {
            "kein_stream": "Warte auf den Stream …", "kein_tv": "Diesem Player ist noch kein Fernseher zugewiesen.",
            "gesperrt": "Dieser Player wurde in der Verwaltung entfernt.", "unbekannt": "Der Server kennt diesen Player nicht.",
            "fern_weg": "Vom Tailnet getrennt – in der Verwaltung entfernt oder im Tailnet gelöscht. Für einen Neustart ein neues Image erstellen.",
+           "fern_link": "Player freigeben: QR-Code scannen und bei Tailscale anmelden", "fern_link2": "oder in der SignageCast-Verwaltung „Player freigeben“",
            "leer": "Dieses Image ist noch nicht eingerichtet.",
            "leer2": "In der SignageCast-Verwaltung unter Fernseher → Player ein Image für diesen Bildschirm erstellen.",
            "wlan_titel": "WLAN einrichten", "wlan1": "1. Diesen Code mit dem Handy scannen",
@@ -62,6 +63,7 @@ TEXTE = {
            "kein_stream": "Waiting for the stream …", "kein_tv": "No TV has been assigned to this player yet.",
            "gesperrt": "This player was removed in the admin.", "unbekannt": "The server does not know this player.",
            "fern_weg": "Disconnected from the tailnet – removed in the admin or deleted in the tailnet. Create a new image to start again.",
+           "fern_link": "Approve this player: scan the QR code and log in to Tailscale", "fern_link2": "or “Approve player” in the SignageCast admin",
            "leer": "This image has not been set up yet.",
            "leer2": "In the SignageCast admin, create an image for this screen under TVs → Players.",
            "wlan_titel": "Set up Wi-Fi", "wlan1": "1. Scan this code with your phone",
@@ -728,9 +730,10 @@ def ton_geraet():
 class Server:
     def __init__(self, k):
         self.k, self.versatz = k, 0
+        self.ersatz = None                  # anderer Standort per Link (seit 1.8): bis zur Anmeldung die Adresse im Heimnetz
 
     def basis(self):
-        return self.k["server"].rstrip("/")
+        return (self.ersatz or self.k["server"]).rstrip("/")
 
     def anfrage(self, pfad, daten=None, roh=None, zeit=20):
         """Signierte Anfrage (HMAC mit dem Geräte-Schlüssel, der Schlüssel selbst geht nie übers Netz); die Antwort ist
@@ -931,6 +934,8 @@ class Fernnetz:
     def __init__(self, player):
         self.p, self.proc, self.naechster, self.geprueft, self.gesichert = player, None, 0, 0, ""
         self.faden, self.lief = None, False
+        self.anmeldung, self.ohne_tag, self.url, self.anmelde_fehler = None, False, "", ""      # Link-Modus (seit 1.8)
+        self.abgemeldet = False
         self.info, self.fehler = {}, ""
         self.dauerhaft = BOOT + "/signagecast/tailscale.state"
         self.zustand = self.ORDNER + "/tailscaled.state"
@@ -958,7 +963,37 @@ class Fernnetz:
     def optionen(self, f):
         """Immer dieselben Optionen – tailscale up lehnt sonst ab („requires mentioning all non-default flags“)."""
         arg = ["--hostname=" + (self.p.k.get("hostname") or "sc-player"), "--accept-dns=false", "--accept-routes=false"]
+        if f.get("art") == "link" and f.get("tag") and not self.ohne_tag:
+            arg.append("--advertise-tags=" + f["tag"])
         return arg + (["--login-server=" + f["login"]] if f.get("login") else [])
+
+    def link_anmelden(self, f):
+        """Link-Modus: tailscale up wartet im Hintergrund auf die Anmeldung; den Link liest schritt() aus dem Status.
+        Erlaubt das Tailnet den Tag nicht (keine Zugriffsregel), noch einmal ohne Tag – die Verwaltung warnt dann."""
+        if self.anmeldung and self.anmeldung.poll() is None:
+            return
+        if self.anmeldung is not None:            # beendet: war es der Tag?
+            fehler = (self.anmeldung.stderr.read() if self.anmeldung.stderr else "") or ""
+            if re.search(r"tag", fehler, re.I) and not self.ohne_tag:
+                self.ohne_tag = True
+                log("Fernnetz: Tag nicht erlaubt – Anmeldung ohne Tag")
+            elif fehler.strip():
+                self.anmelde_fehler = fehler.strip()[-160:]
+        self.anmeldung = subprocess.Popen(["tailscale", "--socket=" + self.SOCK, "up", "--timeout=1800s", *self.optionen(f)],
+                                          stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+
+    def abmelden(self):
+        """In der Verwaltung entfernt (seit 1.8): selbst aus dem Tailnet abmelden und die Anmeldung vergessen."""
+        if not self.gewuenscht() or not self.proc or self.proc.poll() is not None or self.abgemeldet:
+            return
+        self.abgemeldet = True
+        self.ts("logout", zeit=30)
+        for d in (self.zustand, self.dauerhaft):
+            try:
+                os.unlink(d)
+            except OSError:
+                pass
+        log("Fernnetz: abgemeldet (in der Verwaltung entfernt)")
 
     def beitreten(self, f):
         datei = self.ORDNER + "/schluessel"
@@ -1001,13 +1036,19 @@ class Fernnetz:
             self.faden = threading.Thread(target=self.beitreten, args=(f,), daemon=True)     # bis 2 min – Anzeige läuft weiter
             self.faden.start()
             return
+        link = f.get("art") == "link"
+        if link:                                  # bis zur Anmeldung über das Heimnetz melden (Link an die Verwaltung)
+            self.p.server.ersatz = None if lage == "Running" else (f.get("lan") or None)
+            self.url = st.get("AuthURL", "") if lage == "NeedsLogin" and str(st.get("AuthURL", "")).startswith("https://") else ""
+            if lage == "NeedsLogin" and self.p.zustand != "gesperrt":
+                self.link_anmelden(f)
         if lage == "Stopped":
             self.ts("up", "--timeout=30s", *self.optionen(f), zeit=40)
             return
         if lage != "Running":
             self.fehler = "abgemeldet" if lage == "NeedsLogin" else (lage.lower() or "startet")
             self.info = {}
-            if lage == "NeedsLogin" and self.lief:  # lief schon und ist ohne Schlüssel abgemeldet: Gerät wurde gelöscht
+            if lage == "NeedsLogin" and self.lief and not link and self.p.zustand != "gesperrt":   # gelöscht
                 self.p.zustand = "fern_weg"
             return
         self.fehler, self.lief = "", True
@@ -1031,7 +1072,10 @@ class Fernnetz:
     def bericht(self):
         if not self.gewuenscht():
             return None
-        return dict(self.info, art=self.p.k["fern"].get("art", ""), fehler=self.fehler)
+        b = dict(self.info, art=self.p.k["fern"].get("art", ""), fehler=self.fehler)
+        if self.p.k["fern"].get("art") == "link":
+            b.update(url=self.url, ohne_tag=self.ohne_tag, anmelde_fehler=self.anmelde_fehler if not self.info else "")
+        return b
 
 
 class Hotspot:
@@ -1282,6 +1326,8 @@ class Player:
             return False
         if code in (403, 404, 410):
             self.zustand = "gesperrt" if code == 410 else "unbekannt"
+            if code == 410:
+                self.fern.abmelden()                # seit 1.8: auch aus dem Tailnet
             return False
         if code != 200:
             return False
@@ -1486,6 +1532,10 @@ class Player:
             return
         if self.zustand in ("gesperrt", "unbekannt", "fern_weg"):
             self.anzeige.zeigen([self.t[self.zustand], self.k.get("name", "")])
+            return
+        if not online and self.fern.url:            # anderer Standort per Link: hier freigeben (seit 1.8)
+            self.zustand = "fern_link"
+            self.anzeige.zeigen([self.t["fern_link"], self.k.get("name", ""), self.t["fern_link2"]], qr=self.fern.url)
             return
         if not online and not self.anzeige.url:
             self.zustand = "verbinde"

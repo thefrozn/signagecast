@@ -14,11 +14,36 @@ SignageCast at its tailnet address. Display, commands and the **terminal** (remo
 | | |
 |---|---|
 | Image | Only the image for **one device** (not the pairing-code image for several) |
-| Key | Single use, pre-approved, with a tag (`tag:signagecast-player`), valid 7 days; deleted from the device file after joining |
-| Remove | *Remove* in the admin also deletes the device from the tailnet (and withdraws an unused key) |
+| Login | By login link (approve on the card or QR code on the TV) – or, advanced, a single-use pre-approved key with a tag (`tag:signagecast-player`, 7 days), deleted from the device after joining |
+| Remove | *Remove* in the admin: the player logs itself out (link) or SignageCast deletes it from the tailnet (OAuth/Headscale) |
 | Mode | **Direct mode** recommended – the TV page and data go through the tunnel, YouTube comes straight from the local internet. Stream mode works too, but needs several Mbit/s upload at your place all the time (more through relays) |
 
-## 1. Tailscale on the SignageCast server
+## The easy way: login links (since 0.42)
+
+**Settings → Remote sites** → service *Tailscale – login link*:
+
+1. **Set up Tailscale** – SignageCast installs Tailscale from the official package archive (signing key pinned). In a
+   Proxmox container the page first shows two lines for the Proxmox host (`/dev/net/tun`, see below).
+2. **Connect to Tailscale** – opens the Tailscale login in a new window; log in with your account and confirm. The page
+   notices by itself and shows *Connected as “signagecast” (100.x.y.z)*.
+3. **Switch on remote sites.**
+4. **Access rule (recommended):** the page shows a complete rule – *Copy*, *Open the Tailscale rule editor*, paste,
+   save. Then players can only reach SignageCast, your own devices everything as before. Without the rule a player
+   in someone else's rooms could reach all devices in your tailnet, and its login expires after 180 days – its card
+   warns about that.
+
+Then create a player with **At another site** ticked. On its first start the player logs in by link:
+
+- still at your place: its card shows **Approve player (Tailscale)** – click, log in, confirm;
+- already at the other site: the TV shows a **QR code** – scan it with a phone that is logged in to Tailscale.
+
+**Remove** in the admin: the player logs itself out of Tailscale at its next contact. If it is no longer reachable,
+delete it in the Tailscale admin under *Machines*.
+
+The rest of this page is the manual and the advanced way (OAuth client – SignageCast then creates one-time keys and
+deletes removed players itself – or your own Headscale).
+
+## 1. Tailscale on the SignageCast server (manual)
 
 SignageCast itself has to be in the tailnet. Note its address with `tailscale ip -4` (100.x.y.z).
 
@@ -57,7 +82,7 @@ tailscale ip -4
 **Docker / Podman / NAS:** install Tailscale on the **host** (QNAP and Synology have a Tailscale package). The
 published port 8890 is then reachable at the tailnet address of the host. In the admin enter that address.
 
-## 2. Access for SignageCast
+## 2. Access for SignageCast (advanced)
 
 SignageCast creates the one-time keys and deletes removed players through the API.
 
@@ -119,6 +144,15 @@ key is invalid at once.
 - The free plan of Tailscale is enough for a few devices; Headscale has no limits.
 
 ## Deutsch (kurz)
+
+**Einfach per Anmelde-Link (seit 0.42):** Einstellungen → **Fernstandorte** → *Tailscale – per Anmelde-Link* →
+**Tailscale einrichten** (installiert das offizielle Paket; im Proxmox-Container erst zwei Zeilen auf dem Host, zeigt die
+Seite) → **Mit Tailscale verbinden** (Anmeldung im neuen Fenster) → **Einschalten** → empfohlene **Zugriffsregel**
+kopieren und im Regel-Editor von Tailscale einfügen. Player mit Häkchen *An einem anderen Standort*: beim ersten Start
+auf seiner Karte **Player freigeben** klicken – oder am anderen Ort den **QR-Code** am Fernseher scannen. **Entfernen**:
+der Player meldet sich beim nächsten Kontakt selbst ab; sonst in Tailscale unter *Machines* löschen.
+
+Erweitert (unten): OAuth-Client (SignageCast erzeugt Einmal-Schlüssel und löscht entfernte Player selbst) oder Headscale.
 
 **Player an einem anderen Standort** (Praxis, Ferienwohnung, Filiale) erreichen SignageCast über **Tailscale** oder
 **Headscale** (selbst betrieben). Kein Port am Router, kein SSH. Der Player fragt wie immer selbst beim Server an – jetzt

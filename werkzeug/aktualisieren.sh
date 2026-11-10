@@ -7,6 +7,9 @@
 #   signagecast  neueste Version holen – nur mit gültiger minisign-Signatur –, vorher Einstellungen sichern, danach
 #                prüfen, ob der Dienst läuft; sonst automatisch zurück zur vorigen Version
 #   zurueck      vorige Version wiederherstellen
+#   tailscale    Tailscale für Player an anderen Standorten einrichten (seit 0.42): offizielles Paket (Schlüssel per
+#                Prüfsumme festgeschrieben), Kernel-TUN (nie Userspace – dann wäre die Verwaltungs-API aus dem Tailnet
+#                offen), Dienst an, der Dienst-Benutzer darf sich per Link anmelden (--operator)
 # Ergebnis: /var/lib/signagecast/aktualisierung.json (für die Verwaltung lesbar).
 set -u
 REPO=thefrozn/signagecast
@@ -152,6 +155,27 @@ signagecast_aktualisieren() {
   fi
 }
 
+tailscale_einrichten() {
+  status tailscale laeuft "Tailscale wird eingerichtet"
+  if [ ! -c /dev/net/tun ]; then status tailscale fehler "kein_tun"; return 1; fi
+  . /etc/os-release
+  K=/usr/share/keyrings/tailscale-archive-keyring.gpg
+  if ! curl -fsSL -m 60 "https://pkgs.tailscale.com/stable/debian/$VERSION_CODENAME.noarmor.gpg" -o "$K.neu" \
+     || ! echo "3e03dacf222698c60b8e2f990b809ca1b3e104de127767864284e6c228f1fb39  $K.neu" | sha256sum -c - >/dev/null 2>&1; then
+    rm -f "$K.neu"; status tailscale fehler "schluessel"; return 1
+  fi
+  mv -f "$K.neu" "$K"
+  echo "deb [signed-by=$K] https://pkgs.tailscale.com/stable/debian $VERSION_CODENAME main" > /etc/apt/sources.list.d/tailscale.list
+  apt-get update -qq 2>&1 | tail -3
+  if ! apt-get install -y -q tailscale 2>&1 | tail -3; then status tailscale fehler "installation"; return 1; fi
+  sed -i 's/^FLAGS=.*userspace.*/FLAGS=""/' /etc/default/tailscaled 2>/dev/null || true
+  systemctl enable --now tailscaled >/dev/null 2>&1
+  systemctl restart tailscaled
+  for _ in $(seq 1 20); do tailscale status --json >/dev/null 2>&1 && break; sleep 1; done
+  if ! tailscale set --operator=signagecast; then status tailscale fehler "operator"; return 1; fi
+  status tailscale ok "eingerichtet" "\"version\": $(json "$(tailscale version | head -1)")"
+}
+
 # ---------- Anfrage auswerten ----------
 AKTION=${1:-}
 if [ -z "$AKTION" ] && [ -e "$ANFRAGE" ]; then
@@ -165,6 +189,7 @@ case "$AKTION" in
   sicherheit) system_aktualisieren sicherheit sicherheit; STILL=1 pruefen ;;
   signagecast) signagecast_aktualisieren; STILL=1 pruefen ;;
   zurueck) zurueck zurueck ;;
+  tailscale) tailscale_einrichten ;;
   "") exit 0 ;;
   *) status unbekannt fehler "unbekannte Aktion"; exit 1 ;;
 esac

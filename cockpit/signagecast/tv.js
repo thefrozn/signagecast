@@ -80,7 +80,7 @@ const TEXTE = {
           liste: "Player", keine: "Noch kein Player.", online: "online", offline: "offline", nieGesehen: "hat sich noch nie gemeldet",
           zuletzt: (z) => `zuletzt ${z}`, seit: (z) => `seit ${z}`, ip: "IP", netzArt: { kabel: "Kabel", wlan: "WLAN", hotspot: "Hotspot (Einrichtung)", keins: "kein Netz" },
           temp: "Temperatur", version: "Player", hdmi: "Bildschirm", keinHdmi: "kein Bildschirm erkannt", video: "Video",
-          zustand: { start: "startet", koppeln: "wartet auf Kopplung", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
+          zustand: { start: "startet", fern_link: "wartet auf Freigabe in Tailscale", koppeln: "wartet auf Kopplung", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
                      stream_fehler: "Stream-Fehler", gesperrt: "entfernt", unbekannt: "dem Server unbekannt", direkt: "zeigt die Seite direkt", direkt_start: "Browser startet …" },
           drehung: "Drehung", aufloesung: "Ausgabe", a: { auto: "wie der Fernseher meldet", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Lautstärke (%)", cec: "Fernseher nach Zeitplan ein- und ausschalten (HDMI-CEC)", cecText: "Wenn das Layout „schwarz“ ist (Zeitplan des Fernsehers), schaltet der Pi den Fernseher per HDMI aus und danach wieder ein. Am Fernseher muss CEC an sein (Samsung „Anynet+“, LG „SimpLink“, Sony „Bravia Sync“).",
@@ -142,19 +142,33 @@ const TEXTE = {
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
             neu: "Neuen Link erzeugen", neuFrage: "Neuen Link erzeugen? Der bisherige gilt dann sofort nicht mehr – Geräte damit zeigen einen Fehler, bis der neue eingetragen ist.", neuOk: "Neuer Link erstellt",
             linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Fernseher – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
-    fern: { titel: "Player an anderem Standort", text: "Ein Pi oder PC an einem anderen Ort (Praxis, Ferienwohnung, Filiale) erreicht SignageCast über Tailscale – oder über Headscale, wenn du es selbst betreibst. Der Player tritt beim ersten Start mit einem Einmal-Schlüssel bei; Anzeige, Befehle und das Terminal laufen dann wie zu Hause. An keinem Router wird ein Port geöffnet.",
-          anleitung: "Anleitung: Tailscale auf diesem Server einrichten, OAuth-Client, Zugriffsregel", art: "Dienst", arten: { aus: "aus", tailscale: "Tailscale", headscale: "Headscale (selbst betrieben)" },
+    fern: { titel: "Player an anderem Standort", text: "Ein Pi oder PC an einem anderen Ort (Praxis, Ferienwohnung, Filiale) erreicht SignageCast über Tailscale. An keinem Router wird ein Port geöffnet; Anzeige, Befehle und das Terminal laufen wie zu Hause.",
+          link: { s1: "1. Tailscale auf diesem Server", s2: "2. Mit deinem Tailscale-Konto verbinden", s3: "3. Einschalten",
+                  einrichten: "Tailscale einrichten", einrichtenText: "Installiert Tailscale aus dem offiziellen Paketarchiv (etwa 1 Minute).", laeuft: "wird eingerichtet …",
+                  fehler: { kein_tun: "Diesem Container fehlt /dev/net/tun. Auf dem Proxmox-Host einmal ausführen (Container-ID statt <ID>), dann hier noch einmal:", schluessel: "Der Signaturschlüssel von Tailscale stimmt nicht – abgebrochen.", installation: "Installation fehlgeschlagen – Internet erreichbar?", operator: "Tailscale läuft, erlaubt SignageCast aber die Anmeldung nicht." },
+                  container: "Im Container: Tailscale auf dem Host installieren und dort anmelden – siehe Anleitung. Dann weiter mit „Einschalten“ (erweitert, mit Adresse).",
+                  verbinden: "Mit Tailscale verbinden", verbindenText: "Öffnet die Anmeldung bei Tailscale in einem neuen Fenster – melde dich an und bestätige. Diese Seite merkt es von selbst.",
+                  oeffnen: "Anmelde-Link öffnen", wartet: "Warte auf die Anmeldung …",
+                  verbunden: (n, ip, k) => `Verbunden als „${n}“ (${ip})${k ? " · " + k : ""}`,
+                  einschalten: "Fernstandorte einschalten", an: "Eingeschaltet – beim Player „An einem anderen Standort“ ankreuzen.", aus: "Ausschalten" },
+          erweitert: "Erweitert: OAuth-Client oder Headscale",
+          anleitung: "Anleitung", art: "Dienst", arten: { aus: "aus", link: "Tailscale – per Anmelde-Link", tailscale: "Tailscale – mit OAuth-Client", headscale: "Headscale (selbst betrieben)" },
           server: "SignageCast im Tailnet", serverText: "Die Tailnet-IP dieses Servers (100.x.y.z). Tailscale muss hier laufen – siehe Anleitung.", vorschlag: (ip) => `Erkannt: ${ip} – übernehmen`,
           clientId: "OAuth-Client-ID", clientSecret: "OAuth-Client-Secret", clientText: "In der Tailscale-Verwaltung unter Settings → Trust credentials → OAuth client anlegen: Rechte „Auth Keys: Write“ und „Devices Core: Write“, Tag wie unten.",
           url: "Headscale-Adresse", apiKey: "API-Schlüssel", apiText: "headscale apikeys create --expiration 365d", benutzer: "Benutzer-ID (optional)",
           tag: "Tag der Player", tagText: "Die Player bekommen diesen Tag. In der Zugriffsregel darf er nur SignageCast erreichen.",
-          pruefen: "Verbindung prüfen", geprueft: (n, name) => `Verbindung ok – ${n} Geräte im Tailnet, SignageCast als „${name}“ gefunden.`,
-          regel: "Zugriffsregel (ACL) – Vorschlag", regelText: "In die Zugriffsregeln deines Tailnets übernehmen. Achtung: Ein Abschnitt „acls“ ersetzt die Standardregel „alle dürfen alles“ – deine bisherigen Regeln (z. B. für deine eigenen Geräte) gehören mit hinein.",
+          pruefen: "Verbindung prüfen", geprueft: (n, name) => n == null ? `Verbindung ok – SignageCast ist als „${name}“ im Tailnet.` : `Verbindung ok – ${n} Geräte im Tailnet, SignageCast als „${name}“ gefunden.`,
+          regel: "Zugriffsregel – empfohlen", regelText: "Ohne Regel darf in Tailscale jedes Gerät alle anderen erreichen – ein Player in fremden Räumen käme an alle deine Geräte. Mit dieser Regel erreichen Player nur SignageCast, deine eigenen Geräte weiter alles. Kopieren, im Regel-Editor einfügen (hast du schon eigene Regeln, nur die Teile ergänzen), speichern.",
+          kopieren: "Kopieren", kopiert: "Kopiert", editor: "Regel-Editor von Tailscale öffnen",
           box: "An einem anderen Standort (über Tailscale)", boxHs: "An einem anderen Standort (über Headscale)",
           boxText: (ip) => `Der Player tritt beim ersten Start mit einem Einmal-Schlüssel (7 Tage gültig) dem Tailnet bei und spricht SignageCast unter ${ip} an. Nur mit dem Image für genau dieses Gerät.`,
+          boxLink: "Beim ersten Start meldet sich der Player per Link an: Steht er noch hier, erscheint auf seiner Karte „Player freigeben“; am anderen Ort zeigt der Fernseher einen QR-Code. Nur mit dem Image für genau dieses Gerät.",
+          freigeben: "Player freigeben (Tailscale)", freigebenText: "Öffnet Tailscale – anmelden und bestätigen. Danach verbindet sich der Player von selbst.",
+          ohneTag: "Ohne Tag angemeldet: Die Zugriffsregel fehlt – dieser Player kann alle Geräte in deinem Tailnet erreichen, und seine Anmeldung läuft nach 180 Tagen ab. Regel einfügen (Einstellungen → Fernstandorte), dann neues Image.",
           zeile: "Anderer Standort", wartet: "Image erstellt – noch nicht beigetreten", direkt: "direkt", relay: (r) => `über Relay ${r}`,
           fehler: { fehlt: "Image vor 0.41 ohne Tailscale – neues Image erstellen", abgemeldet: "vom Tailnet abgemeldet – neues Image erstellen", startet: "startet …" },
           entfernt: "Player entfernt – auch aus dem Tailnet", nichtGefunden: "Player entfernt – im Tailnet nicht (mehr) gefunden",
+          entferntLink: "Player entfernt – er meldet sich beim nächsten Kontakt selbst aus Tailscale ab. Ist er nicht mehr erreichbar, in Tailscale unter Machines löschen.",
           entferntFehler: (t) => `Player entfernt, aber nicht aus dem Tailnet: ${t} – bitte dort von Hand löschen`,
           userspace: "Tailscale läuft auf diesem Server im Userspace-Modus. Dann ist die Verwaltung aus dem Tailnet ohne Anmeldung erreichbar – Fernstandorte bleiben gesperrt. Bitte /dev/net/tun einrichten und den Userspace-Modus abschalten (Anleitung)." },
     ki: { titel: "KI-Assistenten im Heimnetz", text: "Claude oder ein anderer KI-Assistent verwaltet die Inhalte direkt: Layouts bauen und ändern, Vorschau ansehen, Laufschrift, Durchsagen, Streams. Jeder Computer bekommt einen eigenen Zugang, den du hier jederzeit entfernen kannst – er gilt dann sofort nicht mehr. Nur im Heimnetz; jede Änderung steht im Protokoll („MCP <Computer>“).",
@@ -487,7 +501,7 @@ const TEXTE = {
           liste: "Players", keine: "No player yet.", online: "online", offline: "offline", nieGesehen: "has never reported",
           zuletzt: (z) => `last seen ${z}`, seit: (z) => `since ${z}`, ip: "IP", netzArt: { kabel: "cable", wlan: "Wi-Fi", hotspot: "hotspot (setup)", keins: "no network" },
           temp: "Temperature", version: "Player", hdmi: "Screen", keinHdmi: "no screen detected", video: "Video",
-          zustand: { start: "starting", koppeln: "waiting for pairing", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
+          zustand: { start: "starting", fern_link: "waiting for approval in Tailscale", koppeln: "waiting for pairing", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
                      stream_fehler: "stream error", gesperrt: "removed", unbekannt: "unknown to the server", direkt: "shows the page directly", direkt_start: "browser starting …" },
           drehung: "Rotation", aufloesung: "Output", a: { auto: "as the TV reports", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Volume (%)", cec: "Switch the TV on and off by schedule (HDMI-CEC)", cecText: "When the layout is “black” (schedule of the TV), the Pi switches the TV off via HDMI and on again later. CEC must be enabled on the TV (Samsung “Anynet+”, LG “SimpLink”, Sony “Bravia Sync”).",
@@ -549,19 +563,33 @@ const TEXTE = {
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
             neu: "Create new link", neuFrage: "Create a new link? The current one stops working immediately – devices using it show an error until the new one is entered.", neuOk: "New link created",
             linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this TV – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
-    fern: { titel: "Players at another site", text: "A Pi or PC at another place (office, holiday flat, branch) reaches SignageCast through Tailscale – or through Headscale if you run it yourself. The player joins with a one-time key on its first start; display, commands and the terminal then work as at home. No port is opened on any router.",
-          anleitung: "Guide: set up Tailscale on this server, OAuth client, access rule", art: "Service", arten: { aus: "off", tailscale: "Tailscale", headscale: "Headscale (self-hosted)" },
+    fern: { titel: "Players at another site", text: "A Pi or PC at another place (office, holiday flat, branch) reaches SignageCast through Tailscale. No port is opened on any router; display, commands and the terminal work as at home.",
+          link: { s1: "1. Tailscale on this server", s2: "2. Connect your Tailscale account", s3: "3. Switch on",
+                  einrichten: "Set up Tailscale", einrichtenText: "Installs Tailscale from the official package archive (about 1 minute).", laeuft: "setting up …",
+                  fehler: { kein_tun: "This container has no /dev/net/tun. Run once on the Proxmox host (container ID instead of <ID>), then here again:", schluessel: "The signing key of Tailscale does not match – stopped.", installation: "Installation failed – internet reachable?", operator: "Tailscale runs but does not let SignageCast log in." },
+                  container: "In a container: install Tailscale on the host and log in there – see the guide. Then “Switch on” under advanced (with the address).",
+                  verbinden: "Connect to Tailscale", verbindenText: "Opens the Tailscale login in a new window – log in and confirm. This page notices by itself.",
+                  oeffnen: "Open login link", wartet: "Waiting for the login …",
+                  verbunden: (n, ip, k) => `Connected as “${n}” (${ip})${k ? " · " + k : ""}`,
+                  einschalten: "Switch on remote sites", an: "Switched on – tick “At another site” for a player.", aus: "Switch off" },
+          erweitert: "Advanced: OAuth client or Headscale",
+          anleitung: "Guide", art: "Service", arten: { aus: "off", link: "Tailscale – login link", tailscale: "Tailscale – OAuth client", headscale: "Headscale (self-hosted)" },
           server: "SignageCast in the tailnet", serverText: "The tailnet IP of this server (100.x.y.z). Tailscale must run here – see the guide.", vorschlag: (ip) => `Detected: ${ip} – use it`,
           clientId: "OAuth client ID", clientSecret: "OAuth client secret", clientText: "In the Tailscale admin under Settings → Trust credentials → create an OAuth client: scopes “Auth Keys: Write” and “Devices Core: Write”, tag as below.",
           url: "Headscale address", apiKey: "API key", apiText: "headscale apikeys create --expiration 365d", benutzer: "User ID (optional)",
           tag: "Tag of the players", tagText: "The players get this tag. In the access rule it may only reach SignageCast.",
-          pruefen: "Check connection", geprueft: (n, name) => `Connection ok – ${n} devices in the tailnet, SignageCast found as “${name}”.`,
-          regel: "Access rule (ACL) – suggestion", regelText: "Add this to the access rules of your tailnet. Careful: an “acls” section replaces the default rule “everyone may do everything” – include your existing rules (e.g. for your own devices).",
+          pruefen: "Check connection", geprueft: (n, name) => n == null ? `Connection ok – SignageCast is in the tailnet as “${name}”.` : `Connection ok – ${n} devices in the tailnet, SignageCast found as “${name}”.`,
+          regel: "Access rule – recommended", regelText: "Without a rule every device in Tailscale may reach every other one – a player in someone else's rooms could reach all your devices. With this rule players only reach SignageCast, your own devices still everything. Copy, paste into the rule editor (if you already have rules, add just these parts), save.",
+          kopieren: "Copy", kopiert: "Copied", editor: "Open the Tailscale rule editor",
           box: "At another site (through Tailscale)", boxHs: "At another site (through Headscale)",
           boxText: (ip) => `On its first start the player joins the tailnet with a one-time key (valid 7 days) and talks to SignageCast at ${ip}. Only with the image for exactly this device.`,
+          boxLink: "On its first start the player logs in by link: while it is still here, its card shows “Approve player”; at the other site the TV shows a QR code. Only with the image for exactly this device.",
+          freigeben: "Approve player (Tailscale)", freigebenText: "Opens Tailscale – log in and confirm. The player then connects by itself.",
+          ohneTag: "Logged in without tag: the access rule is missing – this player can reach all devices in your tailnet, and its login expires after 180 days. Add the rule (Settings → Remote sites), then a new image.",
           zeile: "Other site", wartet: "Image created – not joined yet", direkt: "direct", relay: (r) => `through relay ${r}`,
           fehler: { fehlt: "Image before 0.41 without Tailscale – create a new image", abgemeldet: "logged out of the tailnet – create a new image", startet: "starting …" },
           entfernt: "Player removed – also from the tailnet", nichtGefunden: "Player removed – not (or no longer) found in the tailnet",
+          entferntLink: "Player removed – it logs itself out of Tailscale at its next contact. If it is no longer reachable, delete it in Tailscale under Machines.",
           entferntFehler: (t) => `Player removed, but not from the tailnet: ${t} – please delete it there by hand`,
           userspace: "Tailscale runs in userspace mode on this server. Then the admin is reachable from the tailnet without login – remote sites stay blocked. Please set up /dev/net/tun and switch userspace mode off (guide)." },
     ki: { titel: "AI assistants in your home network", text: "Claude or another AI assistant manages the content directly: build and change layouts, look at a preview, ticker, announcements, streams. Every computer gets its own access, which you can remove here at any time – it stops working immediately. Home network only; every change is in the log (“MCP <computer>”).",
@@ -758,6 +786,9 @@ const TEXTE = {
       fn_aus: "Remote sites are not set up (Settings → Remote sites)",
       fn_server_fehlt: "SignageCast ({d}) is not in this tailnet – check the address or set up Tailscale on this server",
       fn_userspace: "Tailscale runs in userspace mode on this server – then the admin is reachable from the tailnet without login. Please set up /dev/net/tun (guide REMOTE.md) and switch userspace mode off",
+      fn_kein_tailscale: "Tailscale is not set up on this server – first “Set up Tailscale”",
+      fn_operator: "Tailscale does not let SignageCast log in – please run “Set up Tailscale” again",
+      fn_anmeldung: "Login to Tailscale not started: {d}", fn_nicht_verbunden: "First connect to Tailscale (login link), then switch on",
       fn_nur_geraet: "Another site only works with the image for exactly this device (not with a pairing code)",
       z_uhrzeit: "Schedule: time as HH:MM", z_layout: "Schedule: unknown layout {id}",
       s_kein_link: "No YouTube video or channel link recognised", s_nicht_einbettbar: "This video may not be embedded (or does not exist)",
@@ -1302,8 +1333,8 @@ function plNetzAnbinden(wurzel, px) {
 // ---------- Fernwartung (seit 0.33): Terminal zum Pi, gezeichnet mit xterm.js (wie das Terminal in Cockpit) ----------
 // Anderer Standort (seit 0.41) – nur, wenn Fernstandorte eingerichtet sind (P = Antwort von /api/player)
 const fernBox = (P, id, an) => !P.fern ? "" : `<div class="zeile"><label><input type="checkbox" id="${id}" ${an ? "checked" : ""}> ${esc(P.fern.art === "headscale" ? T.fern.boxHs : T.fern.box)}</label></div>
-  <p class="leise">${esc(T.fern.boxText(P.fern.server))}</p>`;
-const fernAntwort = (r) => r && r.fern ? melden(r.fern === "entfernt" ? T.fern.entfernt : r.fern === "nicht_gefunden" ? T.fern.nichtGefunden : T.fern.entferntFehler(r.fern_text), r.fern === "fehler") : null;
+  <p class="leise">${esc(P.fern.art === "link" ? T.fern.boxLink : T.fern.boxText(P.fern.server))}</p>`;
+const fernAntwort = (r) => r && r.fern ? melden(r.fern === "entfernt" ? T.fern.entfernt : r.fern === "link" ? T.fern.entferntLink : r.fern === "nicht_gefunden" ? T.fern.nichtGefunden : T.fern.entferntFehler(r.fern_text), r.fern === "fehler") : null;
 const fwBox = (id, an) => `<div class="zeile"><label><input type="checkbox" id="${id}" ${an ? "checked" : ""}> ${esc(T.pl.fw.image)}</label></div>
   <p class="leise">${esc(T.pl.fw.imageText)}</p>`;
 let xtermGeladen = null;
@@ -1586,6 +1617,8 @@ async function playerSeite(inhalt) {
       ${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
       ${g.wlan_offen ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
+      ${g.fern && b.fern && b.fern.url && !b.fern.ip ? `<div class="zeile"><a class="knopf haupt" href="${esc(b.fern.url)}" target="_blank" rel="noopener">${esc(T.fern.freigeben)}</a></div><p class="leise">${esc(T.fern.freigebenText)}</p>` : ""}
+      ${g.fern && b.fern && b.fern.ohne_tag ? `<p class="warn">⚠ ${esc(T.fern.ohneTag)}</p>` : ""}
       ${g.befehle.length ? `<p class="leise">${esc(T.pl.wartet(g.befehle.map((a) => T.pl.b[a] || a).join(", ")))}</p>` : ""}
       ${g.ergebnisse.length ? `<p class="leise">${esc(T.pl.ergebnis)}: ${g.ergebnisse.slice(0, 3).map((e) => `${esc(uhr(e))} ${esc(T.pl.b[e.art] || (e.art === "wlan" ? T.pl.wlan : e.art))} ${e.ok
         ? `<span class="gut">${esc(T.pl.ok)}</span>` : `<span class="schlecht">${esc(T.pl.fehlgeschlagen)}</span>${e.hinweis ? " (" + esc(e.hinweis) + ")" : ""}`}`).join(" · ")}</p>` : ""}
@@ -2767,18 +2800,51 @@ async function protokollSeite(inhalt) {
 
 // KI-Assistenten im Heimnetz (seit 0.40): Computer verbinden (Datei für Claude Desktop, Befehl/Link für Claude Code,
 // Cursor, VS Code) und wieder entfernen. Der Schlüssel wird nur direkt nach dem Verbinden gezeigt.
-// ---------- Fernstandorte (seit 0.41): Player an einem anderen Ort über Tailscale/Headscale ----------
+// ---------- Fernstandorte (seit 0.41; seit 0.42 einfach per Anmelde-Link) ----------
 async function fernSeite(inhalt) {
-  const F = T.fern;
-  let d = await holen("/api/fernnetz"), pruefung = null;
+  const F = T.fern, FL = F.link;
+  let d = await holen("/api/fernnetz"), pruefung = null, link = "", timer = null, wahl = null;
+  const PVE = "lxc.cgroup2.devices.allow: c 10:200 rwm\nlxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file";
+  const neu = async () => { d = await holen("/api/fernnetz"); zeichnen(); };
+  const beobachten = (bis) => { clearInterval(timer); timer = setInterval(async () => {
+    if (!document.body.contains(inhalt.firstElementChild)) { clearInterval(timer); return; }
+    d = await holen("/api/fernnetz"); if (bis(d)) { clearInterval(timer); link = ""; } zeichnen(); }, 3000); };
+  const kopierFeld = (text, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen}" style="flex:1;font-family:monospace;font-size:12px">${esc(text)}</textarea>
+      <button class="knopf" data-kopieren>${esc(F.kopieren)}</button></div>`;
+  const linkHtml = () => {
+    const h = d.hier, e = d.einrichtung || {};
+    let x = `<h3>${esc(FL.s1)}</h3>`;
+    if (!h) {
+      if (!d.einrichten_moeglich) x += `<p class="leise">${esc(FL.container)}</p>`;
+      else if (e.phase === "laeuft") x += `<p>${esc(FL.laeuft)}</p>`;
+      else {
+        if (e.phase === "fehler") x += `<p class="schlecht">⚠ ${esc(FL.fehler[e.meldung] || e.meldung)}</p>` + (e.meldung === "kein_tun" || !d.tun ? kopierFeld(PVE.replace(/^/gm, "") + "\n# /etc/pve/lxc/<ID>.conf, dann: pct reboot <ID>", 4) : "");
+        else if (!d.tun) x += `<p class="leise">${esc(FL.fehler.kein_tun)}</p>` + kopierFeld(PVE + "\n# /etc/pve/lxc/<ID>.conf, dann: pct reboot <ID>", 4);
+        x += `<div class="zeile"><button class="knopf haupt" id="fnEinrichten">${esc(FL.einrichten)}</button></div><p class="leise">${esc(FL.einrichtenText)}</p>`;
+      }
+      return x;
+    }
+    x += `<p class="gut">✓ Tailscale ${esc(e.version || "")}</p><h3>${esc(FL.s2)}</h3>`;
+    if (!h.laeuft) {
+      const url = link || h.url;
+      x += `<div class="zeile"><button class="knopf haupt" id="fnVerbinden">${esc(FL.verbinden)}</button></div><p class="leise">${esc(FL.verbindenText)}</p>`
+        + (url ? `<p><a class="knopf" href="${esc(url)}" target="_blank" rel="noopener">${esc(FL.oeffnen)}</a> <span class="leise">${esc(FL.wartet)}</span></p>` : "");
+      return x;
+    }
+    x += `<p class="gut">✓ ${esc(FL.verbunden(h.name, h.ip, h.konto))}</p><h3>${esc(FL.s3)}</h3>`;
+    x += d.fernnetz.art === "link" && d.fernnetz.server === h.ip
+      ? `<p class="gut">✓ ${esc(FL.an)}</p><div class="zeile"><button class="knopf" id="fnPruefen">${esc(F.pruefen)}</button><button class="knopf" id="fnAus">${esc(FL.aus)}</button></div>`
+      : `<div class="zeile"><button class="knopf haupt" id="fnEin">${esc(FL.einschalten)}</button></div>`;
+    return x;
+  };
   const zeichnen = () => {
-    const k = d.fernnetz, art = k.art;
+    const k = d.fernnetz, art = wahl || (k.art === "aus" ? "link" : k.art);
     inhalt.innerHTML = `<div class="karte"><h2>${esc(F.titel)}</h2><p class="leise">${esc(F.text)}</p>
         <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/REMOTE.md" target="_blank" rel="noopener">${esc(F.anleitung)}</a></p>
         ${d.userspace ? `<p class="schlecht">⚠ ${esc(F.userspace)}</p>` : ""}
-        <div class="zeile"><label for="fnArt">${esc(F.art)}</label><select id="fnArt">${["aus", "tailscale", "headscale"].map((a) =>
+        <div class="zeile"><label for="fnArt">${esc(F.art)}</label><select id="fnArt">${["link", "tailscale", "headscale", "aus"].map((a) =>
           `<option value="${a}" ${a === art ? "selected" : ""}>${esc(F.arten[a])}</option>`).join("")}</select></div>
-        <div id="fnFelder" ${art === "aus" ? "hidden" : ""}>
+        ${art === "link" ? linkHtml() : art === "aus" ? `<div class="zeile"><button class="knopf haupt" id="fnSpeichern">${esc(T.speichern)}</button></div>` : `
           <div class="zeile"><label for="fnServer">${esc(F.server)}</label><input type="text" id="fnServer" value="${esc(k.server)}" placeholder="100.64.0.1" inputmode="decimal"></div>
           <p class="leise">${esc(F.serverText)}${d.tailnet_ip && d.tailnet_ip !== k.server ? ` <button class="knopf klein" id="fnVorschlag">${esc(F.vorschlag(d.tailnet_ip))}</button>` : ""}</p>
           <div data-fn="tailscale" ${art === "tailscale" ? "" : "hidden"}>
@@ -2791,32 +2857,45 @@ async function fernSeite(inhalt) {
             <p class="leise"><code>${esc(F.apiText)}</code></p>
             <div class="zeile"><label for="fnBen">${esc(F.benutzer)}</label><input type="text" id="fnBen" value="${esc(k.benutzer)}" inputmode="numeric"></div></div>
           <div class="zeile"><label for="fnTag">${esc(F.tag)}</label><input type="text" id="fnTag" value="${esc(k.tag)}"></div>
-          <p class="leise">${esc(F.tagText)}</p></div>
-        <div class="zeile"><button class="knopf haupt" id="fnSpeichern">${esc(T.speichern)}</button>
-          ${art !== "aus" && k.server ? `<button class="knopf" id="fnPruefen">${esc(F.pruefen)}</button>` : ""}</div>
+          <p class="leise">${esc(F.tagText)}</p>
+          <div class="zeile"><button class="knopf haupt" id="fnSpeichern">${esc(T.speichern)}</button>
+            ${k.art === art && k.server ? `<button class="knopf" id="fnPruefen">${esc(F.pruefen)}</button>` : ""}</div>`}
         ${pruefung ? `<p class="gut">✓ ${esc(F.geprueft(pruefung.geraete, pruefung.server_name))}</p>` : ""}</div>
       ${art !== "aus" ? `<div class="karte"><h2>${esc(F.regel)}</h2><p class="leise">${esc(F.regelText)}</p>
-        <textarea readonly rows="9" style="width:100%;font-family:monospace;font-size:12px">${esc(JSON.stringify(d.regel, null, 2))}</textarea></div>` : ""}`;
-    const sicht = () => {
-      const a = $("#fnArt").value;
-      $("#fnFelder").hidden = a === "aus";
-      inhalt.querySelectorAll("[data-fn]").forEach((x) => { x.hidden = x.dataset.fn !== a; });
-    };
-    $("#fnArt").onchange = sicht;
+        ${kopierFeld(JSON.stringify(d.regel, null, 2), 12)}
+        ${art !== "headscale" ? `<p><a href="https://login.tailscale.com/admin/acls/file" target="_blank" rel="noopener">${esc(F.editor)}</a></p>` : ""}</div>` : ""}`;
+    $("#fnArt").onchange = () => { wahl = $("#fnArt").value; pruefung = null; zeichnen(); };
+    inhalt.querySelectorAll("[data-kopieren]").forEach((b) => { b.onclick = async () => {
+      const t = b.parentElement.querySelector("textarea"); t.select();
+      try { await navigator.clipboard.writeText(t.value); } catch (_) { document.execCommand("copy"); }
+      b.textContent = F.kopiert; setTimeout(() => { b.textContent = F.kopieren; }, 2000); }; });
     if ($("#fnVorschlag")) $("#fnVorschlag").onclick = () => { $("#fnServer").value = d.tailnet_ip; };
-    $("#fnSpeichern").onclick = (e) => aktion(e.target, async () => {
-      const r = await senden("/api/fernnetz", { art: $("#fnArt").value, server: $("#fnServer").value.trim(), tag: $("#fnTag").value.trim(),
-        client_id: $("#fnCid").value.trim(), client_secret: $("#fnCsec").value, url: $("#fnUrl").value.trim(), api_key: $("#fnKey").value,
-        benutzer: $("#fnBen").value.trim() });
-      d.fernnetz = r.fernnetz; d.regel = r.regel; pruefung = null;
-      zeichnen();
-    });
-    if ($("#fnPruefen")) $("#fnPruefen").onclick = (e) => aktion(e.target, async () => {
-      pruefung = (await senden("/api/fernnetz/pruefen", {})).pruefung;
-      zeichnen();
+    if ($("#fnEinrichten")) $("#fnEinrichten").onclick = (e) => aktion(e.target, async () => {
+      await senden("/api/updates/anfrage", { aktion: "tailscale" });
+      d.einrichtung = { phase: "laeuft" }; zeichnen();
+      beobachten((x) => x.hier || (x.einrichtung && x.einrichtung.phase === "fehler"));
     }, null);
+    if ($("#fnVerbinden")) $("#fnVerbinden").onclick = (e) => {
+      const fenster = window.open("about:blank", "_blank");          // im Klick öffnen – sonst blockiert der Browser
+      aktion(e.target, async () => {
+        const h = (await senden("/api/fernnetz/anmelden", {})).hier;
+        link = h.url || "";
+        if (fenster) { if (link) fenster.location = link; else fenster.close(); }
+        d.hier = h; zeichnen();
+        beobachten((x) => x.hier && x.hier.laeuft);
+      }, null).then(() => { if (fenster && !link) try { fenster.close(); } catch (_) { /* egal */ } });
+    };
+    const speichern = async (daten) => { const r = await senden("/api/fernnetz", daten); d.fernnetz = r.fernnetz; d.regel = r.regel; wahl = null; pruefung = null; zeichnen(); };
+    if ($("#fnEin")) $("#fnEin").onclick = (e) => aktion(e.target, () => speichern({ art: "link" }));
+    if ($("#fnAus")) $("#fnAus").onclick = (e) => aktion(e.target, () => speichern({ art: "aus" }));
+    if ($("#fnSpeichern")) $("#fnSpeichern").onclick = (e) => aktion(e.target, () => speichern(art === "aus" ? { art: "aus" } : {
+      art, server: $("#fnServer").value.trim(), tag: $("#fnTag").value.trim(), client_id: $("#fnCid").value.trim(), client_secret: $("#fnCsec").value,
+      url: $("#fnUrl").value.trim(), api_key: $("#fnKey").value, benutzer: $("#fnBen").value.trim() }));
+    if ($("#fnPruefen")) $("#fnPruefen").onclick = (e) => aktion(e.target, async () => {
+      pruefung = (await senden("/api/fernnetz/pruefen", {})).pruefung; zeichnen(); }, null);
   };
   zeichnen();
+  if ((d.einrichtung || {}).phase === "laeuft") beobachten((x) => x.hier || (x.einrichtung && x.einrichtung.phase !== "laeuft"));
 }
 
 async function kiSeite(inhalt) {

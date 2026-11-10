@@ -643,7 +643,11 @@ def konfig(g, netze, server, sprache, zeitzone, fernwartung=False, fern=None):
          "wlan": netze}
     if fernwartung:                                    # seit 0.33: Terminal aus der Verwaltung erlaubt (ab Werk aus)
         k["fernwartung"] = True
-    if fern and g:                                     # seit 0.41: anderer Standort – Tailnet beitreten (Einmal-Schlüssel)
+    if fern and g and fern["art"] == "link":           # seit 0.42: per Anmelde-Link (Verwaltung oder QR-Code am TV)
+        k["fern"] = {"art": "link", "lan": fern["lan"], "tag": fern.get("tag", "")}
+        if fern.get("login"):                          # eigener Login-Server (Headscale)
+            k["fern"]["login"] = fern["login"]
+    elif fern and g:                                   # seit 0.41: anderer Standort – Tailnet beitreten (Einmal-Schlüssel)
         k["fern"] = {"art": fern["art"], "schluessel": fern["schluessel"], "login": fern.get("login", "")}
     if g:
         k.update(id=g["id"], schluessel=g["schluessel"], name=g["name"], hostname=hostname(g), wlan_rev=g.get("wlan_rev", 0),
