@@ -45,11 +45,12 @@ pct reboot <ID>
 > hands connections from the tailnet to `127.0.0.1` – including the admin API, which relies on being reachable only
 > locally and has no login of its own. SignageCast detects this mode and keeps remote sites blocked.
 
-Then log in – with a tag, so that the key of the server does not expire:
+Then log in – with a tag, so that the key of the server does not expire, and without the DNS of the tailnet (the
+server does not need it; Tailscale then leaves `/etc/resolv.conf` alone, so YouTube and data sources keep resolving):
 
 ```bash
-sudo tailscale up --advertise-tags=tag:signagecast-server
-# Headscale: sudo tailscale up --login-server https://headscale.example.org --advertise-tags=tag:signagecast-server
+sudo tailscale up --advertise-tags=tag:signagecast-server --accept-dns=false
+# Headscale: sudo tailscale up --login-server https://headscale.example.org --advertise-tags=tag:signagecast-server --accept-dns=false
 tailscale ip -4
 ```
 
@@ -126,7 +127,8 @@ key is invalid at once.
 1. **Tailscale auf dem SignageCast-Server** (Befehle oben). Proxmox-Container: `/dev/net/tun` durchreichen (zwei Zeilen
    in `/etc/pve/lxc/<ID>.conf`, siehe oben). **Nie den Userspace-Modus** (`--tun=userspace-networking`) – dann wäre die
    Verwaltung aus dem Tailnet ohne Anmeldung erreichbar; SignageCast erkennt das und sperrt Fernstandorte. Anmelden mit
-   `tailscale up --advertise-tags=tag:signagecast-server`, Adresse mit `tailscale ip -4`. Docker/NAS: Tailscale auf
+   `tailscale up --advertise-tags=tag:signagecast-server --accept-dns=false` (ohne Tailnet-DNS, damit die
+   Namensauflösung des Servers unberührt bleibt), Adresse mit `tailscale ip -4`. Docker/NAS: Tailscale auf
    dem Host.
 2. **Zugang:** Tailscale – OAuth-Client mit *Auth Keys: Write* und *Devices Core: Write*, Tag `tag:signagecast-player`;
    Headscale – `headscale apikeys create`. In SignageCast: **Einstellungen → Fernstandorte** → speichern →

@@ -42,6 +42,7 @@ TEXTE = {
     "de": {"start": "SignageCast startet …", "verbinde": "Verbinde mit dem Server …", "kein_server": "Server nicht erreichbar",
            "kein_stream": "Warte auf den Stream …", "kein_tv": "Diesem Player ist noch kein Fernseher zugewiesen.",
            "gesperrt": "Dieser Player wurde in der Verwaltung entfernt.", "unbekannt": "Der Server kennt diesen Player nicht.",
+           "fern_weg": "Vom Tailnet getrennt – in der Verwaltung entfernt oder im Tailnet gelöscht. Für einen Neustart ein neues Image erstellen.",
            "leer": "Dieses Image ist noch nicht eingerichtet.",
            "leer2": "In der SignageCast-Verwaltung unter Fernseher → Player ein Image für diesen Bildschirm erstellen.",
            "wlan_titel": "WLAN einrichten", "wlan1": "1. Diesen Code mit dem Handy scannen",
@@ -60,6 +61,7 @@ TEXTE = {
     "en": {"start": "SignageCast is starting …", "verbinde": "Connecting to the server …", "kein_server": "Server not reachable",
            "kein_stream": "Waiting for the stream …", "kein_tv": "No TV has been assigned to this player yet.",
            "gesperrt": "This player was removed in the admin.", "unbekannt": "The server does not know this player.",
+           "fern_weg": "Disconnected from the tailnet – removed in the admin or deleted in the tailnet. Create a new image to start again.",
            "leer": "This image has not been set up yet.",
            "leer2": "In the SignageCast admin, create an image for this screen under TVs → Players.",
            "wlan_titel": "Set up Wi-Fi", "wlan1": "1. Scan this code with your phone",
@@ -928,7 +930,7 @@ class Fernnetz:
 
     def __init__(self, player):
         self.p, self.proc, self.naechster, self.geprueft, self.gesichert = player, None, 0, 0, ""
-        self.faden = None
+        self.faden, self.lief = None, False
         self.info, self.fehler = {}, ""
         self.dauerhaft = BOOT + "/signagecast/tailscale.state"
         self.zustand = self.ORDNER + "/tailscaled.state"
@@ -1005,8 +1007,10 @@ class Fernnetz:
         if lage != "Running":
             self.fehler = "abgemeldet" if lage == "NeedsLogin" else (lage.lower() or "startet")
             self.info = {}
+            if lage == "NeedsLogin" and self.lief:  # lief schon und ist ohne Schlüssel abgemeldet: Gerät wurde gelöscht
+                self.p.zustand = "fern_weg"
             return
-        self.fehler = ""
+        self.fehler, self.lief = "", True
         eigen = (st.get("Self") or {}).get("TailscaleIPs") or []
         ziel = urllib.parse.urlparse(self.p.k.get("server", "")).hostname or ""
         weg = ""
@@ -1480,7 +1484,7 @@ class Player:
         if self.erkennen_bis > jetzt:
             self.anzeige.zeigen([self.k.get("name", ""), f"{modell()} · {netz()[3]}", self.k["id"]])
             return
-        if self.zustand in ("gesperrt", "unbekannt"):
+        if self.zustand in ("gesperrt", "unbekannt", "fern_weg"):
             self.anzeige.zeigen([self.t[self.zustand], self.k.get("name", "")])
             return
         if not online and not self.anzeige.url:
@@ -1588,7 +1592,7 @@ class Player:
         s = self.soll
         return (s.get("modus") == "direkt" and Browser.verfuegbar() and jetzt >= self.rueckfall_bis and bool(s.get("stream"))
                 and jetzt - self.kontakt < 120 and s.get("bildschirm") != "aus" and not self.hotspot.aktiv
-                and self.erkennen_bis <= jetzt and self.zustand not in ("gesperrt", "unbekannt") and not re.search(r"Pi 3|Zero 2", modell()))
+                and self.erkennen_bis <= jetzt and self.zustand not in ("gesperrt", "unbekannt", "fern_weg") and not re.search(r"Pi 3|Zero 2", modell()))
 
     def direkt_url(self):
         return self.server.basis() + "/anzeige/" + hmac.new(bytes.fromhex(self.k["schluessel"]), b"anzeige", "sha256").hexdigest()[:32]

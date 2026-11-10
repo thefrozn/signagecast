@@ -2689,6 +2689,11 @@ elif "up" in a:
             self.assertEqual(f.bericht(), {"ip": "100.64.0.7", "weg": "direkt", "art": "tailscale", "fehler": ""})
             with open(f.dauerhaft) as d:
                 self.assertEqual(d.read(), "{zustand}")
+            os.remove(os.path.join(o, "drin"))                         # im Tailnet gelöscht (Player entfernt)
+            p.zustand = "direkt"
+            f.schritt(t + 60)
+            self.assertEqual((p.zustand, f.bericht()["fehler"]), ("fern_weg", "abgemeldet"))
+            self.assertIn("fern_weg", agent.TEXTE["de"])
             p.k["fern"]["login"] = "https://hs.example.org"
             self.assertIn("--login-server=https://hs.example.org", f.optionen(p.k["fern"]))
             p.k.pop("fern")
