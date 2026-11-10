@@ -2580,7 +2580,8 @@ class Fernnetz041(unittest.TestCase):
         PL = self.PL
         PL.DATEI, PL.ORDNER, PL.GRUND = os.path.join(self.ordner, "player.json"), os.path.join(self.ordner, "p"), os.path.join(self.ordner, "p", "basis")
         PL.daten.clear(); PL.daten.update(PL._leer()); PL.stand.clear(); PL.einmal.clear()
-        alt = (D.FERN, PL.basis_meta)
+        alt = (D.FERN, PL.basis_meta, D.tailscale_hier)
+        D.tailscale_hier = lambda: None
         D.FERN = self.neues_netz()
         srv = D.Server(("127.0.0.1", 0), D.Bearbeiter)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -2612,13 +2613,21 @@ class Fernnetz041(unittest.TestCase):
             self.assertEqual(PL.geraet(gid)["fern"]["ip"], "100.64.0.7")
             self.assertEqual(post(f"/api/player/{gid}/entfernen", {})["fern"], "entfernt")
             self.assertIn(("DELETE", "/api/v2/device/nP1"), [(a[0], a[1]) for a in self.anfragen])
+            D.tailscale_hier = lambda: {"ip": "100.64.0.1", "tun": False, "laeuft": True}     # Userspace-Modus: gesperrt
+            gid = post("/api/player/neu", {"name": "Userspace", "modell": "pi45"})["geraet"]
+            self.assertEqual(post(f"/api/player/{gid}/image", {"fern": True})["code"], "fn_userspace")
+            self.assertEqual(post("/api/fernnetz", {"art": "tailscale"})["code"], "fn_userspace")
+            self.assertEqual(post("/api/fernnetz/pruefen", {})["code"], "fn_userspace")
+            self.assertTrue(post("/api/fernnetz", {"art": "aus"})["ok"])                     # ausschalten geht immer
+            D.FERN = self.neues_netz()
+            D.tailscale_hier = lambda: {"ip": "100.64.0.1", "tun": True, "laeuft": True}
             gid = post("/api/player/neu", {"name": "Sammel", "modell": "pi45"})["geraet"]
             self.assertEqual(post("/api/player/sammel-image", {"fern": True})["code"], "fn_nur_geraet")
             D.FERN = self.FN.Fernnetz(os.path.join(self.ordner, "leer.json"))
             self.assertEqual(post(f"/api/player/{gid}/image", {"fern": True})["code"], "fn_aus")
         finally:
             srv.shutdown(); srv.server_close()
-            D.FERN, PL.basis_meta = alt
+            D.FERN, PL.basis_meta, D.tailscale_hier = alt
             PL.daten.clear(); PL.daten.update(PL._leer()); PL.einmal.clear()
 
     def test_agent(self):

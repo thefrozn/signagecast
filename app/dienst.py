@@ -160,14 +160,27 @@ def fern(aufruf, *a):
         raise M.Meldung(f.code, d=f.innen) from None
 
 
-def eigene_tailnet_ip():
-    """Tailnet-Adresse dieses Servers, falls Tailscale hier läuft (nur als Vorschlag in der Verwaltung)."""
+def tailscale_hier():
+    """Tailscale auf diesem Server: {"ip", "tun"} oder None (nicht installiert, z. B. im Container).
+    tun = False heißt Userspace-Modus (--tun=userspace-networking): dann reicht tailscaled Verbindungen aus dem Tailnet
+    an 127.0.0.1 weiter – auch an die Verwaltungs-API (127.0.0.1:8080, ohne Anmeldung). Das darf nie sein."""
     try:
-        r = subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True, timeout=3)
-        ip = r.stdout.strip().splitlines()[0] if r.returncode == 0 and r.stdout.strip() else ""
-        return ip if FN._adresse_ok(ip) else ""
-    except (OSError, subprocess.SubprocessError, IndexError):
-        return ""
+        r = subprocess.run(["tailscale", "status", "--json"], capture_output=True, text=True, timeout=5)
+        d = json.loads(r.stdout) if r.stdout.strip().startswith("{") else None
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+    if not isinstance(d, dict) or "TUN" not in d:
+        return None
+    ips = (d.get("Self") or {}).get("TailscaleIPs") or []
+    return {"ip": next((a for a in ips if FN._adresse_ok(a)), ""), "tun": bool(d.get("TUN")),
+            "laeuft": d.get("BackendState") == "Running"}
+
+
+def fern_sicher():
+    """Fernstandorte nur, wenn Tailscale hier nicht im Userspace-Modus läuft (sonst wäre die Verwaltungs-API offen)."""
+    h = tailscale_hier()
+    if h and not h["tun"]:
+        raise M.Meldung("fn_userspace")
 layout_vorrang = {}                                # tv -> {"layout", "bis", "von"}: vom Pult gewählt (seit 0.38, nur im Speicher)
 
 
@@ -2983,8 +2996,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "computer": KI.liste(), "port": WEBHOOK_PORT, "eigene_ip": eigene_ip(),
                                       "https": PultServer.tls is not None})
         if pfad == "/api/fernnetz":                    # Fernstandorte (seit 0.41) – Geheimnisse nur als ••••
+            h = tailscale_hier()
             return self.antwort(200, {"ok": True, "fernnetz": FERN.aussen(), "regel": FERN.regel(WEBHOOK_PORT, HLS_PORT),
-                                      "tailnet_ip": eigene_tailnet_ip(), "port": WEBHOOK_PORT, "stream_port": HLS_PORT})
+                                      "tailnet_ip": (h or {}).get("ip", ""), "userspace": bool(h and not h["tun"]),
+                                      "port": WEBHOOK_PORT, "stream_port": HLS_PORT})
         if pfad == "/api/ki/datei":                    # .mcpb als Download (seit 0.40.1), bis zum Einlösen, höchstens 1 h
             x = ki_datei((q.get("id") or [""])[0])
             if not x:
@@ -3351,10 +3366,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             self.protokoll_detail = {"text": l["name"]}
             return {"einstellungen": einst_aussen()}
         if p == "/api/fernnetz":                      # Fernstandorte speichern (seit 0.41)
+            if str(d.get("art", "aus")) != "aus":
+                fern_sicher()
             fern(FERN.speichern, d)
             self.protokoll_detail = {"text": FERN.k["art"]}
             return {"fernnetz": FERN.aussen(), "regel": FERN.regel(WEBHOOK_PORT, HLS_PORT)}
         if p == "/api/fernnetz/pruefen":
+            fern_sicher()
             return {"pruefung": fern(FERN.pruefen)}
         if p == "/api/ablage":                        # Datei der Verwaltung zum Herunterladen ablegen (seit 0.40.1)
             return {"id": ablegen(d.get("name"), d.get("typ"), d.get("inhalt"))}
@@ -3604,6 +3622,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                     raise M.Meldung("pi_unbekannt" if not g else "pi_browser_befehl")
                 if not FERN.aktiv():
                     raise M.Meldung("fn_aus")
+                fern_sicher()
                 schluessel, kid = fern(FERN.schluessel, "SignageCast " + g["name"])
                 f = {"art": FERN.k["art"], "schluessel": schluessel, "kennung": kid,
                      "login": FERN.k["url"] if FERN.k["art"] == "headscale" else ""}

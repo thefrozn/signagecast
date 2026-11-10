@@ -30,13 +30,20 @@ curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.tailscale-keyring.lis
 sudo apt-get update && sudo apt-get install -y tailscale
 ```
 
-In a Proxmox container without `/dev/net/tun` (the default), let Tailscale run in user space – incoming connections to
-port 8890 still work:
+A Proxmox container has no `/dev/net/tun` by default. Give it one – on the **Proxmox host** (container ID instead of
+`<ID>`), then restart the container:
 
 ```bash
-sudo sed -i 's/^FLAGS=.*/FLAGS="--tun=userspace-networking"/' /etc/default/tailscaled
-sudo systemctl restart tailscaled
+cat >> /etc/pve/lxc/<ID>.conf <<'EOF'
+lxc.cgroup2.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
+EOF
+pct reboot <ID>
 ```
+
+> **Never use the userspace mode** (`--tun=userspace-networking`) on the SignageCast server: in that mode tailscaled
+> hands connections from the tailnet to `127.0.0.1` – including the admin API, which relies on being reachable only
+> locally and has no login of its own. SignageCast detects this mode and keeps remote sites blocked.
 
 Then log in – with a tag, so that the key of the server does not expire:
 
@@ -116,8 +123,9 @@ key is invalid at once.
 **Headscale** (selbst betrieben). Kein Port am Router, kein SSH. Der Player fragt wie immer selbst beim Server an – jetzt
 über dessen Tailnet-Adresse; Anzeige, Befehle und das Terminal laufen unverändert.
 
-1. **Tailscale auf dem SignageCast-Server** (Befehle oben). Proxmox-Container ohne `/dev/net/tun`:
-   `FLAGS="--tun=userspace-networking"` in `/etc/default/tailscaled`. Anmelden mit
+1. **Tailscale auf dem SignageCast-Server** (Befehle oben). Proxmox-Container: `/dev/net/tun` durchreichen (zwei Zeilen
+   in `/etc/pve/lxc/<ID>.conf`, siehe oben). **Nie den Userspace-Modus** (`--tun=userspace-networking`) – dann wäre die
+   Verwaltung aus dem Tailnet ohne Anmeldung erreichbar; SignageCast erkennt das und sperrt Fernstandorte. Anmelden mit
    `tailscale up --advertise-tags=tag:signagecast-server`, Adresse mit `tailscale ip -4`. Docker/NAS: Tailscale auf
    dem Host.
 2. **Zugang:** Tailscale – OAuth-Client mit *Auth Keys: Write* und *Devices Core: Write*, Tag `tag:signagecast-player`;

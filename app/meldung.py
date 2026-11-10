@@ -139,6 +139,7 @@ DE = {
     "fn_nicht_erreichbar": "Tailscale/Headscale nicht erreichbar: {d}",
     "fn_aus": "Fernstandorte sind nicht eingerichtet (Einstellungen → Fernstandorte)",
     "fn_server_fehlt": "SignageCast ({d}) ist nicht in diesem Tailnet – Adresse prüfen oder Tailscale auf diesem Server einrichten",
+    "fn_userspace": "Tailscale läuft auf diesem Server im Userspace-Modus – dann ist die Verwaltung aus dem Tailnet ohne Anmeldung erreichbar. Bitte /dev/net/tun einrichten (Anleitung REMOTE.md) und den Userspace-Modus abschalten",
     "fn_nur_geraet": "Ein anderer Standort geht nur mit dem Image für genau dieses Gerät (nicht mit Kopplungscode)",
     "z_uhrzeit": "Zeitplan: Uhrzeit als HH:MM",
     "z_layout": "Zeitplan: unbekanntes Layout {id}",

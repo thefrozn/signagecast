@@ -155,7 +155,8 @@ const TEXTE = {
           zeile: "Anderer Standort", wartet: "Image erstellt – noch nicht beigetreten", direkt: "direkt", relay: (r) => `über Relay ${r}`,
           fehler: { fehlt: "Image vor 0.41 ohne Tailscale – neues Image erstellen", abgemeldet: "vom Tailnet abgemeldet – neues Image erstellen", startet: "startet …" },
           entfernt: "Player entfernt – auch aus dem Tailnet", nichtGefunden: "Player entfernt – im Tailnet nicht (mehr) gefunden",
-          entferntFehler: (t) => `Player entfernt, aber nicht aus dem Tailnet: ${t} – bitte dort von Hand löschen` },
+          entferntFehler: (t) => `Player entfernt, aber nicht aus dem Tailnet: ${t} – bitte dort von Hand löschen`,
+          userspace: "Tailscale läuft auf diesem Server im Userspace-Modus. Dann ist die Verwaltung aus dem Tailnet ohne Anmeldung erreichbar – Fernstandorte bleiben gesperrt. Bitte /dev/net/tun einrichten und den Userspace-Modus abschalten (Anleitung)." },
     ki: { titel: "KI-Assistenten im Heimnetz", text: "Claude oder ein anderer KI-Assistent verwaltet die Inhalte direkt: Layouts bauen und ändern, Vorschau ansehen, Laufschrift, Durchsagen, Streams. Jeder Computer bekommt einen eigenen Zugang, den du hier jederzeit entfernen kannst – er gilt dann sofort nicht mehr. Nur im Heimnetz; jede Änderung steht im Protokoll („MCP <Computer>“).",
           liste: "Verbundene Computer", keine: "Noch kein Computer verbunden – die Schnittstelle ist aus.", name: "Name des Computers", programm: "Programm", recht: "Darf",
           rechte: { aendern: "Inhalte ändern", lesen: "nur lesen" }, arten: { desktop: "Claude Desktop", code: "Claude Code", cursor: "Cursor", vscode: "VS Code" },
@@ -561,7 +562,8 @@ const TEXTE = {
           zeile: "Other site", wartet: "Image created – not joined yet", direkt: "direct", relay: (r) => `through relay ${r}`,
           fehler: { fehlt: "Image before 0.41 without Tailscale – create a new image", abgemeldet: "logged out of the tailnet – create a new image", startet: "starting …" },
           entfernt: "Player removed – also from the tailnet", nichtGefunden: "Player removed – not (or no longer) found in the tailnet",
-          entferntFehler: (t) => `Player removed, but not from the tailnet: ${t} – please delete it there by hand` },
+          entferntFehler: (t) => `Player removed, but not from the tailnet: ${t} – please delete it there by hand`,
+          userspace: "Tailscale runs in userspace mode on this server. Then the admin is reachable from the tailnet without login – remote sites stay blocked. Please set up /dev/net/tun and switch userspace mode off (guide)." },
     ki: { titel: "AI assistants in your home network", text: "Claude or another AI assistant manages the content directly: build and change layouts, look at a preview, ticker, announcements, streams. Every computer gets its own access, which you can remove here at any time – it stops working immediately. Home network only; every change is in the log (“MCP <computer>”).",
           liste: "Connected computers", keine: "No computer connected yet – the interface is off.", name: "Name of the computer", programm: "Program", recht: "May",
           rechte: { aendern: "change content", lesen: "only read" }, arten: { desktop: "Claude Desktop", code: "Claude Code", cursor: "Cursor", vscode: "VS Code" },
@@ -755,6 +757,7 @@ const TEXTE = {
       fn_api: "Tailscale/Headscale refuses: {d}", fn_nicht_erreichbar: "Tailscale/Headscale not reachable: {d}",
       fn_aus: "Remote sites are not set up (Settings → Remote sites)",
       fn_server_fehlt: "SignageCast ({d}) is not in this tailnet – check the address or set up Tailscale on this server",
+      fn_userspace: "Tailscale runs in userspace mode on this server – then the admin is reachable from the tailnet without login. Please set up /dev/net/tun (guide REMOTE.md) and switch userspace mode off",
       fn_nur_geraet: "Another site only works with the image for exactly this device (not with a pairing code)",
       z_uhrzeit: "Schedule: time as HH:MM", z_layout: "Schedule: unknown layout {id}",
       s_kein_link: "No YouTube video or channel link recognised", s_nicht_einbettbar: "This video may not be embedded (or does not exist)",
@@ -2772,6 +2775,7 @@ async function fernSeite(inhalt) {
     const k = d.fernnetz, art = k.art;
     inhalt.innerHTML = `<div class="karte"><h2>${esc(F.titel)}</h2><p class="leise">${esc(F.text)}</p>
         <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/REMOTE.md" target="_blank" rel="noopener">${esc(F.anleitung)}</a></p>
+        ${d.userspace ? `<p class="schlecht">⚠ ${esc(F.userspace)}</p>` : ""}
         <div class="zeile"><label for="fnArt">${esc(F.art)}</label><select id="fnArt">${["aus", "tailscale", "headscale"].map((a) =>
           `<option value="${a}" ${a === art ? "selected" : ""}>${esc(F.arten[a])}</option>`).join("")}</select></div>
         <div id="fnFelder" ${art === "aus" ? "hidden" : ""}>
