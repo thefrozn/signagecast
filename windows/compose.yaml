@@ -1,0 +1,19 @@
+# SignageCast unter Windows mit Docker Desktop (seit 0.44) – angelegt und gestartet von schnellstart.ps1.
+# Unterschiede zu ../compose.yaml: keine Intel-Grafik (/dev/dri gibt es unter Docker Desktop nicht -> CPU kodiert H.264
+# in Full HD), Port 8890 für Raspberry-Pi-/PC-Player offen, SC_HOST_IP und TZ kommen aus der Datei .env daneben.
+services:
+  signagecast:
+    image: ghcr.io/thefrozn/signagecast:latest
+    container_name: signagecast
+    restart: unless-stopped
+    ports:
+      - "8888:8888"                  # Stream für die Fernseher
+      - "19090:19090"                # Verwaltung
+      - "8890:8890"                  # Player (Raspberry Pi, PC), Webhook, Durchsage-Pult
+    volumes:
+      - signagecast:/data
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      SC_HOST_IP: ${SC_HOST_IP:-}    # IP dieses Windows-Rechners im Heimnetz (für Fernseher-Adresse, Player-Images, HA)
+volumes:
+  signagecast:

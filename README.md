@@ -146,6 +146,7 @@ or a Raspberry Pi or PC as player. Without usable graphics a Full HD software fa
 | **Proxmox VE** | one command on the Proxmox host shell (below) | [Installation](docs/INSTALL.md#proxmox-ve) |
 | **Debian 13** (LXC, VM, PC) | `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh \| sh` | [Installation](docs/INSTALL.md#debian-13) |
 | **Docker / Podman** | `docker run …` or [`compose.yaml`](compose.yaml) | [Installation](docs/INSTALL.md#docker--podman) |
+| **Windows PC** | Docker Desktop + one PowerShell command (Full HD) | [Windows guide](docs/install/WINDOWS.md) |
 | **QNAP NAS** | by mouse in Container Station | [QNAP guide](docs/install/QNAP.md) |
 | **Synology NAS** | by mouse in Container Manager | [Synology guide](docs/install/SYNOLOGY.md) |
 

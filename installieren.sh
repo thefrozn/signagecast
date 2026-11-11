@@ -107,8 +107,9 @@ chmod -R a+rX /usr/share/cockpit/signagecast
 systemctl enable --now cockpit.socket >/dev/null 2>&1
 if ! id tvadmin >/dev/null 2>&1; then
   useradd -m -s /bin/bash tvadmin
-  if [ "$UMGEBUNG" = none ]; then
-    # Echter Rechner: kein bekanntes Passwort für ein Linux-Konto, das sich über Cockpit anmelden kann
+  if [ "$UMGEBUNG" = none ] || [ "$UMGEBUNG" = wsl ]; then
+    # Echter Rechner oder WSL (seit 0.44; im Modus „mirrored“ aus dem Heimnetz erreichbar): kein bekanntes Passwort
+    # für ein Linux-Konto, das sich über Cockpit anmelden kann
     STARTPW=$(head -c 64 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 14)
   else
     STARTPW=tvadmin

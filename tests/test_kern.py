@@ -2243,7 +2243,9 @@ class Mcp039(unittest.TestCase):
         self.assertEqual(r[0]["result"]["protocolVersion"], "2025-06-18")
         namen = {w["name"] for w in r[1]["result"]["tools"]}
         self.assertTrue({"save_layout", "preview", "send_ticker", "get_layout_format"} <= namen)
-        self.assertFalse(any(re.search(r"^(update|upgrade)s?$|backup|sicherung|terminal|player|passw|system", n) for n in namen))
+        self.assertFalse(any(re.search(r"^(update|upgrade)s?$|backup|sicherung|terminal|player|passw|system", n) for n in namen - {"list_players"}))
+        lp = next(w for w in r[1]["result"]["tools"] if w["name"] == "list_players")   # Player nur lesen (seit 0.44)
+        self.assertTrue(lp["annotations"]["readOnlyHint"])
         self.assertEqual(r[2]["error"]["code"], -32601)
         for w in r[1]["result"]["tools"]:
             self.assertEqual(w["inputSchema"]["type"], "object")
@@ -2259,6 +2261,33 @@ class Mcp039(unittest.TestCase):
         r = self.werkzeug("delete_layout", {"id": "standard"})                       # in Gebrauch
         self.assertTrue(r["isError"])
         self.assertIn("tv", r["content"][0]["text"])
+
+    def test_player_nur_lesen(self):
+        """Seit 0.44: list_players ohne Schlüssel, WLAN, IP und Terminal; neueste Fernverwaltungs-Einträge zuerst."""
+        alt = self.mcp.anfrage
+        def anfrage(methode, pfad, daten=None, roh=False):
+            if pfad == "/api/player":
+                return {"jetzt": 1, "geraete": [{"id": "8a7ded51", "name": "Flur", "modell": "pi45", "tv": "tv", "online": True,
+                        "zuletzt_vor": 7, "anzeige_modus": "direkt", "ip": "10.0.0.7", "wlan_offen": "netz", "link_pfad": None,
+                        "terminal": {"sid": "x"}, "fernwartung_protokoll": [{"wer": "a"}],
+                        "bericht": {"version": "1.9", "modus_ist": "direkt", "temperatur": 48.2, "ip": "10.0.0.7", "netze": [{"ssid": "netz"}]},
+                        "hinweise": ["pi_warm"], "verlauf": [{"id": str(i), "art": "befehl", "was": "neustart", "wer": "admin",
+                                                               "gesendet": 100 - i, "ok": True, "rev": 3} for i in range(8)]}]}
+            return alt(methode, pfad, daten, roh)
+        self.mcp.anfrage = anfrage
+        r = self.werkzeug("list_players", {"limit": 3})
+        self.assertFalse(r.get("isError"))
+        text = r["content"][0]["text"]
+        for geheim in ("10.0.0.7", "netz", "sid", "schluessel", "fernwartung_protokoll"):
+            self.assertNotIn(geheim, text)
+        d = json.loads(text)[0]
+        self.assertEqual((d["letzte_meldung_vor_s"], d["anzeige_modus_soll"], d["bericht"]["modus_ist"]), (7, "direkt", "direkt"))
+        self.assertEqual([e["gesendet"] for e in d["fernverwaltung"]], [100, 99, 98])
+        self.mcp._lokal.nur_lesen = True                       # auch für Computer mit „nur lesen“
+        try:
+            self.assertFalse(self.werkzeug("list_players", {}).get("isError"))
+        finally:
+            self.mcp._lokal.nur_lesen = False
 
     def test_fernseher_und_fehler(self):
         self.werkzeug("set_tv_layout", {"tv": "tv", "layout": "nacht"})

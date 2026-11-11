@@ -10,6 +10,7 @@ Choose one way. All of them need an **x86 computer** (Intel or AMD CPU); for 4K 
 | **Proxmox VE** | a Proxmox server – one command creates a ready container | [below](#proxmox-ve) |
 | **Debian 13** | an existing LXC, VM or real computer | [below](#debian-13) |
 | **Docker / Podman** | any Linux host | [below](#docker--podman) |
+| **Windows** | a Windows 10/11 PC – Docker Desktop with one PowerShell command, or WSL (Full HD, no Quick Sync) | [Windows guide](install/WINDOWS.md) |
 | **QNAP** | QNAP NAS with Intel/AMD CPU, Container Station (no command line) | [QNAP guide](install/QNAP.md) |
 | **Synology** | Synology NAS with Intel/AMD CPU, Container Manager (no command line) | [Synology guide](install/SYNOLOGY.md) |
 
@@ -113,7 +114,7 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 ## Deutsch (kurz)
 
 Wege: **Proxmox** (Einzeiler oben in der Shell des Proxmox-Hosts), **Debian 13** (`install.sh` als root, erneut
-ausführen = Update), **Docker/Podman** (`docker run …` oder `compose.yaml`), **QNAP** ([Anleitung](install/QNAP.md))
+ausführen = Update), **Docker/Podman** (`docker run …` oder `compose.yaml`), **Windows** ([Anleitung](install/WINDOWS.md): Docker Desktop mit einem PowerShell-Befehl oder WSL, nur Full HD), **QNAP** ([Anleitung](install/QNAP.md))
 und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der Container-App des NAS. Nötig ist ein
 x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
 kann ab 0.23 ein **Raspberry Pi als Player** stehen – Image aus der Verwaltung, siehe [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player)

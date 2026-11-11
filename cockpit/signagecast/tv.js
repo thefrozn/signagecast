@@ -50,9 +50,16 @@ const TEXTE = {
             mediamtx_langsam: (p) => `MediaMTX hat in den letzten 10 Minuten ${p.n}-mal Bilder weggeworfen („reader is too slow“) – sichtbar als Sprung um etwa eine Sekunde. Abhilfe: Update auf SignageCast 0.19.2 (größere Warteschlange) bzw. Ausgabe auf Full HD oder niedrigere Bitrate.`,
             server_ok: () => "Server in Ordnung: Erzeugung und Kodierung schaffen Echtzeit. Ruckelt es trotzdem, liegt es an Übertragung oder Abspielgerät – Test auf dem Gerät (unten).",
           } },
-    as: { titel: "Willkommen bei SignageCast", schritt: (n) => `Schritt ${n} von 4`, sprache: "Sprache der Verwaltung und der Fernseher",
+    as: { titel: "Willkommen bei SignageCast", schritt: (n) => `Schritt ${n} von 5`, sprache: "Sprache der Verwaltung und der Fernseher",
           ort: "Wo steht der Fernseher? Der Ort bestimmt Wetter, Sonnenzeiten und Warnungen.", ha: "Home Assistant verbinden (optional) – für Werte aus dem Haus. Die Anleitung steht danach unter Einstellungen → Home Assistant.",
+          weg: "Wie kommt das Bild auf den Fernseher?", wege: {
+            browser: ["Browser des Fernsehers", "Smart-TV, Fire TV, Android-TV-Box oder ein Tablet: eine Adresse als Startseite."],
+            pi: ["Raspberry Pi", "Für Fernseher ohne brauchbaren Browser: fertiges Image auf eine SD-Karte schreiben, per HDMI anschließen."],
+            pc: ["PC", "Mini-PC oder alter Laptop: fertiges Image auf einen USB-Stick, startet direkt in die Anzeige."] },
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
+          fertigPlayer: "Fertig! Lege jetzt den Player an: Image erstellen, schreiben, einstecken – er meldet sich danach von selbst unter „Player“.",
+          zumPlayer: "Player anlegen", lokal: "„localhost“ erreicht der Fernseher nicht – nimm die IP dieses Computers im Heimnetz (Docker: SC_HOST_IP setzen).",
+          mehr: "Außerdem möglich", mehrListe: { fern: "Fernstandorte – Player an anderen Orten über Tailscale oder Headscale", ki: "KI-Assistenten – Claude & Co. bauen Layouts und schreiben Laufschriften", pult: "Durchsage-Pult – eine eigene Seite nur für Meldungen, z. B. am Empfang" },
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
     pl: { titel: "Player: Raspberry Pi, PC oder Browser", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
@@ -486,9 +493,16 @@ const TEXTE = {
             mediamtx_langsam: (p) => `MediaMTX discarded frames ${p.n} times in the last 10 minutes (“reader is too slow”) – visible as a jump of about one second. Remedy: update to SignageCast 0.19.2 (larger queue) or Full HD output / lower bitrate.`,
             server_ok: () => "Server is fine: rendering and encoding keep up with real time. If it still stutters, transfer or the playback device is the cause – test on the device (below).",
           } },
-    as: { titel: "Welcome to SignageCast", schritt: (n) => `Step ${n} of 4`, sprache: "Language of the admin and the TVs",
+    as: { titel: "Welcome to SignageCast", schritt: (n) => `Step ${n} of 5`, sprache: "Language of the admin and the TVs",
           ort: "Where is the TV? The place sets weather, sun times and warnings.", ha: "Connect Home Assistant (optional) – for values from your home. The guide is under Settings → Home Assistant afterwards.",
+          weg: "How does the picture get onto the TV?", wege: {
+            browser: ["TV browser", "Smart TV, Fire TV, Android TV box or a tablet: one address as start page."],
+            pi: ["Raspberry Pi", "For TVs without a usable browser: write a ready image to an SD card, connect via HDMI."],
+            pc: ["PC", "Mini PC or old laptop: write a ready image to a USB stick, starts straight into the display."] },
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
+          fertigPlayer: "Done! Now add the player: create the image, write it, plug it in – it then shows up under “Players” by itself.",
+          zumPlayer: "Add player", lokal: "The TV cannot reach “localhost” – use this computer's IP in your home network (Docker: set SC_HOST_IP).",
+          mehr: "Also possible", mehrListe: { fern: "Remote sites – players in other places via Tailscale or Headscale", ki: "AI assistants – Claude & co. build layouts and write tickers", pult: "Announcement desk – a page just for messages, e.g. at the reception" },
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
     pl: { titel: "Players: Raspberry Pi, PC or browser", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
@@ -1173,13 +1187,14 @@ async function entitaeten() {
 
 // ---------- Übersicht ----------
 // Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation (assistent_fertig = false); jeder Schritt speichert sofort
+let asWeg = "browser";   // Schritt 4 (seit 0.44): Browser, Raspberry Pi oder PC
 async function assistent(inhalt, n = 1) {
-  const fertig = async () => { E = (await senden("/api/einstellungen", { assistent_fertig: true })).einstellungen; zeigeSeite("uebersicht"); };
+  const fertig = async (ziel = "uebersicht") => { E = (await senden("/api/einstellungen", { assistent_fertig: true })).einstellungen; zeigeSeite(ziel); };
   const kopf = `<h2>${esc(T.as.titel)}</h2><p class="leise">${esc(T.as.schritt(n))}</p>`;
   const fuss = (weiter = true, ueber = false) => `<div class="zeile">${n > 1 ? `<button class="knopf" id="asZur">${esc(T.as.zurueck)}</button>` : ""}
     ${ueber ? `<button class="knopf" id="asUeber">${esc(T.as.ueberspringen)}</button>` : ""}
     ${weiter ? `<button class="knopf haupt" id="asWeiter">${esc(T.as.weiter)}</button>` : ""}</div>
-    ${n < 4 ? `<p class="leise"><a href="#" id="asSpaeter">${esc(T.as.spaeter)}</a></p>` : ""}`;
+    ${n < 5 ? `<p class="leise"><a href="#" id="asSpaeter">${esc(T.as.spaeter)}</a></p>` : ""}`;
   const geh = (m) => assistent(inhalt, m);
   if (n === 1) {
     inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.sprache)}</p>
@@ -1221,17 +1236,33 @@ async function assistent(inhalt, n = 1) {
       if (r.ok) return geh(4);
       $("#asHaErg").innerHTML = `<span class="schlecht">${esc(T.haFehler[r.code] ? T.haFehler[r.code] : r.fehler)}</span> – ${esc(T.as.ueberspringen)}?`;
     }, null);
+  } else if (n === 4) {
+    inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.weg)}</p><div class="as-wege">${Object.entries(T.as.wege).map(([k, [titel, text]]) =>
+      `<label class="as-weg"><input type="radio" name="asWeg" value="${k}"${k === asWeg ? " checked" : ""}><span><b>${esc(titel)}</b><br><span class="leise">${esc(text)}</span></span></label>`).join("")}</div>${fuss()}</div>`;
+    inhalt.querySelectorAll("input[name=asWeg]").forEach((r) => { r.onchange = () => { asWeg = r.value; }; });
+    $("#asWeiter").onclick = () => geh(5);
   } else {
-    const st = await holen("/api/ha/einrichtung");
-    const t = E.fernseher[0];
-    const adr = `http://${st.eigene_ip || location.hostname}:${st.stream_port || 8888}/${t.id}`;
-    inhalt.innerHTML = `<div class="karte assistent">${kopf}<p>${esc(T.as.fertig)}</p><pre>${esc(adr)}</pre>
-      <p class="leise">${esc(T.as.fertigText)}</p>${fuss(false)}<div class="zeile"><button class="knopf haupt" id="asLos">${esc(T.as.los)}</button></div></div>`;
-    $("#asLos").onclick = (e) => aktion(e.target, fertig, null);
+    let oben;
+    if (asWeg === "browser") {
+      const st = await holen("/api/ha/einrichtung");
+      const t = E.fernseher[0];
+      const host = st.eigene_ip || location.hostname;
+      const adr = `http://${host.includes(":") ? `[${host}]` : host}:${st.stream_port || 8888}/${t.id}`;
+      const lokal = !st.eigene_ip && /^(localhost|127\.|\[?::1\]?$)/.test(location.hostname);
+      oben = `<p>${esc(T.as.fertig)}</p><pre>${esc(adr)}</pre>${lokal ? `<p class="schlecht">${esc(T.as.lokal)}</p>` : ""}`;
+    } else {
+      oben = `<p>${esc(T.as.fertigPlayer)}</p><div class="zeile"><button class="knopf haupt" id="asPlayer">${esc(T.as.zumPlayer)}</button></div>`;
+    }
+    inhalt.innerHTML = `<div class="karte assistent">${kopf}${oben}<p class="leise">${esc(T.as.fertigText)}</p>
+      <p><b>${esc(T.as.mehr)}</b></p><ul class="as-mehr">${Object.entries(T.as.mehrListe).map(([k, t]) => `<li><a href="#" data-ziel="${k}">${esc(t)}</a></li>`).join("")}</ul>
+      ${fuss(false)}<div class="zeile"><button class="knopf${asWeg === "browser" ? " haupt" : ""}" id="asLos">${esc(T.as.los)}</button></div></div>`;
+    $("#asLos").onclick = (e) => aktion(e.target, () => fertig(), null);
+    if ($("#asPlayer")) $("#asPlayer").onclick = (e) => aktion(e.target, () => fertig("player"), null);
+    inhalt.querySelectorAll("a[data-ziel]").forEach((a) => { a.onclick = (e) => { e.preventDefault(); aktion(null, () => fertig(a.dataset.ziel), null); }; });
   }
   if ($("#asZur")) $("#asZur").onclick = () => geh(n - 1);
   if ($("#asUeber")) $("#asUeber").onclick = () => geh(n + 1);
-  if ($("#asSpaeter")) $("#asSpaeter").onclick = (e) => { e.preventDefault(); aktion(null, fertig, null); };
+  if ($("#asSpaeter")) $("#asSpaeter").onclick = (e) => { e.preventDefault(); aktion(null, () => fertig(), null); };
 }
 
 // ---------- Durchsage-Pult (seit 0.19) ----------

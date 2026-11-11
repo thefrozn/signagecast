@@ -103,6 +103,7 @@ abspielt – oder ein Raspberry Pi bzw. PC als Player. Ohne nutzbare Grafik läu
 | **Proxmox VE** | ein Befehl in der Shell des Proxmox-Hosts (unten) | [Installation](docs/INSTALL.md#proxmox-ve) |
 | **Debian 13** (LXC, VM, PC) | `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh \| sh` | [Installation](docs/INSTALL.md#debian-13) |
 | **Docker / Podman** | `docker run …` oder [`compose.yaml`](compose.yaml) | [Installation](docs/INSTALL.md#docker--podman) |
+| **Windows-PC** | Docker Desktop + ein PowerShell-Befehl (Full HD) | [Windows-Anleitung](docs/install/WINDOWS.md#deutsch) |
 | **QNAP-NAS** | per Maus in der Container Station | [QNAP-Anleitung](docs/install/QNAP.md) |
 | **Synology-NAS** | per Maus im Container Manager | [Synology-Anleitung](docs/install/SYNOLOGY.md) |
 

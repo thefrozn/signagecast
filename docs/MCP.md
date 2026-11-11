@@ -76,11 +76,12 @@ the container too (port 8890 must be published, as for the panel).
 | `upload_picture`, `list_media`, `set_media`, `delete_media` | Pictures for layouts (logo, background) and own media for the video window |
 | `list_streams`, `add_stream`, `update_stream`, `remove_stream` | Live cams |
 | `list_sources`, `get_source_data`, `add_source_from_curl` | Own data sources and their values |
+| `list_players` | Raspberry Pi/PC players, **read only** (since 0.44): online, seconds since the last report, display mode wanted/actual, temperature, hints and the newest remote management entries – no keys, Wi-Fi or IP addresses |
 | `get_log` | Change log |
 
 A computer with the right **only read** sees only the reading tools (status, lists, layouts, preview, log).
 
-**Deliberately not possible:** updates, backups and restore, players and their terminal, Home Assistant connection,
+**Deliberately not possible:** updates, backups and restore, commands and settings for players, their terminal, Home Assistant connection,
 passwords, keys and tokens, notifications, connecting further computers. Secret headers of data sources are shown as
 ••••.
 
@@ -116,5 +117,5 @@ Laufschrift, Layout auf Zeit, Durchsage, Bilder hochladen, Streams und Datenquel
 `ssh-copy-id tvadmin@<IP>`). Claude Code: `claude mcp add signagecast -- ssh -T tvadmin@<IP> signagecast-mcp`.
 Docker: `docker exec -i signagecast signagecast-mcp`.
 
-Nicht möglich: Updates, Sicherungen, Player/Terminal, HA-Verbindung, Passwörter und Schlüssel, weitere Computer
+Player nur lesen (`list_players`, seit 0.44: letzte Meldung, Anzeigemodus, Fernverwaltung). Nicht möglich: Updates, Sicherungen, Befehle und Einstellungen für Player, Terminal, HA-Verbindung, Passwörter und Schlüssel, weitere Computer
 verbinden. Jede Änderung steht im Protokoll („MCP *Computer*“), jede Layout-Änderung hinterlässt eine Version.

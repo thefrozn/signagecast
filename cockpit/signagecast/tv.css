@@ -24,7 +24,12 @@ nav button { border: 0; background: none; color: var(--leise); padding: 8px 12px
 .karte.geaendert::after { content: attr(data-ungespeichert); position: absolute; top: -9px; right: 12px; background: var(--akzent);
   color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 9px; }
 .karte.assistent { max-width: 640px; margin: 24px auto; padding: 22px; }
-.karte.assistent pre { font-size: 1.15em; }
+.karte.assistent pre { font-size: 1.15em; white-space: pre-wrap; word-break: break-all; }
+.as-wege { display: grid; gap: 8px; margin: 8px 0 14px; }
+.as-weg { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--linie); border-radius: 8px; cursor: pointer; }
+.as-weg:has(input:checked) { border-color: var(--akzent, #2a7ae2); }
+.as-weg input { margin-top: 4px; }
+ul.as-mehr { margin: 4px 0 14px; padding-left: 20px; }
 nav a.hilfe { margin-left: auto; align-self: center; width: 24px; height: 24px; line-height: 24px; text-align: center;
   border: 1px solid var(--linie); border-radius: 50%; color: var(--leise); text-decoration: none; flex: none; }
 .tabelle-rahmen { overflow-x: auto; }

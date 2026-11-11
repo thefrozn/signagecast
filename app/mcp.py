@@ -9,8 +9,8 @@
 #
 # Der Server spricht nur mit der API des Datendienstes (127.0.0.1:8080, wie die Verwaltung). Er kann Inhalte lesen und
 # ändern – Layouts, Zuweisung an Fernseher, Zeitplan, Karussell, Laufschrift, Durchsagen, Bilder, Streams, Datenquellen
-# – aber bewusst nichts am System: keine Updates, keine Sicherungen, keine Player/Terminals, keine Passwörter oder
-# Schlüssel. Jede Änderung steht im Änderungsprotokoll („MCP <Benutzer>“); Layouts bekommen vorher eine Version.
+# – aber bewusst nichts am System: keine Updates, keine Sicherungen, keine Befehle an Player, keine Terminals, keine
+# Passwörter oder Schlüssel. Player nur lesen (seit 0.44: list_players – Zustand, letzte Meldung, Fernverwaltung). Jede Änderung steht im Änderungsprotokoll („MCP <Benutzer>“); Layouts bekommen vorher eine Version.
 # Nur Python-Standardbibliothek.
 import base64, json, os, re, sys, threading, time, urllib.error, urllib.parse, urllib.request
 
@@ -28,7 +28,8 @@ ANLEITUNG = (
     "save_layout (read get_layout_format first; every change keeps a version, restore_layout_version undoes it) → "
     "preview to look at the result → set_tv_layout to put it on a TV. For short-term things use send_ticker, "
     "show_layout_for_a_while or announce. Pictures for layouts come from upload_picture (target 'layout'). "
-    "Ask the user before deleting anything or changing what a TV shows right now.")
+    "Ask the user before deleting anything or changing what a TV shows right now. list_players shows the Raspberry Pi/PC "
+    "players (read only: last report, display mode, remote management log) – commands and settings for players stay in the admin.")
 
 
 class Fehler(Exception):
@@ -373,6 +374,22 @@ def w_get_log(a):
     return get("/api/protokoll")["eintraege"][:int(a.get("limit", 50))]
 
 
+PLAYER_BERICHT = ("version", "modell", "netz", "zustand", "temperatur", "hdmi", "modus_ist", "browser", "rueckfall", "schreibschutz", "laufzeit")
+
+
+def w_list_players(a):
+    """Player nur lesen (seit 0.44): ohne Schlüssel, WLAN, IP-Adressen und Terminal-Inhalte."""
+    aus = []
+    for g in get("/api/player").get("geraete", []):
+        b = g.get("bericht") or {}
+        aus.append({"id": g["id"], "name": g.get("name"), "modell": g.get("modell"), "tv": g.get("tv"), "online": g.get("online"),
+                    "letzte_meldung_vor_s": g.get("zuletzt_vor"), "anzeige_modus_soll": g.get("anzeige_modus"),
+                    "bericht": {k: b[k] for k in PLAYER_BERICHT if k in b}, "hinweise": g.get("hinweise") or [],
+                    "fernverwaltung": [{k: e.get(k) for k in ("art", "was", "wert", "wer", "gesendet", "abgeholt", "fertig", "ok", "hinweis")}
+                                       for e in (g.get("verlauf") or [])[:int(a.get("limit", 5))]]})
+    return aus
+
+
 S, I, B, O, A = ({"type": "string"}, {"type": "integer"}, {"type": "boolean"}, {"type": "object"},
                  {"type": "array", "items": {"type": "string"}})
 TVS = dict(A, description="TV ids; empty = all TVs")
@@ -427,6 +444,8 @@ WERKZEUGE = {
                         schema({"id": S}, ["id"]), False),
     "add_source_from_curl": (w_add_source_from_curl, "Create a data source from a curl command (headers like Authorization are stored as secrets).",
                              schema({"curl": S, "id": dict(S, description="2-16 characters a-z, 0-9, _"), "name": S, "interval_s": I}, ["curl", "id"]), True),
+    "list_players": (w_list_players, "Raspberry Pi/PC players (read only): online, seconds since the last report, display mode wanted/actual, "
+                     "temperature, hints and the newest remote management entries (sent → picked up → result).", schema({"limit": I}), False),
     "get_log": (w_get_log, "Change log (who changed what and when).", schema({"limit": I}), False),
 }
 

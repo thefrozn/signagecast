@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.44.0 (2026-11-11)
+- **Quick start on Windows** (experimental): one PowerShell command sets up SignageCast with Docker Desktop – checks
+  Docker, finds the PC's IP in the home network, starts the container (ports 19090, 8888 and 8890 for players) and
+  shows the initial password. Running it again updates. Alternative with WSL (Debian, mirrored networking) in the new
+  guide [docs/install/WINDOWS.md](docs/install/WINDOWS.md). Full HD with CPU encoding – Windows does not pass Quick Sync
+  into Linux.
+- **Setup wizard:** new step *How does the picture get onto the TV?* – TV browser (address as before, with a hint when
+  the admin was opened as “localhost”), Raspberry Pi or PC (leads straight to *Players*). The last step points to
+  remote sites, AI assistants and the announcement desk.
+- **AI assistants (MCP):** new read-only tool `list_players` – online, last report, display mode wanted/actual,
+  temperature, hints and the newest remote management entries. Commands and settings for players stay in the admin.
+- Security: under WSL `install.sh` gives the admin user `tvadmin` a random password (like on a real computer) instead
+  of the known container default – with mirrored networking Cockpit is reachable from the home network.
+
 ## v0.43.0 (2026-11-11)
 - **Remote management on every player card:** a section lists everything sent to the player – buttons, changed
   settings (TV, display mode, rotation, output, volume, decoding, write protection), Wi-Fi changes and terminal
