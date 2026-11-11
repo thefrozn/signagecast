@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.45.0 (unreleased)
+## v0.45.0 (2026-11-11)
 - **Gallery:** new page *Content → Gallery* – folders with pictures (JPG, PNG, WebP, GIF) and PDFs, uploaded straight
   into SignageCast (drag and drop, choose files or a whole folder, from a phone via the file picker; no cloud service).
   Photos are scaled down to at most 3840 × 2160 on upload (rotation from the camera applied) and only this version is
