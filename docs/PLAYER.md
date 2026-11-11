@@ -65,6 +65,13 @@ open and 60 new requests per hour. Pairing needs an image from 0.25 on.
   fit (e.g. Pi 3 with H.265 or 4K). A notification is sent when a Pi has not reported for 5 minutes.
 - **Buttons:** screenshot, show name (30 s on the TV – find the right Pi), TV on/off via HDMI-CEC, restart player,
   restart Pi, system update now, fetch log.
+- **Last report** (since 0.43) in the card title, counting live: green up to 30 s, yellow up to 60 s, then red
+  (offline). The Pi reports every 15 s.
+- **Remote management** (since 0.43): everything sent to the Pi – buttons, changed settings, Wi-Fi, terminal sessions –
+  with who sent it and three steps: *sent* → *picked up* (at its next report, normally within 15 s) → *result*. For the
+  display mode and write protection the result is what the Pi reports afterwards (e.g. “player now shows direct”, or
+  why it stays on the stream); other settings are applied as soon as they are picked up. Not picked up after 2 minutes
+  → “is the player online?”. The last 20 entries per player are kept, also over a restart of SignageCast.
 - **Settings:** name, TV, rotation (0/90/180/270°), output resolution, volume, *switch the TV on and off by schedule*
   (when the TV's layout is “black”, via HDMI-CEC – enable CEC on the TV: Samsung *Anynet+*, LG *SimpLink*, Sony
   *Bravia Sync*), write protection, weekly system updates (Sunday 3 am), hardware or CPU decoding.
@@ -269,6 +276,13 @@ wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht n
   unpassenden Einstellungen (z. B. Pi 3 mit H.265 oder 4K). Meldet sich ein Pi 5 Minuten nicht, kommt eine Benachrichtigung.
 - **Knöpfe:** Bildschirmfoto, Name anzeigen (30 s auf dem Fernseher – den richtigen Pi finden), TV ein/aus per HDMI-CEC,
   Player neu starten, Pi neu starten, Systemupdate jetzt, Protokoll holen.
+- **Letzte Meldung** (seit 0.43) im Kartentitel, zählt live mit: grün bis 30 s, gelb bis 60 s, danach rot (offline).
+  Der Pi meldet sich alle 15 s.
+- **Fernverwaltung** (seit 0.43): alles, was an den Pi ging – Knöpfe, geänderte Einstellungen, WLAN, Terminal-Sitzungen –
+  mit wer und drei Stufen: *gesendet* → *abgeholt* (bei der nächsten Meldung, meist binnen 15 s) → *Ergebnis*. Beim
+  Anzeigemodus und Schreibschutz zählt, was der Pi danach meldet (z. B. „Player zeigt jetzt Direkt“ oder warum er beim
+  Stream bleibt); andere Einstellungen setzt er beim Abholen sofort um. Nach 2 Minuten nicht abgeholt → „ist der Player
+  online?“. Die letzten 20 Einträge je Player bleiben, auch über einen Neustart von SignageCast.
 - **Einstellungen:** Name, Fernseher, Drehung (0/90/180/270°), Ausgabe-Auflösung, Lautstärke, *Fernseher nach Zeitplan
   ein- und ausschalten* (wenn das Layout des Fernsehers „schwarz“ ist, per HDMI-CEC – CEC am Fernseher einschalten:
   Samsung *Anynet+*, LG *SimpLink*, Sony *Bravia Sync*), Schreibschutz, wöchentliche Systemupdates (So 3 Uhr), Hardware-

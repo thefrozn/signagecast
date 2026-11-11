@@ -90,6 +90,7 @@ button.knopf:disabled { opacity: .5; cursor: default; }
 .bearbeiten { grid-column: 1 / -1; }
 img.pl-bild { display: block; width: 480px; max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--linie); background: #000; }
 pre.pl-log { max-height: 320px; overflow: auto; }
+ul.fv-liste { list-style: none; padding: 0; margin: 6px 0 0; font-size: 13px; } ul.fv-liste li { padding: 3px 0; border-top: 1px solid var(--linie, rgba(127,127,127,.2)); overflow-wrap: anywhere; }
 img.vorschau { width: 100%; border-radius: 8px; border: 1px solid var(--linie); background: #000; aspect-ratio: 16/9; object-fit: contain; }
 pre { white-space: pre-wrap; background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px; padding: 10px;
   font-size: 13px; overflow-x: auto; }

@@ -1852,6 +1852,107 @@ def secrets_pub():
     return pow(2, secrets.randbits(320), PL.DH_P)
 
 
+class Fernverwaltung043(unittest.TestCase):
+    """Fernverwaltung (seit 0.43): gesendet → abgeholt → Ergebnis, ohne neuen Agent."""
+    def setUp(self):
+        import player as PL
+        self.PL, d = PL, tempfile.mkdtemp()
+        PL.DATEI, PL.ORDNER = os.path.join(d, "player.json"), os.path.join(d, "p")
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+        PL.verlauf.clear(); PL.befehle.clear(); PL.stand.clear()
+        self.g = PL.neu({"name": "Flur", "tv": "tv"}, {"tv"})
+
+    def eintrag(self, was):
+        return next(e for e in self.PL.verlauf[self.g["id"]] if e["was"] == was)
+
+    def test_befehl_drei_stufen(self):
+        PL, g = self.PL, self.g
+        PL.befehl(g["id"], "bild", "anna")
+        e = self.eintrag("bild")
+        self.assertEqual((e["wer"], e["abgeholt"], e["fertig"]), ("anna", None, None))
+        a = PL.melden(g, {}, "", None, None)
+        self.assertTrue(e["abgeholt"]); self.assertIsNone(e["fertig"])
+        PL.melden(g, {"ergebnisse": [{"id": a["befehle"][0]["id"], "art": "bild", "ok": False, "hinweis": "kein Bild"}]}, "", None, None)
+        self.assertEqual((e["ok"], e["hinweis"]), (False, "kein Bild"))
+        self.assertTrue(e["fertig"])
+
+    def test_gleicher_befehl_ersetzt_den_alten(self):
+        PL, g = self.PL, self.g
+        PL.befehl(g["id"], "neustart"); PL.befehl(g["id"], "neustart")
+        alt, neu = PL.verlauf[g["id"]][1], PL.verlauf[g["id"]][0]
+        self.assertEqual((alt["hinweis"], neu["fertig"]), ("ersetzt", None))
+
+    def test_einstellungen(self):
+        PL, g = self.PL, self.g
+        PL.aendern(g["id"], {"drehung": 90, "lautstaerke": 100, "name": "Flur 2"}, {"tv"})
+        self.assertEqual([e["was"] for e in PL.verlauf[g["id"]]], ["drehung"])        # nur geänderte, nur am Pi wirksame
+        PL.melden(g, {}, "", None, None)
+        e = self.eintrag("drehung")
+        self.assertEqual((e["alt"], e["wert"], e["ok"]), (0, 90, True))
+
+    def test_anzeigemodus_wartet_auf_den_ist_zustand(self):
+        PL, g = self.PL, self.g
+        PL.aendern(g["id"], {"anzeige_modus": "direkt"}, {"tv"})
+        e = self.eintrag("anzeige_modus")
+        PL.melden(g, {"modus_ist": "stream", "browser": True}, "", None, None)
+        self.assertTrue(e["abgeholt"]); self.assertIsNone(e["fertig"])
+        e["abgeholt"] -= 20                                           # nächste Meldung
+        PL.melden(g, {"modus_ist": "stream", "browser": True}, "", None, None)
+        self.assertIsNone(e["fertig"])
+        PL.melden(g, {"modus_ist": "direkt", "browser": True}, "", None, None)
+        self.assertEqual((e["ok"], e["hinweis"]), (True, ""))
+
+    def test_anzeigemodus_ohne_browser_und_zeitgrenze(self):
+        PL, g = self.PL, self.g
+        PL.aendern(g["id"], {"anzeige_modus": "direkt"}, {"tv"})
+        e = self.eintrag("anzeige_modus")
+        PL.melden(g, {"modus_ist": "stream"}, "", None, None)
+        e["abgeholt"] -= 20
+        PL.melden(g, {"modus_ist": "stream", "browser": False}, "", None, None)
+        self.assertEqual((e["ok"], e["hinweis"]), (False, "kein_browser"))
+        PL.aendern(g["id"], {"anzeige_modus": "stream"}, {"tv"})
+        PL.aendern(g["id"], {"anzeige_modus": "direkt"}, {"tv"})
+        e = PL.verlauf[g["id"]][0]
+        self.assertEqual(PL.verlauf[g["id"]][1]["hinweis"], "ersetzt")
+        PL.melden(g, {"modus_ist": "stream", "browser": True}, "", None, None)
+        e["abgeholt"] -= 400
+        PL.melden(g, {"modus_ist": "stream", "browser": True}, "", None, None)
+        self.assertEqual((e["ok"], e["hinweis"]), (False, "keine_bestaetigung"))
+
+    def test_wlan_und_speichern(self):
+        PL, g = self.PL, self.g
+        PL.wlan_wechseln(g["id"], {"ssid": "Praxis", "passwort": "abcdefgh"}, "anna")
+        PL.melden(g, {"wlan_rev": 0}, "", None, None)
+        e = self.eintrag("wlan")
+        self.assertEqual((e["wert"], bool(e["abgeholt"])), ("Praxis", True))
+        PL.melden(g, {"wlan_rev": 1, "ergebnisse": [{"art": "wlan", "rev": 1, "ok": False, "hinweis": "nicht_erreichbar"}]}, "", None, None)
+        self.assertEqual((e["ok"], e["hinweis"]), (False, "nicht_erreichbar"))
+        roh = open(PL.verlauf_pfad()).read()
+        self.assertNotIn("abcdefgh", roh); self.assertNotIn("psk", roh)
+        self.assertEqual(oct(os.stat(PL.verlauf_pfad()).st_mode & 0o777), "0o600")
+        l = PL.liste(lambda g: [])[0]
+        self.assertEqual((len(l["verlauf"]), type(l["zuletzt_vor"])), (1, int))
+
+    def test_dienst_neustart_und_grenze(self):
+        PL, g = self.PL, self.g
+        for _ in range(25):
+            PL.aendern(g["id"], {"lautstaerke": 50 if PL.daten["geraete"][0]["lautstaerke"] != 50 else 60}, {"tv"})
+        PL.befehl(g["id"], "bild")
+        self.assertEqual(len(PL.verlauf[g["id"]]), PL.VERLAUF_MAX)
+        PL.verlauf_laden()
+        self.assertEqual(PL.verlauf[g["id"]][0]["hinweis"], "dienst_neu")
+        PL.entfernen(g["id"])
+        self.assertNotIn(g["id"], PL.verlauf)
+        self.assertEqual(json.load(open(PL.verlauf_pfad())), {})
+
+    def test_browser_geraet_ohne_verlauf(self):
+        PL = self.PL
+        b = PL.neu({"name": "Kiosk", "tv": "tv", "modell": "browser"}, {"tv"})
+        PL.aendern(b["id"], {"drehung": 90}, {"tv"})
+        self.assertNotIn(b["id"], PL.verlauf)
+
+
 class Wlan0421(unittest.TestCase):
     """0.42.1: Raspberry Pi OS lässt WLAN im NetworkManager aus, bis eine Region gesetzt ist – der Agent schaltet es ein."""
     def setUp(self):

@@ -3068,7 +3068,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
         if pfad == "/api/player":
-            return self.antwort(200, {"ok": True, "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(), "basis_pc": PL.basis_info("pc"),
+            return self.antwort(200, {"ok": True, "jetzt": int(time.time()), "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(), "basis_pc": PL.basis_info("pc"),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend(),
@@ -3642,7 +3642,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             raise KeyError(p)
         gid, art = m.groups()
         if art == "aendern":
-            PL.aendern(gid, d, tvs)
+            PL.aendern(gid, d, tvs, verwaltung_wer(self))
         elif art == "entfernen":
             g = PL.entfernen(gid)
             f = (g or {}).get("fern")
@@ -3660,9 +3660,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                     print("Fernnetz beim Entfernen:", x.code, x.innen, flush=True)
                     return {"fern": "fehler", "fern_text": str(M.Meldung(x.code, d=x.innen))}
         elif art == "befehl":
-            PL.befehl(gid, str(d.get("art", "")))
+            PL.befehl(gid, str(d.get("art", "")), verwaltung_wer(self))
         elif art == "wlan":
-            PL.wlan_wechseln(gid, d.get("wlan") or {})
+            PL.wlan_wechseln(gid, d.get("wlan") or {}, verwaltung_wer(self))
         elif art == "image":
             server, f = str(d.get("server") or player_server()), None
             if d.get("fern"):                        # seit 0.41: anderer Standort – Einmal-Schlüssel fürs Tailnet

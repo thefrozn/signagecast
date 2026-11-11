@@ -93,6 +93,21 @@ const TEXTE = {
                systemupdate: "Systemupdate jetzt", protokoll: "Protokoll holen" },
           bText: { erkennen: "Zeigt 30 Sekunden Name und IP auf dem Fernseher – so findest du den richtigen Pi.", systemupdate: "Der Pi lädt Updates (Schreibschutz kurz aus) und startet zweimal neu – etwa 5–15 Minuten." },
           wartet: (a) => `wartet auf den Pi: ${a}`, ergebnis: "Zuletzt", ok: "ok", fehlgeschlagen: "fehlgeschlagen",
+          vor: (t) => `letzte Meldung vor ${t}`,
+          fv: { titel: "Fernverwaltung", unterwegs: (n) => `${n} unterwegs`, zuletzt: (w, z) => `zuletzt: ${w} ${z}`, leer: "Noch nichts an diesen Player geschickt.",
+            text: "Alles, was an diesen Player geschickt wurde: gesendet → vom Player abgeholt (er meldet sich alle 15 s) → Ergebnis. Die letzten 20 Einträge.",
+            wartet: "wartet auf den Player", offline: "noch nicht abgeholt – ist der Player online?", abgeholt: (s) => `abgeholt nach ${s}`,
+            umsetzen: "wird umgesetzt …", uebernommen: "übernommen", ok: "erledigt", fehler: "fehlgeschlagen", auto: "automatisch",
+            terminal: "Terminal", laeuft: "läuft",
+            e: { tv: "Fernseher", anzeige_modus: "Anzeige", drehung: "Drehung", aufloesung: "Ausgabe", lautstaerke: "Lautstärke", hwdec: "Video-Dekodierung",
+                 schreibschutz: "Schreibschutz", wlan: "WLAN" },
+            modus: { stream: "Stream", direkt: "Direkt" }, an: "an", aus: "aus",
+            h: { ersetzt: "durch eine neuere Änderung ersetzt", dienst_neu: "verworfen – SignageCast wurde neu gestartet, bevor der Player es abholte",
+                 keine_bestaetigung: "keine Bestätigung vom Player", kein_browser: "auf dem Image fehlt der Browser – bleibt beim Stream",
+                 rueckfall: "der Browser hatte Probleme – Stream für 1 Stunde", nur_stream: "Pi 3/Zero 2 W: bleibt beim Stream",
+                 nicht_erreichbar: "Server damit nicht erreichbar – zurück zum alten WLAN", kabel: "hängt am Kabel – WLAN gespeichert, aber nicht getestet",
+                 pc_image: "PC: Updates kommen mit einem neuen Image", unbekannt: "der Agent kennt den Befehl nicht" },
+            modusOk: (m) => `Player zeigt jetzt ${m}` },
           fw: { knopf: "Terminal", knopfText: "Shell (root) auf diesem Pi im Browser – wie das Terminal in Cockpit",
             aus: "Fernwartung ist auf diesem Pi aus. Einschalten: beim Erstellen des Images ankreuzen oder auf der Einrichtungsseite des Pi.",
             alt: "Der Agent auf diesem Pi kann noch keine Fernwartung – er aktualisiert sich bei der nächsten Meldung selbst.",
@@ -514,6 +529,21 @@ const TEXTE = {
                systemupdate: "System update now", protokoll: "Fetch log" },
           bText: { erkennen: "Shows name and IP on the TV for 30 seconds – so you find the right Pi.", systemupdate: "The Pi installs updates (write protection off for a moment) and restarts twice – about 5–15 minutes." },
           wartet: (a) => `waiting for the Pi: ${a}`, ergebnis: "Last", ok: "ok", fehlgeschlagen: "failed",
+          vor: (t) => `last report ${t} ago`,
+          fv: { titel: "Remote management", unterwegs: (n) => `${n} on the way`, zuletzt: (w, z) => `last: ${w} ${z}`, leer: "Nothing sent to this player yet.",
+            text: "Everything sent to this player: sent → picked up by the player (it reports every 15 s) → result. The last 20 entries.",
+            wartet: "waiting for the player", offline: "not picked up yet – is the player online?", abgeholt: (s) => `picked up after ${s}`,
+            umsetzen: "being applied …", uebernommen: "applied", ok: "done", fehler: "failed", auto: "automatic",
+            terminal: "Terminal", laeuft: "running",
+            e: { tv: "TV", anzeige_modus: "Display", drehung: "Rotation", aufloesung: "Output", lautstaerke: "Volume", hwdec: "Video decoding",
+                 schreibschutz: "Write protection", wlan: "Wi-Fi" },
+            modus: { stream: "stream", direkt: "direct" }, an: "on", aus: "off",
+            h: { ersetzt: "replaced by a newer change", dienst_neu: "dropped – SignageCast restarted before the player picked it up",
+                 keine_bestaetigung: "no confirmation from the player", kein_browser: "the image has no browser – stays on the stream",
+                 rueckfall: "the browser had problems – stream for 1 hour", nur_stream: "Pi 3/Zero 2 W: stays on the stream",
+                 nicht_erreichbar: "server not reachable with it – back to the previous Wi-Fi", kabel: "on cable – Wi-Fi saved but not tested",
+                 pc_image: "PC: updates come with a new image", unbekannt: "the agent does not know this command" },
+            modusOk: (m) => `player now shows ${m}` },
           fw: { knopf: "Terminal", knopfText: "Shell (root) on this Pi in the browser – like the terminal in Cockpit",
             aus: "Remote maintenance is off on this Pi. To switch it on: tick it when creating the image, or on the Pi’s setup page.",
             alt: "The agent on this Pi cannot do remote maintenance yet – it updates itself at its next report.",
@@ -1433,7 +1463,8 @@ async function terminalOeffnen(g) {
 }
 
 async function playerSeite(inhalt) {
-  let P = await holen("/api/player");
+  const holenP = async () => Object.assign(await holen("/api/player"), { _geholt: Date.now() });     // Zeitpunkt für „vor X s“
+  let P = await holenP();
   const tvOpt = (w) => `<option value="">${esc(T.pl.keinTv)}</option>` + E.fernseher.map((t) => `<option value="${esc(t.id)}" ${t.id === w ? "selected" : ""}>${esc(t.name)}</option>`).join("");
   const opt = (werte, w, texte) => werte.map((x) => `<option value="${esc(x)}" ${String(x) === String(w) ? "selected" : ""}>${esc(texte ? texte[x] : x)}</option>`).join("");
   const mb = (b) => Math.round(b / 1e6);
@@ -1511,7 +1542,7 @@ async function playerSeite(inhalt) {
     $("#plKoppeln").onclick = (e) => aktion(e.target, async () => {
       await senden("/api/player/koppeln", { code: $("#plCode").value, name: $("#plKName").value, tv: $("#plKTv").value });
       $("#plCode").value = ""; $("#plKName").value = "";
-      P = await holen("/api/player"); $("#plWartend").textContent = wartendText(); listeZeichnen();
+      P = await holenP(); $("#plWartend").textContent = wartendText(); listeZeichnen();
     }, T.pl.gekoppelt);
     const netzNeu = plNetzAnbinden($("#plNeu"), "n");
     const neuSicht = () => {
@@ -1540,15 +1571,15 @@ async function playerSeite(inhalt) {
           $("#plSchritte").innerHTML = schritteHtml(m === "pc"); $("#plSchritte").hidden = false;
         }
         $("#plName").value = "";
-        P = await holen("/api/player"); listeZeichnen();
+        P = await holenP(); listeZeichnen();
       }, m === "browser" ? null : T.pl.laedtHerunter);
     };
     $("#plServerOk").onclick = (e) => aktion(e.target, async () => {
       await senden("/api/player/einstellungen", { server: $("#plServer").value.trim(), stream_port: Number($("#plStreamPort").value) || 0 });
-      P = await holen("/api/player");
+      P = await holenP();
     });
     inhalt.querySelectorAll("[data-vergessen]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
-      await senden("/api/player/wlan-vergessen", { ssid: b.dataset.vergessen }); P = await holen("/api/player"); zeichnen(); }); });
+      await senden("/api/player/wlan-vergessen", { ssid: b.dataset.vergessen }); P = await holenP(); zeichnen(); }); });
     listeZeichnen();
   };
   const linkUrl = (g) => (P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}`) + g.link_pfad;
@@ -1581,16 +1612,76 @@ async function playerSeite(inhalt) {
     };
     k.querySelector("[data-speichern]").onclick = (e) => aktion(e.target, async () => {
       await senden(`/api/player/${g.id}/aendern`, { name: k.querySelector("[name=name]").value, tv: k.querySelector("[name=tv]").value });
-      P = await holen("/api/player"); listeZeichnen();
+      P = await holenP(); listeZeichnen();
     });
     k.querySelector("[data-link-neu]").onclick = (e) => {
       if (!confirm(T.pl.br.neuFrage)) return;
-      aktion(e.target, async () => { await senden(`/api/player/${g.id}/link-neu`); P = await holen("/api/player"); listeZeichnen(); }, T.pl.br.neuOk);
+      aktion(e.target, async () => { await senden(`/api/player/${g.id}/link-neu`); P = await holenP(); listeZeichnen(); }, T.pl.br.neuOk);
     };
     k.querySelector("[data-entfernen]").onclick = (e) => {
       if (!confirm(T.pl.entfernenFrage(g.name))) return;
-      aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holen("/api/player"); listeZeichnen(); });
+      aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holenP(); listeZeichnen(); });
     };
+  };
+  // Fernverwaltung (seit 0.43): letzte Meldung live und was an den Player ging – gesendet → abgeholt → Ergebnis
+  const jetztS = () => (P.jetzt || Date.now() / 1000) + (Date.now() - (P._geholt || Date.now())) / 1000;
+  const dauer = (s) => { s = Math.max(0, Math.round(s)); return s < 90 ? `${s} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`; };
+  const vorHtml = (g) => {
+    const vor = g.zuletzt_vor + (Date.now() - (P._geholt || Date.now())) / 1000;
+    const k = vor <= 30 ? "gut" : vor <= 60 ? "warn" : "schlecht";
+    return `<span class="${k}">● ${esc(vor <= 60 ? T.pl.online : T.pl.offline)}</span> <span class="leise">${esc(T.pl.vor(dauer(vor)))}</span>`;
+  };
+  const fvOffen = new Set(), fvStand = new WeakMap();
+  const fvUhr = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString(ORT(), { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
+  const fvTag = (ts) => { const d = new Date(ts * 1000); return d.toDateString() === new Date().toDateString() ? fvUhr(ts)
+    : d.toLocaleString(ORT(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); };
+  const fvWert = (was, w) => was === "anzeige_modus" ? T.pl.fv.modus[w] || w : was === "drehung" ? `${w}°` : was === "aufloesung" ? T.pl.a[w] || w
+    : was === "lautstaerke" ? `${w} %` : was === "hwdec" ? T.pl.hw[w] || w : was === "schreibschutz" ? (w ? T.pl.fv.an : T.pl.fv.aus)
+    : was === "tv" ? ((E.fernseher.find((t) => t.id === w) || {}).name || w || "–") : String(w ?? "–");
+  const fvWas = (e) => e.art === "befehl" ? T.pl.b[e.was] || e.was : e.art === "wlan" ? `${T.pl.fv.e.wlan} ${T.pl.zitat(e.wert)}`
+    : `${T.pl.fv.e[e.was] || e.was}: ${fvWert(e.was, e.alt)} → ${fvWert(e.was, e.wert)}`;
+  const fvOffenE = (e) => !e.fertig;
+  const fvKopf = (g) => {
+    const n = g.verlauf.filter(fvOffenE).length;
+    if (n) return `<span class="warn">· ${esc(T.pl.fv.unterwegs(n))}</span>`;
+    const e = g.verlauf[0];
+    if (!e) return "";
+    const z = e.ok === true ? `<span class="gut">✓</span>` : e.ok === false ? `<span class="schlecht">✗</span>` : "–";
+    return `<span class="leise">· ${esc(T.pl.fv.zuletzt(fvWas(e), fvTag(e.gesendet)))}</span> ${z}`;
+  };
+  const fvStufe = (e) => {
+    const jetzt = jetztS();
+    if (!e.abgeholt && !e.fertig) return jetzt - e.gesendet > 120 ? `<span class="warn">⚠ ${esc(T.pl.fv.offline)}</span>` : `<span class="warn">… ${esc(T.pl.fv.wartet)}</span>`;
+    const ab = e.abgeholt ? `<span class="leise">${esc(T.pl.fv.abgeholt(dauer(e.abgeholt - e.gesendet)))}</span>` : "";
+    const h = e.hinweis ? ` (${esc(T.pl.fv.h[e.hinweis] || e.hinweis)})` : "";
+    if (!e.fertig) return `${ab} → <span class="warn">${esc(T.pl.fv.umsetzen)}</span>`;
+    if (e.ok === null) return `<span class="leise">${ab ? ab + " → " : ""}${esc(T.pl.fv.h[e.hinweis] || e.hinweis || "–")}</span>`;
+    if (e.ok === false) return `${ab} → <span class="schlecht">✗ ${esc(T.pl.fv.fehler)}</span>${h}`;
+    const text = e.was === "anzeige_modus" ? T.pl.fv.modusOk(fvWert(e.was, e.hinweis === "nur_stream" ? "stream" : e.wert))
+      : e.art === "einstellung" && e.was !== "schreibschutz" ? T.pl.fv.uebernommen : T.pl.fv.ok;
+    return `${ab} → <span class="gut">✓ ${esc(text)}</span>${e.hinweis === "nur_stream" ? h : ""}`;
+  };
+  const fvListe = (g) => {
+    const zeilen = g.verlauf.map((e) => ({ t: e.gesendet, html: `<b>${esc(fvWas(e))}</b> <span class="leise">${esc(e.wer === "auto" ? T.pl.fv.auto : e.wer)}</span> – ${fvStufe(e)}` }));
+    for (const x of g.fernwartung_protokoll || [])
+      zeilen.push({ t: x.start, html: `<b>${esc(T.pl.fv.terminal)}</b> <span class="leise">${esc(x.wer)}</span> – ${dauer(x.ende - x.start)} · ${esc(T.pl.fw.gruende[x.grund] || x.grund)}` });
+    if (g.terminal) zeilen.push({ t: g.terminal.start, html: `<b>${esc(T.pl.fv.terminal)}</b> <span class="leise">${esc(g.terminal.wer)}</span> – <span class="warn">${esc(T.pl.fv.laeuft)}</span>` });
+    zeilen.sort((a, b) => b.t - a.t);
+    return zeilen.length ? `<ul class="fv-liste">${zeilen.map((z) => `<li><span class="leise">${esc(fvTag(z.t))}</span> ${z.html}</li>`).join("")}</ul>`
+      : `<p class="leise">${esc(T.pl.fv.leer)}</p>`;
+  };
+  // jede Sekunde: Alter der Meldung und offene Einträge nachführen, ohne die Karte neu zu zeichnen
+  const fvTicken = () => {
+    for (const g of P.geraete) {
+      const k = inhalt.querySelector(`[data-g="${g.id}"]`);
+      if (!k) continue;
+      const v = k.querySelector("[data-vor]");
+      if (v && g.zuletzt_vor != null) v.innerHTML = vorHtml(g);
+      for (const [sel, html] of [["[data-fv-kopf]", fvKopf(g)], ["[data-fv-liste]", fvListe(g)]]) {
+        const x = k.querySelector(sel);
+        if (x && fvStand.get(x) !== html) { x.innerHTML = html; fvStand.set(x, html); }
+      }
+    }
   };
   const karte = (g) => {
     if (g.modell === "browser") return karteBrowser(g);
@@ -1599,7 +1690,7 @@ async function playerSeite(inhalt) {
     const ort = ORT();
     const zeit = (ts) => ts ? new Date(ts * 1000).toLocaleString(ort, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
     const uhr = (e) => e.ts ? new Date(e.ts * 1000).toLocaleTimeString(ort, { hour: "2-digit", minute: "2-digit" }) : e.zeit;
-    const status = g.online ? `<span class="gut">● ${esc(T.pl.online)}</span> <span class="leise">${esc(T.pl.seit(zeit(g.seit)))}</span>`
+    const status = g.zuletzt_vor != null ? `<span data-vor="${g.id}">${vorHtml(g)}</span>`
       : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
       : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
     const netz = b.netz ? (T.pl.netzArt[b.netz] || b.netz) + (b.ssid ? " " + T.pl.zitat(b.ssid) : "") + (b.signal != null ? ` ${b.signal} %` : "") : "–";
@@ -1616,12 +1707,9 @@ async function playerSeite(inhalt) {
     return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
       ${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
-      ${g.wlan_offen ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
+      ${g.wlan_offen && !g.verlauf.some((e) => e.art === "wlan" && !e.fertig) ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
       ${g.fern && b.fern && b.fern.url && !b.fern.ip ? `<div class="zeile"><a class="knopf haupt" href="${esc(b.fern.url)}" target="_blank" rel="noopener">${esc(T.fern.freigeben)}</a></div><p class="leise">${esc(T.fern.freigebenText)}</p>` : ""}
       ${g.fern && b.fern && b.fern.ohne_tag ? `<p class="warn">⚠ ${esc(T.fern.ohneTag)}</p>` : ""}
-      ${g.befehle.length ? `<p class="leise">${esc(T.pl.wartet(g.befehle.map((a) => T.pl.b[a] || a).join(", ")))}</p>` : ""}
-      ${g.ergebnisse.length ? `<p class="leise">${esc(T.pl.ergebnis)}: ${g.ergebnisse.slice(0, 3).map((e) => `${esc(uhr(e))} ${esc(T.pl.b[e.art] || (e.art === "wlan" ? T.pl.wlan : e.art))} ${e.ok
-        ? `<span class="gut">${esc(T.pl.ok)}</span>` : `<span class="schlecht">${esc(T.pl.fehlgeschlagen)}</span>${e.hinweis ? " (" + esc(e.hinweis) + ")" : ""}`}`).join(" · ")}</p>` : ""}
       ${g.bild ? `<p><img src="" data-bild="${g.id}" alt="${esc(T.pl.bildAlt(zeit(g.bild)))}" title="${esc(T.pl.bildAlt(zeit(g.bild)))}" class="pl-bild"></p>` : ""}
       ${zeilen.length ? `<div class="tabelle-rahmen"><table class="tabelle">${zeilen.map(([k, w]) => `<tr><td class="leise">${esc(k)}</td><td>${esc(w ?? "–")}</td></tr>`).join("")}</table></div>` : ""}
       ${pc ? `<p class="leise">${esc(T.pl.pc.live)}</p>` : ""}
@@ -1631,8 +1719,8 @@ async function playerSeite(inhalt) {
       ${g.online ? (g.fernwartung ? `<div class="zeile"><button class="knopf haupt" data-terminal title="${esc(T.pl.fw.knopfText)}"><span class="mdi mdi-console"></span> ${esc(T.pl.fw.knopf)}</button>
         ${g.terminal ? `<span class="warn">${esc(T.pl.fw.laeuft(zeit(g.terminal.start), g.terminal.wer))}</span>` : ""}</div>`
         : `<p class="leise">${esc("fernwartung" in b ? T.pl.fw.aus : T.pl.fw.alt)}</p>`) : ""}
-      ${(g.fernwartung_protokoll || []).length ? `<details class="erweitert"><summary>${esc(T.pl.fw.protokoll)}</summary><ul class="leise">${g.fernwartung_protokoll.map((x) =>
-        `<li>${esc(zeit(x.start))} · ${esc(x.wer)} · ${Math.max(1, Math.round((x.ende - x.start) / 60))} min · ${esc(T.pl.fw.gruende[x.grund] || x.grund)}</li>`).join("")}</ul></details>` : ""}
+      <details class="erweitert" data-fv="${g.id}" ${fvOffen.has(g.id) ? "open" : ""}><summary>${esc(T.pl.fv.titel)} <span data-fv-kopf>${fvKopf(g)}</span></summary>
+        <p class="leise">${esc(T.pl.fv.text)}</p><div data-fv-liste>${fvListe(g)}</div></details>
       <pre data-log hidden class="pl-log"></pre>
       <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
@@ -1666,13 +1754,14 @@ async function playerSeite(inhalt) {
     const ziel = $("#plListe");
     if (!ziel) return;
     ziel.innerHTML = P.geraete.length ? P.geraete.map(karte).join("") : `<p class="leise">${esc(T.pl.keine)}</p>`;
+    ziel.querySelectorAll("details[data-fv]").forEach((d) => { d.ontoggle = () => { if (d.open) fvOffen.add(d.dataset.fv); else fvOffen.delete(d.dataset.fv); }; });
     bilderLaden();
     for (const g of P.geraete) {
       const k = ziel.querySelector(`[data-g="${g.id}"]`);
       if (g.modell === "browser") { browserAnbinden(k, g); continue; }
       const wlanLesen = plNetzAnbinden(k, "w" + g.id), imageLesen = plNetzAnbinden(k, "i" + g.id);
       k.querySelectorAll("[data-befehl]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
-        await senden(`/api/player/${g.id}/befehl`, { art: b.dataset.befehl }); g.befehle.push(b.dataset.befehl); }, T.pl.befehlOk); });
+        await senden(`/api/player/${g.id}/befehl`, { art: b.dataset.befehl }); fvOffen.add(g.id); P = await holenP(); listeZeichnen(); }, T.pl.befehlOk); });
       const term = k.querySelector("[data-terminal]");
       if (term) term.onclick = () => terminalOeffnen(g);
       const log = k.querySelector("[data-protokoll]");
@@ -1684,11 +1773,11 @@ async function playerSeite(inhalt) {
           aufloesung: w("aufloesung").value, lautstaerke: Number(w("lautstaerke").value), cec_zeitplan: w("cec_zeitplan").checked,
           schreibschutz: w("schreibschutz").checked, systemupdate: w("systemupdate").value, hwdec: w("hwdec").value,
           anzeige_modus: w("modell").value === "pi3" ? "stream" : w("anzeige_modus").value });
-        P = await holen("/api/player"); listeZeichnen();
+        fvOffen.add(g.id); P = await holenP(); listeZeichnen();
       });
       k.querySelector("[name=modell]").onchange = (e) => k.querySelectorAll("[data-anzeige]").forEach((x) => { x.hidden = e.target.value === "pi3"; });
       k.querySelector("[data-wlan-senden]").onclick = (e) => aktion(e.target, async () => {
-        await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); P = await holen("/api/player"); listeZeichnen(); }, T.pl.wlanGesendet);
+        await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); fvOffen.add(g.id); P = await holenP(); listeZeichnen(); }, T.pl.wlanGesendet);
       k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {
         const fo = k.querySelector(`#plIForm${g.id}`);
         const fe = k.querySelector(`#plIFern${g.id}`);
@@ -1696,17 +1785,23 @@ async function playerSeite(inhalt) {
         plHerunterladen(d.kennung, d.datei); }, T.pl.laedtHerunter);
       k.querySelector("[data-entfernen]").onclick = (e) => {
         if (!confirm(T.pl.entfernenFrage(g.name))) return;
-        aktion(e.target, async () => { const r = await senden(`/api/player/${g.id}/entfernen`); P = await holen("/api/player"); listeZeichnen(); fernAntwort(r); }, g.fern ? null : undefined);
+        aktion(e.target, async () => { const r = await senden(`/api/player/${g.id}/entfernen`); P = await holenP(); listeZeichnen(); fernAntwort(r); }, g.fern ? null : undefined);
       };
     }
   };
   // alle 10 s auffrischen – nicht, solange jemand in einer Karte tippt oder ein Formular offen ist
+  // seit 0.43: jede Sekunde „vor X s“ und die Fernverwaltung nachführen; abfragen alle 10 s, solange etwas unterwegs ist alle 3 s
+  let holt = false;
   const beobachten = () => {
     clearInterval(timer);
     timer = setInterval(async () => {
-      if (aktiv !== "player") return;
+      if (aktiv !== "player" || holt) return;
+      fvTicken();
+      const unterwegs = P.geraete.some((g) => (g.verlauf || []).some(fvOffenE));
+      if (Date.now() - P._geholt < (laedt() ? 2000 : unterwegs ? 3000 : 10000)) return;
       const alt = laedt();
-      P = await holen("/api/player");
+      holt = true;
+      try { P = await holenP(); } finally { holt = false; }
       if (alt || laedt()) {
         $("#plBasis").innerHTML = basisText(false);
         $("#plBasisPc").innerHTML = basisText(true);
@@ -1714,8 +1809,9 @@ async function playerSeite(inhalt) {
       }
       const w = $("#plWartend");
       if (w) w.textContent = wartendText();
-      if (!inhalt.querySelector("#plListe :focus, #plListe details[open], #plListe pre:not([hidden]), #plListe .geaendert")) listeZeichnen();
-    }, laedt() ? 2000 : 10000);
+      if (!inhalt.querySelector("#plListe :focus, #plListe details[open]:not([data-fv]), #plListe pre:not([hidden]), #plListe .geaendert")) listeZeichnen();
+      else fvTicken();
+    }, 1000);
   };
   zeichnen();
   beobachten();

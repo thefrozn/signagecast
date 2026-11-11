@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## v0.43.0 (2026-11-11)
+- **Remote management on every player card:** a section lists everything sent to the player – buttons, changed
+  settings (TV, display mode, rotation, output, volume, decoding, write protection), Wi-Fi changes and terminal
+  sessions – with who sent it and three steps: *sent* → *picked up* (with how long it took) → *result* (done, applied,
+  failed with the reason). Switching between stream and direct mode now shows “being applied …” until the player
+  reports the new mode, or why it stays on the stream (no browser on the image, fallback, Pi 3). Not picked up after
+  2 minutes → “is the player online?”. Last 20 entries per player, kept over a restart; while something is on its way
+  the page asks every 3 s instead of 10 s. Works with every agent – no new image.
+- **Last report** in the card title, counting live (green up to 30 s, yellow up to 60 s, then red/offline).
 - README (en/de): section *Liability and warranty* / *Haftung und Gewährleistung*.
 
 ## v0.42.1 (2026-11-10)

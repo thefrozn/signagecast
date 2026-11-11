@@ -52,6 +52,7 @@ sperre = threading.Lock()
 stand = {}            # id -> {"zeit", "bericht", "ip"} (letzte Meldung, nur im Speicher)
 befehle = {}          # id -> [{"id", "art", "zeit"}] noch nicht abgeholt
 ergebnisse = {}       # id -> [{"art", "ok", "hinweis", "zeit"}] (die letzten 10)
+verlauf = {}          # id -> [Eintrag] Fernverwaltung (seit 0.43): gesendet → abgeholt → Ergebnis, neueste zuerst
 einmal = {}           # Download-Kennung -> {"id" ("" = Image für mehrere Pis), "netze", "server", "bis"}
 kopplungen = {}       # Anfrage-Kennung -> {"code", "schluessel", "bis", "ip", "modell", "geraet"} (nur im Speicher)
 koppel_zeiten = []    # Zeitpunkte neuer Kopplungsanfragen der letzten Stunde (Grenze gegen Durchprobieren)
@@ -191,14 +192,135 @@ def neu(d, tvs, schluessel=None):
     return g
 
 
-def aendern(gid, d, tvs):
+def aendern(gid, d, tvs, wer=""):
     with sperre:
         g = geraet(gid)
         if not g:
             raise Fehler("pi_unbekannt")
+        vorher = {k: g.get(k) for k in AM_PI}
         _felder(g, d, tvs)
         speichern(daten)
+        if g.get("modell") != BROWSER:
+            for k in AM_PI:
+                if g.get(k) != vorher[k]:
+                    for e in verlauf.get(gid, []):
+                        if e["art"] == "einstellung" and e["was"] == k and not e["fertig"]:
+                            e.update(fertig=int(time.time()), ok=None, hinweis="ersetzt")
+                    _eintrag(gid, {"id": secrets.token_hex(4), "art": "einstellung", "was": k, "wert": g.get(k), "alt": vorher[k], "wer": wer})
     return g
+
+
+# ---------- Fernverwaltung (seit 0.43): was wurde an den Player geschickt, hat er es abgeholt, mit welchem Ergebnis ----------
+# Kein neuer Agent nötig: Abgeholt = die Meldung, deren Antwort es enthielt; Ergebnis = Befehlsergebnis (über die Kennung),
+# WLAN-Ergebnis (über die Revision), beim Anzeigemodus und Schreibschutz der gemeldete Ist-Zustand. Die übrigen
+# Einstellungen setzt der Agent beim Abholen sofort um – dort gilt „abgeholt“ als erledigt.
+# Höchstens VERLAUF_MAX Einträge je Gerät; geschrieben wird nur, wenn sich ein Eintrag ändert (nicht bei jeder Meldung).
+AM_PI = ("tv", "anzeige_modus", "drehung", "aufloesung", "lautstaerke", "hwdec", "schreibschutz")
+VERLAUF_MAX = 20
+BESTAETIGEN_S = {"anzeige_modus": 300, "schreibschutz": 900}     # so lange auf den Ist-Zustand warten, dann „keine Bestätigung“
+
+
+def verlauf_pfad():
+    return os.path.join(os.path.dirname(DATEI), "player-verlauf.json")
+
+
+def verlauf_laden():
+    """Beim Start: Befehle leben nur im Speicher – was noch nicht abgeholt war, ist mit dem Neustart des Dienstes weg."""
+    try:
+        with open(verlauf_pfad()) as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        d = {}
+    verlauf.clear()
+    if not isinstance(d, dict):
+        return
+    jetzt = int(time.time())
+    for gid, liste in d.items():
+        if not isinstance(liste, list):
+            continue
+        liste = [e for e in liste if isinstance(e, dict) and e.get("id") and e.get("art")][:VERLAUF_MAX]
+        for e in liste:
+            if e["art"] == "befehl" and not e.get("abgeholt") and not e.get("fertig"):
+                e.update(fertig=jetzt, ok=None, hinweis="dienst_neu")
+        verlauf[gid] = liste
+
+
+def _verlauf_speichern():
+    pfad = verlauf_pfad()
+    try:
+        os.makedirs(os.path.dirname(pfad), exist_ok=True)
+        tmp = pfad + ".tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            json.dump(verlauf, f, ensure_ascii=False)
+        os.replace(tmp, pfad)
+    except OSError as f:
+        print("Player-Verlauf nicht gespeichert:", f, flush=True)
+
+
+def _eintrag(gid, e):
+    """Mit gehaltener Sperre."""
+    e = dict({"wert": None, "alt": None, "abgeholt": None, "fertig": None, "ok": None, "hinweis": ""}, **e)
+    e.update(wer=str(e.get("wer") or "")[:40], gesendet=int(time.time()))
+    verlauf[gid] = ([e] + verlauf.get(gid, []))[:VERLAUF_MAX]
+    _verlauf_speichern()
+
+
+def _verlauf_melden(g, bericht, offen, wlan_gesendet):
+    """Bei jeder Meldung (mit gehaltener Sperre): abgeholt und Ist-Zustand nachtragen."""
+    liste = verlauf.get(g["id"])
+    if not liste:
+        return
+    jetzt, geaendert = int(time.time()), False
+    ids = {b["id"] for b in offen}
+    for e in liste:
+        if e["fertig"]:
+            continue
+        if not e["abgeholt"]:
+            if e["art"] == "befehl" and e["id"] in ids or e["art"] == "einstellung" or e["art"] == "wlan" and wlan_gesendet:
+                e["abgeholt"], geaendert = jetzt, True
+                if e["art"] == "einstellung" and e["was"] not in BESTAETIGEN_S:
+                    e.update(fertig=jetzt, ok=True)          # setzt der Agent beim Abholen sofort um
+            continue
+        if e["art"] != "einstellung" or jetzt <= e["abgeholt"]:
+            continue
+        if e["was"] == "anzeige_modus":                       # erst die Meldung nach dem Abholen zeigt den neuen Zustand
+            ziel = modus_fuer(g, bericht)
+            if bericht.get("modus_ist") == ziel:
+                e.update(fertig=jetzt, ok=True, hinweis="" if ziel == e["wert"] else "nur_stream")
+            elif ziel == "direkt" and bericht.get("browser") is False:
+                e.update(fertig=jetzt, ok=False, hinweis="kein_browser")
+            elif ziel == "direkt" and bericht.get("rueckfall"):
+                e.update(fertig=jetzt, ok=False, hinweis="rueckfall")
+        elif e["was"] == "schreibschutz" and "schreibschutz" in bericht and bool(bericht["schreibschutz"]) == bool(e["wert"]):
+            e.update(fertig=jetzt, ok=True)
+        if not e["fertig"] and jetzt - e["abgeholt"] > BESTAETIGEN_S.get(e["was"], 0):
+            e.update(fertig=jetzt, ok=False, hinweis="keine_bestaetigung")
+        geaendert = geaendert or bool(e["fertig"])
+    if geaendert:
+        _verlauf_speichern()
+
+
+def _verlauf_ergebnisse(g, liste):
+    """Ergebnisse der Befehle (Kennung) und des WLAN-Wechsels (Revision) eintragen. Mit gehaltener Sperre."""
+    v = verlauf.get(g["id"])
+    if not v or not isinstance(liste, list):
+        return
+    geaendert = False
+    for r in liste:
+        if not isinstance(r, dict):
+            continue
+        for e in v:
+            if e["fertig"]:
+                continue
+            if e["art"] == "befehl" and r.get("id") and r.get("id") == e["id"] or \
+                    e["art"] == "wlan" and r.get("art") == "wlan" and r.get("rev") == e.get("rev"):
+                e.update(fertig=int(time.time()), ok=bool(r.get("ok")), hinweis=str(r.get("hinweis") or "")[:200])
+                e["abgeholt"] = e["abgeholt"] or e["fertig"]
+                geaendert = True
+                break
+    if geaendert:
+        _verlauf_speichern()
 
 
 def entfernen(gid):
@@ -212,6 +334,9 @@ def entfernen(gid):
     stand.pop(gid, None)
     befehle.pop(gid, None)
     direkt_abruf.pop(gid, None)
+    with sperre:
+        if verlauf.pop(gid, None) is not None:
+            _verlauf_speichern()
     FW.entfernen(gid)
     for endung in (".jpg", ".log"):
         try:
@@ -232,7 +357,7 @@ def link_neu(gid):
     direkt_abruf.pop(gid, None)
 
 
-def befehl(gid, art):
+def befehl(gid, art, wer=""):
     if art not in BEFEHLE:
         raise Fehler("pi_befehl")
     g = geraet(gid)
@@ -241,11 +366,17 @@ def befehl(gid, art):
     if g.get("modell") == BROWSER:
         raise Fehler("pi_browser_befehl")
     with sperre:
+        alt = [b["id"] for b in befehle.get(gid, []) if b["art"] == art]
         liste = [b for b in befehle.get(gid, []) if b["art"] != art]
-        befehle[gid] = liste + [{"id": secrets.token_hex(4), "art": art, "zeit": time.time()}]
+        bid = secrets.token_hex(4)
+        befehle[gid] = liste + [{"id": bid, "art": art, "zeit": time.time()}]
+        for e in verlauf.get(gid, []):
+            if e["id"] in alt and not e["fertig"]:          # derselbe Befehl noch einmal: der alte fällt weg
+                e.update(fertig=int(time.time()), ok=None, hinweis="ersetzt")
+        _eintrag(gid, {"id": bid, "art": "befehl", "was": art, "wer": wer})
 
 
-def wlan_wechseln(gid, w):
+def wlan_wechseln(gid, w, wer=""):
     """Neues WLAN an den Pi schicken. Er probiert es aus und kehrt zum alten zurück, wenn er den Server damit nicht erreicht."""
     netz, merken = wlan_aus_anfrage(w)
     if not netz:
@@ -259,6 +390,11 @@ def wlan_wechseln(gid, w):
         g["wlan_rev"] = int(g.get("wlan_rev", 0)) + 1
         g["wlan_soll"] = {"rev": g["wlan_rev"], "netze": [netz], "seit": time.strftime("%Y-%m-%d %H:%M")}
         speichern(daten)
+        if g.get("modell") != BROWSER:
+            for e in verlauf.get(gid, []):
+                if e["art"] == "wlan" and not e["fertig"]:
+                    e.update(fertig=int(time.time()), ok=None, hinweis="ersetzt")
+            _eintrag(gid, {"id": secrets.token_hex(4), "art": "wlan", "was": "wlan", "wert": netz["ssid"], "rev": g["wlan_rev"], "wer": wer})
 
 
 def wlan_vergessen(ssid):
@@ -420,8 +556,10 @@ def agent_hash():
 def melden(g, bericht, ip, stream, bildschirm):
     """Meldung eines Players verbuchen; Antwort: alles, was er tun soll."""
     bericht = bericht if isinstance(bericht, dict) else {}
-    ergebnisse_merken(g, bericht.pop("ergebnisse", None))
+    erg = bericht.pop("ergebnisse", None)
+    ergebnisse_merken(g, erg)
     with sperre:
+        _verlauf_ergebnisse(g, erg)
         alt = stand.get(g["id"]) or {}
         stand[g["id"]] = {"zeit": time.time(), "bericht": bericht, "ip": ip, "seit": alt.get("seit") if alt.get("zeit", 0) > time.time() - ONLINE_S * 2 else time.time()}
         offen = befehle.pop(g["id"], [])
@@ -433,6 +571,7 @@ def melden(g, bericht, ip, stream, bildschirm):
         if ws and int(bericht.get("wlan_rev") or 0) >= ws["rev"]:
             g["wlan_soll"] = None
             speichern(daten)
+        _verlauf_melden(g, bericht, offen, bool(g.get("wlan_soll")))
     abruf = direkt_abruf.get(g["id"])
     return {"ok": True, "intervall": 15, "name": g["name"], "stream": stream, "lautstaerke": g["lautstaerke"],
             "modus": modus_fuer(g, bericht), "direkt_abruf": int(time.time() - abruf) if abruf else None,
@@ -496,7 +635,8 @@ def liste(hinweise):
                         protokoll=os.path.exists(os.path.join(ORDNER, g["id"] + ".log")), hinweise=hinweise(g),
                         anzeige_modus=g.get("anzeige_modus", "stream"), modus=modus_fuer(g),
                         fernwartung=bool((s.get("bericht") or {}).get("fernwartung")), terminal=FW.zustand(g["id"]),
-                        fernwartung_protokoll=FW.protokoll(g["id"], 5)))
+                        fernwartung_protokoll=FW.protokoll(g["id"], 5), verlauf=[dict(e) for e in verlauf.get(g["id"], [])],
+                        zuletzt_vor=int(time.time() - z) if z else None))
     return aus
 
 
@@ -512,7 +652,7 @@ def wochenpflege():
         if g["systemupdate"] == "woechentlich" and online(g["id"]) and time.time() - (lu.get("zeit") or 0) > 6 * 86400 \
                 and not any(b["art"] == "systemupdate" for b in befehle.get(g["id"], [])) and g["id"] not in pflege_heute:
             pflege_heute.add(g["id"])
-            befehl(g["id"], "systemupdate")
+            befehl(g["id"], "systemupdate", "auto")
     if t.tm_min > 55:
         pflege_heute.clear()
 
@@ -770,3 +910,6 @@ def image_schreiben(kennung, schreiben, sprache, zeitzone):
     if not roh_aus:
         schreiben(gz.flush())
     einmal.pop(kennung, None)
+
+
+verlauf_laden()
