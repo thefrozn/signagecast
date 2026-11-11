@@ -576,7 +576,12 @@ function galerieHolen(oid) {
     g.laedt = true;
     fetch(`galerie/ordner/${encodeURIComponent(oid)}.json`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (j && j.ok) { g.stand = j.stand; g.folien = j.folien || []; g.ordnungen = {}; } })
+      .then((j) => {
+        if (!j || !j.ok) return;
+        const vorher = g.folien.length;
+        g.stand = j.stand; g.folien = j.folien || []; g.ordnungen = {};
+        if (!vorher !== !g.folien.length && daten && !daten.layout.schwarz) fuellen();   // gleich zeigen bzw. ausblenden
+      })
       .catch(() => {})
       .finally(() => { g.laedt = false; });
   }
@@ -604,16 +609,18 @@ function galerieOrdnung(oid, g, reihenfolge, runde) {
   g.ordnungen[key] = f;
   return f;
 }
-function galerieUrl(oid, reihenfolge, sekunden) {
+// Full-HD-Fassung, solange die Fläche (in echten Bildpunkten) nicht größer ist – spart im Browser ~20 MB je Bild
+function galerieUrl(oid, reihenfolge, sekunden, breite, hoehe) {
   const g = galerien[oid];
   if (!g || !g.folien.length) return null;
   const n = g.folien.length, schritt = Math.floor(jetztMs() / 1000 / Math.max(3, sekunden));
-  const f = galerieOrdnung(oid, g, reihenfolge, Math.floor(schritt / n));
-  return f[schritt % n].u;
+  const f = galerieOrdnung(oid, g, reihenfolge, Math.floor(schritt / n))[schritt % n];
+  const dpr = window.devicePixelRatio || 1;
+  return f.h && breite * dpr <= 1920 && hoehe * dpr <= 1080 ? f.h : f.u;
 }
 function galerieFolie(b) {
   const o = b.e.optionen;
-  const url = galerieUrl(o.ordner, o.reihenfolge, o.sekunden);
+  const url = galerieUrl(o.ordner, o.reihenfolge, o.sekunden, b.d.clientWidth, b.d.clientHeight);
   if (!url || b.galUrl === url) return;
   b.galUrl = url;
   const neu = new Image();
@@ -631,7 +638,7 @@ function galerieFolie(b) {
 }
 function hgGalerieSetzen(hg) {                // Hintergrund als Diashow: erst zeigen, wenn das Bild geladen ist
   if (!hg.galerie || !galerieHolen(hg.galerie).folien.length) return false;
-  const u = galerieUrl(hg.galerie, "eigene", hg.galerie_s || 60), h = $("hg");
+  const h = $("hg"), u = galerieUrl(hg.galerie, "eigene", hg.galerie_s || 60, h.clientWidth || 1920, h.clientHeight || 1080);
   if (u && h.dataset.galerie !== u) {
     h.dataset.galerie = u;
     const neu = new Image();

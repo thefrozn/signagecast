@@ -423,7 +423,7 @@ const TEXTE = {
     medHoch: "Dateien hochladen", medLaedt: (n, p) => `Lade ${n} … ${p} %`, medKeine: "Noch keine eigenen Medien.", medDauer: "Anzeigedauer (s)",
     // Galerie und Speicher (seit 0.45)
     galText: "Ordner mit Bildern (JPG, PNG, WebP, GIF) und PDFs für den Layout-Baustein „Galerie“ oder als Hintergrund-Diashow. Fotos werden beim Hochladen auf höchstens 4K verkleinert – nur diese Fassung wird gespeichert. Die Bilder liegen nur hier und kommen nicht in die Sicherung (die Ordnernamen schon).",
-    galBelegt: (b, g) => `Galerie: ${b} von ${g} GB belegt`, galPlatzFuer: (n) => `Platz für etwa ${n} weitere Fotos`,
+    galBelegt: (b, g) => `Galerie: ${b} von ${g} GB belegt`, galGrenzePlatz: (g) => `Die Grenze ist gerade ${g} GB: mehr ist über der Reserve nicht frei.`, galPlatzFuer: (n) => `Platz für etwa ${n} weitere Fotos`,
     galGrenze: "Höchstens (GB, alle Ordner)", galOrdnerNeu: "Neuer Ordner", galOrdnerName: "Name des Ordners", galKeine: "Noch keine Ordner – „Neuer Ordner“ anlegen.",
     galLeer: "Der Ordner ist leer. Bilder oder PDFs hierher ziehen oder auswählen.", galDateien: "Dateien wählen", galOrdnerWahl: "Ganzen Ordner wählen",
     galZiehen: "Bilder und PDFs hierher ziehen", galUmbenennen: "Umbenennen", galOrdnerWeg: "Ordner löschen", galOrdnerWegFrage: (n) => `Ordner „${n}“ mit allen Bildern löschen?`,
@@ -999,7 +999,7 @@ const TEXTE = {
     medHoch: "Upload files", medLaedt: (n, p) => `Uploading ${n} … ${p} %`, medKeine: "No own media yet.", medDauer: "Duration (s)",
     // Gallery and storage (since 0.45)
     galText: "Folders with pictures (JPG, PNG, WebP, GIF) and PDFs for the layout element “Gallery” or as a background slideshow. Photos are scaled down to at most 4K when uploaded – only this version is stored. The pictures are kept only here and are not part of the backup (the folder names are).",
-    galBelegt: (b, g) => `Gallery: ${b} of ${g} GB used`, galPlatzFuer: (n) => `room for about ${n} more photos`,
+    galBelegt: (b, g) => `Gallery: ${b} of ${g} GB used`, galGrenzePlatz: (g) => `The limit is ${g} GB right now: no more is free above the reserve.`, galPlatzFuer: (n) => `room for about ${n} more photos`,
     galGrenze: "At most (GB, all folders)", galOrdnerNeu: "New folder", galOrdnerName: "Folder name", galKeine: "No folders yet – create one with “New folder”.",
     galLeer: "The folder is empty. Drag pictures or PDFs here or choose them.", galDateien: "Choose files", galOrdnerWahl: "Choose a whole folder",
     galZiehen: "Drag pictures and PDFs here", galUmbenennen: "Rename", galOrdnerWeg: "Delete folder", galOrdnerWegFrage: (n) => `Delete folder “${n}” with all pictures?`,
@@ -3316,10 +3316,11 @@ async function galerieSeite(inhalt) {
     const platz = Math.max(0, Math.floor((g.grenze - g.belegt) / schnitt));
     const pct = g.grenze ? Math.min(100, Math.round(g.belegt / g.grenze * 100)) : 100;
     inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(T.galText)}</p>
-        <div class="spbalken" role="img" aria-label="${esc(T.galBelegt(gbText(g.belegt), gbText(g.grenze)))}"><div class="sp-galerie" style="width:${pct}%"></div></div>
-        <p>${esc(T.galBelegt(gbText(g.belegt), gbText(g.grenze)))} · ${esc(T.galPlatzFuer(platz.toLocaleString(ORT())))}</p>
+        <div class="spbalken" role="img" aria-label="${esc(T.galBelegt(groesseText(g.belegt), gbText(g.grenze)))}"><div class="sp-galerie" data-breite="${pct}%"></div></div>
+        <p>${esc(T.galBelegt(groesseText(g.belegt), gbText(g.grenze)))} · ${esc(T.galPlatzFuer(platz.toLocaleString(ORT())))}</p>
+        ${g.grenze < g.grenze_gb * 1024 ** 3 - 1e8 ? `<p class="leise">${esc(T.galGrenzePlatz(gbText(g.grenze)))}</p>` : ""}
         ${sp.stufe !== "gruen" ? `<p class="${sp.stufe === "rot" ? "schlecht" : "warn"}"><a href="#speicher">${esc(T.galStufe[sp.stufe])}</a></p>` : ""}
-        <div class="zeile"><label for="galGrenze">${esc(T.galGrenze)}</label><input type="number" id="galGrenze" min="1" max="2000" value="${g.grenze_gb}" style="width:90px">
+        <div class="zeile"><label for="galGrenze">${esc(T.galGrenze)}</label><input type="number" id="galGrenze" class="schmal" min="1" max="2000" value="${g.grenze_gb}">
           <button class="knopf" id="galGrenzeOk">${esc(T.speichern)}</button></div></div>
       <div class="karte" id="galKarte"><div class="zeile galordner">${g.ordner.map((x) => `<button class="knopf ${x.id === GAL_ORDNER ? "haupt" : ""}" data-ordner="${esc(x.id)}">${esc(x.name)} <span class="leise">${x.anzahl}</span></button>`).join("")}
           <button class="knopf" id="galNeu">+ ${esc(T.galOrdnerNeu)}</button></div>
@@ -3336,6 +3337,7 @@ async function galerieSeite(inhalt) {
               <img alt="" draggable="false"><input type="checkbox" aria-label="${esc(e.name)}" ${auswahl.has(e.id) ? "checked" : ""}>
               <span class="galname">${esc(e.name)}${e.art === "pdf" ? " · " + esc(T.galSeiten(e.seiten)) : ""}</span></div>`).join("")}</div>`
           : `<p class="leise">${esc(T.galLeer)}</p>`}` : `<p class="leise">${esc(T.galKeine)}</p>`}</div>`;
+    breitenSetzen(inhalt);
     // Ordner wählen, anlegen, umbenennen, löschen
     inhalt.querySelectorAll("[data-ordner]").forEach((k) => { k.onclick = () => { GAL_ORDNER = k.dataset.ordner; auswahl.clear(); bericht = ""; zeichnen(); }; });
     $("#galNeu").onclick = (ev) => {
@@ -3459,15 +3461,18 @@ async function speicherSeite(inhalt) {
   inhalt.innerHTML = `<div class="karte"><h2>${esc(T.reiter.speicher)} <span class="${l.stufe === "gruen" ? "gut" : l.stufe === "gelb" ? "warn" : "schlecht"}">${esc(T.spStufe[l.stufe])}</span></h2>
       <p class="leise">${esc(T.spText)}</p>
       <div class="spbalken gross" role="img" aria-label="${esc(T.spFrei(gbText(l.frei), gbText(l.gesamt)))}">
-        ${bereiche.map(([k, b], i) => `<div class="sp-${i % 6}" style="width:${pct(b)}" title="${esc(T.spBereiche[k] || k)}: ${esc(groesseText(b))}"></div>`).join("")}
-        <div class="sp-sonst" style="width:${pct(sonst)}" title="${esc(T.spSonst)}"></div>
-        <div class="sp-frei" style="width:${pct(Math.max(0, l.frei - l.reserve))}"></div><div class="sp-reserve" style="width:${pct(Math.min(l.frei, l.reserve))}" title="${esc(T.spReserve(gbText(l.reserve)))}"></div></div>
+        ${bereiche.map(([k, b], i) => `<div class="sp-${i % 6}" data-breite="${pct(b)}" title="${esc(T.spBereiche[k] || k)}: ${esc(groesseText(b))}"></div>`).join("")}
+        <div class="sp-sonst" data-breite="${pct(sonst)}" title="${esc(T.spSonst)}"></div>
+        <div class="sp-frei" data-breite="${pct(Math.max(0, l.frei - l.reserve))}"></div><div class="sp-reserve" data-breite="${pct(Math.min(l.frei, l.reserve))}" title="${esc(T.spReserve(gbText(l.reserve)))}"></div></div>
       <p><b>${esc(T.spFrei(gbText(l.frei), gbText(l.gesamt)))}</b> · ${esc(T.spReserve(gbText(l.reserve)))}</p>
       <table class="sptabelle">${bereiche.map(([k, b], i) => `<tr><td><span class="spfarbe sp-${i % 6}"></span>${esc(T.spBereiche[k] || k)}</td><td>${esc(groesseText(b))}</td>
           <td>${ZIEL[k] ? `<a href="#${ZIEL[k]}">${esc(T.spAufraeumen)}</a>` : ""}</td></tr>`).join("")}
         <tr><td><span class="spfarbe sp-sonst"></span>${esc(T.spSonst)}</td><td>${esc(groesseText(sonst))}</td><td></td></tr></table>
       <p class="leise">${esc(T.spOrt)}: <code>${esc(d.pfad)}</code></p></div>`;
+  breitenSetzen(inhalt);
 }
+// Cockpit erlaubt kein style="…" im HTML (Content-Security-Policy) – Breiten deshalb per Skript setzen
+function breitenSetzen(wurzel) { wurzel.querySelectorAll("[data-breite]").forEach((d) => { d.style.width = d.dataset.breite; }); }
 
 // ---------- Updates (seit 0.13): Anfrage an das root-Skript, Stand aus dessen Statusdateien ----------
 async function updatesSeite(inhalt) {

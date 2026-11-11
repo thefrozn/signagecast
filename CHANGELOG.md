@@ -4,7 +4,8 @@
 - **Gallery:** new page *Content → Gallery* – folders with pictures (JPG, PNG, WebP, GIF) and PDFs, uploaded straight
   into SignageCast (drag and drop, choose files or a whole folder, from a phone via the file picker; no cloud service).
   Photos are scaled down to at most 3840 × 2160 on upload (rotation from the camera applied) and only this version is
-  kept; PDFs become one picture per page. Thumbnails, order by dragging, delete several at once. Limits: 50 MB per
+  kept, plus a Full HD copy that TVs up to 1080p use (a decoded 4K picture needs about 30 MB in the browser); PDFs
+  become one picture per page. Thumbnails, order by dragging, delete several at once. Limits: 50 MB per
   photo, 100 MB per PDF, 1000 files per folder, gallery limit 5 GB (adjustable).
 - **Layout element *Gallery*** and the template **Galerie Vollbild**: seconds per picture, fit (border black or blurred
   picture) or fill, order as in the folder / by name / newest first / random, cross-fade or cut. Pictures change by the

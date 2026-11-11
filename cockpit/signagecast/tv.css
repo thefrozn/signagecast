@@ -69,9 +69,9 @@ input[type=text], input[type=number], input[type=time], input[type=url], input[t
 input[type=text], input[type=url], input[type=password], textarea, select.breit { width: 360px; }
 input[type=number] { width: 110px; }
 textarea { width: 100%; min-height: 120px; font-family: ui-monospace, monospace; font-size: 13px; }
-button.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
+button.knopf, label.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
   padding: 8px 14px; min-height: 40px; cursor: pointer; }
-button.knopf.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+button.knopf.haupt, label.knopf.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; }
 button.knopf.gefahr { color: var(--schlecht); }
 button.knopf:disabled { opacity: .5; cursor: default; }
 /* Schalter */
@@ -217,3 +217,5 @@ table.sptabelle td:nth-child(2) { text-align: right; font-variant-numeric: tabul
 .galbild .galname { display: block; padding: 3px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .galbild.gewaehlt { border-color: var(--akzent); }
 .galbild.ziel { border-color: var(--warn); }
+input.schmal { width: 90px; }
+label.knopf { display: inline-flex; align-items: center; }

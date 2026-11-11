@@ -4,6 +4,10 @@
 #   dateien/<prüfsumme>.jpg|png    Bild, beim Hochladen auf höchstens 3840 x 2160 verkleinert (nur diese Fassung bleibt)
 #   dateien/<prüfsumme>/1.jpg …    PDF, Seite für Seite (app/pdf.py)
 #   dateien/<prüfsumme>.k.jpg      Vorschaubild für die Verwaltung (320 px breit)
+#   dateien/<prüfsumme>.hd.jpg     Full-HD-Fassung (≤ 1920 x 1080), nur wenn das Bild größer ist; ebenso <prüfsumme>/<n>.hd.jpg
+#                                  je PDF-Seite. Die TV-Seite nimmt sie, solange der Baustein nicht mehr Bildpunkte hat –
+#                                  ein dekodiertes 4K-Bild belegt im Browser ~30 MB, die Full-HD-Fassung ~8 MB (gemessen 0.45:
+#                                  +220 MB RAM im Chromium der Aufnahme mit 4K-Bildern)
 #   eintraege.json                 {ordner-id: [{"id", "name", "art": bild|pdf, "datei", "seiten", "zeit", "bytes"}]}
 # Gleicher Inhalt = gleiche Prüfsumme: liegt ein Bild in zwei Ordnern, gibt es die Datei nur einmal.
 # Die Bilder kommen nicht in die Sicherung (die ZIP entsteht im Arbeitsspeicher, Gigabytes wären zu viel).
@@ -19,6 +23,7 @@ MAX_PDF = 100 * 1024 * 1024
 MAX_EINTRAEGE = 1000                   # je Ordner
 MAX_PIXEL = 100_000_000                # größer ist kein Foto, sondern ein Speicherfresser beim Dekodieren
 BREITE, HOEHE = 3840, 2160
+HD_B, HD_H = 1920, 1080
 KLEIN = 320
 # Pixelformate mit Durchsichtigkeit -> als PNG behalten (sonst JPG)
 ALPHA = {"rgba", "bgra", "argb", "abgr", "ya8", "ya16be", "ya16le", "rgba64be", "rgba64le", "pal8", "yuva420p", "yuva444p",
@@ -77,6 +82,26 @@ def bild_umwandeln(pfad, ziel, name):
         raise Meldung("gal_kaputt", d=(fehler.splitlines() or ["?"])[-1][:160])
     os.replace(tmp, os.path.join(ziel, datei))
     return datei
+
+
+def hd_fassung(quelle, ziel):
+    """Full-HD-Fassung (JPG) neben das Bild legen, wenn es größer als 1920 x 1080 ist. -> True, wenn angelegt."""
+    try:
+        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", quelle],
+                           capture_output=True, text=True, timeout=30)
+        b, h = (int(x) for x in r.stdout.strip().split(",")[:2])
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return False
+    if b <= HD_B and h <= HD_H:
+        return False
+    tmp = ziel + ".neu.jpg"
+    code, _ = _ffmpeg(["-i", quelle, "-frames:v", "1", "-vf", f"scale=w={HD_B}:h={HD_H}:force_original_aspect_ratio=decrease:flags=lanczos",
+                       "-q:v", "3", "-update", "1", "-y", tmp], 60)
+    if code == 0 and os.path.exists(tmp):
+        os.replace(tmp, ziel)
+        return True
+    _weg(tmp)
+    return False
 
 
 def vorschau(quelle, ziel):
@@ -139,9 +164,11 @@ class Galerie:
         aus = []
         for i, e in enumerate(self.liste(oid)):
             if e["art"] == "pdf":
-                aus += [{"u": f"galerie/{e['id']}/{n}.jpg", "n": e["name"], "z": e["zeit"], "i": i} for n in range(1, e["seiten"] + 1)]
+                aus += [dict({"u": f"galerie/{e['id']}/{n}.jpg", "n": e["name"], "z": e["zeit"], "i": i},
+                             **({"h": f"galerie/{e['id']}/{n}.hd.jpg"} if e.get("hd") else {})) for n in range(1, e["seiten"] + 1)]
             else:
-                aus.append({"u": f"galerie/{e['datei']}", "n": e["name"], "z": e["zeit"], "i": i})
+                aus.append(dict({"u": f"galerie/{e['datei']}", "n": e["name"], "z": e["zeit"], "i": i},
+                                **({"h": f"galerie/{e['id']}.hd.jpg"} if e.get("hd") else {})))
         return aus
 
     def belegt(self):
@@ -191,10 +218,19 @@ class Galerie:
             if neu_angelegt and vorher + bytes_ > grenze_bytes:   # Grenze der Galerie: nicht übernehmen
                 self._datei_weg(h)
                 raise Meldung("gal_voll", gb=round(grenze_bytes / 1024 ** 3, 1))
+            if art == "pdf":                   # Full-HD-Fassungen (siehe oben); hd nur, wenn jede Seite eine hat
+                hd = all(os.path.exists(os.path.join(self.dateien, h, f"{n}.hd.jpg")) or
+                         hd_fassung(os.path.join(self.dateien, h, f"{n}.jpg"), os.path.join(self.dateien, h, f"{n}.hd.jpg"))
+                         for n in range(1, seiten + 1))
+                bytes_ = sum(os.path.getsize(os.path.join(self.dateien, h, x)) for x in os.listdir(os.path.join(self.dateien, h)))
+            else:
+                hd = os.path.exists(os.path.join(self.dateien, f"{h}.hd.jpg")) or hd_fassung(erste, os.path.join(self.dateien, f"{h}.hd.jpg"))
+                if hd:
+                    bytes_ += os.path.getsize(os.path.join(self.dateien, f"{h}.hd.jpg"))
             if not os.path.exists(os.path.join(self.dateien, f"{h}.k.jpg")):
-                vorschau(erste, os.path.join(self.dateien, f"{h}.k.jpg"))
+                vorschau(os.path.join(self.dateien, f"{h}.hd.jpg") if hd and art != "pdf" else erste, os.path.join(self.dateien, f"{h}.k.jpg"))
             e = {"id": h, "name": re.sub(r"[\x00-\x1f]", "", str(name or h))[:80] or h, "art": art, "datei": datei, "seiten": seiten,
-                 "zeit": int(time.time()), "bytes": bytes_}
+                 "zeit": int(time.time()), "bytes": bytes_, "hd": hd}
             with self.sperre:                  # noch unter self.umwandeln: aufraeumen sieht nie eine Datei ohne Eintrag
                 self.daten.setdefault(oid, []).append(e)
                 self._speichern()
@@ -204,7 +240,7 @@ class Galerie:
         return any(e["id"] == h for l in self.daten.values() for e in l)
 
     def _datei_weg(self, h):
-        for n in (f"{h}.jpg", f"{h}.png", f"{h}.k.jpg", h):
+        for n in (f"{h}.jpg", f"{h}.png", f"{h}.k.jpg", f"{h}.hd.jpg", h):
             _weg(os.path.join(self.dateien, n))
 
     def loeschen(self, oid, ids):
@@ -249,7 +285,7 @@ class Galerie:
             return
         for n in namen:
             p = os.path.join(self.dateien, n)
-            m = re.fullmatch(r"([0-9a-f]{16})(\.k\.jpg|\.jpg|\.png)?", n)
+            m = re.fullmatch(r"([0-9a-f]{16})(\.k\.jpg|\.hd\.jpg|\.jpg|\.png)?", n)
             try:
                 alt = time.time() - os.path.getmtime(p) > alter_s
             except OSError:

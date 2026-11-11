@@ -3073,11 +3073,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 return self.antwort(200, open(os.path.join(DS.AUDIO, m.group(1) + ".wav"), "rb").read(), "audio/wav")
             except OSError:
                 return self.antwort(404, {"ok": False})
-        m = re.fullmatch(r"/galerie/([0-9a-f]{16})(?:\.(jpg|png)|/(\d{1,3})\.jpg|\.k\.jpg)", p.path)
-        if m:                                     # Galerie (seit 0.45): Bild, PDF-Seite oder Vorschaubild
+        m = re.fullmatch(r"/galerie/([0-9a-f]{16})(?:\.(jpg|png|k\.jpg|hd\.jpg)|/(\d{1,3})(\.hd)?\.jpg)", p.path)
+        if m:                                     # Galerie (seit 0.45): Bild, Full-HD-Fassung, PDF-Seite oder Vorschaubild
             if m.group(3):
-                return self.unveraenderlich(os.path.join(GALERIE.dateien, m.group(1), m.group(3) + ".jpg"), "image/jpeg")
-            endung = m.group(2) or "k.jpg"
+                return self.unveraenderlich(os.path.join(GALERIE.dateien, m.group(1), m.group(3) + (m.group(4) or "") + ".jpg"), "image/jpeg")
+            endung = m.group(2)
             return self.unveraenderlich(os.path.join(GALERIE.dateien, f"{m.group(1)}.{endung}"),
                                         "image/png" if endung == "png" else "image/jpeg")
         m = re.fullmatch(r"/galerie/ordner/([a-z0-9]{2,12})\.json", p.path)
@@ -3418,6 +3418,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                     raise M.Meldung("gal_ordner")
                 if nr == 0:
                     max_b = GAL.MAX_PDF if GAL.art_erkennen(stueck[:16]) == "pdf" else GAL.MAX_BILD
+                    SP.pruefen(DATEN, min(gesamt, max_b) * 2)   # erst die Platte (klarere Meldung), dann die Grenze der Galerie
                     if GALERIE.belegt() + min(gesamt, max_b) > galerie_grenze():
                         raise M.Meldung("gal_voll", gb=SP.gb(galerie_grenze()))
                 else:
@@ -3429,7 +3430,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 roh = hochladen.fertig_roh(str(d["kennung"]))
                 try:
                     SP.pruefen(DATEN, os.path.getsize(roh) * 2)    # Platz für die umgewandelte Fassung
-                    eintrag = GALERIE.hinzufuegen(oid, roh, os.path.basename(str(d.get("name") or ""))[:80], galerie_grenze())
+                    try:
+                        eintrag = GALERIE.hinzufuegen(oid, roh, os.path.basename(str(d.get("name") or ""))[:80], galerie_grenze())
+                    except M.Meldung as f:          # Grenze nur wegen der Platte erreicht: das sagen
+                        if f.code == "gal_voll" and galerie_grenze() < einst()["galerie"]["grenze_gb"] * SP.GB:
+                            SP.pruefen(DATEN, SP.lage(DATEN)["nutzbar"] + 1)
+                        raise
                 finally:
                     os.remove(roh)
                     SP.neu_zaehlen()

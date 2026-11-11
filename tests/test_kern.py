@@ -3065,6 +3065,11 @@ class Galerie045(unittest.TestCase):
                             os.path.join(g.dateien, a["datei"])], capture_output=True, text=True)
         self.assertEqual(r.stdout.strip(), "3600,2160")                # auf höchstens 3840 x 2160
         self.assertTrue(os.path.exists(os.path.join(g.dateien, a["id"] + ".k.jpg")))
+        self.assertTrue(a["hd"] and not b["hd"])                       # Full-HD-Fassung nur für große Bilder
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0",
+                            os.path.join(g.dateien, a["id"] + ".hd.jpg")], capture_output=True, text=True)
+        self.assertEqual(r.stdout.strip(), "1800,1080")
+        self.assertEqual(g.folien("fam")[0]["h"], f"galerie/{a['id']}.hd.jpg")
         self.assertEqual(g.hinzufuegen("fam", gross, "nochmal", 10 ** 9)["name"], "Urlaub 2.jpg")   # schon im Ordner
         g.hinzufuegen("arbeit", gross, "x", 10 ** 9)                   # zweiter Ordner, dieselbe Datei
         self.assertEqual([f["u"] for f in g.folien("fam")], [f"galerie/{a['datei']}", f"galerie/{b['datei']}"])
