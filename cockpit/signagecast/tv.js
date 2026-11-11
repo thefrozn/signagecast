@@ -15,7 +15,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Geräte", einrichten: "Einrichten", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
@@ -57,11 +57,11 @@ const TEXTE = {
             pi: ["Raspberry Pi", "Für Fernseher ohne brauchbaren Browser: fertiges Image auf eine SD-Karte schreiben, per HDMI anschließen."],
             pc: ["PC", "Mini-PC oder alter Laptop: fertiges Image auf einen USB-Stick, startet direkt in die Anzeige."] },
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
-          fertigPlayer: "Fertig! Lege jetzt den Player an: Image erstellen, schreiben, einstecken – er meldet sich danach von selbst unter „Player“.",
+          fertigPlayer: "Fertig! Lege jetzt den Player an: Image erstellen, schreiben, einstecken – er meldet sich danach von selbst unter „Geräte“.",
           zumPlayer: "Player anlegen", lokal: "„localhost“ erreicht der Fernseher nicht – nimm die IP dieses Computers im Heimnetz (Docker: SC_HOST_IP setzen).",
           mehr: "Außerdem möglich", mehrListe: { fern: "Fernstandorte – Player an anderen Orten über Tailscale oder Headscale", ki: "KI-Assistenten – Claude & Co. bauen Layouts und schreiben Laufschriften", pult: "Durchsage-Pult – eine eigene Seite nur für Meldungen, z. B. am Empfang" },
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
-    pl: { titel: "Player: Raspberry Pi, PC oder Browser", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Pis hier.",
+    pl: { titel: "Player: Raspberry Pi, PC oder Browser", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Geräte unter „Geräte“.",
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           ram: "Arbeitsspeicher: Für den Stream reicht 1 GB (Zero 2 W: 512 MB). Für den Direktmodus mindestens 2 GB, besser 4 GB – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe; mit Schreibschutz liegt auch alles, was der Browser speichert, im Arbeitsspeicher. Schätzwerte, auf echten Pis noch nicht gemessen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
@@ -84,7 +84,7 @@ const TEXTE = {
           s2: "Fragt der Imager nach „OS-Anpassungen“: Nein – alles steht schon im Image. (balenaEtcher: Datei wählen, Karte wählen, Flash.)",
           s3: "Karte in den Pi stecken, HDMI an den Fernseher, Strom an. Der erste Start dauert 2–3 Minuten (der Pi startet einmal neu), dann erscheint das Bild.",
           s4: "Findet der Pi kein Netz, öffnet er nach 2 Minuten einen Hotspot und zeigt auf dem Fernseher einen QR-Code – mit dem Handy scannen und das WLAN auswählen.",
-          liste: "Player", keine: "Noch kein Player.", online: "online", offline: "offline", nieGesehen: "hat sich noch nie gemeldet",
+          liste: "Geräte", keine: "Noch kein Gerät – richte unter „Einrichten“ einen Raspberry Pi, PC oder Browser ein.", neuGeraet: "Neues Gerät einrichten", zuGeraete: "Zu „Geräte“", angelegt: "Angelegt – nach dem ersten Start meldet sich das Gerät unter „Geräte“.", online: "online", offline: "offline", nieGesehen: "hat sich noch nie gemeldet",
           zuletzt: (z) => `zuletzt ${z}`, seit: (z) => `seit ${z}`, ip: "IP", netzArt: { kabel: "Kabel", wlan: "WLAN", hotspot: "Hotspot (Einrichtung)", keins: "kein Netz" },
           temp: "Temperatur", version: "Player", hdmi: "Bildschirm", keinHdmi: "kein Bildschirm erkannt", video: "Video",
           zustand: { start: "startet", fern_link: "wartet auf Freigabe in Tailscale", koppeln: "wartet auf Kopplung", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
@@ -148,7 +148,7 @@ const TEXTE = {
                pc_ist_pi: "Dieses Gerät meldet sich als Raspberry Pi – in den Einstellungen das Modell auf den passenden Pi stellen.",
                pi_ist_pc: "Dieses Gerät meldet sich als PC – in den Einstellungen das Modell auf „PC“ stellen." },
           pc: { titel: "PC als Player (seit 0.36, experimentell)",
-            text: "Ein normaler PC, Mini-PC oder Thin Client (x86-64 mit UEFI) wird zum Player: Er startet vom USB-Stick, ohne etwas auf seiner Festplatte zu ändern, und zeigt die Seite im Direktmodus selbst – gestochen scharf, ohne Verzögerung, und der Server muss für ihn nichts kodieren. Verwaltet wird er hier wie ein Pi.",
+            text: "Ein normaler PC, Mini-PC oder Thin Client (x86-64 mit UEFI) wird zum Player: Er startet vom USB-Stick, ohne etwas auf seiner Festplatte zu ändern, und zeigt die Seite im Direktmodus selbst – gestochen scharf, ohne Verzögerung, und der Server muss für ihn nichts kodieren. Verwaltet wird er unter „Geräte“ wie ein Pi.",
             bedarf: "Dazu: 64-Bit-PC mit UEFI (etwa ab 2013; Secure Boot darf an bleiben), mindestens 4 GB Arbeitsspeicher, Intel- oder AMD-Grafik (NVIDIA geht, Videos aber ohne Hardware-Dekodierung), USB-Stick ab 4 GB, LAN-Kabel oder WLAN. Kein HDMI-CEC (TV ein/aus) und keine Systemupdates – neue Software kommt mit einem neuen Image.",
             basis: "PC-Image", basisFehlt: "noch nicht geladen – einmalig etwa 1 GB",
             format: "Format", f: { gz: "USB-Stick (.img.gz – balenaEtcher, Raspberry Pi Imager, Rufus)", iso: "ISO (.iso, ungepackt – Ventoy, CD, virtuelle Maschine)" },
@@ -476,7 +476,7 @@ const TEXTE = {
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Devices", einrichten: "Set up", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
@@ -518,11 +518,11 @@ const TEXTE = {
             pi: ["Raspberry Pi", "For TVs without a usable browser: write a ready image to an SD card, connect via HDMI."],
             pc: ["PC", "Mini PC or old laptop: write a ready image to a USB stick, starts straight into the display."] },
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
-          fertigPlayer: "Done! Now add the player: create the image, write it, plug it in – it then shows up under “Players” by itself.",
+          fertigPlayer: "Done! Now add the player: create the image, write it, plug it in – it then shows up under “Devices” by itself.",
           zumPlayer: "Add player", lokal: "The TV cannot reach “localhost” – use this computer's IP in your home network (Docker: set SC_HOST_IP).",
           mehr: "Also possible", mehrListe: { fern: "Remote sites – players in other places via Tailscale or Headscale", ki: "AI assistants – Claude & co. build layouts and write tickers", pult: "Announcement desk – a page just for messages, e.g. at the reception" },
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
-    pl: { titel: "Players: Raspberry Pi, PC or browser", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all Pis here.",
+    pl: { titel: "Players: Raspberry Pi, PC or browser", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all devices under “Devices”.",
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
           ram: "Memory: 1 GB is enough for the stream (Zero 2 W: 512 MB). Direct mode needs at least 2 GB, better 4 GB – especially with videos, cameras, web pages or 4K output; with write protection everything the browser stores is kept in memory too. Estimates, not yet measured on real Pis.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
@@ -545,7 +545,7 @@ const TEXTE = {
           s2: "If the Imager asks about “OS customisation”: No – everything is already in the image. (balenaEtcher: choose file, choose card, Flash.)",
           s3: "Put the card into the Pi, HDMI to the TV, power on. The first start takes 2–3 minutes (the Pi restarts once), then the picture appears.",
           s4: "If the Pi finds no network, after 2 minutes it opens a hotspot and shows a QR code on the TV – scan it with your phone and choose the Wi-Fi.",
-          liste: "Players", keine: "No player yet.", online: "online", offline: "offline", nieGesehen: "has never reported",
+          liste: "Devices", keine: "No device yet – set up a Raspberry Pi, PC or browser under “Set up”.", neuGeraet: "Set up a new device", zuGeraete: "Go to “Devices”", angelegt: "Added – after its first start the device reports under “Devices”.", online: "online", offline: "offline", nieGesehen: "has never reported",
           zuletzt: (z) => `last seen ${z}`, seit: (z) => `since ${z}`, ip: "IP", netzArt: { kabel: "cable", wlan: "Wi-Fi", hotspot: "hotspot (setup)", keins: "no network" },
           temp: "Temperature", version: "Player", hdmi: "Screen", keinHdmi: "no screen detected", video: "Video",
           zustand: { start: "starting", fern_link: "waiting for approval in Tailscale", koppeln: "waiting for pairing", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
@@ -609,7 +609,7 @@ const TEXTE = {
                pc_ist_pi: "This device reports as a Raspberry Pi – set the model to the matching Pi in the settings.",
                pi_ist_pc: "This device reports as a PC – set the model to “PC” in the settings." },
           pc: { titel: "PC as player (since 0.36, experimental)",
-            text: "An ordinary PC, mini PC or thin client (x86-64 with UEFI) becomes a player: it starts from a USB stick without changing anything on its disk and shows the page itself in direct mode – sharp, without delay, and the server encodes nothing for it. You manage it here like a Pi.",
+            text: "An ordinary PC, mini PC or thin client (x86-64 with UEFI) becomes a player: it starts from a USB stick without changing anything on its disk and shows the page itself in direct mode – sharp, without delay, and the server encodes nothing for it. You manage it under “Devices” like a Pi.",
             bedarf: "You need: 64-bit PC with UEFI (about 2013 or newer; Secure Boot may stay on), at least 4 GB of memory, Intel or AMD graphics (NVIDIA works, but videos without hardware decoding), USB stick of 4 GB or more, LAN cable or Wi-Fi. No HDMI-CEC (TV on/off) and no system updates – new software comes with a new image.",
             basis: "PC image", basisFehlt: "not downloaded yet – about 1 GB once",
             format: "Format", f: { gz: "USB stick (.img.gz – balenaEtcher, Raspberry Pi Imager, Rufus)", iso: "ISO (.iso, uncompressed – Ventoy, CD, virtual machine)" },
@@ -1136,7 +1136,7 @@ const zweiTeile = (a, b) => async (i) => {
   i.innerHTML = `<div id="teilA"></div><div id="teilB"></div>`;
   await a($("#teilA")); await b($("#teilB"));
 };
-const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
+const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
                  galerie: galerieSeite, speicher: speicherSeite,
                  streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
@@ -1146,7 +1146,7 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, lay
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 // Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
-const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]],
+const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player", "einrichten"]],
                   ["inhalte", ["layout", "quellen", "medien", "galerie", "einspieler", "radio", "pult"]],
                   ["videoton", ["streams", "kategorien", "video", "suche"]],
                   ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "ki", "fern", "zugang"] : ["allgemein", "ha", "benachrichtigung", "ki", "fern"]],
@@ -1166,7 +1166,7 @@ function reiterZeichnen() {
   const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
                   fernseher: "#show-something-different-at-night" }[aktiv] || "";
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener"
-    href="https://github.com/thefrozn/signagecast/blob/main/docs/${aktiv === "player" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "") : "MANUAL.md" + anker}">?</a>`));
+    href="https://github.com/thefrozn/signagecast/blob/main/docs/${aktiv === "player" || aktiv === "einrichten" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "") : "MANUAL.md" + anker}">?</a>`));
   sub.hidden = unter.length < 2;
   for (const s of unter) {
     const k = el(`<button class="${s === aktiv ? "an" : ""}">${esc(T.reiter[s])}</button>`);
@@ -1302,7 +1302,7 @@ async function assistent(inhalt, n = 1) {
       <p><b>${esc(T.as.mehr)}</b></p><ul class="as-mehr">${Object.entries(T.as.mehrListe).map(([k, t]) => `<li><a href="#" data-ziel="${k}">${esc(t)}</a></li>`).join("")}</ul>
       ${fuss(false)}<div class="zeile"><button class="knopf${asWeg === "browser" ? " haupt" : ""}" id="asLos">${esc(T.as.los)}</button></div></div>`;
     $("#asLos").onclick = (e) => aktion(e.target, () => fertig(), null);
-    if ($("#asPlayer")) $("#asPlayer").onclick = (e) => aktion(e.target, () => fertig("player"), null);
+    if ($("#asPlayer")) $("#asPlayer").onclick = (e) => aktion(e.target, () => fertig("einrichten"), null);
     inhalt.querySelectorAll("a[data-ziel]").forEach((a) => { a.onclick = (e) => { e.preventDefault(); aktion(null, () => fertig(a.dataset.ziel), null); }; });
   }
   if ($("#asZur")) $("#asZur").onclick = () => geh(n - 1);
@@ -1538,7 +1538,9 @@ async function terminalOeffnen(g) {
   }
 }
 
-async function playerSeite(inhalt) {
+// seit 0.46 zwei Reiter: „Geräte“ (Liste, Fernverwaltung) und „Einrichten“ (Images, Koppeln) – gleiche Daten, getrennte Ansicht
+async function playerSeite(inhalt, einrichten) {
+  const seite = einrichten ? "einrichten" : "player";
   const holenP = async () => Object.assign(await holen("/api/player"), { _geholt: Date.now() });     // Zeitpunkt für „vor X s“
   let P = await holenP();
   const tvOpt = (w) => `<option value="">${esc(T.pl.keinTv)}</option>` + E.fernseher.map((t) => `<option value="${esc(t.id)}" ${t.id === w ? "selected" : ""}>${esc(t.name)}</option>`).join("");
@@ -1559,7 +1561,18 @@ async function playerSeite(inhalt) {
   const schritteHtml = (pc) => { const q = pc ? T.pl.pc : T.pl; return `<h3>${esc(T.pl.schritte)}</h3><ol><li>${esc(q.s1)}</li><li>${esc(q.s2)}</li><li>${esc(q.s3)}</li><li>${esc(q.s4)}</li></ol>`; };
   const wartendText = () => (P.wartend || []).length
     ? T.pl.wartend(P.wartend.length) + ": " + P.wartend.map((w) => [w.modell, w.ip].filter(Boolean).join(" · ")).join(", ") : T.pl.keinerWartet;
+  const zuGeraete = (ziel) => {          // nach Anlegen/Koppeln: Hinweis und Weg zur Liste
+    ziel.insertAdjacentHTML("beforeend", `<p class="gut">${esc(T.pl.angelegt)}</p><div class="zeile"><button class="knopf" data-zu-geraete>${esc(T.pl.zuGeraete)}</button></div>`);
+    ziel.hidden = false;
+    ziel.querySelectorAll("[data-zu-geraete]").forEach((b) => { b.onclick = () => zeigeSeite("player"); });
+  };
   const zeichnen = () => {
+    if (!einrichten) {
+      inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.pl.liste)}</h2><button class="knopf" id="plZuEinrichten">+ ${esc(T.pl.neuGeraet)}</button></div><div id="plListe"></div>`;
+      $("#plZuEinrichten").onclick = () => zeigeSeite("einrichten");
+      listeZeichnen();
+      return;
+    }
     const bereit = !!P.basis.vorhanden;
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pl.titel)}</h2><p>${esc(T.pl.text)}</p>
         <p class="leise">${esc(T.pl.modelle)}</p><p class="leise">${esc(T.pl.bedarf)}</p><p class="leise warn">${esc(T.pl.experimentell)}</p>
@@ -1599,8 +1612,8 @@ async function playerSeite(inhalt) {
         <div class="zeile"><label>${esc(T.pl.code)}</label><input type="text" id="plCode" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="${esc(T.pl.codePlatz)}"></div>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" id="plKName" maxlength="40" placeholder="${esc(T.pl.namePlatz)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plKTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
-        <div class="zeile"><button class="knopf haupt" id="plKoppeln">${esc(T.pl.koppelnKnopf)}</button></div></div>
-      <h2>${esc(T.pl.liste)}</h2><div id="plListe"></div>`;
+        <div class="zeile"><button class="knopf haupt" id="plKoppeln">${esc(T.pl.koppelnKnopf)}</button></div>
+        <div id="plKopFertig" hidden></div></div>`;
     const netzSammel = plNetzAnbinden($("#plKop"), "s");
     const kopSicht = () => {
       const pc = $("#plSArt").value === "pc";
@@ -1618,7 +1631,8 @@ async function playerSeite(inhalt) {
     $("#plKoppeln").onclick = (e) => aktion(e.target, async () => {
       await senden("/api/player/koppeln", { code: $("#plCode").value, name: $("#plKName").value, tv: $("#plKTv").value });
       $("#plCode").value = ""; $("#plKName").value = "";
-      P = await holenP(); $("#plWartend").textContent = wartendText(); listeZeichnen();
+      P = await holenP(); $("#plWartend").textContent = wartendText();
+      $("#plKopFertig").innerHTML = ""; zuGeraete($("#plKopFertig"));
     }, T.pl.gekoppelt);
     const netzNeu = plNetzAnbinden($("#plNeu"), "n");
     const neuSicht = () => {
@@ -1644,10 +1658,11 @@ async function playerSeite(inhalt) {
           try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, fern: !!($("#plFern") && $("#plFern").checked), form: $("#plForm").value, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
           catch (f) { await senden(`/api/player/${r.geraet}/entfernen`); throw f; }        // ohne Image kein halbes Gerät zurücklassen
           plHerunterladen(d.kennung, d.datei);
-          $("#plSchritte").innerHTML = schritteHtml(m === "pc"); $("#plSchritte").hidden = false;
+          $("#plSchritte").innerHTML = schritteHtml(m === "pc"); zuGeraete($("#plSchritte"));
         }
         $("#plName").value = "";
-        P = await holenP(); listeZeichnen();
+        P = await holenP();
+        if (m === "browser") zeigeSeite("player");            // Browser-Gerät: der Link steht in seiner Karte
       }, m === "browser" ? null : T.pl.laedtHerunter);
     };
     $("#plServerOk").onclick = (e) => aktion(e.target, async () => {
@@ -1871,14 +1886,14 @@ async function playerSeite(inhalt) {
   const beobachten = () => {
     clearInterval(timer);
     timer = setInterval(async () => {
-      if (aktiv !== "player" || holt) return;
+      if (aktiv !== seite || holt) return;
       fvTicken();
       const unterwegs = P.geraete.some((g) => (g.verlauf || []).some(fvOffenE));
       if (Date.now() - P._geholt < (laedt() ? 2000 : unterwegs ? 3000 : 10000)) return;
       const alt = laedt();
       holt = true;
       try { P = await holenP(); } finally { holt = false; }
-      if (alt || laedt()) {
+      if (einrichten && (alt || laedt())) {
         $("#plBasis").innerHTML = basisText(false);
         $("#plBasisPc").innerHTML = basisText(true);
         if (alt && !laedt()) zeichnen();
@@ -3453,7 +3468,7 @@ async function galerieSeite(inhalt) {
 async function speicherSeite(inhalt) {
   const d = await holen("/api/speicher"), l = d.lage;
   const ZIEL = { galerie: "galerie", medien: "medien", pdf: "layout", bilder: "layout", sicherungen: "sicherung", einspieler: "einspieler",
-                 quelldateien: "quellen", player: "player" };
+                 quelldateien: "quellen", player: "einrichten" };
   const bereiche = Object.entries(d.bereiche).filter(([, b]) => b > 0).sort((a, b) => b[1] - a[1]);
   const summe = bereiche.reduce((a, [, b]) => a + b, 0);
   const sonst = Math.max(0, l.gesamt - l.frei - summe);

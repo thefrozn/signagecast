@@ -240,8 +240,8 @@ address by itself (start page or autostart of its browser).
 
 ### Play on a Raspberry Pi at the TV
 
-From 0.23 (experimental): **TVs → Players** creates a ready SD card image per screen (Wi-Fi included)
-and manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
+From 0.23 (experimental): **TVs → Set up** creates a ready SD card image per screen (Wi-Fi included);
+**TVs → Devices** manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
 [Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
 Since 0.33 a Pi that allows it opens a **terminal** (root shell in the browser) from its card – off by default,
 see [Remote maintenance](PLAYER.md#remote-maintenance--terminal-in-the-browser-since-033).
@@ -343,8 +343,8 @@ It is never shown again. Create a new one and update the senders.
 
 ## Deutsch (kurz)
 
-Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Player – fertiges Image je Bildschirm mit WLAN,
-zentrale Verwaltung; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
+Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Einrichten – fertiges Image je Bildschirm mit WLAN,
+zentrale Verwaltung unter Fernseher → Geräte; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
 Seit 0.41 auch **an anderen Standorten** über Tailscale oder Headscale (Einstellungen → Fernstandorte, beim Image
 „An einem anderen Standort“) – [REMOTE.md](REMOTE.md#deutsch-kurz).
 

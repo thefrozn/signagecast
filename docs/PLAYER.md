@@ -27,7 +27,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 
 ## Step by step
 
-1. Admin → **TVs → Players** → **Download player image** (once, about 850 MB; checked with the project's
+1. Admin → **TVs → Set up** → **Download player image** (once, about 850 MB; checked with the project's
    signature).
 2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
@@ -142,7 +142,7 @@ fallback to the stream.
 | USB stick | 4 GB or more |
 | Network | LAN cable (nothing to set up) or Wi-Fi (hotspot setup as with the Pi, if the Wi-Fi card can do it) |
 
-1. Admin → **TVs → Players** → **PC image: Download** (once, about 750 MB; checked with the project's signature).
+1. Admin → **TVs → Set up** → **PC image: Download** (once, about 750 MB; checked with the project's signature).
 2. **Add player** → model **PC** → choose the format:
    - **USB stick (.img.gz)** – write with balenaEtcher, Raspberry Pi Imager (*Use custom*) or Rufus (choose *DD image*).
      The PC keeps pairing, Wi-Fi and player updates on the stick.
@@ -238,7 +238,7 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 
 ## Schritt für Schritt
 
-1. Verwaltung → **Fernseher → Player** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
+1. Verwaltung → **Fernseher → Einrichten** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
    des Projekts geprüft).
 2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
    oder **WLAN** (Name und Passwort – oder ein gespeichertes). **Image erstellen und herunterladen** klicken.
@@ -355,7 +355,7 @@ Fernwartung, Kopplungscode, Rückfall auf den Stream.
 | USB-Stick | ab 4 GB |
 | Netz | LAN-Kabel (nichts einzurichten) oder WLAN (Hotspot-Einrichtung wie beim Pi, wenn die WLAN-Karte das kann) |
 
-1. Verwaltung → **Fernseher → Player** → **PC-Image laden** (einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
+1. Verwaltung → **Fernseher → Einrichten** → **PC-Image laden** (einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
 2. **Player hinzufügen** → Modell **PC** → Format wählen:
    - **USB-Stick (.img.gz)** – mit balenaEtcher, Raspberry Pi Imager („Eigenes Image“) oder Rufus („DD-Image“) schreiben.
      Der PC merkt sich Kopplung, WLAN und Updates des Players auf dem Stick.

@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.46.0 (2026-11-11)
+- **Players split into two tabs:** *TVs → Devices* is the everyday page – all Raspberry Pi, PC and browser players
+  with status, screenshot, remote management and terminal, now at the top instead of below the setup. *TVs → Set up*
+  holds everything for a new device: player and PC image, new player, pairing by code. After creating or pairing a
+  device a button leads to *Devices*; a new browser device opens there directly (its link is in its card). Old
+  bookmarks to `#player` open *Devices*. Nothing else changes.
+
 ## v0.45.1 (2026-11-11)
 - **Admin in Cockpit looked off in places:** Cockpit's security policy blocks `style="…"` in HTML, so 28 fixed widths
   and other details were ignored – e.g. narrow address and text fields, no font preview in the font list, copy fields

@@ -230,3 +230,4 @@ label.knopf { display: inline-flex; align-items: center; }
 textarea.mono { flex: 1; width: auto; min-width: 0; font-family: ui-monospace, monospace; font-size: 12px; }
 .umbruch { word-break: break-all; } img.testbild { max-width: 100%; max-height: 300px; } .abstand-r { margin-right: 12px; }
 .karte.anmeldung { max-width: 420px; margin: 40px auto; }
+.kopfzeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 16px 0 10px; } .kopfzeile h2 { margin: 0; }
