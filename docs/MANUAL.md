@@ -19,10 +19,10 @@ that video, so the TV needs no app, no login and no updates.
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
 | **TVs** | TVs · Players | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)) |
-| **Content** | Layouts · Data sources · Media · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
+| **Content** | Layouts · Data sources · Media · Gallery · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, gallery folders (pictures/PDFs for slideshows), scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
 | **Live videos** | Streams · Categories · Rotation & quality · Search | Live cams; categories (edit, create, switch on/off for all TVs or per TV); minutes per stream, daylight, minimum quality and strikes; nightly search |
 | **Settings** | General · Home Assistant · Notifications (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; admin password |
-| **System** | Updates · Backup · Performance · Log | Signed updates, maintenance window, encrypted backups, performance test, switching off the stream without viewers, change log |
+| **System** | Updates · Backup · Storage · Performance · Log | Signed updates, maintenance window, encrypted backups, free space and what uses it, performance test, switching off the stream without viewers, change log |
 
 Every page has its own address (e.g. `…/index.html#benachrichtigung`). Unsaved changes are marked on their card;
 rarely needed options are folded under “Advanced”. On a new installation a short assistant asks for language,
@@ -186,6 +186,29 @@ Add the element **PDF (page by page)** and upload the file (up to 50 pages; expo
 SignageCast converts every page into a picture once; the element shows them one after another, *seconds per page*
 apart. Pages change by the clock, so several TVs turn pages together. *Fit* shows the whole page, *fill* crops it. A new
 upload replaces the file in this element only – save the layout afterwards.
+
+### Show a folder of pictures (gallery, since 0.45)
+**Content → Gallery:** create a folder (e.g. “Family”, “Notices”) and drag pictures (JPG, PNG, WebP, GIF) and PDFs into
+it – or choose files or a whole folder; from a phone use the file picker (iPhone photos arrive as JPG). Photos are
+scaled down to at most 3840 × 2160 when uploaded and only this version is kept; PDFs become one picture per page. Drag
+thumbnails to change the order, tick several to delete them. Limits: 50 MB per photo, 100 MB per PDF, 1000 files per
+folder, and the gallery limit (default 5 GB for all folders, adjustable on the same page).
+
+In the layout add the element **Gallery (pictures/PDFs)** and choose the folder – or start from the template
+**Galerie Vollbild** (full screen). Options: *seconds per picture* (3 s–60 min), *fit* (whole picture, border black or
+the blurred picture behind) or *fill* (crop), order *as in the folder*, *by name*, *newest first* or *random* (new
+shuffle every round), change *cross-fade* or *cut*. Pictures change by the clock, so all TVs show the same picture; new
+pictures appear without saving the layout. A folder can also be the **background** of a layout (Background → “Gallery
+folder (slideshow)”). The pictures stay on this server only and are **not part of the backup** (the folder names
+are) – keep your originals.
+
+### Storage guard (since 0.45)
+SignageCast never fills its disk. A reserve of **2 GB or 10 % of the disk** (whichever is more) always stays free for
+streams, logs and automatic backups. Uploads (gallery, media, PDFs, pictures, backups to restore) are checked
+**before** anything is transferred – the announced size has to fit above the reserve – and again for every chunk.
+**System → Storage** shows free space and what uses it (gallery, media, backups, clip cache …) with links to clean up.
+Below twice the reserve the to-do list and notifications (event “Storage getting low or full”) warn; at the reserve
+uploads and the clip cache stop, everything already there keeps running.
 
 ### Show something only for a while
 Every element has **Only during …** with *from* and *until* (date, optionally a time). Without a time the whole day
@@ -356,6 +379,15 @@ verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtb
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,
 Test-Knopf je Kanal.
+Seit 0.45: **Galerie** – Inhalte → Galerie: Ordner anlegen, Bilder (JPG, PNG, WebP, GIF) und PDFs hineinziehen oder
+auswählen (auch ganze Ordner, vom Handy über die Dateiauswahl). Fotos werden beim Hochladen auf höchstens 4K
+verkleinert, nur diese Fassung bleibt; Reihenfolge per Ziehen, mehrere auswählen und löschen. Im Layout der Baustein
+**Galerie** (oder die Vorlage „Galerie Vollbild“): Sekunden je Bild, einpassen (Rand schwarz oder unscharf) oder
+füllen, Reihenfolge wie im Ordner/Name/neueste/zufällig, überblenden oder direkt – alle Fernseher zeigen dasselbe Bild.
+Auch als **Hintergrund-Diashow**. Die Bilder kommen nicht in die Sicherung (die Ordnernamen schon).
+**Speicherwächter**: Reserve von 2 GB bzw. 10 % der Platte bleibt immer frei; Uploads werden schon vor dem Übertragen
+abgelehnt, wenn sie nicht passen. **System → Speicher** zeigt, was wie viel belegt; bei wenig Platz Hinweis unter
+„Zu erledigen“ und Benachrichtigung, ist die Reserve erreicht, sind Uploads gesperrt – alles andere läuft weiter.
 Seit 0.21: **PDF** als Baustein (bis 50 Seiten, blättert nach der Uhr), **Zeitraum** je Baustein
 („ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Inhalte → Durchsagen; im Pult für Zugänge mit
 dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernseher über Home Assistant schalten**

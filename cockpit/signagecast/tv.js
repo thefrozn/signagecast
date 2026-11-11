@@ -17,7 +17,7 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Player", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -219,6 +219,8 @@ const TEXTE = {
                        kategorien: "Kategorien", standort: "Standort", anzeige: "Anzeige", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen",
                        sicherung: "Sicherung", pult: "Durchsage-Pult", alarm: "Notfall-Vollbild", webhook: "Webhook", stream: "Stream", sprache: "Sprache", updates: "Updates" },
             aktion: { einstellungen: "Einstellungen gespeichert", webhook_neu: "neuer Webhook-Schlüssel", medien_neu: "Medium hochgeladen", medien_loeschen: "Medium gelöscht",
+                      galerie_neu: "Bild in die Galerie geladen", galerie_ordner: "Galerie-Ordner geändert", galerie_loeschen: "Bilder aus der Galerie gelöscht",
+                      galerie_ordnen: "Galerie neu sortiert", galerie_umbenennen: "Galerie-Bild umbenannt",
                       schalten: "Fernseher geschaltet", nach_einschalten: "Quelle/Seite am Fernseher ausprobiert", update: "Update angefordert",
                       update_ergebnis: "Update", sicherung_erstellen: "Sicherung erstellt", sicherung_loeschen: "Sicherung gelöscht",
                       sicherung_einspielen: "Sicherung eingespielt", quelle_datei: "Datei für Datenquelle hochgeladen", kategorie_loeschen: "Kategorie gelöscht",
@@ -251,7 +253,8 @@ const TEXTE = {
             software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
             bildrate: (n) => `„${n}“ ruckelt: zu wenige Bilder/s – Leistungstest starten`,
             allgemein: (g, seit) => `Seit ${seit} fallen alle Streams durch (${{ aufloesung: "Auflösung zu niedrig", puffert: "puffert", steht: "Bild steht", fehler: "Fehler", startet_nicht: "startet nicht" }[g] || g}) – keine Strikes, vermutlich Störung bei YouTube oder im Browser`,
-            doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“` },
+            doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“`,
+            speicher: (st, f) => st === "rot" ? `Speicher voll (${f} GB frei) – Uploads gesperrt, bitte aufräumen` : `Speicher wird knapp (${f} GB frei) – bitte aufräumen` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
     bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Live-Videos", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
@@ -303,7 +306,7 @@ const TEXTE = {
     bnTelegram: "Telegram", bnBotToken: "Bot-Token", bnChatId: "Chat-ID", bnEmail: "E-Mail (SMTP)", bnServer: "SMTP-Server", bnPort: "Port",
     bnSicherheit: "Verschlüsselung", bnBenutzer: "Benutzer", bnPasswort: "Passwort", bnAbsender: "Absender", bnEmpfaenger: "Empfänger (mit Komma trennen)",
     bnHA: "Home Assistant", bnDienst: "Benachrichtigungsdienst", bnAktiv: "aktiv", bnTest: "Testnachricht", bnTestOk: "Testnachricht gesendet",
-    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Fernseher ruckelt (zu wenige Bilder/s)", internet: "Internet nicht erreichbar (Entwarnung mit Zeitraum)" },
+    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Fernseher ruckelt (zu wenige Bilder/s)", internet: "Internet nicht erreichbar (Entwarnung mit Zeitraum)", speicher: "Speicher wird knapp oder ist voll" },
     bnLetzte: "Zuletzt gesendet",
     whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Fernseher legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
     whAktiv: "Meldungen annehmen", whNeu: "Neuen Schlüssel erzeugen", whVorhanden: "Schlüssel gesetzt (••••)", whKeiner: "noch kein Schlüssel",
@@ -418,6 +421,21 @@ const TEXTE = {
     videoQuelleArt: { youtube: "Live-Streams (YouTube)", medien: "nur eigene Medien", gemischt: "gemischt" }, medienAlle: "jedes N-te Mal ein eigenes Medium",
     medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Fernseher unter „Fernseher“ einstellen: nur eigene Medien oder gemischt mit den Live-Streams. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
     medHoch: "Dateien hochladen", medLaedt: (n, p) => `Lade ${n} … ${p} %`, medKeine: "Noch keine eigenen Medien.", medDauer: "Anzeigedauer (s)",
+    // Galerie und Speicher (seit 0.45)
+    galText: "Ordner mit Bildern (JPG, PNG, WebP, GIF) und PDFs für den Layout-Baustein „Galerie“ oder als Hintergrund-Diashow. Fotos werden beim Hochladen auf höchstens 4K verkleinert – nur diese Fassung wird gespeichert. Die Bilder liegen nur hier und kommen nicht in die Sicherung (die Ordnernamen schon).",
+    galBelegt: (b, g) => `Galerie: ${b} von ${g} GB belegt`, galPlatzFuer: (n) => `Platz für etwa ${n} weitere Fotos`,
+    galGrenze: "Höchstens (GB, alle Ordner)", galOrdnerNeu: "Neuer Ordner", galOrdnerName: "Name des Ordners", galKeine: "Noch keine Ordner – „Neuer Ordner“ anlegen.",
+    galLeer: "Der Ordner ist leer. Bilder oder PDFs hierher ziehen oder auswählen.", galDateien: "Dateien wählen", galOrdnerWahl: "Ganzen Ordner wählen",
+    galZiehen: "Bilder und PDFs hierher ziehen", galUmbenennen: "Umbenennen", galOrdnerWeg: "Ordner löschen", galOrdnerWegFrage: (n) => `Ordner „${n}“ mit allen Bildern löschen?`,
+    galAlle: "Alle auswählen", galKeine2: "Auswahl aufheben", galAuswahlWeg: (n) => `${n} löschen`, galWegFrage: (n) => n === 1 ? "1 Datei löschen?" : `${n} Dateien löschen?`,
+    galLaedt: (i, n, name, p) => `Datei ${i} von ${n}: ${name} – ${p} %`, galFertig: (ok, f) => `${ok} hochgeladen` + (f ? `, ${f} nicht übernommen` : ""),
+    galAbbruch: "Abgebrochen:", galSeiten: (n) => `${n} Seiten`, galZiehenText: "Reihenfolge: Bilder mit der Maus verschieben (gilt für „wie im Ordner“).",
+    galFormat: "nicht unterstütztes Format", galAnzahl: (n) => n === 1 ? "1 Datei" : `${n} Dateien`, galStufe: { gelb: "Speicher wird knapp – bitte aufräumen.", rot: "Speicher voll – Uploads gesperrt, bis Platz frei ist." },
+    spText: "Freier Platz im Datenverzeichnis. Eine Reserve bleibt immer frei, damit Streams, Protokolle und Sicherungen weiterlaufen: Ist sie erreicht, nimmt SignageCast keine Uploads mehr an – alles andere läuft weiter.",
+    spFrei: (f, g) => `${f} GB frei von ${g} GB`, spReserve: (r) => `Reserve ${r} GB`, spStufe: { gruen: "in Ordnung", gelb: "wird knapp", rot: "voll – Uploads gesperrt" },
+    spBereiche: { galerie: "Galerie", medien: "eigene Medien", pdf: "PDFs (Layouts)", bilder: "Bilder (Logos, Hintergründe)", sicherungen: "Sicherungen", einspieler: "Einspieler-Vorrat",
+                  quelldateien: "Dateien der Datenquellen", player: "Player-Images", protokolle: "Protokolle" },
+    spSonst: "Sonstiges (System, Programme, Streams)", spOrt: "Datenverzeichnis", spAufraeumen: "aufräumen",
     medSicherung: "In die Sicherung kommen Bilder immer, Videos nur bis zusammen 200 MB – große Videos bitte zusätzlich selbst aufbewahren.",
     medWeg: "Dieses Medium löschen?",
     upSc: "SignageCast", upInstalliert: "installiert", upNeueste: "neueste", upAktuell: "aktuell", upJetzt: "Jetzt aktualisieren",
@@ -460,7 +478,7 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Players", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
@@ -662,6 +680,8 @@ const TEXTE = {
                        kategorien: "Categories", standort: "Location", anzeige: "Display", ha: "Home Assistant", benachrichtigung: "Notifications",
                        sicherung: "Backup", pult: "Announcement panel", alarm: "Emergency screen", webhook: "Webhook", stream: "Stream", sprache: "Language", updates: "Updates" },
             aktion: { einstellungen: "Settings saved", webhook_neu: "new webhook key", medien_neu: "Medium uploaded", medien_loeschen: "Medium deleted",
+                      galerie_neu: "Picture added to the gallery", galerie_ordner: "Gallery folder changed", galerie_loeschen: "Pictures deleted from the gallery",
+                      galerie_ordnen: "Gallery reordered", galerie_umbenennen: "Gallery picture renamed",
                       schalten: "TV switched", nach_einschalten: "Source/page tried on the TV", update: "Update requested",
                       update_ergebnis: "Update", sicherung_erstellen: "Backup created", sicherung_loeschen: "Backup deleted",
                       sicherung_einspielen: "Backup restored", quelle_datei: "File for data source uploaded", kategorie_loeschen: "Category deleted",
@@ -694,7 +714,8 @@ const TEXTE = {
             software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
             bildrate: (n) => `“${n}” stutters: too few frames/s – run the performance test`,
             allgemein: (g, seit) => `Since ${seit} all streams fail (${{ aufloesung: "resolution too low", puffert: "buffering", steht: "picture frozen", fehler: "error", startet_nicht: "does not start" }[g] || g}) – no strikes, probably a YouTube or browser problem`,
-            doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test` },
+            doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test`,
+            speicher: (st, f) => st === "rot" ? `Storage full (${f} GB free) – uploads blocked, please clean up` : `Storage getting low (${f} GB free) – please clean up` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
     bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Live videos", einstellungen: "Settings", system: "System" },
     fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
@@ -746,7 +767,7 @@ const TEXTE = {
     bnTelegram: "Telegram", bnBotToken: "Bot token", bnChatId: "Chat ID", bnEmail: "E-mail (SMTP)", bnServer: "SMTP server", bnPort: "Port",
     bnSicherheit: "Encryption", bnBenutzer: "User", bnPasswort: "Password", bnAbsender: "Sender", bnEmpfaenger: "Recipients (comma separated)",
     bnHA: "Home Assistant", bnDienst: "Notify service", bnAktiv: "active", bnTest: "Test message", bnTestOk: "Test message sent",
-    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "TV stutters (too few frames/s)", internet: "Internet not reachable (all-clear with period)" },
+    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "TV stutters (too few frames/s)", internet: "Internet not reachable (all-clear with period)", speicher: "Storage getting low or full" },
     bnLetzte: "Last sent",
     whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the TVs – above any layout. Only with a secret key; the key is shown only once after it is created.",
     whAktiv: "Accept messages", whNeu: "Create new key", whVorhanden: "Key set (••••)", whKeiner: "no key yet",
@@ -844,6 +865,14 @@ const TEXTE = {
       d_text_tv: "Text and at least one TV required", d_stimme_fehlt: "Voice not loaded yet (Admin → Settings → Announcement panel)",
       d_stimme: "unknown voice", bn_kanal: "unknown channel",
       l_pdf: "invalid PDF", l_zeitraum: "Period: date as YYYY-MM-DD, optionally with time",
+      sp_voll: "Not enough storage: {frei} GB free, {reserve} GB stay free as a reserve for operation (about {bedarf} GB needed) – clean up under System → Storage",
+      gal_ordner: "Unknown gallery folder", gal_ordner_viele: "At most 50 gallery folders",
+      gal_benutzt: "The folder is still shown – change these layouts first: {layouts}", gal_art: "Only pictures (JPG, PNG, WebP, GIF) and PDFs",
+      gal_heic: "HEIC photos (iPhone) please as JPG: upload via the phone's photo picker (converts by itself) or on the iPhone Settings → Camera → Formats → “Most Compatible”",
+      gal_gross: "File larger than {mb} MB", gal_pixel: "Picture too large ({mp} megapixels, at most 100)", gal_kaputt: "Picture not readable: {d}",
+      gal_zeit: "Converting takes longer than {s} s", gal_viele: "At most {n} files per folder",
+      gal_voll: "The gallery is full ({gb} GB) – delete pictures or raise the limit under Content → Gallery",
+      l_galerie: "invalid gallery folder", l_imp_galerie: "Gallery folder {w} does not exist here – choose a folder in the editor",
       pdf_art: "Not a PDF file", pdf_werkzeug: "pdftoppm missing (package poppler-utils) – please update SignageCast",
       pdf_zeit: "Converting takes longer than {s} s – please use a smaller PDF", pdf_kaputt: "PDF not readable: {d}",
       al_text: "Text for the emergency screen missing",
@@ -968,6 +997,21 @@ const TEXTE = {
     videoQuelleArt: { youtube: "live streams (YouTube)", medien: "own media only", gemischt: "mixed" }, medienAlle: "every N-th time own media",
     medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per TV under “TVs”: own media only or mixed with the live streams. Pictures stay for their duration, videos play completely.",
     medHoch: "Upload files", medLaedt: (n, p) => `Uploading ${n} … ${p} %`, medKeine: "No own media yet.", medDauer: "Duration (s)",
+    // Gallery and storage (since 0.45)
+    galText: "Folders with pictures (JPG, PNG, WebP, GIF) and PDFs for the layout element “Gallery” or as a background slideshow. Photos are scaled down to at most 4K when uploaded – only this version is stored. The pictures are kept only here and are not part of the backup (the folder names are).",
+    galBelegt: (b, g) => `Gallery: ${b} of ${g} GB used`, galPlatzFuer: (n) => `room for about ${n} more photos`,
+    galGrenze: "At most (GB, all folders)", galOrdnerNeu: "New folder", galOrdnerName: "Folder name", galKeine: "No folders yet – create one with “New folder”.",
+    galLeer: "The folder is empty. Drag pictures or PDFs here or choose them.", galDateien: "Choose files", galOrdnerWahl: "Choose a whole folder",
+    galZiehen: "Drag pictures and PDFs here", galUmbenennen: "Rename", galOrdnerWeg: "Delete folder", galOrdnerWegFrage: (n) => `Delete folder “${n}” with all pictures?`,
+    galAlle: "Select all", galKeine2: "Clear selection", galAuswahlWeg: (n) => `Delete ${n}`, galWegFrage: (n) => n === 1 ? "Delete 1 file?" : `Delete ${n} files?`,
+    galLaedt: (i, n, name, p) => `File ${i} of ${n}: ${name} – ${p} %`, galFertig: (ok, f) => `${ok} uploaded` + (f ? `, ${f} not taken` : ""),
+    galAbbruch: "Stopped:", galSeiten: (n) => `${n} pages`, galZiehenText: "Order: drag pictures with the mouse (used by “as in the folder”).",
+    galFormat: "unsupported format", galAnzahl: (n) => n === 1 ? "1 file" : `${n} files`, galStufe: { gelb: "Storage is getting low – please clean up.", rot: "Storage full – uploads blocked until space is free." },
+    spText: "Free space in the data directory. A reserve always stays free so streams, logs and backups keep running: once it is reached, SignageCast accepts no more uploads – everything else keeps running.",
+    spFrei: (f, g) => `${f} GB free of ${g} GB`, spReserve: (r) => `reserve ${r} GB`, spStufe: { gruen: "OK", gelb: "getting low", rot: "full – uploads blocked" },
+    spBereiche: { galerie: "Gallery", medien: "own media", pdf: "PDFs (layouts)", bilder: "Pictures (logos, backgrounds)", sicherungen: "Backups", einspieler: "Clip cache",
+                  quelldateien: "Data source files", player: "Player images", protokolle: "Logs" },
+    spSonst: "Other (system, programs, streams)", spOrt: "Data directory", spAufraeumen: "clean up",
     medSicherung: "Backups always contain pictures, videos only up to 200 MB in total – please keep large videos yourself as well.",
     medWeg: "Delete this medium?",
     upSc: "SignageCast", upInstalliert: "installed", upNeueste: "latest", upAktuell: "up to date", upJetzt: "Update now",
@@ -1093,6 +1137,7 @@ const zweiTeile = (a, b) => async (i) => {
   await a($("#teilA")); await b($("#teilB"));
 };
 const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
+                 galerie: galerieSeite, speicher: speicherSeite,
                  streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: zweiTeile(pultSeite, webhookKarte),
@@ -1102,10 +1147,10 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: playerSeite, lay
 // Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player"]],
-                  ["inhalte", ["layout", "quellen", "medien", "einspieler", "radio", "pult"]],
+                  ["inhalte", ["layout", "quellen", "medien", "galerie", "einspieler", "radio", "pult"]],
                   ["videoton", ["streams", "kategorien", "video", "suche"]],
                   ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "ki", "fern", "zugang"] : ["allgemein", "ha", "benachrichtigung", "ki", "fern"]],
-                  ["system", ["updates", "sicherung", "leistung", "protokoll"]]];
+                  ["system", ["updates", "sicherung", "speicher", "leistung", "protokoll"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
 const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || BEREICHE[0];
@@ -1901,13 +1946,14 @@ const TODO_WARN = {
   player: (w) => [T.todo.player(w.name), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
   bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
   internet: (w) => [T.todo.internet(w.seit), "uebersicht"], bild: (w) => [T.todo.bild(w.name, w.befund), "leistung"],
+  speicher: (w) => [T.todo.speicher(w.stufe, String(w.frei).replace(".", E.sprache === "en" ? "." : ",")), "speicher"],
 };
 async function todoZeichnen(s) {
   const l = [];
   const neu = (stufe, text, seite, key, art) => l.push({ stufe, text, seite, key, art });
   for (const w of s.todo_warn || []) {
     const f = TODO_WARN[w.key.split(":")[0]];
-    if (f) { const [text, seite] = f(w); neu("warn", text, seite, w.key, "warn"); }
+    if (f) { const [text, seite] = f(w); neu("warn", text, seite, w.key === "speicher" && w.stufe === "rot" ? null : w.key, "warn"); }   // voll: nicht ausblendbar
   }
   if (s.neue_version) neu("info", T.todo.update(s.neue_version), CONTAINER ? "uebersicht" : "updates", "update:" + s.neue_version, "update");
   if (s.kodierung && s.kodierung.art === "software") neu("info", T.todo.software, "uebersicht", "software", "tipp");
@@ -3239,7 +3285,7 @@ async function medienSeite(inhalt) {
         for (let nr = 0; nr < teile; nr++) {
           const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
           let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
-          d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, name: f.name.replace(/\.[^.]+$/, "") });
+          d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, name: f.name.replace(/\.[^.]+$/, ""), gesamt: f.size });
           $("#medStand").textContent = T.medLaedt(f.name, Math.round((nr + 1) / teile * 100));
         }
         if (d && d.einstellungen) E = d.einstellungen;
@@ -3248,6 +3294,179 @@ async function medienSeite(inhalt) {
     });
   };
   zeichnen();
+}
+
+// ---------- Galerie (seit 0.45): Ordner mit Bildern/PDFs, hochladen in Stücken, Reihenfolge per Ziehen ----------
+let GAL_ORDNER = null;                          // zuletzt gewählter Ordner
+const groesseText = (b) => b >= 1024 ** 3 ? (b / 1024 ** 3).toLocaleString(ORT(), { maximumFractionDigits: 1 }) + " GB"
+  : Math.max(0.1, b / 1024 ** 2).toLocaleString(ORT(), { maximumFractionDigits: b < 10 * 1024 ** 2 ? 1 : 0 }) + " MB";
+const gbText = (b) => (b / 1024 ** 3).toLocaleString(ORT(), { maximumFractionDigits: 1 });
+async function galerieSeite(inhalt) {
+  const STUECK = 3 * 1024 * 1024;
+  const ERLAUBT = /\.(jpe?g|png|webp|gif|pdf|heic|heif)$/i;
+  let g = await holen("/api/galerie"), eintraege = [], auswahl = new Set(), laeuft = false, bericht = "", urls = [];
+  const zeichnen = async () => {
+    urls.forEach((u) => URL.revokeObjectURL(u)); urls = [];
+    if (!g.ordner.some((o) => o.id === GAL_ORDNER)) GAL_ORDNER = g.ordner.length ? g.ordner[0].id : null;
+    eintraege = GAL_ORDNER ? (await holen(`/api/galerie/ordner?id=${encodeURIComponent(GAL_ORDNER)}`)).eintraege || [] : [];
+    auswahl = new Set([...auswahl].filter((id) => eintraege.some((e) => e.id === id)));
+    const o = g.ordner.find((x) => x.id === GAL_ORDNER), sp = g.speicher;
+    const anzahl = g.ordner.reduce((a, x) => a + x.anzahl, 0);
+    const schnitt = anzahl && g.belegt ? g.belegt / anzahl : 1.2 * 1024 ** 2;          // so groß ist ein Foto hier im Schnitt
+    const platz = Math.max(0, Math.floor((g.grenze - g.belegt) / schnitt));
+    const pct = g.grenze ? Math.min(100, Math.round(g.belegt / g.grenze * 100)) : 100;
+    inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(T.galText)}</p>
+        <div class="spbalken" role="img" aria-label="${esc(T.galBelegt(gbText(g.belegt), gbText(g.grenze)))}"><div class="sp-galerie" style="width:${pct}%"></div></div>
+        <p>${esc(T.galBelegt(gbText(g.belegt), gbText(g.grenze)))} · ${esc(T.galPlatzFuer(platz.toLocaleString(ORT())))}</p>
+        ${sp.stufe !== "gruen" ? `<p class="${sp.stufe === "rot" ? "schlecht" : "warn"}"><a href="#speicher">${esc(T.galStufe[sp.stufe])}</a></p>` : ""}
+        <div class="zeile"><label for="galGrenze">${esc(T.galGrenze)}</label><input type="number" id="galGrenze" min="1" max="2000" value="${g.grenze_gb}" style="width:90px">
+          <button class="knopf" id="galGrenzeOk">${esc(T.speichern)}</button></div></div>
+      <div class="karte" id="galKarte"><div class="zeile galordner">${g.ordner.map((x) => `<button class="knopf ${x.id === GAL_ORDNER ? "haupt" : ""}" data-ordner="${esc(x.id)}">${esc(x.name)} <span class="leise">${x.anzahl}</span></button>`).join("")}
+          <button class="knopf" id="galNeu">+ ${esc(T.galOrdnerNeu)}</button></div>
+        ${o ? `<div class="zeile"><input type="text" id="galName" value="${esc(o.name)}" maxlength="40" aria-label="${esc(T.galOrdnerName)}">
+            <button class="knopf" id="galUmb">${esc(T.galUmbenennen)}</button><button class="knopf gefahr" id="galWeg">${esc(T.galOrdnerWeg)}</button></div>
+          <div class="galablage" id="galAblage"><p>${esc(T.galZiehen)}</p>
+            <div class="zeile"><label class="knopf haupt">${esc(T.galDateien)}<input type="file" id="galDatei" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" hidden></label>
+              <label class="knopf">${esc(T.galOrdnerWahl)}<input type="file" id="galVerz" webkitdirectory multiple hidden></label></div>
+            <p class="leise" id="galStand">${esc(bericht)}</p></div>
+          ${eintraege.length ? `<div class="zeile"><button class="knopf" id="galAlle">${esc(auswahl.size === eintraege.length ? T.galKeine2 : T.galAlle)}</button>
+              <button class="knopf gefahr" id="galAuswahlWeg" ${auswahl.size ? "" : "disabled"}>${esc(T.galAuswahlWeg(auswahl.size))}</button>
+              <span class="leise">${esc(T.galAnzahl(eintraege.length))} · ${esc(groesseText(o.bytes))} · ${esc(T.galZiehenText)}</span></div>
+            <div class="galraster" id="galRaster">${eintraege.map((e) => `<div class="galbild ${auswahl.has(e.id) ? "gewaehlt" : ""}" draggable="true" data-id="${esc(e.id)}" title="${esc(e.name)}">
+              <img alt="" draggable="false"><input type="checkbox" aria-label="${esc(e.name)}" ${auswahl.has(e.id) ? "checked" : ""}>
+              <span class="galname">${esc(e.name)}${e.art === "pdf" ? " · " + esc(T.galSeiten(e.seiten)) : ""}</span></div>`).join("")}</div>`
+          : `<p class="leise">${esc(T.galLeer)}</p>`}` : `<p class="leise">${esc(T.galKeine)}</p>`}</div>`;
+    // Ordner wählen, anlegen, umbenennen, löschen
+    inhalt.querySelectorAll("[data-ordner]").forEach((k) => { k.onclick = () => { GAL_ORDNER = k.dataset.ordner; auswahl.clear(); bericht = ""; zeichnen(); }; });
+    $("#galNeu").onclick = (ev) => {
+      const name = prompt(T.galOrdnerName, "");
+      if (name === null) return;
+      aktion(ev.target, async () => { const d = await senden("/api/galerie/ordner", { aktion: "neu", name }); E = d.einstellungen; g = d.galerie; GAL_ORDNER = d.id; await zeichnen(); });
+    };
+    $("#galGrenzeOk").onclick = (ev) => aktion(ev.target, async () => {
+      const d = await senden("/api/einstellungen", { galerie: { grenze_gb: Number($("#galGrenze").value) || 5 } }); E = d.einstellungen;
+      g = await holen("/api/galerie"); await zeichnen();
+    });
+    if (!o) return;
+    $("#galUmb").onclick = (ev) => aktion(ev.target, async () => {
+      const d = await senden("/api/galerie/ordner", { aktion: "umbenennen", id: o.id, name: $("#galName").value }); E = d.einstellungen; g = d.galerie; await zeichnen();
+    });
+    $("#galWeg").onclick = (ev) => { if (confirm(T.galOrdnerWegFrage(o.name))) aktion(ev.target, async () => {
+      const d = await senden("/api/galerie/ordner", { aktion: "loeschen", id: o.id }); E = d.einstellungen; g = d.galerie; GAL_ORDNER = null; await zeichnen();
+    }); };
+    // Hochladen: Dateien, ganzer Ordner oder hineinziehen
+    $("#galDatei").onchange = (ev) => hochladen(ev.target.files);
+    $("#galVerz").onchange = (ev) => hochladen(ev.target.files);
+    const karte = $("#galKarte"), ablage = $("#galAblage");
+    karte.ondragover = (ev) => { if ([...ev.dataTransfer.types].includes("Files")) { ev.preventDefault(); ablage.classList.add("ueber"); } };
+    karte.ondragleave = (ev) => { if (!karte.contains(ev.relatedTarget)) ablage.classList.remove("ueber"); };
+    karte.ondrop = (ev) => { if (ev.dataTransfer.files.length) { ev.preventDefault(); ablage.classList.remove("ueber"); hochladen(ev.dataTransfer.files); } };
+    if (!eintraege.length) return;
+    // Auswahl und Löschen
+    const raster = $("#galRaster");
+    const auswahlZeigen = () => {
+      $("#galAuswahlWeg").disabled = !auswahl.size; $("#galAuswahlWeg").textContent = T.galAuswahlWeg(auswahl.size);
+      $("#galAlle").textContent = auswahl.size === eintraege.length ? T.galKeine2 : T.galAlle;
+    };
+    raster.querySelectorAll(".galbild").forEach((b) => {
+      const cb = b.querySelector("input");
+      cb.onchange = () => { if (cb.checked) auswahl.add(b.dataset.id); else auswahl.delete(b.dataset.id); b.classList.toggle("gewaehlt", cb.checked); auswahlZeigen(); };
+    });
+    $("#galAlle").onclick = () => {
+      const alle = auswahl.size !== eintraege.length;
+      auswahl = new Set(alle ? eintraege.map((e) => e.id) : []);
+      raster.querySelectorAll(".galbild").forEach((b) => { b.classList.toggle("gewaehlt", alle); b.querySelector("input").checked = alle; });
+      auswahlZeigen();
+    };
+    $("#galAuswahlWeg").onclick = (ev) => { if (confirm(T.galWegFrage(auswahl.size))) aktion(ev.target, async () => {
+      const d = await senden("/api/galerie/loeschen", { ordner: o.id, ids: [...auswahl] }); g = d.galerie; auswahl.clear(); await zeichnen();
+    }); };
+    // Reihenfolge per Ziehen (Maus); Dateien von außen gehen an die Ablage
+    let gezogen = null;
+    raster.querySelectorAll(".galbild").forEach((b) => {
+      b.ondragstart = (ev) => { gezogen = b.dataset.id; ev.dataTransfer.setData("text/x-galerie", gezogen); ev.dataTransfer.effectAllowed = "move"; };
+      b.ondragover = (ev) => { if (gezogen) { ev.preventDefault(); b.classList.add("ziel"); } };
+      b.ondragleave = () => b.classList.remove("ziel");
+      b.ondrop = (ev) => {
+        if (!gezogen) return;
+        ev.preventDefault(); ev.stopPropagation(); b.classList.remove("ziel");
+        const ids = eintraege.map((e) => e.id).filter((id) => id !== gezogen);
+        ids.splice(ids.indexOf(b.dataset.id), 0, gezogen);
+        gezogen = null;
+        aktion(null, async () => { const d = await senden("/api/galerie/ordnen", { ordner: o.id, ids }); g = d.galerie; await zeichnen(); }, null);
+      };
+      b.ondragend = () => { gezogen = null; };
+    });
+    // Vorschaubilder erst laden, wenn sie zu sehen sind
+    const io = new IntersectionObserver((xs) => xs.forEach((x) => {
+      if (!x.isIntersecting) return;
+      io.unobserve(x.target);
+      dienstBinaer.get(`/galerie/${x.target.dataset.id}.k.jpg`, {}, {}).then((d) => {
+        const u = URL.createObjectURL(new Blob([d], { type: "image/jpeg" })); urls.push(u); x.target.querySelector("img").src = u;
+      }).catch(() => {});
+    }), { rootMargin: "200px" });
+    raster.querySelectorAll(".galbild").forEach((b) => io.observe(b));
+  };
+  const hochladen = async (dateien) => {
+    if (laeuft || !GAL_ORDNER) return;
+    laeuft = true;
+    const alle = [...dateien], liste = alle.filter((f) => ERLAUBT.test(f.name) || /^(image\/|application\/pdf)/.test(f.type));
+    const ziel = GAL_ORDNER;
+    let ok = 0, abbruch = "";
+    const fehler = alle.length - liste.length ? [`${alle.length - liste.length} × ${T.galFormat}`] : [];
+    const stand = (t) => { const s = $("#galStand"); if (s) s.textContent = t; };
+    try {
+      for (let i = 0; i < liste.length && !abbruch; i++) {
+        const f = liste[i], teile = Math.max(1, Math.ceil(f.size / STUECK));
+        const kennung = Math.random().toString(36).slice(2, 12).replace(/[^a-z0-9]/g, "a").padEnd(10, "x");
+        try {
+          for (let nr = 0; nr < teile; nr++) {
+            const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
+            let bin = ""; for (let j = 0; j < roh.length; j += 0x8000) bin += String.fromCharCode(...roh.subarray(j, j + 0x8000));
+            const d = JSON.parse(await dienst.post("/api/medien/teil", JSON.stringify({ kennung, nr, daten: btoa(bin), fertig: nr === teile - 1,
+              zweck: "galerie", ordner: ziel, name: f.name, gesamt: f.size }), KOPF));
+            if (!d.ok) { const x = new Error(meldungText(d, d.fehler)); x.code = d.code; throw x; }
+            if (d.galerie) g = d.galerie;
+            stand(T.galLaedt(i + 1, liste.length, f.name, Math.round((nr + 1) / teile * 100)));
+          }
+          ok++;
+        } catch (e) {
+          if (["sp_voll", "gal_voll", "gal_viele", "gal_ordner"].includes(e.code)) abbruch = e.message;   // die übrigen passen auch nicht
+          else fehler.push(`${f.name}: ${e.message || e}`);
+        }
+      }
+    } finally {
+      laeuft = false;
+      bericht = T.galFertig(ok, fehler.length + (abbruch ? liste.length - ok - fehler.length : 0)) + (abbruch ? ` – ${T.galAbbruch} ${abbruch}` : "")
+        + (fehler.length ? " – " + fehler.slice(0, 5).join(" · ") + (fehler.length > 5 ? " …" : "") : "");
+      try { g = await holen("/api/galerie"); } catch (_) { /* egal */ }
+      if (aktiv === "galerie") await zeichnen();
+      melden(bericht, !!(abbruch || fehler.length));
+    }
+  };
+  await zeichnen();
+}
+
+// ---------- Speicher (seit 0.45): Lage des Datenverzeichnisses und was wie viel belegt ----------
+async function speicherSeite(inhalt) {
+  const d = await holen("/api/speicher"), l = d.lage;
+  const ZIEL = { galerie: "galerie", medien: "medien", pdf: "layout", bilder: "layout", sicherungen: "sicherung", einspieler: "einspieler",
+                 quelldateien: "quellen", player: "player" };
+  const bereiche = Object.entries(d.bereiche).filter(([, b]) => b > 0).sort((a, b) => b[1] - a[1]);
+  const summe = bereiche.reduce((a, [, b]) => a + b, 0);
+  const sonst = Math.max(0, l.gesamt - l.frei - summe);
+  const pct = (b) => (l.gesamt ? b / l.gesamt * 100 : 0).toFixed(2) + "%";
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(T.reiter.speicher)} <span class="${l.stufe === "gruen" ? "gut" : l.stufe === "gelb" ? "warn" : "schlecht"}">${esc(T.spStufe[l.stufe])}</span></h2>
+      <p class="leise">${esc(T.spText)}</p>
+      <div class="spbalken gross" role="img" aria-label="${esc(T.spFrei(gbText(l.frei), gbText(l.gesamt)))}">
+        ${bereiche.map(([k, b], i) => `<div class="sp-${i % 6}" style="width:${pct(b)}" title="${esc(T.spBereiche[k] || k)}: ${esc(groesseText(b))}"></div>`).join("")}
+        <div class="sp-sonst" style="width:${pct(sonst)}" title="${esc(T.spSonst)}"></div>
+        <div class="sp-frei" style="width:${pct(Math.max(0, l.frei - l.reserve))}"></div><div class="sp-reserve" style="width:${pct(Math.min(l.frei, l.reserve))}" title="${esc(T.spReserve(gbText(l.reserve)))}"></div></div>
+      <p><b>${esc(T.spFrei(gbText(l.frei), gbText(l.gesamt)))}</b> · ${esc(T.spReserve(gbText(l.reserve)))}</p>
+      <table class="sptabelle">${bereiche.map(([k, b], i) => `<tr><td><span class="spfarbe sp-${i % 6}"></span>${esc(T.spBereiche[k] || k)}</td><td>${esc(groesseText(b))}</td>
+          <td>${ZIEL[k] ? `<a href="#${ZIEL[k]}">${esc(T.spAufraeumen)}</a>` : ""}</td></tr>`).join("")}
+        <tr><td><span class="spfarbe sp-sonst"></span>${esc(T.spSonst)}</td><td>${esc(groesseText(sonst))}</td><td></td></tr></table>
+      <p class="leise">${esc(T.spOrt)}: <code>${esc(d.pfad)}</code></p></div>`;
 }
 
 // ---------- Updates (seit 0.13): Anfrage an das root-Skript, Stand aus dessen Statusdateien ----------

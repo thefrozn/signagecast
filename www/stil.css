@@ -184,6 +184,15 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-pdf { padding: 0 !important; align-items: center; justify-content: center; }
 .typ-pdf img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .typ-pdf.fuellen img { object-fit: cover; }
+/* Galerie (seit 0.45): zwei Folien übereinander, die neue blendet über die alte; Rand schwarz oder unscharf */
+.typ-galerie { overflow: hidden; padding: 0 !important; }
+.typ-galerie .folie { position: absolute; inset: 0; opacity: 0; transition: opacity .8s ease; }
+.typ-galerie .folie.an { opacity: 1; }
+.typ-galerie.hart .folie { transition: none; }
+.typ-galerie img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.typ-galerie.fuellen img { object-fit: cover; }
+.typ-galerie .rand { position: absolute; inset: -6%; background: center / cover no-repeat; filter: blur(28px) brightness(.55); }
+.typ-galerie:not(.unscharf) .rand, .typ-galerie.fuellen .rand { display: none; }
 
 
 /* Fernwartung aktiv (seit 0.33, nur Direktmodus eines Pi) */

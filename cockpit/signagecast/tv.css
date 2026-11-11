@@ -194,3 +194,26 @@ details.mehr > summary::-webkit-details-marker { display: none; }
 .fw-fenster .leise { color: #a8a8a8; }
 .fw-hinweis { margin: 6px 0; font-size: 13px; }
 .fw-term { flex: 1 1 auto; min-height: 0; }
+/* Galerie und Speicher (seit 0.45) */
+.spbalken { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--linie); margin: 8px 0; }
+.spbalken.gross { height: 22px; }
+.spbalken > div { height: 100%; flex: none; }
+.sp-galerie, .sp-0 { background: var(--akzent); } .sp-1 { background: #2a9d8f; } .sp-2 { background: #e9a23b; }
+.sp-3 { background: #9b5de5; } .sp-4 { background: #d1495b; } .sp-5 { background: #6c8ead; }
+.sp-sonst { background: var(--leise); } .sp-frei { background: transparent; }
+.sp-reserve { background: repeating-linear-gradient(45deg, transparent 0 4px, rgba(128, 128, 128, .45) 4px 8px); }
+table.sptabelle { border-collapse: collapse; margin: 8px 0; }
+table.sptabelle td { padding: 4px 14px 4px 0; border-bottom: 1px solid var(--linie); }
+table.sptabelle td:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; }
+.spfarbe { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+.galordner { flex-wrap: wrap; }
+.galablage { border: 2px dashed var(--linie); border-radius: 10px; padding: 12px; margin: 10px 0; text-align: center; }
+.galablage .zeile { justify-content: center; flex-wrap: wrap; }
+.galablage.ueber { border-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 10%, transparent); }
+.galraster { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
+.galbild { position: relative; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: var(--linie); cursor: grab; }
+.galbild img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #000; }
+.galbild input { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; margin: 0; }
+.galbild .galname { display: block; padding: 3px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.galbild.gewaehlt { border-color: var(--akzent); }
+.galbild.ziel { border-color: var(--warn); }

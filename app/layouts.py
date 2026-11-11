@@ -19,6 +19,7 @@ OPERATOREN = ["=", "!=", ">", "<", "an", "aus"]
 STILE = ["natur", "stadt", "himmel", "berge", "meer", "gemischt"]
 TAGESZEITEN = ["morgen", "tag", "abend", "nacht"]
 WECHSEL = ["tageszeit", "tageszeit_wetter", "diashow"]
+HG_ARTEN = ("wetter", "stil", "farbe", "bild", "galerie")    # galerie seit 0.45: Ordner als Diashow
 
 # Bausteine: Typ -> erlaubte Optionen mit Prüffunktion und Standardwert
 def _b(w):  return bool(w)
@@ -94,6 +95,11 @@ def _pdf(w):
     if w and not re.fullmatch(r"[0-9a-f]{16}", w):
         raise Meldung("l_pdf")
     return w
+def _gid(w):
+    w = str(w or "").strip()
+    if w and not re.fullmatch(r"[a-z0-9]{2,12}", w):
+        raise Meldung("l_galerie")
+    return w
 def _symbole(w):
     """Kalender als Symbole (seit 0.28): Regeln „Titel enthält …“ -> Symbol und Farbe, die erste passende gilt."""
     aus = []
@@ -115,6 +121,7 @@ _qid.art = "id of one of your own data sources (Content → Data sources), \"\" 
 _pfad.art = 'path into the data source answer, e.g. "current.temp" or "items.0.title"'
 _url.art = "web address starting with http:// or https://"
 _pdf.art = '16 hex characters of an uploaded PDF ("" = none; the user uploads it later)'
+_gid.art = 'id of a gallery folder (Content → Gallery), "" = none; the user picks it later in the editor'
 _symbole.art = 'list of rules {"text": "word in the title", "icon": "mdi-…", "farbe": "#rrggbb"} (max 12)'
 _raeume.art = 'list of {"name": "Living room", "entity": "sensor.living_room_temperature"} (max 8)'
 
@@ -163,12 +170,16 @@ TYPEN = {
                    "versatz_x": (_zahl(0, 10000), 0), "versatz_y": (_zahl(0, 10000), 0)},
     # seit 0.21: PDF Seite für Seite (app/pdf.py wandelt beim Hochladen in Bilder um)
     "pdf":        {"datei": (_pdf, ""), "sekunden": (_zahl(3, 3600), 15), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen")},
+    # seit 0.45: Ordner mit Bildern/PDFs (Inhalte → Galerie), Folie für Folie nach der Uhr
+    "galerie":    {"ordner": (_gid, ""), "sekunden": (_zahl(3, 3600), 10), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen"),
+                   "rand": (_wahl("schwarz", "unscharf"), "schwarz"), "reihenfolge": (_wahl("eigene", "name", "neu", "zufall"), "eigene"),
+                   "uebergang": (_wahl("blenden", "hart"), "blenden")},
 }
 ENTFERNT = {"abfahrten"}                 # seit 0.26 ausgebaut (kein offener Fahrplan-Dienst für Deutschland)
 # Mindestgröße je Typ (Felder)
 MINDEST = {"logo": (2, 1), "video": (8, 5), "kamera": (4, 3), "kalender": (6, 3), "raeume": (4, 2), "vorhersage": (4, 3),
            "apibild": (2, 2), "qrcode": (2, 2), "apiliste": (4, 1), "webcam": (4, 3), "diagramm": (4, 2), "webseite": (4, 3),
-           "pdf": (3, 3)}
+           "pdf": (3, 3), "galerie": (3, 3)}
 # Zeitraum eines Bausteins (seit 0.21): „ab“/„bis“ als Datum oder Datum mit Uhrzeit (Ortszeit); leer = unbegrenzt
 ZEITPUNKT = re.compile(r"\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(T([01]\d|2[0-3]):[0-5]\d)?")
 
@@ -207,7 +218,7 @@ def pruefe_layout(l):
         raise Meldung("l_kennung", id=repr(lid))
     hg = l.get("hintergrund", {}) or {}
     art = hg.get("art", "wetter")
-    if art not in ("wetter", "stil", "farbe", "bild"):
+    if art not in HG_ARTEN:
         raise Meldung("l_hintergrund")
     def _bildname(b):
         b = str(b or "")
@@ -219,6 +230,8 @@ def pruefe_layout(l):
     stil = hg.get("stil", "natur") if hg.get("stil", "natur") in STILE else "natur"
     wechsel = hg.get("wechsel", "tageszeit") if hg.get("wechsel", "tageszeit") in WECHSEL else "tageszeit"
     diashow_min = max(1, min(120, int(hg.get("diashow_min", 10) or 10)))
+    galerie = _gid(hg.get("galerie"))
+    galerie_s = max(5, min(3600, int(hg.get("galerie_s", 60) or 60)))
     b = hg.get("bereich") or {}
     bw = max(4, min(SPALTEN, int(b.get("w", SPALTEN)))); bh = max(3, min(ZEILEN, int(b.get("h", ZEILEN))))
     bereich = {"x": max(0, min(SPALTEN - bw, int(b.get("x", 0)))), "y": max(0, min(ZEILEN - bh, int(b.get("y", 0)))), "w": bw, "h": bh}
@@ -262,6 +275,7 @@ def pruefe_layout(l):
     return {"id": lid, "name": str(l.get("name", lid))[:40] or lid,
             "hintergrund": {"art": art, "farbe": _farbe(hg.get("farbe", "#202020")) or "#202020", "bild": bild,
                             "bilder_tageszeit": je_zeit, "stil": stil, "wechsel": wechsel, "diashow_min": diashow_min,
+                            "galerie": galerie, "galerie_s": galerie_s,
                             "nachts_dunkler": bool(hg.get("nachts_dunkler", True)), "abdunkeln": bool(hg.get("abdunkeln", True)),
                             "bereich": bereich, "anpassung": anpassung, "ausschnitt": ausschnitt},
             "thema": {"schema": schema, "akzent": _farbe(th.get("akzent", "#3d8cd0")) or "#3d8cd0", "schrift": schrift},
@@ -299,7 +313,7 @@ def json_aus_text(text):
         raise Meldung("l_imp_json", d=str(f)[:120]) from None
 
 
-def import_pruefen(roh, belegte_ids=(), bild_da=lambda n: True, quellen=(), pdf_da=lambda n: True):
+def import_pruefen(roh, belegte_ids=(), bild_da=lambda n: True, quellen=(), pdf_da=lambda n: True, ordner=None):
     """Layout aus einer Datei oder einem eingefügten Text übernehmen: Was sich reparieren lässt, wird repariert und als
     Hinweis gemeldet (unbekannte Bausteine weglassen, ungültige Werte auf den Standard, fehlende Kennungen vergeben,
     fehlende Bilder leeren). Gibt (layout, hinweise) zurück; hinweise = Liste von Meldungen."""
@@ -312,7 +326,7 @@ def import_pruefen(roh, belegte_ids=(), bild_da=lambda n: True, quellen=(), pdf_
     hinweise = []
     l = {"id": _neue_id(set(belegte_ids), roh.get("id"), "layout", 16), "name": str(roh.get("name") or "Import")[:40]}
     hg = dict(roh.get("hintergrund") or {}) if isinstance(roh.get("hintergrund"), dict) else {}
-    if hg.get("art", "wetter") not in ("wetter", "stil", "farbe", "bild"):
+    if hg.get("art", "wetter") not in HG_ARTEN:
         hinweise.append(Meldung("l_imp_wert", feld="hintergrund.art", w=str(hg.get("art"))[:40]))
         hg["art"] = "wetter"
     for feld in ("bild",):
@@ -325,6 +339,8 @@ def import_pruefen(roh, belegte_ids=(), bild_da=lambda n: True, quellen=(), pdf_
     hg["bilder_tageszeit"] = bt
     if hg.get("art") == "bild" and not hg.get("bild") and not any(bt.values()):
         hg["art"] = "wetter"
+    if hg.get("galerie") and (not re.fullmatch(r"[a-z0-9]{2,12}", str(hg["galerie"])) or (ordner is not None and hg["galerie"] not in ordner)):
+        hinweise.append(Meldung("l_imp_galerie", w=str(hg["galerie"])[:40])); hg["galerie"] = ""
     if hg.get("farbe") and not FARBE.fullmatch(str(hg["farbe"])):
         hinweise.append(Meldung("l_imp_wert", feld="hintergrund.farbe", w=str(hg["farbe"])[:40])); hg["farbe"] = "#202020"
     l["hintergrund"] = hg
@@ -376,6 +392,8 @@ def import_pruefen(roh, belegte_ids=(), bild_da=lambda n: True, quellen=(), pdf_
                 hinweise.append(Meldung("l_imp_bild", w=opt[k])); opt[k] = ""
             if k == "datei" and typ == "pdf" and opt[k] and not pdf_da(opt[k]):
                 hinweise.append(Meldung("l_imp_bild", w=opt[k])); opt[k] = ""
+            if k == "ordner" and typ == "galerie" and opt[k] and ordner is not None and opt[k] not in ordner:
+                hinweise.append(Meldung("l_imp_galerie", w=opt[k])); opt[k] = ""
             if k == "quelle" and opt[k] and opt[k] not in quellen:
                 hinweise.append(Meldung("l_imp_quelle", b=name, q=opt[k]))
         x["optionen"] = opt
@@ -413,6 +431,7 @@ TYP_TEXT = {
     "webcam": "IP camera (own data source of type video)", "diagramm": "history chart of a value",
     "unwetter": "official severe weather warnings (Germany, DWD)", "webseite": "web page (embedded or as screenshot)",
     "pdf": "PDF shown page by page",
+    "galerie": "slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Gallery); the user picks the folder",
 }
 
 
@@ -437,7 +456,8 @@ def format_beschreibung():
          "| Field | Meaning |", "|---|---|",
          "| `id` | 2–16 characters a–z, 0–9 (a new one is assigned on import if it exists already) |",
          "| `name` | display name, max 40 characters |",
-         '| `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture) |',
+         '| `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture), `"galerie"` (slideshow of a gallery folder) |',
+         '| `hintergrund.galerie`, `hintergrund.galerie_s` | for art `galerie`: folder id ("" – the user picks it) and seconds per picture (5–3600) |',
          f"| `hintergrund.stil` | {', '.join(f'`{x}`' for x in STILE)} – picture changes with the time of day |",
          '| `hintergrund.farbe` | `"#rrggbb"` for art `farbe` |',
          '| `hintergrund.abdunkeln` | true = darken the picture a little so text stays readable |',
@@ -620,6 +640,9 @@ def vorlagen():
                                     _el("lage", "wetterlage", 2, 6, 7, 1),
                                     _el("sender", "sender", 9, 6, 6, 1, ausrichtung="rechts"),
                                     _el("meldung", "meldung", 17, 1, 22, 3, ausrichtung="mitte")]}),
+        # Galerie Vollbild (seit 0.45): ein Galerie-Ordner über den ganzen Bildschirm – den Ordner wählt man im Editor
+        pruefe_layout({"id": "galerie", "name": "Galerie Vollbild", "hintergrund": {"art": "farbe", "farbe": "#000000"},
+                       "elemente": [_el("galerie", "galerie", 0, 0, 48, 27, optionen={"sekunden": 15})]}),
         pruefe_layout({"id": "nacht", "name": "Nacht (nur Uhr, gedimmt)", "hintergrund": {"art": "farbe", "farbe": "#000000"},
                        "thema": {"schema": "gedimmt", "akzent": "#555555"},
                        "elemente": [_el("uhr", "uhr", 16, 10, 16, 6, ausrichtung="mitte")]}),

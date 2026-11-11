@@ -98,6 +98,12 @@ function bauen(layout) {
     if (e.typ === "diagramm") d.innerHTML = `<div class="kopf"><span class="name">${esc(e.optionen.name)}</span><span class="wert"></span></div><div class="kurve"></div>`;
     if (e.typ === "webcam") d.classList.add(e.optionen.anpassung === "einpassen" ? "einpassen" : "fuellen");
     if (e.typ === "pdf") { d.innerHTML = `<img alt="">`; d.classList.add(e.optionen.anpassung === "fuellen" ? "fuellen" : "einpassen"); }
+    if (e.typ === "galerie") {             // seit 0.45: zwei Folien zum Überblenden, je mit unscharfem Rand dahinter
+      d.innerHTML = `<div class="folie"><div class="rand"></div><img alt=""></div><div class="folie"><div class="rand"></div><img alt=""></div>`;
+      d.classList.add(e.optionen.anpassung === "fuellen" ? "fuellen" : "einpassen");
+      if (e.optionen.rand === "unscharf") d.classList.add("unscharf");
+      if (e.optionen.uebergang === "hart") d.classList.add("hart");
+    }
     if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
@@ -125,7 +131,10 @@ function hintergrund(layout) {
     return STILE[tag % STILE.length];
   };
   let url = null;
-  if (hg.art === "farbe") { h.style.backgroundImage = "none"; h.style.backgroundColor = hg.farbe; }
+  if (hg.art !== "galerie") delete h.dataset.galerie;
+  if (hg.art === "galerie") {                 // seit 0.45: Diashow eines Galerie-Ordners (leer: Wetterbild)
+    if (!hgGalerieSetzen(hg)) { delete h.dataset.galerie; url = wetterbild(); }
+  } else if (hg.art === "farbe") { h.style.backgroundImage = "none"; h.style.backgroundColor = hg.farbe; }
   else if (hg.art === "bild") {
     const b = (hg.bilder_tageszeit || {})[tz] || hg.bild;
     url = b ? `bild/${b}` : wetterbild();
@@ -411,6 +420,12 @@ function fuellen() {
         if (sichtbar) webseite(b, foto); else if (b.stopp) { b.stopp(); }
         break;
       }
+      case "galerie": {
+        const g = o.ordner ? galerieHolen(o.ordner) : null;
+        sichtbar = sichtbar && !!(g && g.folien.length);
+        if (sichtbar) galerieFolie(b);
+        break;
+      }
       case "pdf": {
         b.pdf = (daten.pdf || {})[e.id];
         sichtbar = sichtbar && !!(b.pdf && b.pdf.seiten);
@@ -549,6 +564,83 @@ function pdfSeite(b) {
   neu.src = url;
 }
 
+// ---------- Galerie (seit 0.45) ----------
+// Die Liste der Folien holt die Seite nur, wenn sich der Stand des Ordners (aus daten.json) ändert. Welche Folie dran
+// ist, bestimmt die Uhr – wie beim PDF zeigen alle Fernseher dieselbe. „zufall“ mischt bei jedem Durchgang neu
+// (gleich auf allen Fernsehern); die Seiten eines PDFs bleiben zusammen.
+const galerien = {};                          // ordner -> {stand, folien, laedt, ordnungen}
+function galerieHolen(oid) {
+  const g = galerien[oid] || (galerien[oid] = { stand: null, folien: [], laedt: false, ordnungen: {} });
+  const st = ((daten && daten.galerie) || {})[oid];
+  if (st && st !== g.stand && !g.laedt) {
+    g.laedt = true;
+    fetch(`galerie/ordner/${encodeURIComponent(oid)}.json`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j && j.ok) { g.stand = j.stand; g.folien = j.folien || []; g.ordnungen = {}; } })
+      .catch(() => {})
+      .finally(() => { g.laedt = false; });
+  }
+  return g;
+}
+function zufallszahl(text) {                   // einfache, überall gleiche Zufallsfolge aus einem Text
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+}
+function galerieOrdnung(oid, g, reihenfolge, runde) {
+  const key = reihenfolge === "zufall" ? `zufall-${runde}` : reihenfolge;
+  if (g.ordnungen[key]) return g.ordnungen[key];
+  let f = g.folien;
+  if (reihenfolge === "name") f = [...f].sort((a, b) => a.n.localeCompare(b.n, undefined, { numeric: true, sensitivity: "base" }) || a.i - b.i);
+  else if (reihenfolge === "neu") f = [...f].sort((a, b) => b.z - a.z || a.i - b.i);
+  else if (reihenfolge === "zufall") {
+    const gruppen = [];
+    for (const x of f) { if (!gruppen.length || gruppen[gruppen.length - 1][0].i !== x.i) gruppen.push([]); gruppen[gruppen.length - 1].push(x); }
+    const z = zufallszahl(`${oid}-${g.stand}-${runde}`);
+    for (let i = gruppen.length - 1; i > 0; i--) { const j = Math.floor(z() * (i + 1)); [gruppen[i], gruppen[j]] = [gruppen[j], gruppen[i]]; }
+    f = gruppen.flat();
+    g.ordnungen = { [key]: f };                // alte Runden vergessen
+  }
+  g.ordnungen[key] = f;
+  return f;
+}
+function galerieUrl(oid, reihenfolge, sekunden) {
+  const g = galerien[oid];
+  if (!g || !g.folien.length) return null;
+  const n = g.folien.length, schritt = Math.floor(jetztMs() / 1000 / Math.max(3, sekunden));
+  const f = galerieOrdnung(oid, g, reihenfolge, Math.floor(schritt / n));
+  return f[schritt % n].u;
+}
+function galerieFolie(b) {
+  const o = b.e.optionen;
+  const url = galerieUrl(o.ordner, o.reihenfolge, o.sekunden);
+  if (!url || b.galUrl === url) return;
+  b.galUrl = url;
+  const neu = new Image();
+  neu.onload = () => {
+    if (b.galUrl !== url) return;
+    const folien = b.d.querySelectorAll(".folie");
+    const vorne = [...folien].find((x) => x.classList.contains("an"));
+    const hinten = vorne === folien[0] ? folien[1] : folien[0];
+    hinten.querySelector("img").src = url;
+    hinten.querySelector(".rand").style.backgroundImage = b.d.classList.contains("unscharf") ? `url("${url}")` : "none";
+    hinten.classList.add("an");
+    if (vorne) vorne.classList.remove("an");
+  };
+  neu.src = url;
+}
+function hgGalerieSetzen(hg) {                // Hintergrund als Diashow: erst zeigen, wenn das Bild geladen ist
+  if (!hg.galerie || !galerieHolen(hg.galerie).folien.length) return false;
+  const u = galerieUrl(hg.galerie, "eigene", hg.galerie_s || 60), h = $("hg");
+  if (u && h.dataset.galerie !== u) {
+    h.dataset.galerie = u;
+    const neu = new Image();
+    neu.onload = () => { if (h.dataset.galerie === u) h.style.backgroundImage = `url("${u}")`; };
+    neu.src = u;
+  }
+  return true;
+}
+
 // Countdown: Rest bis zum Ziel in Tagen/Stunden/Minuten/Sekunden nach der Vorlage, danach der Ende-Text
 function countdown(b) {
   const o = b.e.optionen, d = b.d;
@@ -569,6 +661,8 @@ function countdown(b) {
 function uhr() {
   const jetzt = new Date(jetztMs());
   const zone = ZEIT.zone ? { timeZone: ZEIT.zone } : {};
+  const hg = daten && daten.layout && !daten.layout.schwarz && daten.layout.hintergrund;
+  if (hg && hg.art === "galerie" && !hgGalerieSetzen(hg) && $("hg").dataset.galerie) hintergrund(daten.layout);   // Ordner leer geworden
   for (const { e, d } of bausteine) {
     if (e.typ === "uhr") {
       d.textContent = jetzt.toLocaleTimeString(T.locale, { hour: "2-digit", minute: "2-digit", ...(e.optionen.sekunden ? { second: "2-digit" } : {}), ...zone });
@@ -581,6 +675,8 @@ function uhr() {
       countdown(bausteine.find((x) => x.e === e));
     } else if (e.typ === "pdf" && !d.classList.contains("versteckt")) {
       pdfSeite(bausteine.find((x) => x.e === e));
+    } else if (e.typ === "galerie" && !d.classList.contains("versteckt")) {
+      galerieFolie(bausteine.find((x) => x.e === e));
     } else if (e.typ === "meldung" && !d.classList.contains("versteckt")) {
       const m = meldungen[e.optionen.entity];
       if (m && Date.now() - m.seit > e.optionen.dauer * 1000) d.classList.add("versteckt");

@@ -11,7 +11,7 @@ const LTEXTE = {
     nameFehlt: "Bitte einen Namen eingeben.", verwerfen: "Ungespeicherte Änderungen verwerfen?", hgFarben: "Hintergrund & Farben",
     layout: "Layout", neu: "Neues Layout", ausVorlage: "aus Vorlage", duplizieren: "Kopieren", loeschen: "Löschen",
     exportieren: "Exportieren", importieren: "Importieren", rueckgaengig: "Rückgängig", speichern: "Speichern",
-    name: "Name", hintergrund: "Hintergrund", hgArt: { wetter: "Wetterbild (nach Wetter)", stil: "Bilderset (nach Tageszeit)", bild: "eigene Bilder", farbe: "Farbe" },
+    name: "Name", hintergrund: "Hintergrund", hgArt: { wetter: "Wetterbild (nach Wetter)", stil: "Bilderset (nach Tageszeit)", bild: "eigene Bilder", galerie: "Galerie-Ordner (Diashow)", farbe: "Farbe" },
     stil: "Stil", stilArt: { natur: "Natur", stadt: "Stadt", himmel: "Himmel", berge: "Berge", meer: "Meer", gemischt: "gemischt (jeden Tag ein anderer)" },
     wechsel: "Wechsel", wechselArt: { tageszeit: "nach Tageszeit", tageszeit_wetter: "nach Tageszeit, bei Regen/Schnee/Nebel Wetterbild", diashow: "Diashow" },
     diashowMin: "Diashow: Minuten je Bild", nachtsDunkler: "abends/nachts dunkler", jeZeit: "Eigenes Bild je Tageszeit (leer = Hauptbild)",
@@ -53,7 +53,7 @@ const LTEXTE = {
            text: "Freier Text", logo: "Logo / Bild", kamera: "Kamera (HA)", kalender: "Kalender / Müllabfuhr", meldung: "Meldung von HA", flaeche: "Fläche (Farbe)",
            apiwert: "API-Wert", apiliste: "API-Liste / Feed", apibild: "API-Bild", anzeige: "Anzeige (Balken/Ampel)", countdown: "Countdown", qrcode: "QR-Code",
            webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite", unwetter: "Unwetterwarnung (DWD)",
-           pdf: "PDF (Seite für Seite)" },
+           pdf: "PDF (Seite für Seite)", galerie: "Galerie (Bilder/PDFs)" },
     opt: { sekunden: "mit Sekunden", wochentag: "mit Wochentag", jahr: "mit Jahr", entity: "Entität (aus HA)", tage: "Tage",
            liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", text: "Text",
            bild: "Bild hochladen (PNG mit durchsichtigem Hintergrund oder JPG)", laufband: "als Laufband (läuft durch)", nur_mit_terminen: "nur zeigen, wenn in diesem Zeitraum Termine anstehen",
@@ -65,7 +65,8 @@ const LTEXTE = {
            inhalt: "Inhalt (Text, Link oder WLAN-Daten)", beschriftung: "Beschriftung",
            immer: "auch ohne Warnung zeigen", ton: "mit Ton", stunden: "Zeitraum (Stunden)", url: "Adresse", neu_laden_min: "neu laden alle (min, 0 = nie; Foto: stündlich)", modus: "Darstellung", zoom: "Zoom (%)",
            versatz_x: "Ausschnitt: von links (px)", versatz_y: "Ausschnitt: von oben (px)",
-           datei: "PDF hochladen", sekunden: "Sekunden je Seite" },
+           datei: "PDF hochladen", sekunden: "Sekunden je Seite",
+           ordner: "Ordner", rand: "Rand (bei „einpassen“)", reihenfolge: "Reihenfolge", uebergang: "Wechsel" },
     optHilfe: { temperatur: "leer = Wetter aus Einstellungen → Allgemein; oder ein Temperatur-Sensor", kamera: "z. B. Türklingel – mit Bedingung nur bei Klingeln zeigen",
                 meldung: "Text-Entität in HA (z. B. input_text.tv_meldung). Ändert sich der Text, erscheint er als Banner.",
                 kalender: "Kalender-Entität, z. B. Müllabfuhr (Waste Collection Schedule) oder Familienkalender – oder eine Datenquelle (iCal oder CSV mit Datumsspalte, dann ohne HA)",
@@ -80,8 +81,13 @@ const LTEXTE = {
                 diagramm: "Entweder eine HA-Entität (Verlauf aus der HA-Historie) oder Datenquelle + Pfad – deren Werte merkt sich SignageCast ab jetzt (bis 7 Tage).",
                 webseite: "„Einbetten“ zeigt die Seite live, geht aber nur, wenn sie es erlaubt („Prüfen“). „Bildschirmfoto“ geht mit fast jeder öffentlichen Seite: SignageCast lädt sie selbst und zeigt alle paar Minuten ein Foto (ohne Bewegung und Anmeldung, Cookie-Hinweise bleiben sichtbar). Zoom und Ausschnitt wählen den sichtbaren Teil.",
                 unwetter: "Amtliche Warnungen des Deutschen Wetterdienstes für den Standort (nur Deutschland). Ohne Warnung unsichtbar – oder „auch ohne Warnung zeigen“.",
-                pdf: "Preisliste, Speisekarte, Aushang oder Präsentation (als PDF speichern). Bis 50 Seiten; die Seiten wechseln nach der Uhr – alle Fernseher blättern gleich." },
-    wahl: { liste: "Liste", symbole: "nur Symbole", balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)", einbetten: "einbetten (live)", bild: "Bildschirmfoto" },
+                pdf: "Preisliste, Speisekarte, Aushang oder Präsentation (als PDF speichern). Bis 50 Seiten; die Seiten wechseln nach der Uhr – alle Fernseher blättern gleich.",
+                galerie: "Zeigt einen Ordner aus Inhalte → Galerie: Bilder und PDF-Seiten nacheinander, nach der Uhr – alle Fernseher zeigen dasselbe Bild. Neue Bilder im Ordner erscheinen von selbst. Für Vollbild den Baustein auf 0 0 48 27 ziehen." },
+    wahl: { liste: "Liste", symbole: "nur Symbole", balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)", einbetten: "einbetten (live)", bild: "Bildschirmfoto",
+            schwarz: "schwarz", unscharf: "Bild unscharf dahinter", eigene: "wie im Ordner", name: "nach Name", neu: "neueste zuerst", zufall: "zufällig",
+            blenden: "überblenden", hart: "direkt" },
+    galSekunden: "Sekunden je Bild", galKeinOrdner: "– Ordner wählen –", galOrdnerAnlegen: "Ordner anlegen und Bilder hochladen: Inhalte → Galerie",
+    galHg: "Ordner", galHgSek: "Sekunden je Bild",
     keineQuelle: "– Datenquelle wählen –", waehlen: "wählen …", bedQuelle: "Wert aus", bedHA: "Home Assistant", bedPfad: "Pfad",
     pruefen: "Prüfen", einbettbarJa: "Seite erlaubt das Einbetten", einbettbarNein: "Seite verbietet das Einbetten", einbettbarUnklar: "nicht prüfbar", tippFoto: "– Tipp: Darstellung „Bildschirmfoto“ wählen.",
     zeitraum: "Nur im Zeitraum …", zeitraumText: "Zum Beispiel „Praxis vom 23.12. bis 2.1. geschlossen“: erscheint und verschwindet von selbst. Ohne Uhrzeit gilt der ganze Tag.",
@@ -95,7 +101,7 @@ const LTEXTE = {
     nameFehlt: "Please enter a name.", verwerfen: "Discard unsaved changes?", hgFarben: "Background & colours",
     layout: "Layout", neu: "New layout", ausVorlage: "from template", duplizieren: "Copy", loeschen: "Delete",
     exportieren: "Export", importieren: "Import", rueckgaengig: "Undo", speichern: "Save",
-    name: "Name", hintergrund: "Background", hgArt: { wetter: "Weather picture (by weather)", stil: "Picture set (by time of day)", bild: "own pictures", farbe: "Colour" },
+    name: "Name", hintergrund: "Background", hgArt: { wetter: "Weather picture (by weather)", stil: "Picture set (by time of day)", bild: "own pictures", galerie: "Gallery folder (slideshow)", farbe: "Colour" },
     stil: "Style", stilArt: { natur: "Nature", stadt: "City", himmel: "Sky", berge: "Mountains", meer: "Sea", gemischt: "mixed (different every day)" },
     wechsel: "Change", wechselArt: { tageszeit: "by time of day", tageszeit_wetter: "by time of day, weather picture when rain/snow/fog", diashow: "Slideshow" },
     diashowMin: "Slideshow: minutes per picture", nachtsDunkler: "darker in the evening/at night", jeZeit: "Own picture per time of day (empty = main picture)",
@@ -137,7 +143,7 @@ const LTEXTE = {
            text: "Free text", logo: "Logo / picture", kamera: "Camera (HA)", kalender: "Calendar / waste collection", meldung: "Message from HA", flaeche: "Area (colour)",
            apiwert: "API value", apiliste: "API list / feed", apibild: "API picture", anzeige: "Gauge (bar/traffic light)", countdown: "Countdown", qrcode: "QR code",
            webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page", unwetter: "Weather warning (DWD)",
-           pdf: "PDF (page by page)" },
+           pdf: "PDF (page by page)", galerie: "Gallery (pictures/PDFs)" },
     opt: { sekunden: "with seconds", wochentag: "with weekday", jahr: "with year", entity: "Entity (from HA)", tage: "Days",
            liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", text: "Text",
            bild: "Upload picture (PNG with transparent background or JPG)", laufband: "as ticker (scrolling)", nur_mit_terminen: "only show when events are due in this period",
@@ -149,7 +155,8 @@ const LTEXTE = {
            inhalt: "Content (text, link or Wi-Fi data)", beschriftung: "Caption",
            immer: "show also without warning", ton: "with sound", stunden: "Period (hours)", url: "Address", neu_laden_min: "reload every (min, 0 = never; picture: hourly)", modus: "Display", zoom: "Zoom (%)",
            versatz_x: "Crop: from left (px)", versatz_y: "Crop: from top (px)",
-           datei: "Upload PDF", sekunden: "Seconds per page" },
+           datei: "Upload PDF", sekunden: "Seconds per page",
+           ordner: "Folder", rand: "Border (with “fit”)", reihenfolge: "Order", uebergang: "Change" },
     optHilfe: { temperatur: "empty = weather from Settings → General; or a temperature sensor", kamera: "e.g. doorbell – with a condition only when it rings",
                 meldung: "Text entity in HA (e.g. input_text.tv_message). When the text changes it appears as a banner.",
                 kalender: "Calendar entity, e.g. waste collection or family calendar – or a data source (iCal or CSV with a date column, then without HA)",
@@ -164,8 +171,13 @@ const LTEXTE = {
                 diagramm: "Either an HA entity (history from HA) or data source + path – SignageCast records its values from now on (up to 7 days).",
                 webseite: "“Embed” shows the page live but only works if it allows embedding (“Check”). “Screenshot” works with almost any public page: SignageCast loads it itself and shows a fresh picture every few minutes (no motion, no login, cookie notices stay visible). Zoom and crop choose the visible part.",
                 unwetter: "Official warnings of the German Weather Service for the location (Germany only). Hidden without a warning – or “show also without warning”.",
-                pdf: "Price list, menu, notice or presentation (saved as PDF). Up to 50 pages; pages change by the clock – all TVs turn pages together." },
-    wahl: { liste: "List", symbole: "icons only", balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)", einbetten: "embed (live)", bild: "Screenshot" },
+                pdf: "Price list, menu, notice or presentation (saved as PDF). Up to 50 pages; pages change by the clock – all TVs turn pages together.",
+                galerie: "Shows a folder from Content → Gallery: pictures and PDF pages one after another, by the clock – all TVs show the same picture. New pictures in the folder appear by themselves. For full screen set the element to 0 0 48 27." },
+    wahl: { liste: "List", symbole: "icons only", balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)", einbetten: "embed (live)", bild: "Screenshot",
+            schwarz: "black", unscharf: "blurred picture behind", eigene: "as in the folder", name: "by name", neu: "newest first", zufall: "random",
+            blenden: "cross-fade", hart: "cut" },
+    galSekunden: "Seconds per picture", galKeinOrdner: "– choose folder –", galOrdnerAnlegen: "Create folders and upload pictures: Content → Gallery",
+    galHg: "Folder", galHgSek: "Seconds per picture",
     keineQuelle: "– choose data source –", waehlen: "pick …", bedQuelle: "Value from", bedHA: "Home Assistant", bedPfad: "Path",
     pruefen: "Check", einbettbarJa: "page allows embedding", einbettbarNein: "page forbids embedding", einbettbarUnklar: "could not check", tippFoto: "– tip: choose display “Screenshot”.",
     zeitraum: "Only during …", zeitraumText: "For example “Closed from 23 Dec to 2 Jan”: appears and disappears by itself. Without a time the whole day counts.",
@@ -177,7 +189,7 @@ const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 
   vorhersage: [8, 5], raeume: [9, 5], kachel: [5, 5], video: [24, 14], sender: [9, 1], text: [12, 2], kamera: [12, 7],
   kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4], apiwert: [8, 3], apiliste: [14, 6], apibild: [10, 8], anzeige: [8, 3],
   countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12], unwetter: [20, 3],
-  pdf: [16, 20] };
+  pdf: [16, 20], galerie: [24, 14] };
 // welche Arten von Datenquellen ein Baustein anbietet
 // Kalender als Symbole (seit 0.28): Vorschläge und Müll-Vorlage
 const SYM_VORSCHLAG = ["mdi-trash-can", "mdi-trash-can-outline", "mdi-delete-variant", "mdi-leaf", "mdi-flower", "mdi-newspaper-variant",
@@ -195,7 +207,10 @@ const SYM_TEXTE = {
 };
 const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical", "csv"], apibild: ["bild", "json"], apiliste: ["json", "rss", "ical", "text", "csv"],
   diagramm: ["json", "text", "csv"], apiwert: ["json", "text", "rss", "ical", "csv"], anzeige: ["json", "text", "csv"], countdown: ["json", "text", "ical", "csv"] };
-const WAHL = { ansicht: ["liste", "symbole"], darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"], modus: ["einbetten", "bild"] };
+const WAHL = { ansicht: ["liste", "symbole"], darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"], modus: ["einbetten", "bild"],
+  rand: ["schwarz", "unscharf"], reihenfolge: ["eigene", "name", "neu", "zufall"], uebergang: ["blenden", "hart"] };   // Galerie seit 0.45
+const galerieOptionen = (w, leer) => `<option value="">${esc(leer)}</option>` + ((E.galerie && E.galerie.ordner) || [])
+  .map((o) => `<option value="${esc(o.id)}" ${o.id === w ? "selected" : ""}>${esc(o.name)}</option>`).join("");
 const ENT_DOMAINS = { temperatur: ["weather", "sensor"], wetterlage: ["weather"], feuchte: ["weather", "sensor"], wind: ["weather", "sensor"],
   kamera: ["camera"], kalender: ["calendar"], meldung: ["input_text", "sensor", "text"] };
 
@@ -242,6 +257,10 @@ async function layoutSeite(inhalt) {
             <p class="leise">${esc(L.jeZeit)}</p>
             ${["morgen", "tag", "abend", "nacht"].map((z) => `<div class="zeile"><label>${esc(L.zeitName[z])}</label><input type="file" data-zeit="${z}" accept="image/jpeg,image/png">
               <span class="leise">${esc(l.hintergrund.bilder_tageszeit[z] || "")}</span>${l.hintergrund.bilder_tageszeit[z] ? `<button class="knopf gefahr" data-weg="${z}">${esc(L.entfernenKurz)}</button>` : ""}</div>`).join("")}</div>
+          <div class="eintrag" id="hgGalerie" ${l.hintergrund.art === "galerie" ? "" : "hidden"}>
+            <div class="zeile"><label>${esc(L.galHg)}</label><select id="hgGalOrdner">${galerieOptionen(l.hintergrund.galerie, L.galKeinOrdner)}</select>
+              <label>${esc(L.galHgSek)}</label><input type="number" id="hgGalSek" min="5" max="3600" value="${l.hintergrund.galerie_s || 60}"></div>
+            <p class="leise"><a href="#galerie">${esc(L.galOrdnerAnlegen)}</a></p></div>
           <div class="zeile" id="hgFarbZeile" ${l.hintergrund.art === "farbe" ? "" : "hidden"}><label>${esc(L.hgArt.farbe)}</label><input type="color" id="hgFarbe" value="${esc(l.hintergrund.farbe)}"></div>
           <div class="zeile"><label>${esc(L.bereich)}</label></div>
           <div class="zeile pos">${["x", "y", "w", "h"].map((k) => `<label>${{ x: "←", y: "↓", w: "↔", h: "↕" }[k]}<input type="number" data-bereich="${k}" value="${l.hintergrund.bereich[k]}"></label>`).join("")}
@@ -276,6 +295,8 @@ async function layoutSeite(inhalt) {
     $("#hgStilWahl").onchange = () => { merken(); lay().hintergrund.stil = $("#hgStilWahl").value; zeichnen(); offen(); };
     $("#hgWechsel").onchange = () => { merken(); lay().hintergrund.wechsel = $("#hgWechsel").value; zeichnen(); offen(); };
     $("#hgDia").onchange = kopf(() => { lay().hintergrund.diashow_min = Number($("#hgDia").value); });
+    $("#hgGalOrdner").onchange = kopf(() => { lay().hintergrund.galerie = $("#hgGalOrdner").value; });
+    $("#hgGalSek").onchange = kopf(() => { lay().hintergrund.galerie_s = Number($("#hgGalSek").value) || 60; });
     $("#hgNacht").onchange = kopf(() => { lay().hintergrund.nachts_dunkler = $("#hgNacht").checked; });
     $("#hgAnpassung").onchange = kopf(() => { lay().hintergrund.anpassung = $("#hgAnpassung").value; });
     $("#hgAusschnitt").onchange = kopf(() => { lay().hintergrund.ausschnitt = $("#hgAusschnitt").value; });
@@ -629,7 +650,9 @@ async function layoutSeite(inhalt) {
     if (!e) { ziel.innerHTML = `<p class="leise">${esc(L.keinerGewaehlt)}</p>`; return; }
     const o = e.optionen, b = e.bedingung || {};
     const feld = (k) => {
-      const w = o[k], lab = esc(L.opt[k] || k);
+      const w = o[k], lab = esc(e.typ === "galerie" && k === "sekunden" ? L.galSekunden : L.opt[k] || k);
+      if (k === "ordner") return `<div class="zeile"><label>${lab}</label><select name="o_ordner">${galerieOptionen(w, L.galKeinOrdner)}</select></div>
+        <p class="leise"><a href="#galerie">${esc(L.galOrdnerAnlegen)}</a></p>`;
       if (k === "liste") return `<h3>${lab}</h3><div id="raumListe">${(w || []).map((r, i) => `<div class="zeile" data-i="${i}">
           <input type="text" name="rn" value="${esc(r.name)}" placeholder="Name" style="width:120px"><input type="text" name="re" list="ents" value="${esc(r.entity)}" placeholder="sensor.…">
           <button class="knopf gefahr" name="rw">✕</button></div>`).join("")}</div><button class="knopf" id="raumPlus">${esc(L.raumNeu)}</button>`;
@@ -749,7 +772,7 @@ async function layoutSeite(inhalt) {
       for (let nr = 0; nr < teile; nr++) {
         const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
         let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
-        d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, zweck: "pdf" });
+        d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, zweck: "pdf", gesamt: f.size });
       }
       merken(); o.datei = d.pdf; $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen();
       ziel.querySelector("[name=pdfStand]").textContent = "✓ " + L.seiten(d.seiten);
@@ -838,6 +861,7 @@ function vorschauInhalt(e, L) {
     case "diagramm": return "📈 " + (o.name || o.entity || o.pfad || L.typ.diagramm);
     case "webseite": return "🌐 " + (o.url.replace(/^https?:\/\//, "").slice(0, 30) || L.typ.webseite);
     case "pdf": return "📄 " + (o.datei ? "PDF" : L.typ.pdf);
+    case "galerie": return "🖼 " + ((((E.galerie && E.galerie.ordner) || []).find((x) => x.id === o.ordner) || {}).name || L.typ.galerie);
     default: return L.typ[e.typ] || e.typ;
   }
 }

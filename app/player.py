@@ -18,6 +18,7 @@ import hashlib, hmac, json, lzma, os, re, secrets, shutil, subprocess, threading
 from streams import DATEN
 from meldung import Meldung as Fehler
 import fernwartung as FW
+import speicher as SP
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AGENT = os.path.join(BASIS, "player", "agent.py")
@@ -733,6 +734,7 @@ def basis_laden(version, art="pi"):
             raise Fehler("pi_signatur")
         if shutil.disk_usage(grund).free < meta["xz_groesse"] + 500_000_000:
             raise Fehler("pi_platz", mb=meta["xz_groesse"] // 1_000_000 + 500)
+        SP.pruefen(grund, meta["xz_groesse"])         # seit 0.45: auch die Reserve des Speicherwächters bleibt frei
         st.update(gesamt=meta["xz_groesse"], version=v)
         h = hashlib.sha256()
 

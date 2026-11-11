@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.45.0 (unreleased)
+- **Gallery:** new page *Content → Gallery* – folders with pictures (JPG, PNG, WebP, GIF) and PDFs, uploaded straight
+  into SignageCast (drag and drop, choose files or a whole folder, from a phone via the file picker; no cloud service).
+  Photos are scaled down to at most 3840 × 2160 on upload (rotation from the camera applied) and only this version is
+  kept; PDFs become one picture per page. Thumbnails, order by dragging, delete several at once. Limits: 50 MB per
+  photo, 100 MB per PDF, 1000 files per folder, gallery limit 5 GB (adjustable).
+- **Layout element *Gallery*** and the template **Galerie Vollbild**: seconds per picture, fit (border black or blurred
+  picture) or fill, order as in the folder / by name / newest first / random, cross-fade or cut. Pictures change by the
+  clock – all TVs show the same one; new pictures appear without saving the layout. A folder can also be the
+  **background** of a layout (slideshow). Raspberry Pi and PC players in direct mode load the pictures once and keep
+  them cached.
+- **Storage guard:** a reserve of 2 GB or 10 % of the disk always stays free. Every upload (gallery, media, PDFs,
+  pictures, data source files, restoring a backup) is refused *before* the transfer if it does not fit, and stopped
+  if the disk fills during the transfer; the clip cache, player image download and automatic backups do not write
+  into the reserve either. New page **System → Storage** with free space and what uses it. Low storage appears in the
+  to-do list and as a notification (new event *Storage getting low or full*); at the reserve uploads are blocked,
+  everything else keeps running. The overview now shows the free space of the data directory (Docker: the volume).
+- The gallery pictures are not part of the backup (the folder names are) – the backup is built in memory.
+
 ## v0.44.0 (2026-11-11)
 - **Quick start on Windows** (experimental, **not tested on real Windows yet** – feedback welcome): one PowerShell command sets up SignageCast with Docker Desktop – checks
   Docker, finds the PC's IP in the home network, starts the container (ports 19090, 8888 and 8890 for players) and

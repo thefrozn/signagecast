@@ -21,7 +21,8 @@ The wrapper (`art`, `version`, `layout`) is optional – a bare layout object wo
 |---|---|
 | `id` | 2–16 characters a–z, 0–9 (a new one is assigned on import if it exists already) |
 | `name` | display name, max 40 characters |
-| `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture) |
+| `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture), `"galerie"` (slideshow of a gallery folder) |
+| `hintergrund.galerie`, `hintergrund.galerie_s` | for art `galerie`: folder id ("" – the user picks it) and seconds per picture (5–3600) |
 | `hintergrund.stil` | `natur`, `stadt`, `himmel`, `berge`, `meer`, `gemischt` – picture changes with the time of day |
 | `hintergrund.farbe` | `"#rrggbb"` for art `farbe` |
 | `hintergrund.abdunkeln` | true = darken the picture a little so text stays readable |
@@ -333,6 +334,19 @@ Minimum size 3 × 3 cells.
 | `datei` | 16 hex characters of an uploaded PDF ("" = none; the user uploads it later) | `""` |
 | `sekunden` | integer 3–3600 | `15` |
 | `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
+
+### `galerie` – slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Gallery); the user picks the folder
+
+Minimum size 3 × 3 cells.
+
+| Option | Value | Default |
+|---|---|---|
+| `ordner` | id of a gallery folder (Content → Gallery), "" = none; the user picks it later in the editor | `""` |
+| `sekunden` | integer 3–3600 | `10` |
+| `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
+| `rand` | one of "schwarz", "unscharf" | `"schwarz"` |
+| `reihenfolge` | one of "eigene", "name", "neu", "zufall" | `"eigene"` |
+| `uebergang` | one of "blenden", "hart" | `"blenden"` |
 
 ## Rules for good layouts
 

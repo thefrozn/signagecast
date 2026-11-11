@@ -33,6 +33,11 @@ TEXTE = {
         "bild_steht": ("SignageCast: Bild von „{tv}“ steht", "Das Bild von „{tv}“ ändert sich seit einigen Minuten nicht, obwohl die Uhr "
                        "laufen müsste. Neu laden und Neustart haben nicht geholfen – bitte in der Verwaltung prüfen."),
         "bild_vorbei": ("SignageCast: „{tv}“ zeigt wieder ein Bild", "Der Fernseher „{tv}“ zeigt wieder ein normales Bild."),
+        "speicher_gelb": ("SignageCast: Speicher wird knapp", "Nur noch {frei} GB frei (Reserve {reserve} GB). Uploads gehen noch – "
+                          "bitte unter System → Speicher aufräumen (Galerie, Medien, Sicherungen)."),
+        "speicher_rot": ("SignageCast: Speicher voll – Uploads gesperrt", "Nur noch {frei} GB frei, die Reserve von {reserve} GB ist "
+                         "erreicht. Alles läuft weiter, aber Uploads sind gesperrt, bis unter System → Speicher Platz frei ist."),
+        "speicher_vorbei": ("SignageCast: Speicher wieder in Ordnung", "Wieder {frei} GB frei."),
     },
     "en": {
         "ausfall": ("SignageCast: “{tv}” failed", "Playback for the TV “{tv}” has failed (render chain incomplete)."),
@@ -60,6 +65,11 @@ TEXTE = {
         "bild_steht": ("SignageCast: picture of “{tv}” is frozen", "The picture of “{tv}” has not changed for several minutes although "
                        "the clock should run. Reloading and restarting did not help – please check the admin."),
         "bild_vorbei": ("SignageCast: “{tv}” shows a picture again", "The TV “{tv}” shows a normal picture again."),
+        "speicher_gelb": ("SignageCast: storage is getting low", "Only {frei} GB free (reserve {reserve} GB). Uploads still work – "
+                          "please clean up under System → Storage (gallery, media, backups)."),
+        "speicher_rot": ("SignageCast: storage full – uploads blocked", "Only {frei} GB free, the reserve of {reserve} GB is reached. "
+                         "Everything keeps running, but uploads are blocked until space is freed under System → Storage."),
+        "speicher_vorbei": ("SignageCast: storage OK again", "{frei} GB free again."),
     },
 }
 # Gründe aus ha.py (HAFehler.code) – auf Deutsch steht der Text von ha.py

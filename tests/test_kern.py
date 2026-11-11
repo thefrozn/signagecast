@@ -2981,3 +2981,122 @@ elif "logout" in a:
                 if x and x.poll() is None:
                     x.kill(); x.wait()
             os.environ["PATH"], agent.Fernnetz.ORDNER, agent.Fernnetz.SOCK, agent.netz = alt
+
+
+class Speicher045(unittest.TestCase):
+    """Speicherwächter (seit 0.45): Reserve max(2 GB, 10 %), Stufen grün/gelb/rot, Uploads früh abgelehnt."""
+
+    def _platte(self, gesamt_gb, frei_gb):
+        import types
+        from unittest import mock
+        sv = types.SimpleNamespace(f_blocks=int(gesamt_gb * 1024), f_frsize=1024 ** 2, f_bavail=int(frei_gb * 1024))
+        return mock.patch("os.statvfs", return_value=sv)
+
+    def test_stufen_und_reserve(self):
+        import speicher as SP
+        with self._platte(100, 50):
+            l = SP.lage("/x")
+            self.assertEqual(l["reserve"], 10 * 1024 ** 3)            # 10 % von 100 GB
+            self.assertEqual(l["stufe"], "gruen")
+        with self._platte(10, 3):
+            self.assertEqual(SP.lage("/x")["reserve"], 2 * 1024 ** 3)  # mindestens 2 GB
+            self.assertEqual(SP.lage("/x")["stufe"], "gelb")
+        with self._platte(10, 1.5):
+            self.assertEqual(SP.lage("/x")["stufe"], "rot")
+
+    def test_pruefen_lehnt_ab_bevor_die_reserve_angetastet_wird(self):
+        import speicher as SP
+        with self._platte(100, 12):
+            SP.pruefen("/x", 1 * 1024 ** 3)                           # 12 - 1 = 11 GB > 10 GB Reserve
+            with self.assertRaises(M.Meldung) as f:
+                SP.pruefen("/x", 3 * 1024 ** 3)
+            self.assertEqual(f.exception.code, "sp_voll")
+
+    def test_hochladen_lehnt_angekuendigte_groesse_sofort_ab(self):
+        import speicher as SP
+        ordner = tempfile.mkdtemp()
+        h = MED.Hochladen(ordner, platz=lambda n: SP.pruefen(ordner, n))
+        with self._platte(100, 10.5):
+            with self.assertRaises(M.Meldung) as f:
+                h.teil("abcdefgh", 0, b"x" * 10, gesamt=900 * 1024 ** 2)
+            self.assertEqual(f.exception.code, "sp_voll")
+        self.assertEqual(os.listdir(ordner), [])                       # nichts angelegt
+        with self.assertRaises(M.Meldung) as f:                         # Grenze je Datei (Galerie)
+            h.teil("abcdefgh", 0, b"x" * 10, gesamt=60, max_bytes=50)
+        self.assertEqual(f.exception.code, "gal_gross")
+
+    def test_hochladen_bricht_ab_wenn_die_platte_sich_fuellt(self):
+        import speicher as SP
+        ordner = tempfile.mkdtemp()
+        h = MED.Hochladen(ordner, platz=lambda n: SP.pruefen(ordner, n))
+        with self._platte(100, 50):
+            h.teil("abcdefgh", 0, b"x" * 10, gesamt=20)
+        with self._platte(100, 10):
+            with self.assertRaises(M.Meldung):
+                h.teil("abcdefgh", 1, b"x" * 10)
+        self.assertEqual(os.listdir(ordner), [])                       # Rest weg
+        self.assertNotIn("abcdefgh", h.offen)
+
+
+class Galerie045(unittest.TestCase):
+    def test_art_erkennen(self):
+        import galerie as GAL
+        self.assertEqual(GAL.art_erkennen(b"\xff\xd8\xff\xe0" + b"0" * 12), "bild")
+        self.assertEqual(GAL.art_erkennen(b"RIFF\x00\x00\x00\x00WEBPVP8 "), "bild")
+        self.assertEqual(GAL.art_erkennen(b"%PDF-1.7\n" + b"0" * 7), "pdf")
+        for kopf, code in ((b"\x00\x00\x00\x18ftypheic\x00\x00", "gal_heic"), (b"PK\x03\x04" + b"0" * 12, "gal_art")):
+            with self.assertRaises(M.Meldung) as f:
+                GAL.art_erkennen(kopf)
+            self.assertEqual(f.exception.code, code)
+
+    @unittest.skipUnless(__import__("shutil").which("ffmpeg"), "ffmpeg fehlt")
+    def test_hochladen_verkleinern_teilen_loeschen(self):
+        import subprocess
+        import galerie as GAL
+        tmp = tempfile.mkdtemp()
+        gross, klein = os.path.join(tmp, "gross.jpg"), os.path.join(tmp, "klein.png")
+        subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=5000x3000", "-frames:v", "1", "-y", gross], check=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=red@0.5:s=64x48,format=rgba", "-frames:v", "1", "-y", klein], check=True)
+        g = GAL.Galerie(os.path.join(tmp, "galerie"))
+        a = g.hinzufuegen("fam", gross, "Urlaub 2.jpg", 10 ** 9)
+        b = g.hinzufuegen("fam", klein, "Logo 10.png", 10 ** 9)
+        self.assertEqual((a["art"], a["datei"][-4:], b["datei"][-4:]), ("bild", ".jpg", ".png"))   # Transparenz bleibt PNG
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0",
+                            os.path.join(g.dateien, a["datei"])], capture_output=True, text=True)
+        self.assertEqual(r.stdout.strip(), "3600,2160")                # auf höchstens 3840 x 2160
+        self.assertTrue(os.path.exists(os.path.join(g.dateien, a["id"] + ".k.jpg")))
+        self.assertEqual(g.hinzufuegen("fam", gross, "nochmal", 10 ** 9)["name"], "Urlaub 2.jpg")   # schon im Ordner
+        g.hinzufuegen("arbeit", gross, "x", 10 ** 9)                   # zweiter Ordner, dieselbe Datei
+        self.assertEqual([f["u"] for f in g.folien("fam")], [f"galerie/{a['datei']}", f"galerie/{b['datei']}"])
+        g.ordnen("fam", [b["id"], a["id"]])
+        self.assertEqual([e["id"] for e in g.liste("fam")], [b["id"], a["id"]])
+        st = g.stand("fam")
+        g.loeschen("fam", [a["id"]])
+        self.assertNotEqual(g.stand("fam"), st)
+        self.assertTrue(os.path.exists(os.path.join(g.dateien, a["datei"])))   # „arbeit“ nutzt sie noch
+        g.aufraeumen({"fam"}, alter_s=0)                                 # Ordner „arbeit“ gelöscht
+        self.assertFalse(os.path.exists(os.path.join(g.dateien, a["datei"])))
+        self.assertTrue(os.path.exists(os.path.join(g.dateien, b["datei"])))
+        with self.assertRaises(M.Meldung) as f:                          # Grenze der Galerie
+            g.hinzufuegen("fam", gross, "x", g.belegt() + 10)
+        self.assertEqual(f.exception.code, "gal_voll")
+        self.assertEqual(sorted(os.listdir(g.dateien)), sorted([b["datei"], b["id"] + ".k.jpg"]))   # nichts liegen geblieben
+        self.assertEqual(GAL.Galerie(os.path.join(tmp, "galerie")).liste("fam")[0]["name"], "Logo 10.png")   # gespeichert
+
+    def test_einstellungen_und_layout(self):
+        e = E.pruefen({"galerie": {"grenze_gb": 3, "ordner": [{"id": "fam", "name": "Familie " * 10}, {"id": "fam", "name": "doppelt"}]}})
+        self.assertEqual(e["galerie"]["grenze_gb"], 3)
+        self.assertEqual([o["id"] for o in e["galerie"]["ordner"]], ["fam"])
+        self.assertLessEqual(len(e["galerie"]["ordner"][0]["name"]), 40)
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"galerie": {"ordner": [{"id": "X/../"}]}})
+        l = L.pruefe_layout({"id": "gal", "hintergrund": {"art": "galerie", "galerie": "fam", "galerie_s": 2},
+                             "elemente": [{"id": "g", "typ": "galerie", "x": 0, "y": 0, "w": 48, "h": 27, "optionen": {"ordner": "fam"}}]})
+        self.assertEqual(l["hintergrund"]["galerie_s"], 5)                # mindestens 5 s
+        self.assertEqual(l["elemente"][0]["optionen"], {"ordner": "fam", "sekunden": 10, "anpassung": "einpassen", "rand": "schwarz",
+                                                        "reihenfolge": "eigene", "uebergang": "blenden"})
+        neu, hinweise = L.import_pruefen({"elemente": [{"typ": "galerie", "optionen": {"ordner": "urlaub"}}],
+                                          "hintergrund": {"art": "galerie", "galerie": "urlaub"}}, ordner={"fam"})
+        self.assertEqual((neu["elemente"][0]["optionen"]["ordner"], neu["hintergrund"]["galerie"]), ("", ""))
+        self.assertEqual([h.code for h in hinweise], ["l_imp_galerie", "l_imp_galerie"])
+        self.assertIn("### `galerie`", L.format_beschreibung())

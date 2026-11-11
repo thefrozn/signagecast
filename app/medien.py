@@ -40,11 +40,14 @@ def video_pruefen(pfad):
 class Hochladen:
     """Datei in Stücken annehmen: teil(kennung, nr, bytes) … fertig(kennung) -> (art, datei, dauer)."""
 
-    def __init__(self, ordner):
+    def __init__(self, ordner, platz=None):
         self.ordner = ordner
-        self.offen = {}                   # kennung -> {"pfad", "naechste", "groesse", "zeit"}
+        self.offen = {}                   # kennung -> {"pfad", "naechste", "groesse", "zeit", "max"}
+        self.platz = platz                # seit 0.45: platz(bytes) prüft den freien Speicher (Meldung, wenn er nicht reicht)
 
-    def teil(self, kennung, nr, daten):
+    def teil(self, kennung, nr, daten, gesamt=0, max_bytes=MAX_DATEI):
+        """Ein Stück annehmen. gesamt (seit 0.45) = angekündigte Größe der ganzen Datei: passt sie nicht, wird schon das
+        erste Stück abgelehnt – es wird nichts erst übertragen und dann verworfen."""
         if not KENNUNG.fullmatch(kennung or ""):
             raise Meldung("med_upload")
         os.makedirs(self.ordner, exist_ok=True)
@@ -53,14 +56,26 @@ class Hochladen:
         u = self.offen.get(kennung)
         if nr == 0:
             self._weg(kennung)
-            u = self.offen[kennung] = {"pfad": os.path.join(self.ordner, f".upload-{kennung}"), "naechste": 0, "groesse": 0}
+            if gesamt > max_bytes:
+                raise Meldung("med_gross") if max_bytes == MAX_DATEI else Meldung("gal_gross", mb=max_bytes // (1024 * 1024))
+            if self.platz:
+                self.platz(max(gesamt, len(daten)) + sum(x["max_rest"] for x in self.offen.values()))
+            u = self.offen[kennung] = {"pfad": os.path.join(self.ordner, f".upload-{kennung}"), "naechste": 0, "groesse": 0,
+                                       "max": max_bytes, "max_rest": max(0, gesamt - len(daten)), "zeit": time.time()}
             open(u["pfad"], "wb").close()
         if not u or nr != u["naechste"]:
             raise Meldung("med_upload")
         u["groesse"] += len(daten)
-        if u["groesse"] > MAX_DATEI:
+        if u["groesse"] > u["max"]:
             self._weg(kennung)
-            raise Meldung("med_gross")
+            raise Meldung("med_gross") if u["max"] == MAX_DATEI else Meldung("gal_gross", mb=u["max"] // (1024 * 1024))
+        if self.platz and nr:
+            try:
+                self.platz(len(daten))
+            except Meldung:
+                self._weg(kennung)          # Platte füllt sich (z. B. durch etwas anderes): abbrechen, Reste weg
+                raise
+        u["max_rest"] = max(0, u["max_rest"] - (len(daten) if nr else 0))
         with open(u["pfad"], "ab") as f:
             f.write(daten)
         u["naechste"], u["zeit"] = nr + 1, time.time()

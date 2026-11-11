@@ -61,6 +61,8 @@ import csvimport as CSV                       # noqa: E402
 import webbild as WB                          # noqa: E402
 import todo as TD                             # noqa: E402
 import pdf as PDF                             # noqa: E402
+import speicher as SP                         # noqa: E402
+import galerie as GAL                         # noqa: E402
 import player as PL                           # noqa: E402
 import fernwartung as FW                      # noqa: E402
 import netz as NZ                             # noqa: E402
@@ -383,6 +385,7 @@ def einspieler_vorladen(x, a):
         os.makedirs(EINSPIELER, exist_ok=True)
         tmp, t0, n, gesamt, ende_erreicht = datei + ".neu", time.time(), 0, None, False
         try:
+            SP.pruefen(DATEN, grenze)            # seit 0.45: der Vorrat wächst nicht in die Reserve hinein
             kopf = {"User-Agent": radio.UA["User-Agent"]}
             if x["vorab_mb"]:
                 kopf["Range"] = f"bytes=0-{grenze - 1}"
@@ -1495,6 +1498,13 @@ def benachrichtigung_schleife():
                 melder.vorbei("internet", "internet_vorbei", seit=zustand["internet_weg"], bis=time.strftime("%H:%M"))
                 PROTOKOLL.eintragen("SignageCast", "system", "internet_wieder", f"{zustand['internet_weg']}–{time.strftime('%H:%M')}")
                 zustand["internet_weg"] = None
+            sp = SP.lage(DATEN)                    # Speicher (seit 0.45): bei gelb und noch einmal bei rot melden
+            if sp["stufe"] != "gruen":
+                melder.melden("speicher-" + sp["stufe"], "speicher", "speicher_" + sp["stufe"], frei=SP.gb(sp["frei"]),
+                              reserve=SP.gb(sp["reserve"]))
+            elif sp["frei"] > 2.2 * sp["reserve"]:  # etwas Abstand, damit es an der Grenze nicht hin und her meldet
+                melder.vorbei("speicher-rot", "speicher_vorbei", frei=SP.gb(sp["frei"]))
+                melder.vorbei("speicher-gelb", "speicher_vorbei", frei=SP.gb(sp["frei"]))
             if einst()["ha"]["url"] and zustand["ha_fehler"]:
                 ha_weg = ha_weg or time.time()
                 if time.time() - ha_weg > 300:
@@ -1529,6 +1539,8 @@ PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion 
     "/api/player/einstellungen": "player_einstellungen", "/api/player/wlan-vergessen": "player_wlan", "/api/player/sammel-image": "player_image",
     "/api/meldung": "meldung", "/api/layout-vorrang": "layout", "/api/durchsage": "durchsage",
     "/api/ki/neu": "ki_neu", "/api/ki/entfernen": "ki_entfernen",
+    "/api/galerie/ordner": "galerie_ordner", "/api/galerie/loeschen": "galerie_loeschen", "/api/galerie/ordnen": "galerie_ordnen",
+    "/api/galerie/umbenennen": "galerie_umbenennen",
 }
 PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennung mit {0} = erste Gruppe
     (re.compile(r"/api/streams/([\w-]{11}|UC[\w-]{22})(?:/([a-z-]+))?"), "stream_{1}"),
@@ -1716,6 +1728,10 @@ def pdf_schleife():
     while True:
         PDF.aufraeumen(PDF_ORDNER, {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf"})
         fernseher_reste_entfernen({t["id"] for t in einst()["fernseher"]})   # Kette lief beim Löschen noch
+        try:
+            GALERIE.aufraeumen({o["id"] for o in einst()["galerie"]["ordner"]})   # seit 0.45
+        except Exception as f:
+            print("Galerie aufräumen:", repr(f), flush=True)
         time.sleep(3600)
 
 
@@ -1911,6 +1927,8 @@ def tv_daten(tv_id, vorschau_layout=None):
                 webbild={x["id"]: fotograf.bild(a) for x in layout.get("elemente", []) if (a := webbild_auftrag(x))},
                 pdf={x["id"]: {"datei": x["optionen"]["datei"], "seiten": PDF.seiten(PDF_ORDNER, x["optionen"]["datei"])}
                      for x in layout.get("elemente", []) if x["typ"] == "pdf" and x["optionen"]["datei"]},
+                # Galerie (seit 0.45): je gezeigtem Ordner nur der Stand – die Folien holt die Seite bei einer Änderung
+                galerie={oid: GALERIE.stand(oid) for oid in galerie_im_layout(layout) if oid in {o["id"] for o in e["galerie"]["ordner"]}},
                 jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M"), alarm=alarm_fuer(t["id"]),
                 medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
                 # Internet weg (seit 0.38): statt der Live-Kameras eigene Medien im Kreis, sonst ein ruhiges Bild
@@ -2004,6 +2022,7 @@ def bild_speichern(b64):
         endung = "png"
     else:
         raise E.Fehler("e_bild_art")
+    SP.pruefen(DATEN, len(daten))
     os.makedirs(BILDER, exist_ok=True)
     name = hashlib.sha256(daten).hexdigest()[:16] + "." + endung
     with open(os.path.join(BILDER, name), "wb") as f:
@@ -2152,6 +2171,9 @@ def todo_warnungen(e):
         w.append({"key": "internet", "seit": time.strftime("%H:%M", time.localtime(NETZ.offline_seit))})
     w += [{"key": "bild:" + t["id"], "name": t["name"], "befund": ausgabe_massnahme[t["id"]]["befund"]}
           for t in e["fernseher"] if ausgabe_massnahme.get(t["id"])]
+    sp = SP.lage(DATEN)                                    # seit 0.45: gelb = Hinweis, rot = Uploads gesperrt
+    if sp["stufe"] != "gruen":
+        w.append({"key": "speicher", "stufe": sp["stufe"], "frei": SP.gb(sp["frei"]), "reserve": SP.gb(sp["reserve"])})
     return w
 
 
@@ -2174,9 +2196,9 @@ def status():
     for z in open("/proc/meminfo"):
         k, w = z.split(":")
         m[k] = int(w.split()[0])
-    sv = os.statvfs("/")
+    sv = os.statvfs(DATEN if os.path.isdir(DATEN) else "/")   # seit 0.45 das Datenverzeichnis (Docker: das Volume)
     e = einst()
-    return {"schalten": schalten_stand,
+    return {"schalten": schalten_stand, "speicher": SP.lage(DATEN),
         "version": VERSION, "zeit": time.strftime("%Y-%m-%d %H:%M:%S"),
         "neue_version": zustand.get("neue_version"), "projekt": f"https://github.com/{PROJEKT}",
         "wetter": {"quelle": e["anzeige"]["wetter_quelle"], "abruf": met.abruf, "fehler": met.fehler, "fehler_m": met.fehler_m,
@@ -2604,7 +2626,43 @@ def csv_analysieren(d):
 # ---------- Sicherung / Profil ----------
 SICHERUNGEN = os.path.join(DATEN, "sicherungen")
 MEDIEN = os.path.join(DATEN, "medien")
-hochladen = MED.Hochladen(MEDIEN)
+hochladen = MED.Hochladen(MEDIEN, platz=lambda n: SP.pruefen(DATEN, n))   # seit 0.45 mit Speicherwächter
+GALERIE = GAL.Galerie(os.path.join(DATEN, "galerie"))
+
+
+def galerie_grenze():
+    """Höchstens so viele Bytes für alle Galerie-Ordner: eingestellte Grenze, aber nie mehr als belegt + über der Reserve frei."""
+    belegt = GALERIE.belegt()
+    return min(einst()["galerie"]["grenze_gb"] * SP.GB, belegt + SP.lage(DATEN)["nutzbar"])
+
+
+def galerie_im_layout(l, oid=None):
+    """Ordner, die ein Layout zeigt (Baustein „Galerie“ und Hintergrund) – mit oid: zeigt es diesen Ordner?"""
+    ids = {x["optionen"]["ordner"] for x in l.get("elemente", []) if x["typ"] == "galerie" and x["optionen"]["ordner"]}
+    hg = l.get("hintergrund") or {}
+    if hg.get("art") == "galerie" and hg.get("galerie"):
+        ids.add(hg["galerie"])
+    return oid in ids if oid else ids
+
+
+def galerie_stand():
+    """Für die Verwaltung: Ordner mit Anzahl und Platz, Belegung und Grenze der Galerie, Lage des Speichers."""
+    ordner = []
+    for o in einst()["galerie"]["ordner"]:
+        l = GALERIE.liste(o["id"])
+        ordner.append(dict(o, anzahl=len(l), folien=sum(e["seiten"] for e in l), bytes=sum(e["bytes"] for e in l)))
+    belegt = GALERIE.belegt()
+    return {"ordner": ordner, "belegt": belegt, "grenze": galerie_grenze(), "grenze_gb": einst()["galerie"]["grenze_gb"],
+            "speicher": SP.lage(DATEN), "max_bild_mb": GAL.MAX_BILD // 2 ** 20, "max_pdf_mb": GAL.MAX_PDF // 2 ** 20,
+            "max_eintraege": GAL.MAX_EINTRAEGE}
+
+
+def speicher_bericht():
+    """System → Speicher (seit 0.45): Lage des Datenverzeichnisses und Belegung je Bereich (höchstens einmal je Minute gezählt)."""
+    bereiche = {"galerie": os.path.join(DATEN, "galerie"), "medien": MEDIEN, "pdf": PDF_ORDNER, "bilder": BILDER,
+                "sicherungen": SICHERUNGEN, "einspieler": EINSPIELER, "quelldateien": Q.DATEIEN,
+                "player": PL.ORDNER, "protokolle": [os.path.join(DATEN, "wache"), os.path.join(DATEN, "protokoll.json")]}
+    return {"lage": SP.lage(DATEN), "bereiche": SP.belegung(bereiche), "pfad": DATEN}
 MEDIEN_SICHERUNG_MAX = 200 * 1024 * 1024        # Videos nur in die Sicherung, solange alle Medien zusammen darunter bleiben
 
 
@@ -2725,6 +2783,7 @@ def sicherung_schleife():
             try:
                 geheim = si["mit_geheimnissen"]
                 roh = sicherung_zip(geheim, si["passwort"] if geheim else None)
+                SP.pruefen(DATEN, len(roh))      # seit 0.45: nicht in die Reserve schreiben (Fehler wird gemeldet)
                 zustand["sicherung_auto"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"),
                                              "name": S.ablegen(SICHERUNGEN, roh, True, geheim, si["behalten"]), "fehler_m": None}
             except Exception as ex:
@@ -2924,6 +2983,19 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    def unveraenderlich(self, pfad, typ):
+        """Datei, deren Name ihre Prüfsumme ist (Galerie): darf der Browser lange behalten – spart Netz zu den Pis."""
+        try:
+            roh = open(pfad, "rb").read()
+        except OSError:
+            return self.antwort(404, {"ok": False})
+        self.send_response(200)
+        self.send_header("Content-Type", typ)
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.send_header("Content-Length", str(len(roh)))
+        self.end_headers()
+        self.wfile.write(roh)
+
     def herunterladen(self, roh, dateiname, typ):
         """Datei mit Content-Disposition – der Browser speichert sie direkt (Cockpit: externer Kanal; Docker: /laden/…)."""
         self.send_response(200)
@@ -3001,6 +3073,18 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 return self.antwort(200, open(os.path.join(DS.AUDIO, m.group(1) + ".wav"), "rb").read(), "audio/wav")
             except OSError:
                 return self.antwort(404, {"ok": False})
+        m = re.fullmatch(r"/galerie/([0-9a-f]{16})(?:\.(jpg|png)|/(\d{1,3})\.jpg|\.k\.jpg)", p.path)
+        if m:                                     # Galerie (seit 0.45): Bild, PDF-Seite oder Vorschaubild
+            if m.group(3):
+                return self.unveraenderlich(os.path.join(GALERIE.dateien, m.group(1), m.group(3) + ".jpg"), "image/jpeg")
+            endung = m.group(2) or "k.jpg"
+            return self.unveraenderlich(os.path.join(GALERIE.dateien, f"{m.group(1)}.{endung}"),
+                                        "image/png" if endung == "png" else "image/jpeg")
+        m = re.fullmatch(r"/galerie/ordner/([a-z0-9]{2,12})\.json", p.path)
+        if m:                                     # Folien eines Ordners für die TV-Seite (nur, wenn sich der Stand ändert)
+            if m.group(1) not in {o["id"] for o in einst()["galerie"]["ordner"]}:
+                return self.antwort(404, {"ok": False})
+            return self.antwort(200, {"ok": True, "stand": GALERIE.stand(m.group(1)), "folien": GALERIE.folien(m.group(1))})
         m = re.fullmatch(r"/bild/([0-9a-f]{16}\.(jpg|png))", p.path)
         if m:
             try:
@@ -3045,6 +3129,15 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if not x or x[0] < time.time():
                 return self.antwort(404, {"ok": False})
             return self.herunterladen(x[3], x[1], x[2] + "; charset=utf-8")
+        if pfad == "/api/galerie":                     # seit 0.45: Ordner, Belegung, Grenze
+            return self.antwort(200, dict(galerie_stand(), ok=True))
+        if pfad == "/api/galerie/ordner":
+            oid = (q.get("id") or [""])[0]
+            if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
+                return self.antwort(404, {"ok": False})
+            return self.antwort(200, {"ok": True, "eintraege": GALERIE.liste(oid)})
+        if pfad == "/api/speicher":                    # seit 0.45: System → Speicher
+            return self.antwort(200, dict(speicher_bericht(), ok=True))
         if pfad == "/api/protokoll":                   # seit 0.38
             return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste()})
         if pfad == "/api/layouts/versionen":
@@ -3277,13 +3370,75 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return {"token": token, "port": WEBHOOK_PORT, "einstellungen": einst_aussen()}
         if p == "/api/einstellungen" and isinstance(d.get("sicherung"), dict) and d["sicherung"].get("passwort") == Q.MASKE:
             d["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]
+        if p == "/api/galerie/ordner":            # seit 0.45: Ordner anlegen, umbenennen, löschen
+            g = einst()["galerie"]
+            ordner = [dict(o) for o in g["ordner"]]
+            a, oid = d.get("aktion"), str(d.get("id", ""))
+            if a == "neu":
+                if len(ordner) >= 50:
+                    raise M.Meldung("gal_ordner_viele")
+                oid = next(k for k in (MED.neue_kennung()[:8] for _ in range(20)) if k not in {o["id"] for o in ordner})
+                ordner.append({"id": oid, "name": str(d.get("name") or "").strip()[:40] or oid})
+            elif a == "umbenennen":
+                for o in ordner:
+                    if o["id"] == oid:
+                        o["name"] = str(d.get("name") or "").strip()[:40] or oid
+            elif a == "loeschen":
+                benutzt = [l["name"] for l in einst()["layouts"] if galerie_im_layout(l, oid)]
+                if benutzt:
+                    raise M.Meldung("gal_benutzt", layouts=", ".join(benutzt))
+                ordner = [o for o in ordner if o["id"] != oid]
+            else:
+                raise M.Meldung("gal_ordner")
+            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"galerie": {"ordner": ordner}}))
+            if a == "loeschen":
+                GALERIE.aufraeumen({o["id"] for o in ordner}, alter_s=0)
+                SP.neu_zaehlen()
+            self.protokoll_detail = {"text": next((o["name"] for o in ordner if o["id"] == oid), oid)[:60]}
+            return {"id": oid, "galerie": galerie_stand(), "einstellungen": einst_aussen()}
+        if p in ("/api/galerie/loeschen", "/api/galerie/ordnen", "/api/galerie/umbenennen"):
+            oid = str(d.get("ordner", ""))
+            if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
+                raise M.Meldung("gal_ordner")
+            ids = [str(x) for x in (d.get("ids") or [])[:GAL.MAX_EINTRAEGE] if GAL.NAME.fullmatch(str(x))]
+            if p.endswith("/loeschen"):
+                self.protokoll_detail = {"text": str(GALERIE.loeschen(oid, ids))}
+                SP.neu_zaehlen()
+            elif p.endswith("/ordnen"):
+                GALERIE.ordnen(oid, ids)
+            else:
+                GALERIE.umbenennen(oid, str(d.get("id", "")), str(d.get("name", "")))
+            return {"eintraege": GALERIE.liste(oid), "galerie": galerie_stand()}
         if p == "/api/medien/teil":
-            hochladen.teil(str(d.get("kennung", "")), int(d.get("nr", -1)), base64.b64decode(str(d.get("daten", "")), validate=False))
+            stueck = base64.b64decode(str(d.get("daten", "")), validate=False)
+            nr, gesamt, max_b = int(d.get("nr", -1)), max(0, int(d.get("gesamt") or 0)), MED.MAX_DATEI
+            if d.get("zweck") == "galerie":        # seit 0.45: Bild/PDF für einen Galerie-Ordner
+                oid = str(d.get("ordner", ""))
+                if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
+                    raise M.Meldung("gal_ordner")
+                if nr == 0:
+                    max_b = GAL.MAX_PDF if GAL.art_erkennen(stueck[:16]) == "pdf" else GAL.MAX_BILD
+                    if GALERIE.belegt() + min(gesamt, max_b) > galerie_grenze():
+                        raise M.Meldung("gal_voll", gb=SP.gb(galerie_grenze()))
+                else:
+                    max_b = GAL.MAX_PDF
+            hochladen.teil(str(d.get("kennung", "")), nr, stueck, gesamt=gesamt, max_bytes=max_b)
             if not d.get("fertig"):
                 return {}
+            if d.get("zweck") == "galerie":
+                roh = hochladen.fertig_roh(str(d["kennung"]))
+                try:
+                    SP.pruefen(DATEN, os.path.getsize(roh) * 2)    # Platz für die umgewandelte Fassung
+                    eintrag = GALERIE.hinzufuegen(oid, roh, os.path.basename(str(d.get("name") or ""))[:80], galerie_grenze())
+                finally:
+                    os.remove(roh)
+                    SP.neu_zaehlen()
+                self.protokoll_detail = {"text": eintrag["name"][:60], "aktion": "galerie_neu"}
+                return {"eintrag": eintrag, "galerie": galerie_stand()}
             if d.get("zweck") == "pdf":           # PDF für den Baustein „PDF“: in Seitenbilder umwandeln, nicht in die Medienliste
                 roh = hochladen.fertig_roh(str(d["kennung"]))
                 try:
+                    SP.pruefen(DATEN, os.path.getsize(roh) * 2 + PDF.SEITEN_MAX * 1024 * 1024)
                     name, n = PDF.umwandeln(roh, PDF_ORDNER)
                 finally:
                     os.remove(roh)
@@ -3334,6 +3489,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         if p == "/api/sicherung/erstellen":
             geheim = bool(d.get("mit_geheimnissen"))
             roh = sicherung_zip(geheim, str(d.get("passwort") or "") or None)
+            SP.pruefen(DATEN, len(roh))
             return {"name": S.ablegen(SICHERUNGEN, roh, False, geheim)}
         if p == "/api/sicherung/loeschen":
             name = str(d.get("name", ""))
@@ -3343,10 +3499,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return {}
         if p == "/api/sicherung/zip":
             roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
+            SP.pruefen(DATEN, len(roh) * 2)      # Bilder/Medien der Sicherung werden ausgepackt
             return {"manifest": sicherung_zip_einspielen(roh, str(d.get("passwort") or "") or None, bool(d.get("strikes")))}
         if p == "/api/quellen/datei":            # Datei für eine Datenquelle hochladen (seit 0.26), höchstens 1 MB
             roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
             name = os.path.basename(str(d.get("name", "")))[:80]
+            SP.pruefen(DATEN, len(roh))
             return {"datei": {"hash": Q.datei_ablegen(roh), "name": name or "datei", "groesse": len(roh)}, "art": Q.datei_art(roh, name)}
         if p == "/api/csv/analysieren":           # CSV-Import, allgemein (seit 0.26): Inhalt, hochgeladene Datei oder Datenquelle
             return csv_analysieren(d)
@@ -3385,7 +3543,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             ersetzen = str(d.get("ersetzen") or "")      # seit 0.39: Kennung behalten (Layout ersetzen)
             l, hinweise = L.import_pruefen(roh, [x["id"] for x in e["layouts"] if x["id"] != ersetzen], bild_da=lambda n: os.path.exists(os.path.join(BILDER, n)),
                                            quellen=[q["id"] for q in e["quellen"]],
-                                           pdf_da=lambda n: bool(PDF.seiten(PDF_ORDNER, n)))
+                                           pdf_da=lambda n: bool(PDF.seiten(PDF_ORDNER, n)),
+                                           ordner={o["id"] for o in e["galerie"]["ordner"]})
             return {"layout": l, "hinweise": [M.als_dict(h) for h in hinweise]}
         if p == "/api/layouts/wiederherstellen":       # alte Fassung zurückholen (seit 0.38) – auch ein gelöschtes Layout
             lid, nr = str(d.get("id", "")), d.get("nr")

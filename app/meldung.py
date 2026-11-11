@@ -218,6 +218,21 @@ DE = {
     "q_datei_art": "{id}: Diese Art kann nicht aus einer Datei kommen",
     "q_datei_leer": "Die Datei ist leer",
     "q_datei_fehlt": "Die hochgeladene Datei ist nicht mehr da – bitte erneut hochladen",
+    # seit 0.45: Speicherwächter und Galerie
+    "sp_voll": "Nicht genug Speicher: {frei} GB frei, {reserve} GB bleiben als Reserve für den Betrieb frei (nötig etwa {bedarf} GB) – unter System → Speicher aufräumen",
+    "gal_ordner": "Unbekannter Galerie-Ordner",
+    "gal_ordner_viele": "Höchstens 50 Galerie-Ordner",
+    "gal_benutzt": "Der Ordner wird noch gezeigt – erst in diesen Layouts ändern: {layouts}",
+    "gal_art": "Nur Bilder (JPG, PNG, WebP, GIF) und PDFs",
+    "gal_heic": "HEIC-Fotos (iPhone) bitte als JPG: über die Fotoauswahl des Handys hochladen (wandelt selbst um) oder am iPhone Einstellungen → Kamera → Formate → „Maximale Kompatibilität“",
+    "gal_gross": "Datei größer als {mb} MB",
+    "gal_pixel": "Bild zu groß ({mp} Megapixel, höchstens 100)",
+    "gal_kaputt": "Bild nicht lesbar: {d}",
+    "gal_zeit": "Umwandeln dauert länger als {s} s",
+    "gal_viele": "Höchstens {n} Dateien je Ordner",
+    "gal_voll": "Die Galerie ist voll ({gb} GB) – Bilder löschen oder unter Inhalte → Galerie die Grenze erhöhen",
+    "l_galerie": "ungültiger Galerie-Ordner",
+    "l_imp_galerie": "Galerie-Ordner {w} gibt es hier nicht – im Editor einen Ordner wählen",
 }
 
 

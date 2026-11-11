@@ -153,6 +153,9 @@ STANDARD = {
     "quellen": [],                        # eigene Datenquellen (API/RSS/Bild), siehe app/quellen.py
     # eigene Medien (seit 0.15): [{"id", "name", "art": bild|video, "datei", "dauer_s", "aktiv"}], Dateien in DATEN/medien
     "medien": [],
+    # Galerie (seit 0.45): Ordner mit Bildern/PDFs für den Baustein „Galerie“ und den Hintergrund; Inhalt in DATEN/galerie
+    # (app/galerie.py). grenze_gb = höchstens so viel Platz für alle Ordner zusammen (nie mehr als über der Reserve frei ist)
+    "galerie": {"grenze_gb": 5, "ordner": []},
     # Meldung per Webhook (seit 0.16): eigener Port (SC_WEBHOOK_PORT, Standard 8890), nur mit geheimem Schlüssel
     "webhook": {"aktiv": False, "token": ""},
     # Durchsage-Pult (seit 0.19): Zugänge nur für Meldungen; Passwort nur als Hash; fernseher leer = alle
@@ -172,7 +175,8 @@ STANDARD = {
         "email": {"aktiv": False, "server": "", "port": 587, "sicherheit": "starttls", "benutzer": "", "passwort": "",
                   "absender": "", "empfaenger": ""},
         "ha": {"aktiv": False, "dienst": "notify.notify"},
-        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True, "leistung": True, "internet": True},
+        "ereignisse": {"ausfall": True, "update": True, "sicherung": True, "ha": True, "leistung": True, "internet": True,
+                       "speicher": True},                     # seit 0.45
     },
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
     "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
@@ -610,6 +614,18 @@ def pruefen(e):
                           "datei": _text(m.get("datei", ""), 40, r"[0-9a-f]{16}\.(jpg|png|mp4|webm)"),
                           "dauer_s": _zahl(m.get("dauer_s", 15), 1, 7200), "aktiv": bool(m.get("aktiv", True))})
         s["medien"] = aus_m
+    ga = e.get("galerie") or {}
+    if "grenze_gb" in ga:
+        s["galerie"]["grenze_gb"] = _zahl(ga["grenze_gb"], 1, 2000, int)
+    if "ordner" in ga:
+        aus_g, ids_g = [], set()
+        for o in (ga.get("ordner") or [])[:50]:
+            oid = _text(o.get("id", ""), 12, r"[a-z0-9]{2,12}")
+            if oid in ids_g:
+                continue
+            ids_g.add(oid)
+            aus_g.append({"id": oid, "name": _text(str(o.get("name", "") or oid)[:40], 40) or oid})
+        s["galerie"]["ordner"] = aus_g
     if "quellen" in e:
         try:
             s["quellen"] = Q.pruefen(e["quellen"])
