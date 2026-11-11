@@ -29,7 +29,8 @@ SITZUNG_S = 30 * 86400
 sitzungen = {}                 # Kennung -> Ablaufzeit (nur im Speicher: Neustart = neu anmelden)
 sperre = threading.Lock()
 
-CSP = ("default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; "
+# seit 0.45.1 ohne 'unsafe-inline' für Styles – wie Cockpit; Breiten usw. über Klassen bzw. element.style im Skript
+CSP = ("default-src 'self'; img-src 'self' blob: data:; style-src 'self'; font-src 'self' data:; "
        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
 
 ERSATZ = """// Ersatz für die zwei Cockpit-Funktionen, die die Verwaltung nutzt (Docker/Podman-Betrieb)
@@ -57,7 +58,7 @@ ANMELDUNG = """<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SignageCast</title><link rel="stylesheet" href="/tv.css"></head>
 <body><header><h1>SignageCast</h1></header>
-<main id="inhalt"><div class="karte" style="max-width:420px;margin:40px auto">
+<main id="inhalt"><div class="karte anmeldung">
 <form method="post" action="/anmelden">
 <div class="zeile"><label for="pw">Passwort / Password</label></div>
 <div class="zeile"><input type="password" id="pw" name="passwort" autofocus autocomplete="current-password" required></div>

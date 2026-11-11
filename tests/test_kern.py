@@ -3105,3 +3105,20 @@ class Galerie045(unittest.TestCase):
         self.assertEqual((neu["elemente"][0]["optionen"]["ordner"], neu["hintergrund"]["galerie"]), ("", ""))
         self.assertEqual([h.code for h in hinweise], ["l_imp_galerie", "l_imp_galerie"])
         self.assertIn("### `galerie`", L.format_beschreibung())
+
+
+class OhneInlineStyle0451(unittest.TestCase):
+    """Cockpit (style-src 'self') blockiert style="…" im HTML – die Verwaltung nutzt Klassen bzw. element.style (seit 0.45.1)."""
+
+    def test_kein_style_attribut_und_strenge_richtlinie(self):
+        basis = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ordner = os.path.join(basis, "cockpit", "signagecast")
+        for n in sorted(os.listdir(ordner)):
+            if n.endswith((".js", ".html")):
+                with open(os.path.join(ordner, n), encoding="utf-8") as f:
+                    for nr, z in enumerate(f, 1):
+                        if not z.lstrip().startswith("//"):
+                            self.assertNotRegex(z, r"""\sstyle=["'$]""", f"{n}:{nr}")
+        import verwaltung
+        self.assertNotIn("unsafe-inline", verwaltung.CSP)
+        self.assertNotIn("style=", verwaltung.ANMELDUNG)

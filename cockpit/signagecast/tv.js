@@ -2614,7 +2614,7 @@ function kodierungTeil(t, sta) {
     <div class="zeile"><label>${esc(T.kod.tune)}</label><select name="tune">${Object.keys(T.kod.tuneArt).map((x) =>
       `<option value="${x}" ${x === (t.tune || "zerolatency") ? "selected" : ""}>${esc(T.kod.tuneArt[x])}</option>`).join("")}</select></div>
     <p class="leise">${esc(T.kod.tuneInfo)}</p><p class="leise" name="ohneInfo"></p>
-    <div class="zeile"><label>${esc(T.kod.bframes)}</label><input type="number" name="bframes" min="0" max="4" value="${t.bframes || 0}" style="width:70px"></div>
+    <div class="zeile"><label>${esc(T.kod.bframes)}</label><input type="number" name="bframes" min="0" max="4" value="${t.bframes || 0}" class="b70"></div>
     <p class="leise">${esc(T.kod.bfInfo)}</p>
     <div class="zeile"><button class="knopf" name="kodStandard">${esc(T.kod.standard)}</button></div>`;
 }
@@ -2654,7 +2654,7 @@ async function fernseherSeite(inhalt) {
     E.fernseher.forEach((t, i) => {
       const k = el(`<div class="karte" data-i="${i}">
         <div class="zeile"><label>${esc(T.senderName)}</label><input type="text" name="name" value="${esc(t.name)}"></div>
-        <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" style="width:140px"></div>
+        <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" class="b140"></div>
         <div class="zeile"><label>${esc(T.adresse)}</label><code>http://${esc(ip)}:${esc(st.stream_port || 8888)}/${esc(t.id)}</code></div>
         <h3>${esc(T.abschnitt.anzeige)}</h3>
         <div class="zeile"><label>${esc(T.layoutWahl)}</label><select name="layout">${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === t.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
@@ -2664,8 +2664,8 @@ async function fernseherSeite(inhalt) {
         <details ${(t.karussell || {}).aktiv ? "open" : ""}><summary>${esc(T.karussell)}${(t.karussell || {}).aktiv ? " ✓" : ""}</summary>
           <p class="leise">${esc(T.karussellText)}</p>
           <div class="zeile"><label>${esc(T.karussellAn)}</label>${schalter("k_aktiv", (t.karussell || {}).aktiv)}
-            <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" style="width:80px"></div>
-          ${E.layouts.map((l) => `<label style="margin-right:12px"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
+            <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" class="b80"></div>
+          ${E.layouts.map((l) => `<label class="abstand-r"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
         <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}${haZustandText(sta, t) ? " · " + esc(haZustandText(sta, t)) : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
           <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
             <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div>
@@ -2683,7 +2683,7 @@ async function fernseherSeite(inhalt) {
         <h3>${esc(T.abschnitt.video)}</h3>
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
-          <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" style="width:70px"></span></div>
+          <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" class="b70"></span></div>
         <details><summary>${esc(T.kategorien)} (${katIds().length - t.kategorien_aus.length}/${katIds().length})</summary>
         ${katSchalter("kat_", t.kategorien_aus)}</details>
         <h3>${esc(T.abschnitt.ton)}</h3>
@@ -2795,7 +2795,7 @@ async function radioSeite(inhalt) {
     const m = $("#meine"); m.innerHTML = E.radio.sender.length ? "" : `<p class="leise">${esc(T.keineSender)}</p>`;
     for (const x of E.radio.sender) {
       const nutzer = E.fernseher.filter((t) => t.radio_sender === x.id && t.ton === "radio").map((t) => t.name);
-      const z = el(`<div class="zeile eintrag"><b>${esc(x.name)}</b><span class="leise" style="word-break:break-all">${esc(x.url)}</span>
+      const z = el(`<div class="zeile eintrag"><b>${esc(x.name)}</b><span class="leise umbruch">${esc(x.url)}</span>
         ${nutzer.length ? `<span class="marke gut">♪ ${esc(nutzer.join(", "))}</span>` : ""}
         <button class="knopf" name="bearbeiten">${esc(T.bearbeiten)}</button><button class="knopf gefahr" name="weg">${esc(T.entfernen)}</button></div>`);
       z.querySelector("[name=weg]").onclick = (e) => aktion(e.target, async () => {
@@ -2882,15 +2882,15 @@ async function einspielerSeite(inhalt) {
         <div class="zeile"><label>${esc(T.epQuelle)}</label><select name="quelle" class="breit">${Object.keys(T.epQuelleArt).map((q) => `<option value="${q}" ${q === x.quelle ? "selected" : ""}>${esc(T.epQuelleArt[q])}</option>`).join("")}</select></div>
         <div class="zeile" name="urlZeile"><label>${esc(T.epUrl)}</label><input type="url" name="url" value="${esc(x.url)}"></div>
         <div class="zeile"><label>${esc(T.epMinuten)}</label>${[0, 15, 30, 45].map((m) => `<label><input type="checkbox" name="m${m}" ${x.minuten.includes(m) ? "checked" : ""}> :${String(m).padStart(2, "0")}</label>`).join("")}
-          <input type="text" name="andere" value="${esc(andere.join(","))}" placeholder="${esc(T.epAndere)}" style="width:150px"></div>
+          <input type="text" name="andere" value="${esc(andere.join(","))}" placeholder="${esc(T.epAndere)}" class="b150"></div>
         <div class="zeile"><label>${esc(T.epZeit)}</label><input type="time" name="von" value="${esc(x.von)}"> – <input type="time" name="bis" value="${esc(x.bis)}">
           <label><input type="checkbox" name="ton" ${x.ton ? "checked" : ""}> ${esc(T.epTon)}</label></div>
         <div class="zeile"><label>${esc(T.epFernseher)}</label>${E.fernseher.map((t) => `<label><input type="checkbox" name="tv_${esc(t.id)}" ${x.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join("")}</div>
         <div class="zeile" name="pufferZeile"><label>${esc(T.epPuffer)}</label><select name="puffer">${Object.keys(T.epPufferArt).map((k) => `<option value="${k}" ${k === (x.puffer || "vorab") ? "selected" : ""}>${esc(T.epPufferArt[k])}</option>`).join("")}</select>
           <span name="mengeTeil"><label>${esc(T.epMenge)}</label><select name="menge"><option value="komplett" ${x.vorab_mb ? "" : "selected"}>${esc(T.epKomplett)}</option>
             <option value="mb" ${x.vorab_mb ? "selected" : ""}>${esc(T.epMb)}</option></select>
-            <input type="number" name="vorab_mb" min="1" max="2000" value="${x.vorab_mb || 20}" style="width:90px"></span>
-          <span name="vorlaufTeil"><label>${esc(T.epVorlauf)}</label><input type="number" name="vorlauf_s" min="0" max="60" value="${x.vorlauf_s ?? 10}" style="width:80px"></span></div>
+            <input type="number" name="vorab_mb" min="1" max="2000" value="${x.vorab_mb || 20}" class="b90"></span>
+          <span name="vorlaufTeil"><label>${esc(T.epVorlauf)}</label><input type="number" name="vorlauf_s" min="0" max="60" value="${x.vorlauf_s ?? 10}" class="b80"></span></div>
         <p class="leise" name="pufferText">${esc(T.epPufferText)}</p>
         <div class="zeile"><span class="leise">${st.stand ? esc(T.epStand) + ": " + esc(st.stand.replace("T", " ")) : ""}${st.fehler ? ` <span class="schlecht">${esc(T.epFehler)}: ${esc(meldungText(st.fehler_m, st.fehler))}</span>` : ""}
           ${st.vorab ? " · " + esc(T.epVorab((st.vorab.groesse / 1048576).toFixed(1), st.vorab.komplett ? 0 : (st.vorab.gesamt / 1048576).toFixed(1), (st.vorab.stand || "").replace("T", " ").slice(0, 16))) : ""}
@@ -2982,7 +2982,7 @@ async function fernSeite(inhalt) {
   const beobachten = (bis) => { clearInterval(timer); timer = setInterval(async () => {
     if (!document.body.contains(inhalt.firstElementChild)) { clearInterval(timer); return; }
     d = await holen("/api/fernnetz"); if (bis(d)) { clearInterval(timer); link = ""; } zeichnen(); }, 3000); };
-  const kopierFeld = (text, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen}" style="flex:1;font-family:monospace;font-size:12px">${esc(text)}</textarea>
+  const kopierFeld = (text, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen}" class="mono">${esc(text)}</textarea>
       <button class="knopf" data-kopieren>${esc(F.kopieren)}</button></div>`;
   const linkHtml = () => {
     const h = d.hier, e = d.einrichtung || {};
@@ -3079,7 +3079,7 @@ async function kiSeite(inhalt) {
   if (adresse.includes(":") && !adresse.startsWith("[")) adresse = `[${adresse}]`;
   const b64 = (t) => btoa(String.fromCharCode(...new TextEncoder().encode(t)));
   const laden = (e) => herunterladen("/api/ki/datei", { id: e.id }, e.datei, "application/octet-stream");   // seit 0.40.1
-  const feld = (wert, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen || 2}" style="flex:1;font-family:monospace;font-size:12px">${esc(wert)}</textarea>
+  const feld = (wert, zeilen) => `<div class="zeile"><textarea readonly rows="${zeilen || 2}" class="mono">${esc(wert)}</textarea>
       <button class="knopf" data-kopieren>${esc(K.kopieren)}</button></div>`;
   const ergebnisHtml = (e) => {
     if (!e) return "";
@@ -3177,7 +3177,7 @@ async function sicherungSeite(inhalt) {
           <p class="leise" id="pwStaerke"></p></div>
         <div class="zeile"><button class="knopf haupt" id="erstellen">${esc(T.sichErstellen)}</button></div></div>
       <div class="karte"><h2>${esc(T.sichListe)}</h2>
-        ${d.liste.length ? d.liste.map((x) => `<div class="zeile eintrag"><span style="flex:1">${esc(x.zeit)} · ${esc(x.auto ? T.sichAuto : T.sichManuell)} · ${groesse(x.groesse)}
+        ${d.liste.length ? d.liste.map((x) => `<div class="zeile eintrag"><span class="flex1">${esc(x.zeit)} · ${esc(x.auto ? T.sichAuto : T.sichManuell)} · ${groesse(x.groesse)}
             ${x.verschluesselt ? " · 🔒 AES-256" : ""}${x.geheim ? " · " + esc(T.sichMitGeheim) : ""}</span>
             <button class="knopf" data-laden="${esc(x.name)}">${esc(T.herunterladen)}</button><button class="knopf gefahr" data-weg="${esc(x.name)}">✕</button></div>`).join("")
           : `<p class="leise">${esc(T.sichKeine)}</p>`}
@@ -3260,8 +3260,8 @@ async function medienSeite(inhalt) {
     const liste = $("#medListe");
     E.medien.forEach((m) => {
       const z = el(`<div class="zeile eintrag" data-id="${esc(m.id)}"><span class="medvorschau">${m.art === "bild" ? "🖼" : "🎬"}</span>
-        <input type="text" name="name" value="${esc(m.name)}" style="flex:1">
-        ${m.art === "bild" ? `<label>${esc(T.medDauer)}</label><input type="number" name="dauer" min="1" max="3600" value="${m.dauer_s}" style="width:80px">`
+        <input type="text" name="name" value="${esc(m.name)}" class="flex1">
+        ${m.art === "bild" ? `<label>${esc(T.medDauer)}</label><input type="number" name="dauer" min="1" max="3600" value="${m.dauer_s}" class="b80">`
                            : `<span class="leise">${Math.floor(m.dauer_s / 60)}:${String(Math.round(m.dauer_s % 60)).padStart(2, "0")}</span>`}
         ${schalter("aktiv", m.aktiv)}<button class="knopf gefahr" name="weg">✕</button></div>`);
       if (m.art === "bild") dienstBinaer.get(`/medien/${m.datei}`, {}, {}).then((d) => {

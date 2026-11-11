@@ -209,6 +209,8 @@ const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical", "csv"], apibild: ["b
   diagramm: ["json", "text", "csv"], apiwert: ["json", "text", "rss", "ical", "csv"], anzeige: ["json", "text", "csv"], countdown: ["json", "text", "ical", "csv"] };
 const WAHL = { ansicht: ["liste", "symbole"], darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"], modus: ["einbetten", "bild"],
   rand: ["schwarz", "unscharf"], reihenfolge: ["eigene", "name", "neu", "zufall"], uebergang: ["blenden", "hart"] };   // Galerie seit 0.45
+// Schriftvorschau in Auswahllisten (seit 0.45.1 per Skript – Cockpit lässt style="…" im HTML nicht zu)
+const schriftVorschau = (w) => w.querySelectorAll("option[data-schrift]").forEach((o) => { o.style.fontFamily = `'${o.dataset.schrift}'`; });
 const galerieOptionen = (w, leer) => `<option value="">${esc(leer)}</option>` + ((E.galerie && E.galerie.ordner) || [])
   .map((o) => `<option value="${esc(o.id)}" ${o.id === w ? "selected" : ""}>${esc(o.name)}</option>`).join("");
 const ENT_DOMAINS = { temperatur: ["weather", "sensor"], wetterlage: ["weather"], feuchte: ["weather", "sensor"], wind: ["weather", "sensor"],
@@ -271,13 +273,14 @@ async function layoutSeite(inhalt) {
             <label><input type="checkbox" id="hgDunkel" ${l.hintergrund.abdunkeln ? "checked" : ""}> ${esc(L.abdunkeln)}</label></div>
           <div class="zeile"><label>${esc(L.schema)}</label><select id="thSchema">${Object.keys(L.schemaArt).map((k) => `<option value="${k}" ${k === l.thema.schema ? "selected" : ""}>${esc(L.schemaArt[k])}</option>`).join("")}</select>
             <label>${esc(L.akzent)}</label><input type="color" id="thAkzent" value="${esc(l.thema.akzent)}">
-            <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option style="font-family:'${esc(k)}'" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
+            <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option data-schrift="${esc(k)}" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
         </details>
         <div class="zeile"><select id="bTyp">${Object.keys(L.typ).map((k) => `<option value="${k}">${esc(L.typ[k])}</option>`).join("")}</select>
           <button class="knopf" id="bNeu">${esc(L.bausteinNeu)}</button></div>
         <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}</p>
       </div>
       <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="lw-seite">${handy() ? "" : `<div class="karte" id="ebenen"></div>`}<div class="karte" id="eigenschaften"></div></div></div>`;
+    schriftVorschau(inhalt);
     if (handy()) listeZeichnen(); else leinwandZeichnen();
     eigenschaftenZeichnen();
     // Kopf
@@ -625,7 +628,7 @@ async function layoutSeite(inhalt) {
     const rahmen = $("#leinwandRahmen");
     rahmen.innerHTML = "";
     lay().elemente.forEach((e) => {
-      const z = el(`<div class="eintrag zeile ${e.id === GEWAEHLT ? "gewaehlt" : ""}"><b style="flex:1">${esc(L.typ[e.typ] || e.typ)}</b>
+      const z = el(`<div class="eintrag zeile ${e.id === GEWAEHLT ? "gewaehlt" : ""}"><b class="flex1">${esc(L.typ[e.typ] || e.typ)}</b>
         <span class="leise">${esc(vorschauText(e, L)).slice(0, 24)}</span>${schalter("s", e.sichtbar)}
         <button class="knopf" data-a="-" aria-label="${esc(L.kleiner)}">−</button><button class="knopf" data-a="+" aria-label="${esc(L.groesser)}">+</button>
         <button class="knopf" data-a="e">${esc(L.einstellen)}</button></div>`);
@@ -654,7 +657,7 @@ async function layoutSeite(inhalt) {
       if (k === "ordner") return `<div class="zeile"><label>${lab}</label><select name="o_ordner">${galerieOptionen(w, L.galKeinOrdner)}</select></div>
         <p class="leise"><a href="#galerie">${esc(L.galOrdnerAnlegen)}</a></p>`;
       if (k === "liste") return `<h3>${lab}</h3><div id="raumListe">${(w || []).map((r, i) => `<div class="zeile" data-i="${i}">
-          <input type="text" name="rn" value="${esc(r.name)}" placeholder="Name" style="width:120px"><input type="text" name="re" list="ents" value="${esc(r.entity)}" placeholder="sensor.…">
+          <input type="text" name="rn" value="${esc(r.name)}" placeholder="Name" class="b120"><input type="text" name="re" list="ents" value="${esc(r.entity)}" placeholder="sensor.…">
           <button class="knopf gefahr" name="rw">✕</button></div>`).join("")}</div><button class="knopf" id="raumPlus">${esc(L.raumNeu)}</button>`;
       if (e.typ === "kalender" && ["symbole", "ohne_symbol", "wann"].includes(k) && o.ansicht !== "symbole") return "";
       if (k === "symbole") {
@@ -672,7 +675,7 @@ async function layoutSeite(inhalt) {
       if (k === "quelle") return `<div class="zeile"><label>${lab}</label><select name="o_quelle"><option value="">${esc(L.keineQuelle)}</option>
         ${(E.quellen || []).filter((q) => !QUELL_ARTEN[e.typ] || QUELL_ARTEN[e.typ].includes(q.art) || q.id === w)
             .map((q) => `<option value="${esc(q.id)}" ${q.id === w ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>`;
-      if (k === "url") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_url" value="${esc(w ?? "")}" spellcheck="false" style="width:100%">
+      if (k === "url") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_url" value="${esc(w ?? "")}" spellcheck="false" class="voll">
         <button class="knopf" type="button" name="urlPruefen">${esc(L.pruefen)}</button><span class="leise" id="urlErg"></span></div>`;
       if (k === "pfad") return `<div class="zeile"><label>${lab}</label><input type="text" name="o_pfad" value="${esc(w ?? "")}" spellcheck="false">
         <button class="knopf" type="button" name="pfadWahl">${esc(L.waehlen)}</button></div><div class="pfadBaum"></div>`;
@@ -695,7 +698,7 @@ async function layoutSeite(inhalt) {
         <div class="neuner">${["oben-links", "oben-mitte", "oben-rechts", "links", "mitte", "rechts", "unten-links", "unten-mitte", "unten-rechts"].map((k) =>
           `<button type="button" class="${k === (e.ausrichtung || "links") ? "an" : ""}" data-pos="${k}" title="${esc(L.ausrichtungArt[k])}" aria-label="${esc(L.ausrichtungArt[k])}"></button>`).join("")}</div></div>
       <div class="zeile"><label>${esc(L.schriftEl)}</label><select name="schrift"><option value="">${esc(L.wieLayout)}</option>
-        ${SCHRIFTEN.map((k) => `<option value="${esc(k)}" style="font-family:'${esc(k)}'" ${k === e.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
+        ${SCHRIFTEN.map((k) => `<option value="${esc(k)}" data-schrift="${esc(k)}" ${k === e.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
       <div class="zeile"><label>${esc(L.textfarbe)}</label><input type="color" name="textfarbe" value="${esc(e.textfarbe || "#ffffff")}">
         <label><input type="checkbox" name="textfarbeStd" ${e.textfarbe ? "" : "checked"}> ${esc(L.textfarbeStd)}</label></div>
       <div class="zeile"><label>${esc(L.gewicht)}</label><select name="gewicht">${Object.keys(L.gewichtArt).map((k) => `<option value="${k}" ${k === (e.gewicht || "") ? "selected" : ""}>${esc(L.gewichtArt[k])}</option>`).join("")}</select></div>
@@ -711,9 +714,10 @@ async function layoutSeite(inhalt) {
         <div class="zeile" data-bed="api" ${b.quelle ? "" : "hidden"}><input type="text" name="b_pfad" value="${esc(b.pfad || "")}" placeholder="${esc(L.bedPfad)}" spellcheck="false">
           <button class="knopf" type="button" name="bPfadWahl">${esc(L.waehlen)}</button></div><div class="bPfadBaum"></div>
         <div class="zeile"><select name="b_op">${Object.keys(L.op).map((k) => `<option value="${esc(k)}" ${k === (b.op || "=") ? "selected" : ""}>${esc(L.op[k])}</option>`).join("")}</select>
-          <input type="text" name="b_wert" value="${esc(b.wert || "")}" style="width:140px"></div></details>
+          <input type="text" name="b_wert" value="${esc(b.wert || "")}" class="b140"></div></details>
       <div class="zeile"><button class="knopf" name="vorne">${esc(L.vorne)}</button><button class="knopf" name="hinten">${esc(L.hinten)}</button>
         <button class="knopf gefahr" name="weg">${esc(L.entfernen)}</button></div>`;
+    schriftVorschau(ziel);
     const aendern = () => {
       merken();
       for (const k of Object.keys(o)) {

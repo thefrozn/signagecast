@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.45.1 (2026-11-11)
+- **Admin in Cockpit looked off in places:** Cockpit's security policy blocks `style="…"` in HTML, so 28 fixed widths
+  and other details were ignored – e.g. narrow address and text fields, no font preview in the font list, copy fields
+  not monospaced, and a large picture in a data source test could run over the edge. They are CSS classes now (font
+  preview set by script); a test keeps `style="…"` out of the admin.
+- **Security (Docker/Podman):** the admin's content security policy no longer allows inline styles – as strict as
+  Cockpit.
+
 ## v0.45.0 (2026-11-11)
 - **Gallery:** new page *Content → Gallery* – folders with pictures (JPG, PNG, WebP, GIF) and PDFs, uploaded straight
   into SignageCast (drag and drop, choose files or a whole folder, from a phone via the file picker; no cloud service).

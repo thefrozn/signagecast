@@ -103,7 +103,7 @@ async function quellenSeite(inhalt) {
   inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(Q.text)}</p>
       <div class="zeile"><button class="knopf haupt" id="qNeu">${esc(Q.neu)}</button><button class="knopf" id="qCurl">${esc(Q.ausCurl)}</button>
         <select id="qBsp"><option value="">${esc(Q.beispiel)}</option>${Object.keys(QBEISPIELE).map((k) => `<option value="${k}">${esc(Q.beispiele[k])}</option>`).join("")}</select></div>
-      <div id="qCurlBox" hidden><p class="leise">${esc(Q.curlText)}</p><textarea id="qCurlText" rows="5" style="width:100%" spellcheck="false"></textarea>
+      <div id="qCurlBox" hidden><p class="leise">${esc(Q.curlText)}</p><textarea id="qCurlText" rows="5" class="voll" spellcheck="false"></textarea>
         <div class="zeile"><button class="knopf haupt" id="qCurlOk">${esc(Q.uebernehmen)}</button></div></div></div>
     <div id="qEditor"></div><div id="qListe"></div>`;
 
@@ -163,14 +163,14 @@ async function quellenSeite(inhalt) {
     const ein = einheitVon(q.intervall_s);
     z.innerHTML = `<div class="karte"><h2>${esc(altId ? q.name : Q.neu)}</h2>
       <div class="zeile"><label>${esc(Q.name)}</label><input type="text" id="qName" value="${esc(q.name)}"></div>
-      <div class="zeile"><label>${esc(Q.kennung)}</label><input type="text" id="qId" value="${esc(q.id)}" style="width:160px" pattern="[a-z0-9_]{2,16}"></div>
+      <div class="zeile"><label>${esc(Q.kennung)}</label><input type="text" id="qId" value="${esc(q.id)}" class="b160" pattern="[a-z0-9_]{2,16}"></div>
       <div class="zeile"><label>${esc(Q.art)}</label><select id="qArt">${Object.keys(Q.artName).map((k) => `<option value="${k}" ${k === q.art ? "selected" : ""}>${esc(Q.artName[k])}</option>`).join("")}</select>
         <label>${esc(Q.methode)}</label><select id="qMethode">${["GET", "POST"].map((m) => `<option ${m === q.methode ? "selected" : ""}>${m}</option>`).join("")}</select></div>
       <div class="zeile" data-nicht="video"><label>${esc(Q.herkunft)}</label><select id="qHerkunft">${Object.keys(Q.herkunftName).map((k) =>
         `<option value="${k}" ${k === q.herkunft ? "selected" : ""}>${esc(Q.herkunftName[k])}</option>`).join("")}</select></div>
       <div data-nur="datei"><div class="zeile"><label>${esc(Q.datei)}</label><input type="file" id="qDatei" accept=".ics,.csv,.tsv,.txt,.json,.xml,text/calendar,text/csv">
         <span class="leise" id="qDateiStand">${q.datei ? "✓ " + esc(q.datei.name) : ""}</span></div><p class="leise">${esc(Q.dateiHinweis)}</p></div>
-      <div class="zeile" data-nicht="datei"><label>${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" style="width:100%;max-width:640px" spellcheck="false"></div>
+      <div class="zeile" data-nicht="datei"><label>${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" class="voll640" spellcheck="false"></div>
       <div class="zeile" data-nur="video"><label>${esc(Q.format)}</label><select id="qFormat">${Object.keys(Q.formatName).map((k) => `<option value="${k}" ${k === q.format ? "selected" : ""}>${esc(Q.formatName[k])}</option>`).join("")}</select></div>
       <p class="leise" data-nur="video">${esc(Q.videoHinweis)}</p>
       <div class="zeile" data-nicht="video"><label>${esc(Q.intervall)}</label><input type="number" id="qIv" min="1" value="${q.intervall_s / ein}">
@@ -178,11 +178,11 @@ async function quellenSeite(inhalt) {
         <label>${esc(Q.aktiv)}</label>${schalter("qAktiv", q.aktiv)}</div>
       <div data-nur="csv"><h3>${esc(Q.csvFelder)}</h3><div class="zeile" data-nicht="datei"><button class="knopf" id="qCsvLesen">${esc(Q.felderLesen)}</button></div>
         <div id="qCsv"></div><h3>${esc(Q.termine)}</h3><p class="leise">${esc(Q.termineHinweis)}</p><div id="qCsvKal"></div></div>
-      <div data-nicht="datei"><h3>${esc(Q.kopf)}</h3><div id="qKopf">${q.kopf.map((k) => `<div class="zeile kopfzeile"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" style="width:180px">
-          <input type="${k.geheim ? "password" : "text"}" name="kw" value="${esc(k.wert)}" placeholder="Wert" autocomplete="off" style="width:280px">
+      <div data-nicht="datei"><h3>${esc(Q.kopf)}</h3><div id="qKopf">${q.kopf.map((k) => `<div class="zeile kopfzeile"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" class="b180">
+          <input type="${k.geheim ? "password" : "text"}" name="kw" value="${esc(k.wert)}" placeholder="Wert" autocomplete="off" class="b280">
           <label><input type="checkbox" name="kg" ${k.geheim ? "checked" : ""}> ${esc(Q.geheim)}</label><button class="knopf gefahr" name="kx">✕</button></div>`).join("")}</div>
       <div class="zeile"><button class="knopf" id="qKopfNeu">${esc(Q.kopfNeu)}</button></div><p class="leise">${esc(Q.geheimHinweis)}</p></div>
-      <div id="qInhaltZeile" ${q.methode === "POST" ? "" : "hidden"}><label>${esc(Q.inhalt)}</label><textarea id="qInhalt" rows="4" style="width:100%" spellcheck="false">${esc(q.inhalt)}</textarea></div>
+      <div id="qInhaltZeile" ${q.methode === "POST" ? "" : "hidden"}><label>${esc(Q.inhalt)}</label><textarea id="qInhalt" rows="4" class="voll" spellcheck="false">${esc(q.inhalt)}</textarea></div>
       <div class="zeile"><button class="knopf" id="qTest">${esc(Q.testen)}</button><button class="knopf haupt" id="qOk">${esc(Q.speichern)}</button>
         <button class="knopf" id="qWeg">${esc(Q.abbrechen)}</button></div>
       <div id="qTestErg"></div></div>`;
@@ -254,7 +254,7 @@ async function quellenSeite(inhalt) {
       const r = await senden("/api/quellen/test", { quelle: lesen() }).catch((e) => ({ ok: false, fehler: e.message }));
       const ziel = $("#qTestErg");
       if (!r.ok) { ziel.innerHTML = `<p class="schlecht">${esc(r.fehler)}</p>`; return; }
-      ziel.innerHTML = `<p class="gut">OK · ${r.dauer_ms} ${esc(Q.ms)}</p>${r.bild ? `<img src="${esc(r.bild)}" alt="" style="max-width:100%;max-height:300px">` : ""}
+      ziel.innerHTML = `<p class="gut">OK · ${r.dauer_ms} ${esc(Q.ms)}</p>${r.bild ? `<img src="${esc(r.bild)}" alt="" class="testbild">` : ""}
         <h3>${esc(Q.antwort)}</h3><div id="qBaum"></div>`;
       baumZeigen($("#qBaum"), r.daten, (p) => pfadGewaehlt(q.id, p, $("#qTestErg")));
     }, null);

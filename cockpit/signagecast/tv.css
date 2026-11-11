@@ -219,3 +219,14 @@ table.sptabelle td:nth-child(2) { text-align: right; font-variant-numeric: tabul
 .galbild.ziel { border-color: var(--warn); }
 input.schmal { width: 90px; }
 label.knopf { display: inline-flex; align-items: center; }
+/* Seit 0.45.1 statt style="…" im HTML (Cockpit lässt Inline-Styles nicht zu); :is(…) schlägt input[type=…] oben */
+:is(input, textarea, select).b70 { width: 70px; } :is(input, textarea, select).b80 { width: 80px; }
+:is(input, textarea, select).b90 { width: 90px; } :is(input, textarea, select).b120 { width: 120px; }
+:is(input, textarea, select).b140 { width: 140px; } :is(input, textarea, select).b150 { width: 150px; }
+:is(input, textarea, select).b160 { width: 160px; } :is(input, textarea, select).b180 { width: 180px; }
+:is(input, textarea, select).b280 { width: 280px; max-width: 100%; }
+:is(input, textarea, select).voll { width: 100%; } :is(input, textarea, select).voll640 { width: 100%; max-width: 640px; }
+.flex1 { flex: 1; } :is(input, textarea).flex1 { width: auto; min-width: 0; }
+textarea.mono { flex: 1; width: auto; min-width: 0; font-family: ui-monospace, monospace; font-size: 12px; }
+.umbruch { word-break: break-all; } img.testbild { max-width: 100%; max-height: 300px; } .abstand-r { margin-right: 12px; }
+.karte.anmeldung { max-width: 420px; margin: 40px auto; }
