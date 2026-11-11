@@ -1,7 +1,7 @@
 # Changelog
 
 ## v0.44.0 (2026-11-11)
-- **Quick start on Windows** (experimental): one PowerShell command sets up SignageCast with Docker Desktop – checks
+- **Quick start on Windows** (experimental, **not tested on real Windows yet** – feedback welcome): one PowerShell command sets up SignageCast with Docker Desktop – checks
   Docker, finds the PC's IP in the home network, starts the container (ports 19090, 8888 and 8890 for players) and
   shows the initial password. Running it again updates. Alternative with WSL (Debian, mirrored networking) in the new
   guide [docs/install/WINDOWS.md](docs/install/WINDOWS.md). Full HD with CPU encoding – Windows does not pass Quick Sync
