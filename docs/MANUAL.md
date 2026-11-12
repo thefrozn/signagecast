@@ -21,7 +21,7 @@ that video, so the TV needs no app, no login and no updates.
 | **TVs** | TVs · Players | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)) |
 | **Content** | Layouts · Data sources · Media · Gallery · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, gallery folders (pictures/PDFs for slideshows), scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
 | **Live videos** | Streams · Categories · Rotation & quality · Search | Live cams; categories (edit, create, switch on/off for all TVs or per TV); minutes per stream, daylight, minimum quality and strikes; nightly search |
-| **Settings** | General · Home Assistant · Notifications (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; admin password |
+| **Settings** | General · Home Assistant · Notifications · Storage locations (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; NAS/cloud folders for all file dialogs; admin password |
 | **System** | Updates · Backup · Storage · Performance · Log | Signed updates, maintenance window, encrypted backups, free space and what uses it, performance test, switching off the stream without viewers, change log |
 
 Every page has its own address (e.g. `…/index.html#benachrichtigung`). Unsaved changes are marked on their card;
@@ -210,6 +210,25 @@ streams, logs and automatic backups. Uploads (gallery, media, PDFs, pictures, ba
 Below twice the reserve the to-do list and notifications (event “Storage getting low or full”) warn; at the reserve
 uploads and the clip cache stop, everything already there keeps running.
 
+### Pictures and files from a NAS or cloud (storage locations, since 0.48)
+**Settings → Storage locations:** add a **WebDAV** address (Nextcloud/ownCloud: Files → Settings → WebDAV; best with an
+app password), an **SMB** share (`smb://nas/share/folder`, SMB3 only, best a read-only account) or a **folder on the
+server** (below `/mnt`, `/media`, `/srv`; in Docker mount a volume to `/speicherorte`, see `compose.yaml`). On Proxmox
+you can mount the NAS on the host and pass it read-only into the container
+(`pct set <ID> -mp0 /mnt/pve/nas,mp=/mnt/nas,ro=1`) – then SignageCast needs no password at all. *Test connection*
+lists the folder (and, with write permission, writes and deletes a small test file). Locations are read-only unless you
+tick *Allow writing* (only needed for backups).
+
+Afterwards every file field in the admin has a **From storage location** button: browse the folders and pick one or
+several files. Gallery pictures, media and backups to restore are fetched by the server itself; other files (CSV,
+playlist, layout, background picture, PDF up to 25 MB) run through the normal import. In **Content → Gallery** a folder
+can be **linked** to a folder of a location: new and changed pictures arrive by themselves (every 5–1440 minutes or
+*Sync now*), deleted ones disappear (can be switched off), the order follows the file names; pictures you upload by hand
+stay. A **data source** can read its file from a location on every fetch (origin *File from storage location*). Under
+**System → Backup** the automatic backup can also be stored in a location with write permission (experimental). If a
+location cannot be reached, nothing is deleted and *To do* shows it. Passwords are never shown again, are not part of
+backups and never reach the log – after restoring a backup on a new server, enter the locations again.
+
 ### Show something only for a while
 Every element has **Only during …** with *from* and *until* (date, optionally a time). Without a time the whole day
 counts: from 2026-12-23 until 2027-01-02 shows the text from the morning of 23 December to the end of 2 January. The
@@ -388,6 +407,12 @@ Auch als **Hintergrund-Diashow**. Die Bilder kommen nicht in die Sicherung (die 
 **Speicherwächter**: Reserve von 2 GB bzw. 10 % der Platte bleibt immer frei; Uploads werden schon vor dem Übertragen
 abgelehnt, wenn sie nicht passen. **System → Speicher** zeigt, was wie viel belegt; bei wenig Platz Hinweis unter
 „Zu erledigen“ und Benachrichtigung, ist die Reserve erreicht, sind Uploads gesperrt – alles andere läuft weiter.
+Seit 0.48: **Speicherorte** – Einstellungen → Speicherorte: WebDAV (Nextcloud, ownCloud, NAS), SMB (nur SMB3) oder ein
+Ordner auf dem Server (unter /mnt, /media, /srv; Docker: Volume nach /speicherorte) einmal eintragen, standardmäßig nur
+lesend. Danach hat jedes Dateifeld den Knopf **Aus Speicherort**. Galerie-Ordner lassen sich mit einem Ordner
+**verknüpfen** (neue/geänderte Bilder kommen von selbst, gelöschte gehen, von Hand hochgeladene bleiben),
+Datenquellen lesen ihre Datei bei jedem Abruf aus dem Speicherort, und die automatische Sicherung kann zusätzlich in
+einen Speicherort mit Schreibrecht (experimentell). Passwörter bleiben nur auf dem Server (nicht in Sicherungen).
 Seit 0.21: **PDF** als Baustein (bis 50 Seiten, blättert nach der Uhr), **Zeitraum** je Baustein
 („ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Inhalte → Durchsagen; im Pult für Zugänge mit
 dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernseher über Home Assistant schalten**

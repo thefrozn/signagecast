@@ -17,7 +17,7 @@ const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Geräte", einrichten: "Einrichten", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher" },
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher", speicherorte: "Speicherorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -220,7 +220,7 @@ const TEXTE = {
                        sicherung: "Sicherung", pult: "Durchsage-Pult", alarm: "Notfall-Vollbild", webhook: "Webhook", stream: "Stream", sprache: "Sprache", updates: "Updates" },
             aktion: { einstellungen: "Einstellungen gespeichert", webhook_neu: "neuer Webhook-Schlüssel", medien_neu: "Medium hochgeladen", medien_loeschen: "Medium gelöscht",
                       galerie_neu: "Bild in die Galerie geladen", galerie_ordner: "Galerie-Ordner geändert", galerie_loeschen: "Bilder aus der Galerie gelöscht",
-                      galerie_ordnen: "Galerie neu sortiert", galerie_umbenennen: "Galerie-Bild umbenannt",
+                      galerie_ordnen: "Galerie neu sortiert", galerie_umbenennen: "Galerie-Bild umbenannt", speicherorte: "Speicherorte geändert", galerie_abgleichen: "Galerie-Abgleich gestartet",
                       schalten: "Fernseher geschaltet", nach_einschalten: "Quelle/Seite am Fernseher ausprobiert", update: "Update angefordert",
                       update_ergebnis: "Update", sicherung_erstellen: "Sicherung erstellt", sicherung_loeschen: "Sicherung gelöscht",
                       sicherung_einspielen: "Sicherung eingespielt", quelle_datei: "Datei für Datenquelle hochgeladen", kategorie_loeschen: "Kategorie gelöscht",
@@ -245,7 +245,8 @@ const TEXTE = {
                warn: "Ausblenden (bis das Problem einmal behoben war – tritt es wieder auf, erscheint es wieder)" },
     todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
     todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
-    todo: { playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Fernseher → Einrichten neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
+    todo: { speicherort: (n) => `Speicherort „${n}“ war beim letzten Zugriff nicht erreichbar`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Fernseher → Einrichten neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
             internet: (s) => `Internet seit ${s} nicht erreichbar – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
             bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
             player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
@@ -479,7 +480,7 @@ const TEXTE = {
   en: {
     reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Devices", einrichten: "Set up", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage" },
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage", speicherorte: "Storage locations" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
@@ -682,7 +683,7 @@ const TEXTE = {
                        sicherung: "Backup", pult: "Announcement panel", alarm: "Emergency screen", webhook: "Webhook", stream: "Stream", sprache: "Language", updates: "Updates" },
             aktion: { einstellungen: "Settings saved", webhook_neu: "new webhook key", medien_neu: "Medium uploaded", medien_loeschen: "Medium deleted",
                       galerie_neu: "Picture added to the gallery", galerie_ordner: "Gallery folder changed", galerie_loeschen: "Pictures deleted from the gallery",
-                      galerie_ordnen: "Gallery reordered", galerie_umbenennen: "Gallery picture renamed",
+                      galerie_ordnen: "Gallery reordered", galerie_umbenennen: "Gallery picture renamed", speicherorte: "Storage locations changed", galerie_abgleichen: "Gallery sync started",
                       schalten: "TV switched", nach_einschalten: "Source/page tried on the TV", update: "Update requested",
                       update_ergebnis: "Update", sicherung_erstellen: "Backup created", sicherung_loeschen: "Backup deleted",
                       sicherung_einspielen: "Backup restored", quelle_datei: "File for data source uploaded", kategorie_loeschen: "Category deleted",
@@ -707,7 +708,8 @@ const TEXTE = {
                warn: "Hide (until the problem was solved once – if it comes back, it shows again)" },
     todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
     todoEin: "Show again", todoAusgeblendet: "hidden",
-    todo: { playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under TVs → Set up so new devices get all fixes (e.g. Wi-Fi on first start)`,
+    todo: { speicherort: (n) => `Storage location “${n}” was not reachable on last access`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under TVs → Set up so new devices get all fixes (e.g. Wi-Fi on first start)`,
             internet: (s) => `Internet not reachable since ${s} – the TVs show own media or a fallback picture`,
             bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
             player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
@@ -874,6 +876,21 @@ const TEXTE = {
       gal_gross: "File larger than {mb} MB", gal_pixel: "Picture too large ({mp} megapixels, at most 100)", gal_kaputt: "Picture not readable: {d}",
       gal_zeit: "Converting takes longer than {s} s", gal_viele: "At most {n} files per folder",
       gal_voll: "The gallery is full ({gb} GB) – delete pictures or raise the limit under Content → Gallery",
+      so_unbekannt: "This storage location does not exist (any more) – add it under Settings → Storage locations",
+      so_viele: "At most {n} storage locations", so_art: "Type: folder on the server, WebDAV or SMB",
+      so_adresse: "WebDAV address like https://cloud.example.org/remote.php/dav/files/name/ (without user and password in it)",
+      so_adresse_smb: "SMB address like smb://nas/share or smb://nas/share/folder",
+      so_lokal: "Folders on the server only below {wurzeln} (mount the NAS there, for example)",
+      so_zugang: "User or password contains invalid characters", so_pfad: "Invalid path", so_typ: "Please choose a file, not a folder",
+      so_fehlt: "File or folder does not exist there", so_rechte: "No read permission for this folder (user signagecast)",
+      so_anmeldung: "Login refused – check user, password and permissions", so_nicht_erreichbar: "Storage location not reachable: {d}",
+      so_umleitung: "The server redirects – please enter the final address (often with / at the end)", so_http: "Storage location answers HTTP {code}",
+      so_antwort: "Unexpected answer from the storage location: {d}", so_fehler: "Storage location error: {d}",
+      so_zu_viele: "The folder contains too many entries", so_gross: "File larger than {mb} MB", so_ziel_voll: "No space left at the storage location",
+      so_nur_lesen: "Writing is not allowed for this storage location (Settings → Storage locations)",
+      so_smb_fehlt: "SMB is not available on this server (package python3-smbc missing – update SignageCast)",
+      so_ordner_typ: "Please choose a folder", so_abgleich_viele: "The folder holds more than {n} matching files – only the first {n} were taken",
+      q_speicherort: "{id}: Please choose a file from a storage location",
       l_galerie: "invalid gallery folder", l_imp_galerie: "Gallery folder {w} does not exist here – choose a folder in the editor",
       pdf_art: "Not a PDF file", pdf_werkzeug: "pdftoppm missing (package poppler-utils) – please update SignageCast",
       pdf_zeit: "Converting takes longer than {s} s – please use a smaller PDF", pdf_kaputt: "PDF not readable: {d}",
@@ -1144,14 +1161,14 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSei
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: zweiTeile(pultSeite, webhookKarte),
                  updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
-                 protokoll: protokollSeite, ki: kiSeite, fern: fernSeite };
+                 protokoll: protokollSeite, ki: kiSeite, fern: fernSeite, speicherorte: speicherorteSeite };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
 // Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
 // (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player", "einrichten"]],
                   ["inhalte", ["layout", "quellen", "medien", "galerie", "einspieler", "radio", "pult"]],
                   ["videoton", ["streams", "kategorien", "video", "suche"]],
-                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "ki", "fern", "zugang"] : ["allgemein", "ha", "benachrichtigung", "ki", "fern"]],
+                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "speicherorte", "ki", "fern", "zugang"] : ["allgemein", "ha", "benachrichtigung", "speicherorte", "ki", "fern"]],
                   ["system", ["updates", "sicherung", "speicher", "leistung", "protokoll"]]];
 const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
 let aktiv = "uebersicht", timer = null;
@@ -1965,6 +1982,7 @@ const TODO_WARN = {
   bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
   internet: (w) => [T.todo.internet(w.seit), "uebersicht"], bild: (w) => [T.todo.bild(w.name, w.befund), "leistung"],
   player_basis: (w) => [T.todo.playerBasis(w.art, w.alt, w.neu), "einrichten"],
+  speicherort: (w) => [T.todo.speicherort(w.name), "speicherorte"],
   speicher: (w) => [T.todo.speicher(w.stufe, String(w.frei).replace(".", E.sprache === "en" ? "." : ",")), "speicher"],
 };
 async function todoZeichnen(s) {
@@ -3186,8 +3204,12 @@ async function sicherungSeite(inhalt) {
   // AES-256-verschlüsselt mit starkem Passwort. Alte .json-Sicherungen lassen sich weiter einspielen.
   const S = E.sicherung;
   const groesse = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
+  let ortWahl = null, ziel = Object.assign({ ort: "", pfad: "" }, S.ziel || {});   // seit 0.48: Speicherorte
   const zeichnen = async () => {
-    const d = await holen("/api/sicherungen");
+    const d = await holen("/api/sicherungen"), SO = SOT();
+    let orte = [];
+    try { orte = (await soLaden(true)).orte; } catch (_) { /* ohne Speicherorte */ }
+    const schreibbar = orte.filter((o) => o.schreiben || o.id === ziel.ort);
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.sichNeu)}</h2><p class="leise">${esc(T.sicherungText)}</p>
         <div class="zeile"><label><input type="checkbox" id="mitGeheim"> <b>${esc(T.mitGeheimFrage)}</b></label></div>
         <div id="pwBlock" hidden><p class="leise">${esc(T.pwPflicht)}</p>
@@ -3200,7 +3222,8 @@ async function sicherungSeite(inhalt) {
             ${x.verschluesselt ? " · 🔒 AES-256" : ""}${x.geheim ? " · " + esc(T.sichMitGeheim) : ""}</span>
             <button class="knopf" data-laden="${esc(x.name)}">${esc(T.herunterladen)}</button><button class="knopf gefahr" data-weg="${esc(x.name)}">✕</button></div>`).join("")
           : `<p class="leise">${esc(T.sichKeine)}</p>`}
-        ${d.auto ? `<p class="leise">${esc(T.sichLetzteAuto)}: ${esc(d.auto.zeit)}${d.auto.fehler ? ` <span class="schlecht">${esc(meldungText(d.auto.fehler_m, d.auto.fehler))}</span>` : ""}</p>` : ""}</div>
+        ${d.auto ? `<p class="leise">${esc(T.sichLetzteAuto)}: ${esc(d.auto.zeit)}${d.auto.fehler ? ` <span class="schlecht">${esc(meldungText(d.auto.fehler_m, d.auto.fehler))}</span>` : ""}
+          ${d.auto.ziel_ok === true ? ` · <span class="gut">${esc(SO.sichZielOk)}</span>` : d.auto.ziel_ok === false ? ` · <span class="schlecht">${esc(SO.sichZielFehler)}: ${esc(meldungText(d.auto.ziel_fehler_m))}</span>` : ""}</p>` : ""}</div>
       <div class="karte"><h2>${esc(T.sichAutoTitel)}</h2>
         <div class="zeile"><label>${esc(T.sichPlan)}</label><select id="plan">${["aus", "taeglich", "woechentlich"].map((k) => `<option value="${k}" ${k === S.plan ? "selected" : ""}>${esc(T.sichPlanArt[k])}</option>`).join("")}</select>
           <select id="wtag">${T.wochentage.map((w, i) => `<option value="${i}" ${i === S.wochentag ? "selected" : ""}>${esc(w)}</option>`).join("")}</select>
@@ -3210,9 +3233,14 @@ async function sicherungSeite(inhalt) {
         <div id="autoPw" ${S.mit_geheimnissen ? "" : "hidden"}><div class="zeile"><label>${esc(T.pw1)}</label><input type="password" id="apw1" value="${esc(S.passwort)}" autocomplete="new-password"></div>
           <div class="zeile"><label>${esc(T.pw2)}</label><input type="password" id="apw2" value="${esc(S.passwort)}" autocomplete="new-password"></div></div>
         <p class="leise">${esc(T.sichAutoText)}</p>
+        ${schreibbar.length ? `<div class="zeile"><label for="sichZielOrt">${esc(SO.sichZiel)}</label><select id="sichZielOrt"><option value="">${esc(SO.sichZielAus)}</option>
+            ${schreibbar.map((o) => `<option value="${esc(o.id)}" ${o.id === ziel.ort ? "selected" : ""}>${esc(o.name)}</option>`).join("")}</select>
+            <button class="knopf" id="sichZielOrdner" ${ziel.ort ? "" : "hidden"}>${esc(SO.sichZielOrdner)}</button><span class="leise" id="sichZielPfad">${ziel.ort ? "/" + esc(ziel.pfad) : ""}</span>
+            <span class="leise">(${esc(SO.experimentell)})</span></div><p class="leise">${esc(SO.sichZielHinweis)}</p>` : ""}
         <div class="zeile"><button class="knopf haupt" id="autoOk">${esc(T.speichern)}</button></div></div>
       <div class="karte"><h2>${esc(T.sicherungEinspielen)}</h2>
-        <div class="zeile"><input type="file" id="datei" accept=".zip,.json,application/zip,application/json"></div>
+        <div class="zeile"><input type="file" id="datei" data-so="aus" accept=".zip,.json,application/zip,application/json">
+          ${orte.length ? `<button class="knopf" id="sichOrt">📁 ${esc(SO.sichAus)}</button>` : ""}<span class="leise" id="sichOrtWahl">${ortWahl ? esc(SO.sichGewaehlt(soName(ortWahl.ort), ortWahl.pfad)) : ""}</span></div>
         <div class="zeile"><label>${esc(T.pwEinspielen)}</label><input type="password" id="pwEin" autocomplete="off"></div>
         <div class="zeile"><label><input type="checkbox" id="mitStrikes"> ${esc(T.mitStrikes)}</label></div>
         <div class="zeile"><button class="knopf" id="ein">${esc(T.sicherungEinspielen)}</button></div></div>`;
@@ -3223,6 +3251,21 @@ async function sicherungSeite(inhalt) {
       return gut;
     };
     $("#mitGeheim").onchange = () => { $("#pwBlock").hidden = !$("#mitGeheim").checked; };
+    if ($("#sichOrt")) $("#sichOrt").onclick = async () => {
+      const w = await soWaehlen({ filter: /\.zip$/i });
+      if (!w || !w.length) return;
+      ortWahl = w[0]; $("#datei").value = ""; $("#sichOrtWahl").textContent = SO.sichGewaehlt(soName(ortWahl.ort), ortWahl.pfad);
+    };
+    $("#datei").onchange = () => { ortWahl = null; $("#sichOrtWahl").textContent = ""; };
+    if ($("#sichZielOrt")) {
+      $("#sichZielOrt").onchange = () => { ziel = { ort: $("#sichZielOrt").value, pfad: "" }; $("#sichZielOrdner").hidden = !ziel.ort; $("#sichZielPfad").textContent = ziel.ort ? "/" : ""; };
+      $("#sichZielOrdner").onclick = async () => {
+        const w = await soWaehlen({ ordner: true, nurSchreiben: true });
+        if (!w) return;
+        ziel = w; $("#sichZielOrt").value = w.ort; $("#sichZielPfad").textContent = "/" + w.pfad;
+        $("#sichZielOrt").dispatchEvent(new Event("input", { bubbles: true }));          // Karte als geändert markieren
+      };
+    }
     $("#pw1").oninput = staerke;
     $("#autoGeheim").onchange = () => { $("#autoPw").hidden = !$("#autoGeheim").checked; };
     const planSicht = () => { $("#wtag").hidden = $("#plan").value !== "woechentlich"; $("#uhr").hidden = $("#plan").value === "aus"; };
@@ -3248,12 +3291,15 @@ async function sicherungSeite(inhalt) {
       const geheim = $("#autoGeheim").checked;
       if (geheim && $("#apw1").value !== $("#apw2").value) throw new Error(T.pwUngleich);
       await speichernE({ sicherung: { plan: $("#plan").value, wochentag: Number($("#wtag").value), uhrzeit: $("#uhr").value,
-                                      behalten: Number($("#behalten").value) || 7, mit_geheimnissen: geheim, passwort: geheim ? $("#apw1").value : "" } }, null);
+                                      behalten: Number($("#behalten").value) || 7, mit_geheimnissen: geheim, passwort: geheim ? $("#apw1").value : "",
+                                      ziel: { ort: ziel.ort, pfad: ziel.ort ? ziel.pfad : "" } } }, null);
     });
     $("#ein").onclick = (e) => aktion(e.target, async () => {
-      const f = $("#datei").files[0]; if (!f) throw new Error("–");
+      const f = $("#datei").files[0]; if (!f && !ortWahl) throw new Error("–");
       if (!confirm(T.wirklichEinspielen)) return;
-      if (/\.json$/i.test(f.name)) {                     // alte Sicherung / Profil
+      if (!f) {                                          // seit 0.48: aus einem Speicherort, der Server holt die Datei
+        await senden("/api/sicherung/zip", { ort: ortWahl.ort, pfad: ortWahl.pfad, passwort: $("#pwEin").value, strikes: $("#mitStrikes").checked });
+      } else if (/\.json$/i.test(f.name)) {             // alte Sicherung / Profil
         const d = JSON.parse(await f.text());
         if (!$("#mitStrikes").checked) delete d.strikes;
         await senden("/api/sicherung", d);
@@ -3272,7 +3318,8 @@ async function medienSeite(inhalt) {
   const STUECK = 3 * 1024 * 1024;               // 3 MB je Stück (als Base64 unter der Grenze des Dienstes)
   const zeichnen = () => {
     inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(T.medText)}</p>
-        <div class="zeile"><input type="file" id="medDatei" multiple accept="image/jpeg,image/png,video/mp4,video/webm"><button class="knopf haupt" id="medHoch">${esc(T.medHoch)}</button></div>
+        <div class="zeile"><input type="file" id="medDatei" data-so="aus" multiple accept="image/jpeg,image/png,video/mp4,video/webm"><button class="knopf haupt" id="medHoch">${esc(T.medHoch)}</button>
+          <button class="knopf" id="medOrt" hidden>📁 ${esc(SOT().wahl)}</button></div>
         <p class="leise" id="medStand"></p><p class="leise">${esc(T.medSicherung)}</p></div>
       <div class="karte"><div id="medListe">${E.medien.length ? "" : `<p class="leise">${esc(T.medKeine)}</p>`}</div>
         ${E.medien.length ? `<div class="zeile"><button class="knopf haupt" id="medOk">${esc(T.speichern)}</button></div>` : ""}</div>`;
@@ -3296,6 +3343,15 @@ async function medienSeite(inhalt) {
       return { ...m, name: z.querySelector("[name=name]").value, aktiv: z.querySelector("[name=aktiv]").checked,
                dauer_s: m.art === "bild" ? Number(z.querySelector("[name=dauer]").value) || 15 : m.dauer_s };
     }) }, e.target);
+    soLaden().then((d) => { if (d.orte.length && $("#medOrt")) $("#medOrt").hidden = false; }).catch(() => {});
+    $("#medOrt").onclick = async () => {                // seit 0.48: direkt aus einem Speicherort (der Server holt die Datei)
+      const wahl = await soWaehlen({ filter: /\.(jpe?g|png|mp4|m4v|webm)$/i, mehrere: true });
+      if (!wahl || !wahl.length) return;
+      const r = await soHolenViele(wahl, { zweck: "medien" }, (t) => { $("#medStand").textContent = t; });
+      if (r.letzte && r.letzte.einstellungen) E = r.letzte.einstellungen;
+      const text = SOT().uebernommen(r.ok, wahl.length - r.ok) + (r.abbruch ? ` – ${r.abbruch}` : "") + (r.fehler.length ? " – " + r.fehler.slice(0, 3).join(" · ") : "");
+      zeichnen(); melden(text, !!(r.abbruch || r.fehler.length));
+    };
     $("#medHoch").onclick = (e) => aktion(e.target, async () => {
       for (const f of $("#medDatei").files) {
         const kennung = Math.random().toString(36).slice(2, 12).replace(/[^a-z0-9]/g, "a").padEnd(10, "x");
@@ -3323,7 +3379,73 @@ const gbText = (b) => (b / 1024 ** 3).toLocaleString(ORT(), { maximumFractionDig
 async function galerieSeite(inhalt) {
   const STUECK = 3 * 1024 * 1024;
   const ERLAUBT = /\.(jpe?g|png|webp|gif|pdf|heic|heif)$/i;
-  let g = await holen("/api/galerie"), eintraege = [], auswahl = new Set(), laeuft = false, bericht = "", urls = [];
+  let g = await holen("/api/galerie"), eintraege = [], auswahl = new Set(), laeuft = false, bericht = "", urls = [], abTimer = null;
+  // Verknüpfung mit einem Ordner eines Speicherorts (seit 0.48)
+  const abText = (ab) => { const S = SOT();
+    if (!ab) return esc(S.galNie);
+    if (ab.laeuft) return esc(S.galLaeuft(ab.neu));
+    if (ab.jetzt) return esc(S.galWartet);
+    return (ab.fehler_m ? `<span class="schlecht">✗ ${esc(meldungText(ab.fehler_m))}</span> · ` : "") + esc(S.galStand(soZeit(ab.zeit), ab.neu || 0, ab.weg || 0, ab.anzahl || 0))
+      + (ab.unbrauchbar ? ` · <span class="warn">${esc(S.galUnbrauchbar(ab.unbrauchbar))}</span>` : "") + (ab.hinweis_m ? ` · <span class="warn">${esc(meldungText(ab.hinweis_m))}</span>` : ""); };
+  const galVerknHtml = (o) => { const S = SOT(), q = o.quelle;
+    if (!q) return `<div class="zeile" id="galVerknZeile" hidden><button class="knopf" id="galVerkn">🔗 ${esc(S.galVerkn)}</button></div>`;
+    return `<div class="soverkn"><p><b>${esc(S.galVerknMit(o.ort_name || q.ort, q.pfad))}</b></p><p class="leise">${esc(S.galVerknText)}</p>
+      <div class="zeile"><label for="galIv">${esc(S.galIntervall)}</label><input type="number" id="galIv" class="schmal" min="5" max="1440" value="${q.intervall_min}"></div>
+      <div class="zeile"><label><input type="checkbox" id="galUnter" ${q.unterordner ? "checked" : ""}> ${esc(S.galUnter)}</label></div>
+      <div class="zeile"><label><input type="checkbox" id="galLoeschenQ" ${q.loeschen ? "checked" : ""}> ${esc(S.galLoeschen)}</label></div>
+      <p class="leise" id="galAbStand">${abText(o.abgleich)}</p>
+      <div class="zeile"><button class="knopf haupt" id="galVerknOk">${esc(T.speichern)}</button><button class="knopf" id="galJetzt">${esc(S.galJetzt)}</button>
+        <button class="knopf" id="galVerknNeu">${esc(S.galOrdnerAendern)}</button><button class="knopf gefahr" id="galLoesen">${esc(S.galLoesen)}</button></div></div>`; };
+  const verknuepfen = async (o, quelle) => {
+    const d = await senden("/api/galerie/ordner", { aktion: "verknuepfen", id: o.id, quelle }); E = d.einstellungen; g = d.galerie; await zeichnen();
+  };
+  const abBeobachten = () => {                  // während eines Abgleichs nur den Stand neu schreiben, danach einmal alles
+    clearTimeout(abTimer);
+    const o = g.ordner.find((x) => x.id === GAL_ORDNER), ab = o && o.abgleich;
+    if (!ab || !(ab.laeuft || ab.jetzt)) return;
+    abTimer = setTimeout(async () => {
+      if (aktiv !== "galerie") return;
+      try { g = await holen("/api/galerie"); } catch (_) { return abBeobachten(); }
+      const n = g.ordner.find((x) => x.id === GAL_ORDNER), b = n && n.abgleich;
+      if (b && (b.laeuft || b.jetzt)) { const z = $("#galAbStand"); if (z) z.innerHTML = abText(b); abBeobachten(); } else await zeichnen();
+    }, 3000);
+  };
+  const galVerknAn = (o) => {
+    soLaden().then((d) => {
+      if (!d.orte.length) return;
+      $("#galOrt").hidden = false;
+      if ($("#galVerknZeile")) $("#galVerknZeile").hidden = false;
+    }).catch(() => {});
+    $("#galOrt").onclick = async () => {
+      if (laeuft) return;
+      const wahl = await soWaehlen({ filter: /\.(jpe?g|png|webp|gif|pdf)$/i, mehrere: true });
+      if (!wahl || !wahl.length) return;
+      laeuft = true;
+      try {
+        const r = await soHolenViele(wahl, { zweck: "galerie", ordner: o.id }, (t) => { const x = $("#galStand"); if (x) x.textContent = t; });
+        bericht = SOT().uebernommen(r.ok, wahl.length - r.ok) + (r.abbruch ? ` – ${T.galAbbruch} ${r.abbruch}` : "")
+          + (r.fehler.length ? " – " + r.fehler.slice(0, 5).join(" · ") + (r.fehler.length > 5 ? " …" : "") : "");
+        melden(bericht, !!(r.abbruch || r.fehler.length));
+      } finally {
+        laeuft = false;
+        try { g = await holen("/api/galerie"); } catch (_) { /* egal */ }
+        if (aktiv === "galerie") await zeichnen();
+      }
+    };
+    const neu = $("#galVerkn") || $("#galVerknNeu");
+    if (neu) neu.onclick = async (ev) => {
+      const w = await soWaehlen({ ordner: true });
+      if (!w) return;
+      const q = o.quelle || { intervall_min: 15, unterordner: false, loeschen: true };
+      aktion(ev.target, () => verknuepfen(o, { ort: w.ort, pfad: w.pfad, intervall_min: q.intervall_min, unterordner: q.unterordner, loeschen: q.loeschen }));
+    };
+    if (!o.quelle) return;
+    $("#galVerknOk").onclick = (ev) => aktion(ev.target, () => verknuepfen(o, { ort: o.quelle.ort, pfad: o.quelle.pfad,
+      intervall_min: Number($("#galIv").value) || 15, unterordner: $("#galUnter").checked, loeschen: $("#galLoeschenQ").checked }));
+    $("#galJetzt").onclick = (ev) => aktion(ev.target, async () => { g = (await senden("/api/galerie/abgleichen", { ordner: o.id })).galerie; await zeichnen(); }, null);
+    $("#galLoesen").onclick = (ev) => { if (confirm(SOT().galLoesenFrage)) aktion(ev.target, () => verknuepfen(o, null)); };
+    abBeobachten();
+  };
   const zeichnen = async () => {
     urls.forEach((u) => URL.revokeObjectURL(u)); urls = [];
     if (!g.ordner.some((o) => o.id === GAL_ORDNER)) GAL_ORDNER = g.ordner.length ? g.ordner[0].id : null;
@@ -3345,9 +3467,11 @@ async function galerieSeite(inhalt) {
           <button class="knopf" id="galNeu">+ ${esc(T.galOrdnerNeu)}</button></div>
         ${o ? `<div class="zeile"><input type="text" id="galName" value="${esc(o.name)}" maxlength="40" aria-label="${esc(T.galOrdnerName)}">
             <button class="knopf" id="galUmb">${esc(T.galUmbenennen)}</button><button class="knopf gefahr" id="galWeg">${esc(T.galOrdnerWeg)}</button></div>
+          ${galVerknHtml(o)}
           <div class="galablage" id="galAblage"><p>${esc(T.galZiehen)}</p>
-            <div class="zeile"><label class="knopf haupt">${esc(T.galDateien)}<input type="file" id="galDatei" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" hidden></label>
-              <label class="knopf">${esc(T.galOrdnerWahl)}<input type="file" id="galVerz" webkitdirectory multiple hidden></label></div>
+            <div class="zeile"><label class="knopf haupt">${esc(T.galDateien)}<input type="file" id="galDatei" data-so="aus" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" hidden></label>
+              <label class="knopf">${esc(T.galOrdnerWahl)}<input type="file" id="galVerz" webkitdirectory multiple hidden></label>
+              <button class="knopf" id="galOrt" hidden>📁 ${esc(SOT().galAus)}</button></div>
             <p class="leise" id="galStand">${esc(bericht)}</p></div>
           ${eintraege.length ? `<div class="zeile"><button class="knopf" id="galAlle">${esc(auswahl.size === eintraege.length ? T.galKeine2 : T.galAlle)}</button>
               <button class="knopf gefahr" id="galAuswahlWeg" ${auswahl.size ? "" : "disabled"}>${esc(T.galAuswahlWeg(auswahl.size))}</button>
@@ -3375,6 +3499,7 @@ async function galerieSeite(inhalt) {
     $("#galWeg").onclick = (ev) => { if (confirm(T.galOrdnerWegFrage(o.name))) aktion(ev.target, async () => {
       const d = await senden("/api/galerie/ordner", { aktion: "loeschen", id: o.id }); E = d.einstellungen; g = d.galerie; GAL_ORDNER = null; await zeichnen();
     }); };
+    galVerknAn(o);
     // Hochladen: Dateien, ganzer Ordner oder hineinziehen
     $("#galDatei").onchange = (ev) => hochladen(ev.target.files);
     $("#galVerz").onchange = (ev) => hochladen(ev.target.files);

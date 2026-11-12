@@ -1,6 +1,6 @@
 # Eigene Medien: Bilder (JPG/PNG) und Videos (MP4/WebM) für das Videofenster. Hochladen in Stücken (große Videos über
 # die Verwaltung), Art am Inhalt erkennen (nicht an der Endung), Dauer/Codec per ffprobe, Name = Prüfsumme.
-import hashlib, json, os, re, secrets, subprocess, time
+import hashlib, json, os, re, secrets, shutil, subprocess, time
 
 from meldung import Meldung
 
@@ -103,6 +103,20 @@ class Hochladen:
             except OSError:
                 pass
             raise
+
+    def uebernehmen(self, pfad, max_bytes=MAX_DATEI):
+        """Fertige Datei (seit 0.48: aus einem Speicherort geholt) wie ein vollständiges Hochladen anmelden -> Kennung.
+        Die Datei wird verschoben; danach fertig()/fertig_roh() wie gewohnt."""
+        kennung = secrets.token_hex(6)
+        ziel = os.path.join(self.ordner, f".upload-{kennung}")
+        os.makedirs(self.ordner, exist_ok=True)
+        groesse = os.path.getsize(pfad)
+        if groesse > max_bytes:
+            os.remove(pfad)
+            raise Meldung("med_gross") if max_bytes == MAX_DATEI else Meldung("gal_gross", mb=max_bytes // (1024 * 1024))
+        shutil.move(pfad, ziel)
+        self.offen[kennung] = {"pfad": ziel, "naechste": -1, "groesse": groesse, "max": max_bytes, "max_rest": 0, "zeit": time.time()}
+        return kennung
 
     def fertig_roh(self, kennung):
         """Fertige Datei ohne Prüfung (z. B. PDF für app/pdf.py) -> Pfad; der Aufrufer löscht sie danach."""

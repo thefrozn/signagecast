@@ -231,3 +231,19 @@ textarea.mono { flex: 1; width: auto; min-width: 0; font-family: ui-monospace, m
 .umbruch { word-break: break-all; } img.testbild { max-width: 100%; max-height: 300px; } .abstand-r { margin-right: 12px; }
 .karte.anmeldung { max-width: 420px; margin: 40px auto; }
 .kopfzeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 16px 0 10px; } .kopfzeile h2 { margin: 0; }
+/* Speicherorte (seit 0.48): Dateidialog „Aus Speicherort“, Verknüpfung in der Galerie */
+dialog.sowahl { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 32px); border: 1px solid var(--linie); border-radius: 12px;
+  background: var(--karte); color: var(--text); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+dialog.sowahl:not([open]) { display: none; }
+dialog.sowahl::backdrop { background: rgb(0 0 0 / 45%); }
+.sopfad { font-size: .92em; color: var(--leise); word-break: break-all; }
+button.link { font: inherit; border: 0; background: none; color: var(--akzent); padding: 2px 0; cursor: pointer; }
+.soliste { overflow-y: auto; max-height: 50vh; min-height: 120px; border: 1px solid var(--linie); border-radius: 8px; }
+.soeintrag { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--linie);
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.soeintrag:last-child { border-bottom: 0; }
+.soeintrag:hover, .soeintrag:focus-within { background: color-mix(in srgb, var(--akzent) 8%, transparent); }
+.soeintrag .leise { white-space: nowrap; }
+.soliste > p { padding: 10px; margin: 0; }
+.soverkn { border: 1px solid var(--linie); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
+.soverkn p { margin: 4px 0; }

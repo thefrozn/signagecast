@@ -7,6 +7,7 @@ import layouts as L
 import quellen as Q
 from meldung import Meldung
 import sicherung as S
+import speicherorte as SO
 
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
@@ -179,7 +180,9 @@ STANDARD = {
                        "speicher": True},                     # seit 0.45
     },
     # automatische Sicherung (seit 0.12): plan aus/taeglich/woechentlich; mit Zugangsdaten nur mit Passwort (AES-256)
-    "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": ""},
+    # ziel (seit 0.48): zusätzlich eine Kopie in einen Speicherort mit Schreibrecht ({"ort", "pfad"}, ort leer = aus)
+    "sicherung": {"plan": "aus", "wochentag": 0, "uhrzeit": "03:30", "behalten": 7, "mit_geheimnissen": False, "passwort": "",
+                  "ziel": {"ort": "", "pfad": ""}},
     # Updates (seit 0.13): melden = nur anzeigen; system auch „sicherheit“ (nur Sicherheitsupdates) oder „auto“ – automatisch
     # nur im Wartungsfenster und nur, wenn niemand zuschaut
     "updates": {"system": "melden", "signagecast": "melden", "fenster_von": "03:00", "fenster_bis": "05:00"},
@@ -551,6 +554,9 @@ def pruefen(e):
         ss_["passwort"] = str(si["passwort"] or "")[:200]
         if ss_["passwort"]:
             S.passwort_pruefen(ss_["passwort"])          # auch das Passwort der automatischen Sicherung muss stark sein
+    if isinstance(si.get("ziel"), dict):
+        z = si["ziel"]
+        ss_["ziel"] = {"ort": _text(z.get("ort") or "", 12, r"([a-z0-9]{2,12})?"), "pfad": SO.rel_pfad(z.get("pfad"))}
     if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
         raise Meldung("sich_geheim_ohne_pw")
     if "assistent_fertig" in e: s["assistent_fertig"] = bool(e["assistent_fertig"])
@@ -624,7 +630,13 @@ def pruefen(e):
             if oid in ids_g:
                 continue
             ids_g.add(oid)
-            aus_g.append({"id": oid, "name": _text(str(o.get("name", "") or oid)[:40], 40) or oid})
+            eintrag = {"id": oid, "name": _text(str(o.get("name", "") or oid)[:40], 40) or oid}
+            q = o.get("quelle")                     # seit 0.48: mit einem Ordner eines Speicherorts verknüpft
+            if isinstance(q, dict) and q.get("ort"):
+                eintrag["quelle"] = {"ort": _text(q["ort"], 12, r"[a-z0-9]{2,12}"), "pfad": SO.rel_pfad(q.get("pfad")),
+                                     "loeschen": bool(q.get("loeschen", True)), "unterordner": bool(q.get("unterordner", False)),
+                                     "intervall_min": _zahl(q.get("intervall_min", 15), 5, 1440, int)}
+            aus_g.append(eintrag)
         s["galerie"]["ordner"] = aus_g
     if "quellen" in e:
         try:

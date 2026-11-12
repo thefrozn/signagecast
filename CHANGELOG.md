@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.48.0 (2026-11-12)
+- **Storage locations:** new page *Settings → Storage locations* – enter a folder on a NAS or in a cloud once and use
+  it everywhere: **WebDAV** (Nextcloud, ownCloud, many NAS), **SMB** (Windows shares, NAS; SMB3 only) or a **folder on
+  the server** (below `/mnt`, `/media`, `/srv` or `/speicherorte`, e.g. a NAS mounted on the Proxmox host and passed
+  read-only into the container, or a Docker volume). Read-only by default; *Test connection* per location; passwords
+  stay in `speicherorte.json` (mode 600), never in settings, backups, the log or answers to the admin.
+- **“From storage location” in every file dialog:** a shared picker (browse folders, only matching files shown) next
+  to every file field. Gallery pictures, media and backups are fetched by the server directly (nothing travels twice
+  through the network); small files (CSV, playlists, layouts, pictures, PDFs up to 25 MB) go through the usual import.
+- **Linked gallery folders:** a gallery folder can be linked to a folder of a storage location (optionally with
+  subfolders). Every 5–1440 minutes new and changed pictures are taken, deleted ones removed (switchable), order by
+  file name; pictures uploaded by hand stay. If the location is unreachable everything stays as it is and *To do*
+  says so.
+- **Data sources from a storage location:** iCal/CSV/JSON/RSS/text files are read again on every fetch – e.g. a waste
+  calendar that someone keeps up to date on the NAS.
+- **Backup copy to a storage location (experimental):** the automatic backup can also go to a location with write
+  permission; the last *n* automatic backups are kept there too. A backup can be restored straight from a location.
+- Memory: the service needs about 2 MB more; libsmbclient (about 13 MB) is only loaded once an SMB location is used.
+  New package `python3-smbc` (installed with the update; Docker image includes it).
+
 ## v0.47.0 (2026-11-12)
 - **Outdated player image is pointed out:** if the downloaded Pi or PC image is older than SignageCast itself, *To do*
   shows a warning and *TVs → Set up* marks it as outdated with a highlighted *Download again* button. Images built

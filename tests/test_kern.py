@@ -3159,3 +3159,214 @@ class BasisVeraltet047(unittest.TestCase):
                 self.assertIsNone(TD.art(k), k)
         finally:
             PL.basis_meta = alt
+
+
+class Speicherorte048(unittest.TestCase):
+    """Seit 0.48: Speicherorte (Server-Ordner, WebDAV, SMB) für Dateidialoge, Abgleich und Sicherungsziel."""
+
+    def setUp(self):
+        import speicherorte as SO
+        self.SO = SO
+        self.wurzel = os.path.realpath(tempfile.mkdtemp())
+        self.alt_wurzeln, SO.LOKAL_WURZELN = SO.LOKAL_WURZELN, (self.wurzel,)
+        os.makedirs(os.path.join(self.wurzel, "nas", "bilder", "unter"))
+        with open(os.path.join(self.wurzel, "nas", "bilder", "a.jpg"), "wb") as f:
+            f.write(b"\xff\xd8\xff" + b"x" * 100)
+        self.orte = SO.Speicherorte(os.path.join(tempfile.mkdtemp(), "speicherorte.json"))
+
+    def tearDown(self):
+        self.SO.LOKAL_WURZELN = self.alt_wurzeln
+
+    def test_pfade(self):
+        SO = self.SO
+        self.assertEqual(SO.rel_pfad("/a//b/./c/"), "a/b/c")
+        self.assertEqual(SO.rel_pfad("a\\b"), "a/b")
+        self.assertEqual(SO.rel_pfad(None), "")
+        for p in ("../x", "a/../../b", "a/\x00b", "a/\nb"):
+            with self.assertRaises(M.Meldung, msg=p) as f:
+                SO.rel_pfad(p)
+            self.assertEqual(f.exception.code, "so_pfad")
+
+    def test_speichern_maskiert_und_rechte(self):
+        o = self.orte
+        o.speichern([{"name": "Cloud", "art": "webdav", "adresse": "https://cloud.example.org/remote.php/dav/files/x/",
+                      "benutzer": "x", "passwort": "geheim123"},
+                     {"art": "lokal", "adresse": os.path.join(self.wurzel, "nas"), "benutzer": "egal", "passwort": "egal"}])
+        self.assertEqual(oct(os.stat(o.pfad).st_mode & 0o777), "0o600")
+        a = o.aussen()
+        self.assertEqual(a[0]["passwort"], "••••")
+        self.assertNotIn("geheim123", json.dumps(a))
+        self.assertEqual((a[1]["benutzer"], a[1]["passwort"], a[1]["name"]), ("", "", "nas"))   # lokal ohne Zugangsdaten
+        self.assertFalse(a[0]["schreiben"])                                                    # Standard: nur lesen
+        o.speichern([dict(a[0], name="Neu"), a[1]])                                            # •••• = Passwort bleibt
+        self.assertEqual(o.orte[0]["passwort"], "geheim123")
+        self.assertEqual(self.SO.Speicherorte(o.pfad).orte[0]["name"], "Neu")                 # wieder einlesbar
+        self.assertTrue(o.speichern([dict(a[0], adresse="http://nas.local/dav/")]) is None and o.aussen()[0]["unverschluesselt"])
+
+    def test_ungueltige_adressen(self):
+        for d, code in (({"art": "webdav", "adresse": "ftp://x/"}, "so_adresse"),
+                        ({"art": "webdav", "adresse": "https://nutzer:pw@x/"}, "so_adresse"),
+                        ({"art": "smb", "adresse": "smb://nas"}, "so_adresse_smb"),
+                        ({"art": "lokal", "adresse": "/etc"}, "so_lokal"),
+                        ({"art": "lokal", "adresse": os.path.join(self.wurzel, "nas", "..", "..")}, "so_lokal"),
+                        ({"art": "nfs", "adresse": "x"}, "so_art"),
+                        ({"art": "webdav", "adresse": "https://x/", "passwort": "a\nb"}, "so_zugang")):
+            with self.assertRaises(M.Meldung, msg=str(d)) as f:
+                self.orte.speichern([d])
+            self.assertEqual(f.exception.code, code, d)
+        self.orte.speichern([{"art": "smb", "adresse": "smb://nas/freigabe/ordner"}])
+        self.assertEqual(self.orte.orte[0]["name"], "nas")
+
+    def test_lokal_lesen_schreiben_und_kein_ausbruch(self):
+        o, SO = self.orte, self.SO
+        o.speichern([{"id": "nas", "art": "lokal", "adresse": os.path.join(self.wurzel, "nas")}])
+        l = o.ordner("nas", "bilder")["eintraege"]
+        self.assertEqual([(x["name"], x["ordner"]) for x in l], [("unter", True), ("a.jpg", False)])   # Ordner zuerst
+        ziel = os.path.join(tempfile.mkdtemp(), "kopie")
+        self.assertEqual(o.kopieren("nas", "bilder/a.jpg", ziel, 1000), 103)
+        with self.assertRaises(M.Meldung) as f:
+            o.kopieren("nas", "bilder/a.jpg", ziel, 50)
+        self.assertEqual(f.exception.code, "so_gross")
+        self.assertFalse(os.path.exists(ziel))                                                 # Rest gelöscht
+        os.symlink("/etc", os.path.join(self.wurzel, "nas", "raus"))
+        with self.assertRaises(M.Meldung) as f:
+            o.ordner("nas", "raus")
+        self.assertEqual(f.exception.code, "so_pfad")
+        with self.assertRaises(M.Meldung) as f:
+            o.ablegen("nas", "x.txt", ziel)
+        self.assertEqual(f.exception.code, "so_nur_lesen")                                     # ohne Schreibrecht nie
+        with self.assertRaises(M.Meldung) as f:
+            o.ordner("nas", "fehlt")
+        self.assertEqual(f.exception.code, "so_fehlt")
+        self.assertFalse(o.zustand["nas"]["ok"])
+        o.speichern([{"id": "nas", "art": "lokal", "adresse": os.path.join(self.wurzel, "nas"), "schreiben": True}])
+        quelle = os.path.join(self.wurzel, "nas", "bilder", "a.jpg")
+        o.ablegen("nas", "kopie.jpg", quelle)
+        self.assertTrue(os.path.exists(os.path.join(self.wurzel, "nas", "kopie.jpg")))
+        p = o.pruefen("nas")
+        self.assertTrue(p["schreiben"])
+        self.assertEqual(sorted(os.listdir(os.path.join(self.wurzel, "nas"))), ["bilder", "kopie.jpg", "raus"])   # Testdatei wieder weg
+        o.entfernen("nas", "kopie.jpg")
+        self.assertTrue(o.zustand["nas"]["ok"])
+        self.assertEqual(SO.Lokal({"adresse": os.path.join(self.wurzel, "nas")}).wurzel, os.path.join(self.wurzel, "nas"))
+
+    def test_webdav(self):
+        import base64, http.server, threading
+        dateien = {"/dav/bilder/a b.jpg": b"\xff\xd8\xffBILD"}
+        aufrufe = []
+
+        class Dav(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def _ok(self):
+                aufrufe.append((self.command, self.path, self.headers.get("Authorization")))
+                if self.path.startswith("/weg"):
+                    self.send_response(301); self.send_header("Location", "http://example.org/"); self.end_headers(); return False
+                if self.headers.get("Authorization") != "Basic " + base64.b64encode(b"nutzer:pw").decode():
+                    self.send_response(401); self.end_headers(); return False
+                return True
+
+            def do_PROPFIND(self):
+                if not self._ok():
+                    return
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                x = ('<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
+                     '<d:response><d:href>/dav/bilder/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+                     '<d:response><d:href>/dav/bilder/a%20b.jpg</d:href><d:propstat><d:prop><d:resourcetype/><d:getcontentlength>7</d:getcontentlength>'
+                     '<d:getlastmodified>Wed, 11 Nov 2026 10:00:00 GMT</d:getlastmodified></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+                     '<d:response><d:href>/dav/bilder/Urlaub/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+                     '</d:multistatus>').encode()
+                self.send_response(207); self.send_header("Content-Length", str(len(x))); self.end_headers(); self.wfile.write(x)
+
+            def do_GET(self):
+                if not self._ok():
+                    return
+                import urllib.parse
+                b = dateien.get(urllib.parse.unquote(self.path))
+                if b is None:
+                    self.send_response(404); self.end_headers(); return
+                self.send_response(200); self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
+
+            def do_PUT(self):
+                if self._ok():
+                    import urllib.parse
+                    dateien[urllib.parse.unquote(self.path)] = self.rfile.read(int(self.headers["Content-Length"]))
+                    self.send_response(201); self.end_headers()
+
+        s = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Dav)
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+        try:
+            basis = f"http://127.0.0.1:{s.server_address[1]}"
+            o = self.orte
+            o.speichern([{"id": "dav", "art": "webdav", "adresse": basis + "/dav", "benutzer": "nutzer", "passwort": "pw", "schreiben": True},
+                         {"id": "falsch", "art": "webdav", "adresse": basis + "/dav", "benutzer": "nutzer", "passwort": "nein"},
+                         {"id": "weg", "art": "webdav", "adresse": basis + "/weg"}])
+            l = o.ordner("dav", "bilder")["eintraege"]
+            self.assertEqual([(x["name"], x["ordner"], x["groesse"]) for x in l], [("Urlaub", True, 0), ("a b.jpg", False, 7)])
+            self.assertEqual(l[1]["zeit"], 1794391200)
+            ziel = os.path.join(tempfile.mkdtemp(), "x")
+            self.assertEqual(o.kopieren("dav", "bilder/a b.jpg", ziel, 100), 7)
+            self.assertEqual(o.info("dav", "bilder/a b.jpg")["groesse"], 7)
+            o.ablegen("dav", "sich/auto.zip", ziel)
+            self.assertEqual(dateien["/dav/sich/auto.zip"], b"\xff\xd8\xffBILD")
+            for oid, code in (("falsch", "so_anmeldung"), ("weg", "so_umleitung")):
+                with self.assertRaises(M.Meldung) as f:
+                    o.ordner(oid, "")
+                self.assertEqual(f.exception.code, code)
+            self.assertNotIn("example.org", json.dumps(aufrufe))                               # Umleitung nie gefolgt
+        finally:
+            s.shutdown()
+
+    def test_einstellungen_quellen_todo(self):
+        import todo as TD
+        self.assertEqual(TD.art("speicherort:ab12"), "warn")
+        s = E.pruefen({"galerie": {"ordner": [{"id": "fam", "name": "Familie",
+                                                                    "quelle": {"ort": "nas", "pfad": "/bilder/2026/", "intervall_min": 30}}]},
+                                           "sicherung": {"ziel": {"ort": "nas", "pfad": "sicherungen"}}})
+        self.assertEqual(s["galerie"]["ordner"][0]["quelle"], {"ort": "nas", "pfad": "bilder/2026", "loeschen": True, "unterordner": False,
+                                                              "intervall_min": 30})
+        self.assertEqual(s["sicherung"]["ziel"], {"ort": "nas", "pfad": "sicherungen"})
+        with self.assertRaises(M.Meldung):
+            E.pruefen({"galerie": {"ordner": [{"id": "fam", "quelle": {"ort": "nas", "pfad": "../x"}}]}})
+        q = Q.pruefen([{"id": "abfuhr", "art": "csv", "herkunft": "speicherort", "speicherort": {"ort": "nas", "pfad": "/listen/abfuhr.csv"},
+                        "csv": {"felder": [{"name": "Datum", "spalte": 0}]}}])[0]
+        self.assertEqual((q["herkunft"], q["speicherort"], q["url"]), ("speicherort", {"ort": "nas", "pfad": "listen/abfuhr.csv"}, ""))
+        with self.assertRaises(Q.Fehler):
+            Q.pruefen([{"id": "x", "art": "bild", "herkunft": "speicherort", "speicherort": {"ort": "nas", "pfad": "a.png"}}])
+
+    @unittest.skipUnless(__import__("shutil").which("ffmpeg"), "ffmpeg fehlt")
+    def test_galerie_abgleich(self):
+        import subprocess
+        import dienst as D
+        nas = os.path.join(self.wurzel, "nas", "fotos")
+        os.makedirs(nas)
+        for n, farbe in (("1.jpg", "red"), ("2.jpg", "blue")):
+            subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", f"color=c={farbe}:s=64x48", "-frames:v", "1", "-y", os.path.join(nas, n)], check=True)
+        alt_orte, D.ORTE = D.ORTE, self.orte
+        try:
+            self.orte.speichern([{"id": "nas", "art": "lokal", "adresse": os.path.join(self.wurzel, "nas")}])
+            o = {"id": "abgl", "name": "Abgleich", "quelle": {"ort": "nas", "pfad": "fotos", "loeschen": True, "unterordner": False, "intervall_min": 15}}
+            D.galerie_abgleichen(o)
+            st = D.abgleich_status("abgl")
+            self.assertEqual((st["neu"], st["weg"], st["anzahl"], st["fehler_m"]), (2, 0, 2, None))
+            self.assertEqual([e["name"] for e in D.GALERIE.liste("abgl")], ["1.jpg", "2.jpg"])
+            D.galerie_abgleichen(o)                                                            # nichts geändert
+            self.assertEqual(D.abgleich_status("abgl")["neu"], 0)
+            os.remove(os.path.join(nas, "1.jpg"))
+            with open(os.path.join(nas, "kaputt.jpg"), "wb") as f:
+                f.write(b"\xff\xd8\xffkein Bild")
+            D.galerie_abgleichen(o)
+            st = D.abgleich_status("abgl")
+            self.assertEqual((st["weg"], st["unbrauchbar"]), (1, 1))
+            self.assertEqual([e["name"] for e in D.GALERIE.liste("abgl")], ["2.jpg"])
+            D.galerie_abgleichen(o)                                                            # Unbrauchbares nicht jedes Mal neu
+            self.assertEqual(D.abgleich_status("abgl")["neu"], 0)
+            os.rename(os.path.join(self.wurzel, "nas"), os.path.join(self.wurzel, "nas-weg"))  # Speicherort weg: nichts löschen
+            D.galerie_abgleichen(o)
+            st = D.abgleich_status("abgl")
+            self.assertEqual(st["fehler_m"]["code"], "so_fehlt")
+            self.assertEqual(len(D.GALERIE.liste("abgl")), 1)
+        finally:
+            D.ORTE = alt_orte
+            D.GALERIE.loeschen("abgl", [e["id"] for e in D.GALERIE.liste("abgl")])

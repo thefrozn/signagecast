@@ -13,6 +13,7 @@ services:
       # - "8890:8890"                # optional: Webhook, Durchsage-Pult und Raspberry-Pi-Player
     volumes:
       - signagecast:/data
+      # - /mnt/nas/bilder:/speicherorte/nas:ro   # optional (seit 0.48): Ordner als „Speicherort“ (Einstellungen → Speicherorte)
     environment:
       TZ: Europe/Berlin
       SC_HOST_IP: ""                 # IP des Docker-Hosts (für die Home-Assistant-Anleitung), z. B. 192.168.1.20

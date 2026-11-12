@@ -71,6 +71,7 @@ import ausgabe as AG                          # noqa: E402
 import kizugang as KZ                         # noqa: E402
 import fernnetz as FN                         # noqa: E402
 import mcp as MCP                             # noqa: E402
+import speicherorte as SO                     # noqa: E402
 import base64, hashlib, datetime, queue       # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -152,6 +153,9 @@ PROTOKOLL = PR.Protokoll(os.path.join(DATEN, "protokoll.json"))          # wer h
 VERSIONEN = PR.Versionen(os.path.join(DATEN, "layout-versionen.json"))   # alte Fassungen der Layouts (seit 0.38)
 KI = KZ.Zugaenge(os.path.join(DATEN, "ki-zugaenge.json"))                 # verbundene Computer für MCP im Heimnetz (seit 0.40)
 FERN = FN.Fernnetz(os.path.join(DATEN, "fernnetz.json"))                  # Player an anderem Standort per Tailscale/Headscale (seit 0.41)
+ORTE = SO.Speicherorte(os.path.join(DATEN, "speicherorte.json"))          # NAS/Cloud/Server-Ordner für Dateidialoge (seit 0.48)
+Q.SPEICHERORT_LESEN = lambda ort, pfad, n: ORTE.lesen(ort, pfad, n, DATEN)
+SO_LESEN_MAX = 25 * 2 ** 20                       # „Aus Speicherort“ über den Browser (CSV, Playlist, Layout …): höchstens 25 MB
 
 
 def fern(aufruf, *a):
@@ -1541,6 +1545,7 @@ PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion 
     "/api/ki/neu": "ki_neu", "/api/ki/entfernen": "ki_entfernen",
     "/api/galerie/ordner": "galerie_ordner", "/api/galerie/loeschen": "galerie_loeschen", "/api/galerie/ordnen": "galerie_ordnen",
     "/api/galerie/umbenennen": "galerie_umbenennen",
+    "/api/speicherorte": "speicherorte", "/api/speicherorte/holen": "medien_neu", "/api/galerie/abgleichen": "galerie_abgleichen",
 }
 PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennung mit {0} = erste Gruppe
     (re.compile(r"/api/streams/([\w-]{11}|UC[\w-]{22})(?:/([a-z-]+))?"), "stream_{1}"),
@@ -2161,7 +2166,7 @@ def todo_warnungen(e):
         w.append({"key": "allgemein", "grund": a["grund"], "seit": a["seit"]})
     w += [{"key": "doppelt:" + t["id"], "name": t["name"]} for t in doppelt_hoch(e)]
     w += [{"key": "player:" + g["id"], "name": g["name"]} for g in PL.daten["geraete"] if PL.gesehen(g["id"]) and not PL.online(g["id"])]
-    if (zustand.get("sicherung_auto") or {}).get("fehler"):
+    if (zustand.get("sicherung_auto") or {}).get("fehler") or (zustand.get("sicherung_auto") or {}).get("ziel_ok") is False:
         w.append({"key": "sicherung_fehler"})
     if any(any((x.get("ergebnis") or {}).values()) for x in melder.letzte or []):
         w.append({"key": "bn_fehler"})
@@ -2175,6 +2180,10 @@ def todo_warnungen(e):
         alt = PL.basis_veraltet(VERSION, art)
         if alt:
             w.append({"key": f"player_basis:{art}:{VERSION}", "art": art, "alt": alt, "neu": VERSION})
+    for o in ORTE.orte:                                    # seit 0.48: Speicherort beim letzten Zugriff nicht erreichbar
+        z = ORTE.zustand.get(o["id"])
+        if z and not z["ok"]:
+            w.append({"key": "speicherort:" + o["id"], "name": o["name"], "fehler_m": z["fehler_m"]})
     sp = SP.lage(DATEN)                                    # seit 0.45: gelb = Hinweis, rot = Uploads gesperrt
     if sp["stufe"] != "gruen":
         w.append({"key": "speicher", "stufe": sp["stufe"], "frei": SP.gb(sp["frei"]), "reserve": SP.gb(sp["reserve"])})
@@ -2608,7 +2617,7 @@ def devport(tv_id):
 
 # ---------- CSV-Import (seit 0.26) ----------
 def csv_roh(d):
-    """Rohdaten für den CSV-Import: {"daten": base64} | {"datei": hash} | {"quelle": {...}} (Adresse wird geholt)."""
+    """Rohdaten für den CSV-Import: {"daten": base64} | {"datei": hash} | {"speicherort": {ort, pfad}} | {"quelle": {...}}."""
     if d.get("daten"):
         roh = base64.b64decode(str(d["daten"]).split(",")[-1], validate=False)
         if len(roh) > Q.MAX_DATEI:
@@ -2616,6 +2625,8 @@ def csv_roh(d):
         return roh
     if d.get("datei"):
         return Q.datei_lesen(str(d["datei"]))
+    if isinstance(d.get("speicherort"), dict):       # seit 0.48: Datei in einem Speicherort
+        return ORTE.lesen(str(d["speicherort"].get("ort", "")), SO.rel_pfad(d["speicherort"].get("pfad")), Q.MAX_DATEI, DATEN)
     if isinstance(d.get("quelle"), dict):
         roh = [dict(d["quelle"], art="text", herkunft="url")]
         Q.demaskieren(roh, einst()["quellen"])
@@ -2654,11 +2665,158 @@ def galerie_stand():
     ordner = []
     for o in einst()["galerie"]["ordner"]:
         l = GALERIE.liste(o["id"])
-        ordner.append(dict(o, anzahl=len(l), folien=sum(e["seiten"] for e in l), bytes=sum(e["bytes"] for e in l)))
+        ordner.append(dict(o, anzahl=len(l), folien=sum(e["seiten"] for e in l), bytes=sum(e["bytes"] for e in l),
+                           **({"abgleich": abgleich_status(o["id"]), "ort_name": ORTE.name(o["quelle"]["ort"])} if o.get("quelle") else {})))
     belegt = GALERIE.belegt()
     return {"ordner": ordner, "belegt": belegt, "grenze": galerie_grenze(), "grenze_gb": einst()["galerie"]["grenze_gb"],
             "speicher": SP.lage(DATEN), "max_bild_mb": GAL.MAX_BILD // 2 ** 20, "max_pdf_mb": GAL.MAX_PDF // 2 ** 20,
             "max_eintraege": GAL.MAX_EINTRAEGE}
+
+
+# ---------- Abgleich mit Speicherorten (seit 0.48) ----------
+# Ein Galerie-Ordner kann mit einem Ordner eines Speicherorts verknüpft sein (einst galerie.ordner[].quelle). Alle
+# intervall_min Minuten: Liste holen, neue/geänderte Dateien (Größe oder Änderungszeit anders) holen und wie hochgeladene
+# übernehmen, Verschwundene (loeschen=True) aus dem Ordner nehmen, Reihenfolge nach Dateinamen. Von Hand hochgeladene
+# Bilder bleiben unberührt (hinten). Ist der Speicherort nicht erreichbar, bleibt alles, wie es ist.
+# Stand je Ordner in abgleich.json: {rel: {"g": Größe, "z": Zeit, "id": Prüfsumme oder None, "f": Fehlerkennung}}.
+ABGLEICH_DATEI = os.path.join(DATEN, "abgleich.json")
+GAL_ENDUNGEN = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf")
+abgleich = {"galerie": {}}
+abgleich_jetzt = threading.Event()
+
+
+def abgleich_laden():
+    try:
+        with open(ABGLEICH_DATEI) as f:
+            d = json.load(f)
+        if isinstance(d.get("galerie"), dict):
+            abgleich["galerie"] = d["galerie"]
+    except (OSError, ValueError, AttributeError):
+        pass
+    for st in abgleich["galerie"].values():
+        st.pop("laeuft", None)
+
+
+def abgleich_speichern():
+    tmp = ABGLEICH_DATEI + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(abgleich, f)
+    os.replace(tmp, ABGLEICH_DATEI)
+
+
+def speicherort_dateien(ort, rel, unterordner, endungen, tiefe=0):
+    """[(relativer Pfad, Eintrag)] passender Dateien, Unterordner höchstens 3 Ebenen tief."""
+    aus = []
+    d = ORTE.ordner(ort, rel)
+    if d["mehr"]:                                    # unvollständige Liste: lieber nichts löschen
+        raise M.Meldung("so_zu_viele")
+    for x in d["eintraege"]:
+        r = (rel + "/" if rel else "") + x["name"]
+        if x["ordner"]:
+            if unterordner and tiefe < 3:
+                aus += speicherort_dateien(ort, r, True, endungen, tiefe + 1)
+        elif x["name"].lower().endswith(endungen):
+            aus.append((r, x))
+    return aus
+
+
+def galerie_abgleichen(o):
+    q, oid = o["quelle"], o["id"]
+    st = abgleich["galerie"].setdefault(oid, {})
+    sig = f'{q["ort"]}:{q["pfad"]}:{q["unterordner"]}'
+    dateien = st.setdefault("dateien", {})
+    if st.get("quelle") != sig:                      # neu verknüpft: Übernommenes der alten Verknüpfung wieder heraus
+        if st.get("quelle") and q["loeschen"]:
+            GALERIE.loeschen(oid, {v["id"] for v in dateien.values() if v.get("id")})
+        dateien.clear()
+        st["quelle"] = sig
+    st.update(laeuft=True, jetzt=False)
+    neu = weg = 0
+    hinweis = None
+    try:
+        alle = speicherort_dateien(q["ort"], q["pfad"], q["unterordner"], GAL_ENDUNGEN)
+        alle.sort(key=lambda x: x[0].lower())
+        vorhanden = {rel for rel, _ in alle}
+        if len(alle) > GAL.MAX_EINTRAEGE:
+            hinweis = M.als_dict(M.Meldung("so_abgleich_viele", n=GAL.MAX_EINTRAEGE))
+            alle = alle[:GAL.MAX_EINTRAEGE]
+        ids_jetzt = {e["id"] for e in GALERIE.liste(oid)}
+        for rel, x in alle:
+            alt = dateien.get(rel)
+            if alt and alt["g"] == x["groesse"] and alt["z"] == x["zeit"] and (alt.get("id") in ids_jetzt or alt.get("f")):
+                continue                             # unverändert (oder schon einmal als unbrauchbar erkannt)
+            tmp = os.path.join(DATEN, f".abgleich-{secrets.token_hex(4)}")
+            try:
+                SP.pruefen(DATEN, x["groesse"] * 3)
+                if GALERIE.belegt() + x["groesse"] > galerie_grenze():
+                    raise M.Meldung("gal_voll", gb=SP.gb(galerie_grenze()))
+                ORTE.kopieren(q["ort"], rel, tmp, GAL.MAX_PDF)
+                e = GALERIE.hinzufuegen(oid, tmp, rel.rsplit("/", 1)[-1], galerie_grenze())
+            except M.Meldung as ex:
+                if ex.code in ("sp_voll", "gal_voll", "gal_viele") or ex.code.startswith("so_") and ex.code not in ("so_gross", "so_fehlt"):
+                    raise                            # betrifft alle übrigen auch – später wieder versuchen
+                dateien[rel] = {"g": x["groesse"], "z": x["zeit"], "id": None, "f": ex.code}
+                continue
+            finally:
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+            if alt and alt.get("id") and alt["id"] != e["id"] and not any(v.get("id") == alt["id"] for k, v in dateien.items() if k != rel):
+                GALERIE.loeschen(oid, [alt["id"]])   # Datei wurde am Speicherort geändert: alte Fassung heraus
+            dateien[rel] = {"g": x["groesse"], "z": x["zeit"], "id": e["id"]}
+            neu += 1
+            st["neu"] = neu                          # Fortschritt für die Verwaltung
+            time.sleep(0.05)                         # anderen Anfragen Luft lassen
+        for rel in [r for r in dateien if r not in vorhanden]:
+            alt = dateien.pop(rel)
+            if q["loeschen"] and alt.get("id") and not any(v.get("id") == alt["id"] for v in dateien.values()):
+                weg += GALERIE.loeschen(oid, [alt["id"]])
+        if neu or weg:
+            GALERIE.ordnen(oid, [dateien[rel]["id"] for rel, _ in alle if (dateien.get(rel) or {}).get("id")])
+            SP.neu_zaehlen()
+        st.update(zeit=int(time.time()), fehler_m=None, hinweis_m=hinweis, neu=neu, weg=weg,
+                  anzahl=sum(1 for v in dateien.values() if v.get("id")), unbrauchbar=sum(1 for v in dateien.values() if v.get("f")))
+    except Exception as ex:
+        if neu or weg:
+            SP.neu_zaehlen()
+        st.update(zeit=int(time.time()), fehler_m=M.als_dict(ex), neu=neu, weg=weg)
+    finally:
+        st["laeuft"] = False
+        abgleich_speichern()
+
+
+def abgleich_schleife():
+    abgleich_laden()
+    time.sleep(30)
+    while True:
+        try:
+            ordner = einst()["galerie"]["ordner"]
+            for oid in [k for k in abgleich["galerie"] if not any(o["id"] == k and o.get("quelle") for o in ordner)]:
+                abgleich["galerie"].pop(oid, None)   # Verknüpfung gelöst oder Ordner gelöscht: Übernommenes bleibt
+            for o in ordner:
+                q, st = o.get("quelle"), abgleich["galerie"].get(o["id"]) or {}
+                if q and (st.get("jetzt") or time.time() - st.get("zeit", 0) >= q["intervall_min"] * 60):
+                    galerie_abgleichen(o)
+        except Exception as ex:
+            print("Abgleich:", repr(ex), flush=True)
+        abgleich_jetzt.wait(30)
+        abgleich_jetzt.clear()
+
+
+def abgleich_status(oid):
+    st = abgleich["galerie"].get(oid)
+    return {k: st.get(k) for k in ("zeit", "fehler_m", "hinweis_m", "neu", "weg", "anzahl", "unbrauchbar", "laeuft", "jetzt")} if st else None
+
+
+def sicherung_ins_ziel(name, si):
+    """Automatische Sicherung zusätzlich in einen Speicherort; dort bleiben die letzten „behalten“ automatischen."""
+    z = si["ziel"]
+    ORTE.ablegen(z["ort"], (z["pfad"] + "/" if z["pfad"] else "") + name, os.path.join(SICHERUNGEN, name))
+    alt = sorted(x["name"] for x in ORTE.ordner(z["ort"], z["pfad"])["eintraege"]
+                 if not x["ordner"] and x["name"].startswith("auto-") and S.NAME.fullmatch(x["name"]))
+    for n in alt[:-si["behalten"]]:
+        ORTE.entfernen(z["ort"], (z["pfad"] + "/" if z["pfad"] else "") + n)
 
 
 def speicher_bericht():
@@ -2790,6 +2948,12 @@ def sicherung_schleife():
                 SP.pruefen(DATEN, len(roh))      # seit 0.45: nicht in die Reserve schreiben (Fehler wird gemeldet)
                 zustand["sicherung_auto"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"),
                                              "name": S.ablegen(SICHERUNGEN, roh, True, geheim, si["behalten"]), "fehler_m": None}
+                if si["ziel"]["ort"]:                # seit 0.48: Kopie in einen Speicherort
+                    try:
+                        sicherung_ins_ziel(zustand["sicherung_auto"]["name"], si)
+                        zustand["sicherung_auto"]["ziel_ok"] = True
+                    except Exception as ex:
+                        zustand["sicherung_auto"].update(ziel_ok=False, ziel_fehler_m=M.als_dict(ex))
             except Exception as ex:
                 zustand["sicherung_auto"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": str(ex)[:200], "fehler_m": M.als_dict(ex)}
         time.sleep(20)
@@ -3133,6 +3297,15 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if not x or x[0] < time.time():
                 return self.antwort(404, {"ok": False})
             return self.herunterladen(x[3], x[1], x[2] + "; charset=utf-8")
+        if pfad == "/api/speicherorte":                 # seit 0.48 – Passwörter nur als ••••
+            return self.antwort(200, {"ok": True, "orte": ORTE.aussen(), "smb": SO.smb_verfuegbar(), "lokal_wurzeln": SO.LOKAL_WURZELN,
+                                      "container": CONTAINER})
+        if pfad == "/api/speicherorte/ordner":          # Inhalt eines Ordners für den Dateidialog
+            try:
+                return self.antwort(200, dict(ORTE.ordner((q.get("ort") or [""])[0], (q.get("pfad") or [""])[0]), ok=True))
+            except M.Meldung as ex:
+                m = M.als_dict(ex)
+                return self.antwort(200, {"ok": False, "fehler": str(ex), "code": m["code"], "p": m["p"]})
         if pfad == "/api/galerie":                     # seit 0.45: Ordner, Belegung, Grenze
             return self.antwort(200, dict(galerie_stand(), ok=True))
         if pfad == "/api/galerie/ordner":
@@ -3335,6 +3508,40 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, dict({"ok": False, "fehler": str(ex).strip("'") if isinstance(ex, KeyError) else str(ex), "code": m["code"], "p": m["p"]},
                                           **({"innen": m["innen"]} if m.get("innen") else {})))
 
+    def upload_fertig(self, d):
+        """Vollständig angekommene Datei (hochgeladen oder seit 0.48 aus einem Speicherort geholt) übernehmen."""
+        oid = str(d.get("ordner", ""))
+        if d.get("zweck") == "galerie":
+            roh = hochladen.fertig_roh(str(d["kennung"]))
+            try:
+                SP.pruefen(DATEN, os.path.getsize(roh) * 2)    # Platz für die umgewandelte Fassung
+                try:
+                    eintrag = GALERIE.hinzufuegen(oid, roh, os.path.basename(str(d.get("name") or ""))[:80], galerie_grenze())
+                except M.Meldung as f:          # Grenze nur wegen der Platte erreicht: das sagen
+                    if f.code == "gal_voll" and galerie_grenze() < einst()["galerie"]["grenze_gb"] * SP.GB:
+                        SP.pruefen(DATEN, SP.lage(DATEN)["nutzbar"] + 1)
+                    raise
+            finally:
+                os.remove(roh)
+                SP.neu_zaehlen()
+            self.protokoll_detail = {"text": eintrag["name"][:60], "aktion": "galerie_neu"}
+            return {"eintrag": eintrag, "galerie": galerie_stand()}
+        if d.get("zweck") == "pdf":           # PDF für den Baustein „PDF“: in Seitenbilder umwandeln, nicht in die Medienliste
+            roh = hochladen.fertig_roh(str(d["kennung"]))
+            try:
+                SP.pruefen(DATEN, os.path.getsize(roh) * 2 + PDF.SEITEN_MAX * 1024 * 1024)
+                name, n = PDF.umwandeln(roh, PDF_ORDNER)
+            finally:
+                os.remove(roh)
+            self.protokoll_detail = {"text": "PDF"}
+            return {"pdf": name, "seiten": n}
+        art, datei, dauer = hochladen.fertig(str(d["kennung"]))
+        self.protokoll_detail = {"text": str(d.get("name") or datei)[:60]}
+        medium = {"id": MED.neue_kennung(), "name": str(d.get("name") or datei)[:60], "art": art, "datei": datei,
+                  "dauer_s": dauer, "aktiv": True}
+        zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"medien": einst()["medien"] + [medium]}))
+        return {"medium": medium, "einstellungen": einst_aussen()}
+
     def api_post(self, p, d):
         if p == "/api/einstellungen" and isinstance(d.get("quellen"), list):
             Q.demaskieren(d["quellen"], einst()["quellen"])
@@ -3374,6 +3581,49 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return {"token": token, "port": WEBHOOK_PORT, "einstellungen": einst_aussen()}
         if p == "/api/einstellungen" and isinstance(d.get("sicherung"), dict) and d["sicherung"].get("passwort") == Q.MASKE:
             d["sicherung"]["passwort"] = einst()["sicherung"]["passwort"]
+        if p == "/api/speicherorte":              # seit 0.48: alle Speicherorte speichern (Passwort •••• = unverändert)
+            ORTE.speichern(d.get("orte"))
+            self.protokoll_detail = {"text": ", ".join(o["name"] for o in ORTE.orte)[:120] or "–"}
+            return {"orte": ORTE.aussen()}
+        if p == "/api/speicherorte/pruefen":
+            return {"pruefung": ORTE.pruefen(str(d.get("id", ""))), "orte": ORTE.aussen()}
+        if p == "/api/speicherorte/lesen":        # kleine Datei für einen Dateidialog der Verwaltung (Base64)
+            rel = SO.rel_pfad(d.get("pfad"))
+            roh = ORTE.lesen(str(d.get("ort", "")), rel, SO_LESEN_MAX, DATEN)
+            return {"name": rel.rsplit("/", 1)[-1], "daten": base64.b64encode(roh).decode()}
+        if p == "/api/speicherorte/holen":        # große Datei direkt auf den Server holen (Galerie, Medien, PDF)
+            zweck, ort, rel = str(d.get("zweck", "")), str(d.get("ort", "")), SO.rel_pfad(d.get("pfad"))
+            oid = str(d.get("ordner", ""))
+            if zweck == "galerie":
+                if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
+                    raise M.Meldung("gal_ordner")
+                max_b = GAL.MAX_PDF
+            elif zweck in ("medien", "pdf"):
+                max_b = GAL.MAX_PDF if zweck == "pdf" else MED.MAX_DATEI
+            else:
+                raise M.Meldung("so_typ")
+            info = ORTE.info(ort, rel)
+            if info["ordner"] or not rel:
+                raise M.Meldung("so_typ")
+            if info["groesse"] > max_b:
+                raise M.Meldung("so_gross", mb=max_b // 2 ** 20)
+            SP.pruefen(DATEN, info["groesse"] * 2)
+            if zweck == "galerie" and GALERIE.belegt() + info["groesse"] > galerie_grenze():
+                raise M.Meldung("gal_voll", gb=SP.gb(galerie_grenze()))
+            os.makedirs(MEDIEN, exist_ok=True)
+            tmp = os.path.join(MEDIEN, f".speicherort-{os.urandom(4).hex()}")
+            ORTE.kopieren(ort, rel, tmp, max_b)
+            name = rel.rsplit("/", 1)[-1]
+            return self.upload_fertig({"kennung": hochladen.uebernehmen(tmp, max_b), "zweck": "" if zweck == "medien" else zweck,
+                                       "ordner": oid, "name": name if zweck != "medien" else re.sub(r"\.[^.]+$", "", name)})
+        if p == "/api/galerie/abgleichen":        # seit 0.48: verknüpften Ordner jetzt abgleichen (läuft im Hintergrund)
+            o = next((o for o in einst()["galerie"]["ordner"] if o["id"] == str(d.get("ordner", "")) and o.get("quelle")), None)
+            if not o:
+                raise M.Meldung("gal_ordner")
+            abgleich["galerie"].setdefault(o["id"], {})["jetzt"] = True
+            abgleich_jetzt.set()
+            self.protokoll_detail = {"text": o["name"][:60]}
+            return {"galerie": galerie_stand()}
         if p == "/api/galerie/ordner":            # seit 0.45: Ordner anlegen, umbenennen, löschen
             g = einst()["galerie"]
             ordner = [dict(o) for o in g["ordner"]]
@@ -3387,6 +3637,18 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 for o in ordner:
                     if o["id"] == oid:
                         o["name"] = str(d.get("name") or "").strip()[:40] or oid
+            elif a == "verknuepfen":                # seit 0.48: mit einem Ordner eines Speicherorts (quelle None = lösen)
+                q = d.get("quelle") if isinstance(d.get("quelle"), dict) else None
+                if q:
+                    ORTE.ort(str(q.get("ort", "")))
+                    if not ORTE.info(str(q["ort"]), SO.rel_pfad(q.get("pfad")))["ordner"]:
+                        raise M.Meldung("so_ordner_typ")
+                for o in ordner:
+                    if o["id"] == oid:
+                        o.pop("quelle", None)
+                        if q:
+                            o["quelle"] = q
+                abgleich_jetzt.set()
             elif a == "loeschen":
                 benutzt = [l["name"] for l in einst()["layouts"] if galerie_im_layout(l, oid)]
                 if benutzt:
@@ -3395,6 +3657,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             else:
                 raise M.Meldung("gal_ordner")
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"galerie": {"ordner": ordner}}))
+            if a == "verknuepfen" and d.get("quelle"):
+                abgleich["galerie"].setdefault(oid, {})["jetzt"] = True
+                abgleich_jetzt.set()
             if a == "loeschen":
                 GALERIE.aufraeumen({o["id"] for o in ordner}, alter_s=0)
                 SP.neu_zaehlen()
@@ -3430,36 +3695,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             hochladen.teil(str(d.get("kennung", "")), nr, stueck, gesamt=gesamt, max_bytes=max_b)
             if not d.get("fertig"):
                 return {}
-            if d.get("zweck") == "galerie":
-                roh = hochladen.fertig_roh(str(d["kennung"]))
-                try:
-                    SP.pruefen(DATEN, os.path.getsize(roh) * 2)    # Platz für die umgewandelte Fassung
-                    try:
-                        eintrag = GALERIE.hinzufuegen(oid, roh, os.path.basename(str(d.get("name") or ""))[:80], galerie_grenze())
-                    except M.Meldung as f:          # Grenze nur wegen der Platte erreicht: das sagen
-                        if f.code == "gal_voll" and galerie_grenze() < einst()["galerie"]["grenze_gb"] * SP.GB:
-                            SP.pruefen(DATEN, SP.lage(DATEN)["nutzbar"] + 1)
-                        raise
-                finally:
-                    os.remove(roh)
-                    SP.neu_zaehlen()
-                self.protokoll_detail = {"text": eintrag["name"][:60], "aktion": "galerie_neu"}
-                return {"eintrag": eintrag, "galerie": galerie_stand()}
-            if d.get("zweck") == "pdf":           # PDF für den Baustein „PDF“: in Seitenbilder umwandeln, nicht in die Medienliste
-                roh = hochladen.fertig_roh(str(d["kennung"]))
-                try:
-                    SP.pruefen(DATEN, os.path.getsize(roh) * 2 + PDF.SEITEN_MAX * 1024 * 1024)
-                    name, n = PDF.umwandeln(roh, PDF_ORDNER)
-                finally:
-                    os.remove(roh)
-                self.protokoll_detail = {"text": "PDF"}
-                return {"pdf": name, "seiten": n}
-            art, datei, dauer = hochladen.fertig(str(d["kennung"]))
-            self.protokoll_detail = {"text": str(d.get("name") or datei)[:60]}
-            medium = {"id": MED.neue_kennung(), "name": str(d.get("name") or datei)[:60], "art": art, "datei": datei,
-                      "dauer_s": dauer, "aktiv": True}
-            zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), {"medien": einst()["medien"] + [medium]}))
-            return {"medium": medium, "einstellungen": einst_aussen()}
+            return self.upload_fertig(d)
         if p == "/api/medien/loeschen":
             alle = einst()["medien"]
             weg = next((m for m in alle if m["id"] == d.get("id")), None)
@@ -3508,7 +3744,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             os.remove(os.path.join(SICHERUNGEN, name))
             return {}
         if p == "/api/sicherung/zip":
-            roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
+            if d.get("ort"):                      # seit 0.48: direkt aus einem Speicherort
+                roh = ORTE.lesen(str(d["ort"]), SO.rel_pfad(d.get("pfad")), 400 * 2 ** 20, DATEN)
+            else:
+                roh = base64.b64decode(str(d.get("daten", "")).split(",")[-1], validate=False)
             SP.pruefen(DATEN, len(roh) * 2)      # Bilder/Medien der Sicherung werden ausgepackt
             return {"manifest": sicherung_zip_einspielen(roh, str(d.get("passwort") or "") or None, bool(d.get("strikes")))}
         if p == "/api/quellen/datei":            # Datei für eine Datenquelle hochladen (seit 0.26), höchstens 1 MB
@@ -3931,7 +4170,7 @@ def main():
     for ziel in (ha_schleife, streams_schleife, vorab_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
-                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife, NETZ.schleife, ausgabe_schleife):
+                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife, NETZ.schleife, ausgabe_schleife, abgleich_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

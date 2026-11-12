@@ -22,7 +22,7 @@ const QTEXTE = {
     leer: "(leer)", eintraege: "Einträge", geheimHinweis: "Geheime Werte werden nach dem Speichern nur als •••• angezeigt und nicht in Sicherungen übernommen (außer du wählst es).",
     beispiele: { pegel: "Pegelstand (PEGELONLINE, Rhein bei Köln)", news: "Nachrichten (tagesschau.de RSS)", kurs: "Bitcoin-Kurs in Euro (CoinGecko)",
                  pollen: "Pollenflug (Deutscher Wetterdienst)", feiertage: "Feiertage (Google-Kalender, iCal)" },
-    herkunft: "Herkunft", herkunftName: { url: "Adresse abrufen", datei: "Datei hochladen" }, datei: "Datei (bis 1 MB)",
+    herkunft: "Herkunft", herkunftName: { url: "Adresse abrufen", datei: "Datei hochladen", speicherort: "Datei aus Speicherort" }, datei: "Datei (bis 1 MB)",
     dateiHinweis: "Zum Beispiel der Abfuhrkalender deiner Stadt als .ics oder .csv, wenn es keine Abo-Adresse gibt. Neue Termine: Datei wieder hochladen.",
     hochgeladen: "hochgeladen", felderLesen: "Spalten lesen", csvFelder: "Spalten der CSV",
     termine: "Als Termine (für den Baustein „Kalender / Müllabfuhr“)", termineHinweis: "Datumsspalte wählen – dann zeigt der Kalender-Baustein die Zeilen als Termine. Vergangene fallen weg.",
@@ -46,7 +46,7 @@ const QTEXTE = {
     leer: "(empty)", eintraege: "entries", geheimHinweis: "Secret values are shown as •••• after saving and are not included in backups (unless you choose so).",
     beispiele: { pegel: "Water level (PEGELONLINE, Rhine at Cologne)", news: "News (tagesschau.de RSS)", kurs: "Bitcoin price in euro (CoinGecko)",
                  pollen: "Pollen forecast (German Weather Service)", feiertage: "Public holidays Germany (Google calendar, iCal)" },
-    herkunft: "Source", herkunftName: { url: "Fetch address", datei: "Upload file" }, datei: "File (up to 1 MB)",
+    herkunft: "Source", herkunftName: { url: "Fetch address", datei: "Upload file", speicherort: "File from storage location" }, datei: "File (up to 1 MB)",
     dateiHinweis: "For example your town's waste collection calendar as .ics or .csv when there is no subscription address. New dates: upload the file again.",
     hochgeladen: "uploaded", felderLesen: "Read columns", csvFelder: "CSV columns",
     termine: "As events (for the “Calendar / waste collection” element)", termineHinweis: "Choose the date column – the calendar element then shows the rows as events. Past ones are dropped.",
@@ -109,13 +109,16 @@ async function quellenSeite(inhalt) {
 
   const liste = async () => {
     const st = (await holen("/api/quellen/status")).status || {};
+    try { await soLaden(); } catch (_) { /* Namen der Speicherorte fehlen dann */ }
     const ziel = $("#qListe");
     if (!E.quellen.length) { ziel.innerHTML = `<p class="leise">${esc(Q.keine)}</p>`; return; }
     ziel.innerHTML = E.quellen.map((q) => {
       const s = st[q.id] || {};
       const iv = q.intervall_s % 3600 === 0 ? `${q.intervall_s / 3600} h` : q.intervall_s % 60 === 0 ? `${q.intervall_s / 60} min` : `${q.intervall_s} s`;
       return `<div class="karte" data-id="${esc(q.id)}"><h2>${esc(q.name)} <span class="leise">· ${esc(q.id)} · ${esc(Q.artName[q.art])}${q.art === "video" ? "" : " · " + iv}${q.aktiv ? "" : " · –"}</span></h2>
-        <div class="leise umbruch">${q.herkunft === "datei" ? "📄 " + esc(q.datei ? q.datei.name : "") : (q.art === "video" ? "" : esc(q.methode) + " ") + esc(q.url)}</div>
+        <div class="leise umbruch">${q.herkunft === "datei" ? "📄 " + esc(q.datei ? q.datei.name : "")
+          : q.herkunft === "speicherort" && q.speicherort ? "📁 " + esc(soName(q.speicherort.ort)) + ": " + esc(q.speicherort.pfad)
+          : (q.art === "video" ? "" : esc(q.methode) + " ") + esc(q.url)}</div>
         <div class="leise">${esc(Q.letzter)}: ${esc(zeitText(s.abruf))}${s.dauer_ms != null ? ` (${s.dauer_ms} ${Q.ms})` : ""} · ${esc(Q.naechster)}: ${esc(zeitText(s.naechster))}
           ${s.fehler ? `<br><span class="schlecht">${esc(Q.fehler)}: ${esc(meldungText(s.fehler_m, s.fehler))}${s.versuche ? ` (${s.versuche} ${esc(Q.versuche)})` : ""}</span>` : ""}</div>
         <div class="zeile"><button class="knopf" data-a="bearbeiten">${esc(Q.bearbeiten)}</button><button class="knopf" data-a="daten">${esc(Q.daten)}</button>
@@ -150,7 +153,7 @@ async function quellenSeite(inhalt) {
 
   // ---------- Editor ----------
   const oeffnen = (q, id) => {
-    bearbeitet = Object.assign({ id: "", name: "", art: "json", url: "https://", methode: "GET", kopf: [], inhalt: "", intervall_s: 300, aktiv: true, format: "auto", herkunft: "url", datei: null, csv: null }, q);
+    bearbeitet = Object.assign({ id: "", name: "", art: "json", url: "https://", methode: "GET", kopf: [], inhalt: "", intervall_s: 300, aktiv: true, format: "auto", herkunft: "url", datei: null, speicherort: null, csv: null }, q);
     altId = id;
     zeichnen();
     $("#qEditor").scrollIntoView({ behavior: "smooth" });
@@ -170,15 +173,17 @@ async function quellenSeite(inhalt) {
         `<option value="${k}" ${k === q.herkunft ? "selected" : ""}>${esc(Q.herkunftName[k])}</option>`).join("")}</select></div>
       <div data-nur="datei"><div class="zeile"><label>${esc(Q.datei)}</label><input type="file" id="qDatei" accept=".ics,.csv,.tsv,.txt,.json,.xml,text/calendar,text/csv">
         <span class="leise" id="qDateiStand">${q.datei ? "✓ " + esc(q.datei.name) : ""}</span></div><p class="leise">${esc(Q.dateiHinweis)}</p></div>
-      <div class="zeile" data-nicht="datei"><label>${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" class="voll640" spellcheck="false"></div>
+      <div data-nur="so"><div class="zeile"><label>${esc(Q.datei.replace(/ \(.*\)$/, ""))}</label><button class="knopf" id="qSoWahl">📁 ${esc(SOT().qWahl)}</button>
+        <span class="leise" id="qSoStand">${q.speicherort ? "✓ " + esc(soName(q.speicherort.ort)) + ": " + esc(q.speicherort.pfad) : ""}</span></div><p class="leise">${esc(SOT().qHinweis)}</p></div>
+      <div class="zeile" data-nicht="keinurl"><label>${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" class="voll640" spellcheck="false"></div>
       <div class="zeile" data-nur="video"><label>${esc(Q.format)}</label><select id="qFormat">${Object.keys(Q.formatName).map((k) => `<option value="${k}" ${k === q.format ? "selected" : ""}>${esc(Q.formatName[k])}</option>`).join("")}</select></div>
       <p class="leise" data-nur="video">${esc(Q.videoHinweis)}</p>
       <div class="zeile" data-nicht="video"><label>${esc(Q.intervall)}</label><input type="number" id="qIv" min="1" value="${q.intervall_s / ein}">
         <select id="qIvE">${[1, 60, 3600].map((e) => `<option value="${e}" ${e === ein ? "selected" : ""}>${esc(Q.einheit[e])}</option>`).join("")}</select>
         <label>${esc(Q.aktiv)}</label>${schalter("qAktiv", q.aktiv)}</div>
-      <div data-nur="csv"><h3>${esc(Q.csvFelder)}</h3><div class="zeile" data-nicht="datei"><button class="knopf" id="qCsvLesen">${esc(Q.felderLesen)}</button></div>
+      <div data-nur="csv"><h3>${esc(Q.csvFelder)}</h3><div class="zeile" data-nicht="keinurl"><button class="knopf" id="qCsvLesen">${esc(Q.felderLesen)}</button></div>
         <div id="qCsv"></div><h3>${esc(Q.termine)}</h3><p class="leise">${esc(Q.termineHinweis)}</p><div id="qCsvKal"></div></div>
-      <div data-nicht="datei"><h3>${esc(Q.kopf)}</h3><div id="qKopf">${q.kopf.map((k) => `<div class="zeile kopfzeile"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" class="b180">
+      <div data-nicht="keinurl"><h3>${esc(Q.kopf)}</h3><div id="qKopf">${q.kopf.map((k) => `<div class="zeile kopfzeile"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" class="b180">
           <input type="${k.geheim ? "password" : "text"}" name="kw" value="${esc(k.wert)}" placeholder="Wert" autocomplete="off" class="b280">
           <label><input type="checkbox" name="kg" ${k.geheim ? "checked" : ""}> ${esc(Q.geheim)}</label><button class="knopf gefahr" name="kx">✕</button></div>`).join("")}</div>
       <div class="zeile"><button class="knopf" id="qKopfNeu">${esc(Q.kopfNeu)}</button></div><p class="leise">${esc(Q.geheimHinweis)}</p></div>
@@ -209,13 +214,14 @@ async function quellenSeite(inhalt) {
       const art = $("#qArt").value, v = art === "video", nurUrl = v || art === "bild";
       if (nurUrl) $("#qHerkunft").value = "url";
       $("#qHerkunft").disabled = nurUrl;
-      const datei = $("#qHerkunft").value === "datei";
-      const zeigen = { video: v, datei, csv: art === "csv" };
+      const datei = $("#qHerkunft").value === "datei", so = $("#qHerkunft").value === "speicherort";
+      const zeigen = { video: v, datei, so, keinurl: datei || so, csv: art === "csv" };
       z.querySelectorAll("[data-nur]").forEach((x) => { x.hidden = !zeigen[x.dataset.nur]; });
       z.querySelectorAll("[data-nicht]").forEach((x) => { x.hidden = zeigen[x.dataset.nicht]; });
-      $("#qMethode").disabled = v || datei;
+      $("#qMethode").disabled = v || datei || so;
     };
-    $("#qArt").onchange = () => { artZeigen(); if ($("#qArt").value === "csv" && !csvImp && $("#qHerkunft").value === "datei") csvStarten(); };
+    $("#qArt").onchange = () => { artZeigen(); if ($("#qArt").value === "csv" && !csvImp && ["datei", "speicherort"].includes($("#qHerkunft").value)) csvStarten(); };
+    soLaden().then((d) => { const o = $("#qHerkunft").querySelector('[value="speicherort"]'); if (o && !d.orte.length && q.herkunft !== "speicherort") o.remove(); }).catch(() => {});
     $("#qHerkunft").onchange = () => { artZeigen(); csvImp = null; $("#qCsv").innerHTML = ""; if ($("#qArt").value === "csv") csvStarten(); };
     artZeigen();
     // CSV (seit 0.26): Spalten über den allgemeinen Import wählen (csvimport.js), danach die Spalten für Termine
@@ -227,7 +233,9 @@ async function quellenSeite(inhalt) {
       $("#qCsvKal").querySelectorAll("select").forEach((s) => { s.onchange = () => { lesen(); }; });
     };
     const csvStarten = async () => {
-      const herkunft = $("#qHerkunft").value === "datei" ? (q.datei ? { datei: q.datei.hash } : null) : { quelle: Object.assign({}, lesenOhneCsv(), { art: "text" }) };
+      const h = $("#qHerkunft").value;
+      const herkunft = h === "datei" ? (q.datei ? { datei: q.datei.hash } : null) : h === "speicherort" ? (q.speicherort ? { speicherort: q.speicherort } : null)
+        : { quelle: Object.assign({}, lesenOhneCsv(), { art: "text" }) };
       if (!herkunft) return;
       try {
         csvImp = await csvImport($("#qCsv"), herkunft, q.csv || {}, (o) => { q.csv = Object.assign(o, { kalender: (q.csv && q.csv.kalender) || {} }); kalZeichnen(o.felder.map((f) => f.name)); });
@@ -244,7 +252,17 @@ async function quellenSeite(inhalt) {
       if (q.art === "csv") q.csv = { kalender: (q.csv && q.csv.kalender) || {} };     // neue Datei: Trennzeichen und Spalten neu erkennen
       csvImp = null; zeichnen();
     }, null);
-    if (q.art === "csv" && (q.herkunft === "datei" ? q.datei : q.csv && q.csv.felder && q.csv.felder.length)) csvStarten();
+    $("#qSoWahl").onclick = async () => {        // seit 0.48: Datei in einem Speicherort, bei jedem Abruf neu gelesen
+      const w = await soWaehlen({ filter: /\.(ics|csv|tsv|txt|json|xml|rss|atom)$/i });
+      if (!w || !w.length) return;
+      lesen(); q.speicherort = { ort: w[0].ort, pfad: w[0].pfad };
+      const art = { ics: "ical", csv: "csv", tsv: "csv", json: "json", xml: "rss", rss: "rss", atom: "rss", txt: "text" }[w[0].name.split(".").pop().toLowerCase()];
+      if (art) q.art = art;
+      if (!q.name) q.name = w[0].name.replace(/\.[^.]+$/, "").slice(0, 40);
+      if (q.art === "csv") q.csv = { kalender: (q.csv && q.csv.kalender) || {} };
+      csvImp = null; zeichnen();
+    };
+    if (q.art === "csv" && (q.herkunft === "datei" ? q.datei : q.herkunft === "speicherort" ? q.speicherort : q.csv && q.csv.felder && q.csv.felder.length)) csvStarten();
     $("#qName").onchange = () => { if (!$("#qId").value) $("#qId").value = $("#qName").value.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 16); };
     z.querySelectorAll("[name=kg]").forEach((c) => { c.onchange = () => { c.closest(".kopfzeile").querySelector("[name=kw]").type = c.checked ? "password" : "text"; }; });
     z.querySelectorAll("[name=kx]").forEach((b) => { b.onclick = () => { lesen(); b.closest(".kopfzeile").remove(); lesen(); zeichnen(); }; });

@@ -11,7 +11,8 @@ MASKE = "••••"                    # so erscheinen geheime Kopfzeilen in 
 ARTEN = ("json", "text", "rss", "bild", "ical", "video", "csv")
 # Herkunft (seit 0.26): „url“ = der Dienst holt die Adresse; „datei“ = hochgeladene Datei (z. B. Abfuhrkalender als .ics
 # oder .csv, wenn die Stadt keine Abo-Adresse anbietet). Dateien liegen unter DATEIEN/<hash> (setzt dienst.py).
-HERKUNFT = ("url", "datei")
+HERKUNFT = ("url", "datei", "speicherort")   # speicherort seit 0.48: Datei in einem Speicherort, bei jedem Abruf neu gelesen
+SPEICHERORT_LESEN = None                   # (ort, pfad, max_bytes) -> bytes; setzt dienst.py
 DATEI_ARTEN = ("json", "text", "rss", "ical", "csv")
 DATEIEN = None
 DATEI_NAME = re.compile(r"[0-9a-f]{16}")
@@ -42,7 +43,7 @@ def pruefen(liste):
             raise Fehler("q_art")
         url = str(q.get("url", "")).strip()
         herkunft = q.get("herkunft") if q.get("herkunft") in HERKUNFT else "url"
-        datei = None
+        datei = speicherort = None
         if herkunft == "datei":
             if art not in DATEI_ARTEN:
                 raise Fehler("q_datei_art", id=qid)
@@ -50,6 +51,14 @@ def pruefen(liste):
             if not DATEI_NAME.fullmatch(str(d.get("hash", ""))):
                 raise Fehler("q_datei", id=qid)
             datei, url = {"hash": d["hash"], "name": str(d.get("name", ""))[:80] or "datei"}, ""
+        elif herkunft == "speicherort":
+            if art not in DATEI_ARTEN:
+                raise Fehler("q_datei_art", id=qid)
+            so = q.get("speicherort") or {}
+            if not re.fullmatch(r"[a-z0-9]{2,12}", str(so.get("ort", ""))) or not str(so.get("pfad") or "").strip("/"):
+                raise Fehler("q_speicherort", id=qid)
+            datei, url = None, ""
+            speicherort = {"ort": str(so["ort"]), "pfad": str(so["pfad"]).strip("/")[:1000]}
         elif art == "video":
             if not re.fullmatch(r"(rtsps?|https?)://[^\s\"']{1,1000}", url):
                 raise Fehler("q_adresse_video", id=qid)
@@ -80,7 +89,8 @@ def pruefen(liste):
                     "kopf": kopf, "inhalt": str(q.get("inhalt", ""))[:8000] if methode == "POST" else "",
                     "intervall_s": max(30, min(86400, intervall)), "aktiv": bool(q.get("aktiv", True)),
                     "format": q.get("format") if q.get("format") in FORMATE else "auto", "herkunft": herkunft,
-                    **({"datei": datei} if datei else {}), **({"csv": csv_opt} if csv_opt else {})})
+                    **({"datei": datei} if datei else {}), **({"speicherort": speicherort} if speicherort else {}),
+                    **({"csv": csv_opt} if csv_opt else {})})
     return aus
 
 
@@ -737,7 +747,10 @@ class Quellen:
 
     def abrufen(self, q):
         t0 = time.time()
-        roh, art = (datei_lesen(q["datei"]["hash"]), "") if q.get("herkunft") == "datei" else holen(q)
+        if q.get("herkunft") == "speicherort":
+            roh, art = SPEICHERORT_LESEN(q["speicherort"]["ort"], q["speicherort"]["pfad"], MAX_DATEI), ""
+        else:
+            roh, art = (datei_lesen(q["datei"]["hash"]), "") if q.get("herkunft") == "datei" else holen(q)
         return zerlegen(q, roh, art), round((time.time() - t0) * 1000)
 
     def schleife(self):
