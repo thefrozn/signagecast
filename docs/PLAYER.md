@@ -28,7 +28,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 ## Step by step
 
 1. Admin → **TVs → Set up** → **Download player image** (once, about 850 MB; checked with the project's
-   signature).
+   signature). After a SignageCast update, *To do* reminds you to download it again – new images then get all fixes.
 2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
 3. Open **Raspberry Pi Imager** → choose your device → operating system: at the bottom **Use custom** → the downloaded
@@ -239,7 +239,8 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 ## Schritt für Schritt
 
 1. Verwaltung → **Fernseher → Einrichten** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
-   des Projekts geprüft).
+   des Projekts geprüft). Nach einem SignageCast-Update erinnert „Zu erledigen“ daran, es neu zu laden – neue Images
+   bekommen dann alle Korrekturen.
 2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
    oder **WLAN** (Name und Passwort – oder ein gespeichertes). **Image erstellen und herunterladen** klicken.
 3. **Raspberry Pi Imager** öffnen → Gerät wählen → Betriebssystem: ganz unten **Eigenes Image** (Use custom) → die

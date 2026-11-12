@@ -67,7 +67,7 @@ const TEXTE = {
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
           experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Einstellungen → Anzeige).",
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
-          basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisFehler: "Laden fehlgeschlagen",
+          basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisAlt: (s) => `veraltet – bitte neu laden (SignageCast ${s})`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
           koppeln: "Player koppeln (ein Image für mehrere Geräte)", koppelnText: "Ein Image für beliebig viele Pis oder PCs: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jedes Gerät zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Fernseher wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
           sammelImage: "Image für mehrere Geräte herunterladen", fuer: "Für", code: "Code vom Fernseher", codePlatz: "123 456", koppelnKnopf: "Koppeln",
@@ -245,7 +245,8 @@ const TEXTE = {
                warn: "Ausblenden (bis das Problem einmal behoben war – tritt es wieder auf, erscheint es wieder)" },
     todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
     todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
-    todo: { internet: (s) => `Internet seit ${s} nicht erreichbar – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
+    todo: { playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Fernseher → Einrichten neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
+            internet: (s) => `Internet seit ${s} nicht erreichbar – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
             bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
             player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
@@ -528,7 +529,7 @@ const TEXTE = {
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
           experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Settings → Display).",
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
-          basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisFehler: "Download failed",
+          basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisAlt: (s) => `outdated – please reload (SignageCast ${s})`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
           koppeln: "Pair a player (one image for several devices)", koppelnText: "One image for any number of Pis or PCs: it contains the server address and Wi-Fi, but no key yet. At startup each device shows a 6-digit code on the TV – enter it here, choose name and TV, done. The key is negotiated securely and never travels over the network.",
           sammelImage: "Download image for several devices", fuer: "For", code: "Code from the TV", codePlatz: "123 456", koppelnKnopf: "Pair",
@@ -706,7 +707,8 @@ const TEXTE = {
                warn: "Hide (until the problem was solved once – if it comes back, it shows again)" },
     todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
     todoEin: "Show again", todoAusgeblendet: "hidden",
-    todo: { internet: (s) => `Internet not reachable since ${s} – the TVs show own media or a fallback picture`,
+    todo: { playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under TVs → Set up so new devices get all fixes (e.g. Wi-Fi on first start)`,
+            internet: (s) => `Internet not reachable since ${s} – the TVs show own media or a fallback picture`,
             bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
             player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
@@ -1550,7 +1552,8 @@ async function playerSeite(inhalt, einrichten) {
     const b = pc ? P.basis_pc : P.basis;
     if (b.phase === "laedt") return `<span class="warn">${esc(T.pl.basisLaedt(mb(b.geladen), mb(b.gesamt) || "…"))}</span>`;
     const f = b.phase === "fehler" ? `<span class="schlecht">${esc(T.pl.basisFehler)}: ${esc(meldungText(b, b.fehler))}</span> ` : "";
-    return f + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>` : esc(pc ? T.pl.pc.basisFehlt : T.pl.basisFehlt));
+    return f + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>`
+      + (b.veraltet ? ` <span class="warn">⚠ ${esc(T.pl.basisAlt(b.server))}</span>` : "") : esc(pc ? T.pl.pc.basisFehlt : T.pl.basisFehlt));
   };
   // Modelle (seit 0.36 auch PC und Browser-Gerät); ein Browser-Gerät bleibt eines, andere werden keines
   const MT = () => Object.assign({}, T.pl.m, { pc: T.pl.pc.m, browser: T.pl.br.m });
@@ -1577,10 +1580,10 @@ async function playerSeite(inhalt, einrichten) {
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pl.titel)}</h2><p>${esc(T.pl.text)}</p>
         <p class="leise">${esc(T.pl.modelle)}</p><p class="leise">${esc(T.pl.bedarf)}</p><p class="leise warn">${esc(T.pl.experimentell)}</p>
         <div class="zeile"><label>${esc(T.pl.basis)}</label><span id="plBasis">${basisText(false)}</span>
-          <button class="knopf" id="plBasisLaden" ${laedt() ? "disabled" : ""}>${esc(bereit ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+          <button class="knopf${P.basis.veraltet ? " haupt" : ""}" id="plBasisLaden" ${laedt() ? "disabled" : ""}>${esc(bereit ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
         <h3>${esc(T.pl.pc.titel)}</h3><p>${esc(T.pl.pc.text)}</p><p class="leise">${esc(T.pl.pc.bedarf)}</p>
         <div class="zeile"><label>${esc(T.pl.pc.basis)}</label><span id="plBasisPc">${basisText(true)}</span>
-          <button class="knopf" id="plBasisPcLaden" ${laedt() ? "disabled" : ""}>${esc(P.basis_pc.vorhanden ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+          <button class="knopf${P.basis_pc.veraltet ? " haupt" : ""}" id="plBasisPcLaden" ${laedt() ? "disabled" : ""}>${esc(P.basis_pc.vorhanden ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
         <h3>${esc(T.pl.br.titel)}</h3><p class="leise">${esc(T.pl.br.text)}</p>
         ${P.container ? `<p class="leise">${esc(T.pl.port(P.webhook_port))}</p>` : ""}</div>
       <div class="karte" id="plNeu"><h2>${esc(T.pl.neu)}</h2>
@@ -1961,6 +1964,7 @@ const TODO_WARN = {
   player: (w) => [T.todo.player(w.name), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
   bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
   internet: (w) => [T.todo.internet(w.seit), "uebersicht"], bild: (w) => [T.todo.bild(w.name, w.befund), "leistung"],
+  player_basis: (w) => [T.todo.playerBasis(w.art, w.alt, w.neu), "einrichten"],
   speicher: (w) => [T.todo.speicher(w.stufe, String(w.frei).replace(".", E.sprache === "en" ? "." : ",")), "speicher"],
 };
 async function todoZeichnen(s) {

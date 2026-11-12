@@ -758,10 +758,24 @@ def basis_laden(version, art="pi"):
         st.update(phase="fehler", fehler=str(f)[:200], code=getattr(f, "code", ""), p=getattr(f, "p", {}))
 
 
-def basis_info(art="pi"):
+def _vt(v):
+    return tuple(int(x) for x in re.findall(r"\d+", str(v))[:3])
+
+
+def basis_veraltet(version, art="pi"):
+    """Version des geladenen Grundimages, wenn sie älter ist als SignageCast selbst (seit 0.47) – sonst None. Neue Images
+    daraus hätten alte Fehler (z. B. WLAN beim ersten Start vor 0.42.1); während des Ladens keine Meldung."""
+    m = basis_meta(art)
+    if not m or basis_stand[art]["phase"] == "laedt" or not re.fullmatch(r"\d+\.\d+\.\d+", str(version)):
+        return None
+    return m["version"] if _vt(m["version"]) < _vt(version) else None
+
+
+def basis_info(art="pi", version=""):
     m = basis_meta(art)
     return dict(basis_stand[art], vorhanden={"version": m["version"], "groesse": m["groesse"], "erstellt": m.get("erstellt"),
-                                              "basis": m.get("basis")} if m else None)
+                                              "basis": m.get("basis")} if m else None,
+                veraltet=bool(basis_veraltet(version, art)), server=version)
 
 
 # ---------- Image je Gerät ----------

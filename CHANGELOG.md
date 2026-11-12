@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.47.0 (2026-11-12)
+- **Outdated player image is pointed out:** if the downloaded Pi or PC image is older than SignageCast itself, *To do*
+  shows a warning and *TVs → Set up* marks it as outdated with a highlighted *Download again* button. Images built
+  from an old base miss later fixes – e.g. a Pi from a 0.42.0 base did not join Wi-Fi on its own at first start (fixed
+  in 0.42.1) until it got the new agent over a cable. The warning can be hidden and comes back with the next version.
+
 ## v0.46.0 (2026-11-11)
 - **Players split into two tabs:** *TVs → Devices* is the everyday page – all Raspberry Pi, PC and browser players
   with status, screenshot, remote management and terminal, now at the top instead of below the setup. *TVs → Set up*

@@ -2171,6 +2171,10 @@ def todo_warnungen(e):
         w.append({"key": "internet", "seit": time.strftime("%H:%M", time.localtime(NETZ.offline_seit))})
     w += [{"key": "bild:" + t["id"], "name": t["name"], "befund": ausgabe_massnahme[t["id"]]["befund"]}
           for t in e["fernseher"] if ausgabe_massnahme.get(t["id"])]
+    for art in ("pi", "pc"):                               # seit 0.47: Grundimage älter als SignageCast → neu laden
+        alt = PL.basis_veraltet(VERSION, art)
+        if alt:
+            w.append({"key": f"player_basis:{art}:{VERSION}", "art": art, "alt": alt, "neu": VERSION})
     sp = SP.lage(DATEN)                                    # seit 0.45: gelb = Hinweis, rot = Uploads gesperrt
     if sp["stufe"] != "gruen":
         w.append({"key": "speicher", "stufe": sp["stufe"], "frei": SP.gb(sp["frei"]), "reserve": SP.gb(sp["reserve"])})
@@ -3161,7 +3165,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "letzte": zustand.get("leistung"), "geraete": zustand.get("leistung_geraete", []),
                                       "port": WEBHOOK_PORT, "eigene_ip": eigene_ip()})
         if pfad == "/api/player":
-            return self.antwort(200, {"ok": True, "jetzt": int(time.time()), "geraete": PL.liste(player_hinweise), "basis": PL.basis_info(), "basis_pc": PL.basis_info("pc"),
+            return self.antwort(200, {"ok": True, "jetzt": int(time.time()), "geraete": PL.liste(player_hinweise), "basis": PL.basis_info("pi", VERSION), "basis_pc": PL.basis_info("pc", VERSION),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend(),

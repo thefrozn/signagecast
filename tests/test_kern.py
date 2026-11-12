@@ -3122,3 +3122,40 @@ class OhneInlineStyle0451(unittest.TestCase):
         import verwaltung
         self.assertNotIn("unsafe-inline", verwaltung.CSP)
         self.assertNotIn("style=", verwaltung.ANMELDUNG)
+
+
+class BasisVeraltet047(unittest.TestCase):
+    """Seit 0.47: ein Grundimage, das älter ist als SignageCast, meldet sich unter „Zu erledigen“ und auf „Einrichten“."""
+
+    def test_vergleich_und_hinweis(self):
+        import copy
+        import dienst as D
+        import player as PL
+        import todo as TD
+        alt = PL.basis_meta
+        try:
+            PL.basis_meta = lambda art="pi": {"version": "0.42.0", "groesse": 1, "erstellt": "2026-11-10"} if art == "pi" else None
+            self.assertEqual(PL.basis_veraltet("0.46.0"), "0.42.0")
+            self.assertEqual(PL.basis_veraltet("0.46.0", "pc"), None)          # kein PC-Image geladen
+            for v in ("0.42.0", "0.41.9", "dev", "", "0.42"):
+                self.assertIsNone(PL.basis_veraltet(v), v)
+            self.assertEqual(PL.basis_veraltet("0.100.0"), "0.42.0")          # Zahlen, nicht Text vergleichen
+            PL.basis_stand["pi"]["phase"] = "laedt"
+            self.assertIsNone(PL.basis_veraltet("0.46.0"))                    # während des Ladens still
+            PL.basis_stand["pi"]["phase"] = ""
+            i = PL.basis_info("pi", "0.46.0")
+            self.assertTrue(i["veraltet"])
+            self.assertEqual(i["server"], "0.46.0")
+            self.assertFalse(PL.basis_info("pi", "0.42.0")["veraltet"])
+            v = D.VERSION
+            D.VERSION = "0.47.0"
+            try:
+                w = [x for x in D.todo_warnungen(copy.deepcopy(E.STANDARD)) if x["key"].startswith("player_basis")]
+            finally:
+                D.VERSION = v
+            self.assertEqual(w, [{"key": "player_basis:pi:0.47.0", "art": "pi", "alt": "0.42.0", "neu": "0.47.0"}])
+            self.assertEqual(TD.art(w[0]["key"]), "warn")                      # ausblendbar, je SignageCast-Version
+            for k in ("player_basis:pi", "player_basis:xx:0.47.0", "player_basis:pc:0.47"):
+                self.assertIsNone(TD.art(k), k)
+        finally:
+            PL.basis_meta = alt
