@@ -8,15 +8,15 @@ GEHEIM = (("telegram", "token"), ("email", "passwort"))
 # Betreff und Text je Ereignis in der Sprache der Verwaltung (seit 0.19.3; vorher nur Deutsch)
 TEXTE = {
     "de": {
-        "ausfall": ("SignageCast: Ausfall „{tv}“", "Die Wiedergabe für den Fernseher „{tv}“ ist ausgefallen (Render-Kette unvollständig)."),
-        "ausfall_vorbei": ("SignageCast: „{tv}“ läuft wieder", "Die Wiedergabe für den Fernseher „{tv}“ läuft wieder."),
+        "ausfall": ("SignageCast: Ausfall „{tv}“", "Die Wiedergabe für den Kanal „{tv}“ ist ausgefallen (Render-Kette unvollständig)."),
+        "ausfall_vorbei": ("SignageCast: „{tv}“ läuft wieder", "Die Wiedergabe für den Kanal „{tv}“ läuft wieder."),
         "update": ("SignageCast: Update fehlgeschlagen", "{aktion}: {meldung} ({zeit})"),
         "sicherung": ("SignageCast: Sicherung fehlgeschlagen", "Die automatische Sicherung um {zeit} ist fehlgeschlagen: {fehler}"),
         "doppelt": ("SignageCast: „{tv}“ ruckelt", "Die Aufnahme für „{tv}“ verdoppelt seit 3 Minuten viele Bilder. "
-                    "Abhilfe: System → Leistung → „Ton und Stream neu starten“."),
+                    "Abhilfe: System → Zustand → „Ton und Stream neu starten“."),
         "doppelt_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die Aufnahme für „{tv}“ läuft wieder ohne doppelte Bilder."),
         "leistung": ("SignageCast: „{tv}“ ruckelt", "Die TV-Seite für „{tv}“ erreicht seit 5 Minuten nur {fps} Bilder/s (Ziel 25). "
-                     "Leistungstest in der Verwaltung: System → Leistung."),
+                     "Leistungstest in der Verwaltung: System → Zustand."),
         "leistung_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die TV-Seite für „{tv}“ erreicht wieder genug Bilder/s."),
         "ha": ("SignageCast: Home Assistant nicht erreichbar", "Seit {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder."),
@@ -24,31 +24,31 @@ TEXTE = {
         "player_aus": ("SignageCast: Player „{name}“ meldet sich nicht", "Der Raspberry-Pi-Player „{name}“ hat sich seit 5 Minuten "
                        "nicht gemeldet (Strom, Netz oder WLAN?)."),
         "player_wieder": ("SignageCast: Player „{name}“ wieder da", "Der Raspberry-Pi-Player „{name}“ meldet sich wieder."),
-        "internet": ("SignageCast: Internet nicht erreichbar", "Seit {seit} ist das Internet nicht erreichbar. Die Fernseher zeigen "
+        "internet": ("SignageCast: Internet nicht erreichbar", "Seit {seit} ist das Internet nicht erreichbar. Die Kanäle zeigen "
                      "eigene Medien bzw. ein Ersatzbild statt der Live-Kameras."),
         "internet_vorbei": ("SignageCast: Internet wieder erreichbar", "Das Internet war von {seit} bis {bis} nicht erreichbar. "
                             "Die Live-Kameras laufen wieder."),
-        "bild_schwarz": ("SignageCast: „{tv}“ zeigt nur Schwarz", "Der Fernseher „{tv}“ zeigt seit einigen Minuten ein schwarzes Bild, "
+        "bild_schwarz": ("SignageCast: „{tv}“ zeigt nur Schwarz", "Der Kanal „{tv}“ zeigt seit einigen Minuten ein schwarzes Bild, "
                          "obwohl die Wiedergabe läuft. Neu laden und Neustart haben nicht geholfen – bitte in der Verwaltung prüfen."),
         "bild_steht": ("SignageCast: Bild von „{tv}“ steht", "Das Bild von „{tv}“ ändert sich seit einigen Minuten nicht, obwohl die Uhr "
                        "laufen müsste. Neu laden und Neustart haben nicht geholfen – bitte in der Verwaltung prüfen."),
-        "bild_vorbei": ("SignageCast: „{tv}“ zeigt wieder ein Bild", "Der Fernseher „{tv}“ zeigt wieder ein normales Bild."),
+        "bild_vorbei": ("SignageCast: „{tv}“ zeigt wieder ein Bild", "Der Kanal „{tv}“ zeigt wieder ein normales Bild."),
         "speicher_gelb": ("SignageCast: Speicher wird knapp", "Nur noch {frei} GB frei (Reserve {reserve} GB). Uploads gehen noch – "
-                          "bitte unter System → Speicher aufräumen (Galerie, Medien, Sicherungen)."),
+                          "bitte unter System → Zustand aufräumen (Galerie, Medien, Sicherungen)."),
         "speicher_rot": ("SignageCast: Speicher voll – Uploads gesperrt", "Nur noch {frei} GB frei, die Reserve von {reserve} GB ist "
-                         "erreicht. Alles läuft weiter, aber Uploads sind gesperrt, bis unter System → Speicher Platz frei ist."),
+                         "erreicht. Alles läuft weiter, aber Uploads sind gesperrt, bis unter System → Zustand Platz frei ist."),
         "speicher_vorbei": ("SignageCast: Speicher wieder in Ordnung", "Wieder {frei} GB frei."),
     },
     "en": {
-        "ausfall": ("SignageCast: “{tv}” failed", "Playback for the TV “{tv}” has failed (render chain incomplete)."),
-        "ausfall_vorbei": ("SignageCast: “{tv}” is running again", "Playback for the TV “{tv}” is running again."),
+        "ausfall": ("SignageCast: “{tv}” failed", "Playback for the channel “{tv}” has failed (render chain incomplete)."),
+        "ausfall_vorbei": ("SignageCast: “{tv}” is running again", "Playback for the channel “{tv}” is running again."),
         "update": ("SignageCast: update failed", "{aktion}: {meldung} ({zeit})"),
         "sicherung": ("SignageCast: backup failed", "The automatic backup at {zeit} failed: {fehler}"),
         "doppelt": ("SignageCast: “{tv}” is stuttering", "The capture for “{tv}” has been duplicating many frames for 3 minutes. "
-                    "Remedy: System → Performance → “Restart sound and stream”."),
+                    "Remedy: System → Health → “Restart sound and stream”."),
         "doppelt_vorbei": ("SignageCast: “{tv}” is smooth again", "The capture for “{tv}” runs without duplicate frames again."),
         "leistung": ("SignageCast: “{tv}” is stuttering", "The TV page for “{tv}” has only reached {fps} frames/s for 5 minutes (target 25). "
-                     "Performance test in the admin: System → Performance."),
+                     "Performance test in the admin: System → Health."),
         "leistung_vorbei": ("SignageCast: “{tv}” is smooth again", "The TV page for “{tv}” reaches enough frames/s again."),
         "ha": ("SignageCast: Home Assistant not reachable", "Since {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant connected again", "The connection to Home Assistant is back."),
@@ -56,19 +56,19 @@ TEXTE = {
         "player_aus": ("SignageCast: player “{name}” not responding", "The Raspberry Pi player “{name}” has not reported for "
                        "5 minutes (power, network or Wi-Fi?)."),
         "player_wieder": ("SignageCast: player “{name}” is back", "The Raspberry Pi player “{name}” reports again."),
-        "internet": ("SignageCast: internet not reachable", "The internet has not been reachable since {seit}. The TVs show own media "
+        "internet": ("SignageCast: internet not reachable", "The internet has not been reachable since {seit}. The channels show own media "
                      "or a fallback picture instead of the live cams."),
         "internet_vorbei": ("SignageCast: internet reachable again", "The internet was not reachable from {seit} to {bis}. "
                             "The live cams are running again."),
-        "bild_schwarz": ("SignageCast: “{tv}” shows only black", "The TV “{tv}” has shown a black picture for several minutes although "
+        "bild_schwarz": ("SignageCast: “{tv}” shows only black", "The channel “{tv}” has shown a black picture for several minutes although "
                          "playback is running. Reloading and restarting did not help – please check the admin."),
         "bild_steht": ("SignageCast: picture of “{tv}” is frozen", "The picture of “{tv}” has not changed for several minutes although "
                        "the clock should run. Reloading and restarting did not help – please check the admin."),
-        "bild_vorbei": ("SignageCast: “{tv}” shows a picture again", "The TV “{tv}” shows a normal picture again."),
+        "bild_vorbei": ("SignageCast: “{tv}” shows a picture again", "The channel “{tv}” shows a normal picture again."),
         "speicher_gelb": ("SignageCast: storage is getting low", "Only {frei} GB free (reserve {reserve} GB). Uploads still work – "
-                          "please clean up under System → Storage (gallery, media, backups)."),
+                          "please clean up under System → Health (gallery, media, backups)."),
         "speicher_rot": ("SignageCast: storage full – uploads blocked", "Only {frei} GB free, the reserve of {reserve} GB is reached. "
-                         "Everything keeps running, but uploads are blocked until space is freed under System → Storage."),
+                         "Everything keeps running, but uploads are blocked until space is freed under System → Health."),
         "speicher_vorbei": ("SignageCast: storage OK again", "{frei} GB free again."),
     },
 }

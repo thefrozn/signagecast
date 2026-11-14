@@ -52,6 +52,10 @@ ul.todo li.aus { opacity: .7; } ul.todo li.todo-versteckt { font-size: .9em; } u
 details.erweitert { border-top: 1px dashed var(--linie); margin-top: 12px; }
 details.erweitert > summary { color: var(--leise); font-weight: 500; }
 @media (max-width: 640px) { #reiter, #unter { display: none; } #menue { display: block; } }
+textarea.fliess { min-height: 60px; font: inherit; }   /* Fließtext statt Code (seit 0.49) */
+h1 button.kopf-knopf { margin-left: auto; font-size: 14px; font-weight: 500; }   /* Durchsage (seit 0.49) */
+h1 button.kopf-knopf.an { border-color: var(--akzent); color: var(--akzent); }
+#unter button.neu { color: var(--akzent); }
 nav button.an { color: var(--text); border-bottom-color: var(--akzent); font-weight: 600; }
 main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
@@ -69,8 +73,9 @@ input[type=text], input[type=number], input[type=time], input[type=url], input[t
 input[type=text], input[type=url], input[type=password], textarea, select.breit { width: 360px; }
 input[type=number] { width: 110px; }
 textarea { width: 100%; min-height: 120px; font-family: ui-monospace, monospace; font-size: 13px; }
-button.knopf, label.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
+button.knopf, label.knopf, a.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
   padding: 8px 14px; min-height: 40px; cursor: pointer; }
+a.knopf { display: inline-flex; align-items: center; text-decoration: none; }   /* Link als Knopf (seit 0.49) */
 button.knopf.haupt, label.knopf.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; }
 button.knopf.gefahr { color: var(--schlecht); }
 button.knopf:disabled { opacity: .5; cursor: default; }

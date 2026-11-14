@@ -3,6 +3,8 @@
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
 0.33 (overview 0.35, players 0.36, categories 0.37) with the six areas Overview, TVs, Content, Live videos, Settings and System.
+**Since 0.49 the menu is ordered differently** (Overview, Displays, Content, Videos & radio, Settings, System; a TV's
+settings are now a *channel*); the texts below already use the new names, new pictures follow.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
@@ -82,7 +84,7 @@ preset, tune and B-frames per TV. A change is tried briefly first; if it does no
 ![Encoding settings per TV](tour/05a-encoding.jpg)
 
 ### 8. Players – Raspberry Pi, PC or browser (experimental)
-TVs → *Devices*: a player at the TV shows SignageCast – also on TVs without a usable browser. *Add player*: enter a
+Displays → *Devices*: a player at the TV shows SignageCast – also on TVs without a usable browser. *Add player*: enter a
 name, pick the TV, the **model** and the network (LAN or Wi-Fi), download a ready image and write it to an SD card or
 USB stick; nothing to type at the device. Or download one image for many devices: each shows a 6-digit code on the TV,
 which you enter under *Pair a player*.
@@ -186,7 +188,7 @@ built-in ones can be reset to default.
 the minimum quality (360p … 1080p) and the strike rules.
 
 ### 15. Radio
-Content → Radio: your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info,
+Videos & radio → Radio: your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info,
 a buffer that bridges short dropouts.
 
 ![Radio stations](tour/10-radio.jpg)
@@ -241,7 +243,7 @@ to report: TV failure, failed update or backup, Home Assistant disconnected, TV 
 ![Notifications](tour/17-notifications.jpg)
 
 ### 23. Performance test
-System → Performance measures for 10 seconds how smoothly every running TV is rendered and encoded – frames/s of the
+System → Health measures for 10 seconds how smoothly every running TV is rendered and encoded – frames/s of the
 TV page and of the encoder, speed, dropped or duplicated frames, CPU per TV, memory, graphics unit – and gives concrete
 recommendations. A second page, opened on the playback device, measures transfer and playback there. Below: after how
 many seconds without viewers a TV's video stream switches off.
@@ -249,7 +251,7 @@ many seconds without viewers a TV's video stream switches off.
 ![Performance test with recommendations](tour/18-performance.jpg)
 
 ### 24. Announcements, emergency screen and webhook
-Content → Announcements: the panel for the reception (`http://<IP>:8890/pult` – it sends and ends
+Settings → Announcement panel: the panel for the reception (`http://<IP>:8890/pult` – it sends and ends
 announcements, nothing else unless the account has more rights), the voice (offline with Piper: Kerstin or Thorsten), chime, accounts with their own password and the
 TVs they may reach, and templates. Further down the **emergency screen** with its templates and webhook commands, and
 **messages via webhook**: other systems (e.g. Home Assistant) put a short banner on the TVs, with a key shown only once.

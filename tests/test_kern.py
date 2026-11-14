@@ -270,6 +270,25 @@ class Uebersetzungen(unittest.TestCase):
         fehlt = [k for k in M.DE if not re.search(r"\b" + k + r":", en[:en.index("\n    },")])]
         self.assertEqual(fehlt, [])
 
+    def test_menue_vollstaendig(self):
+        """Seit 0.49: jede Seite im Menü hat eine Funktion und einen Namen in beiden Sprachen; alte Adressen zeigen auf Seiten."""
+        with open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", "tv.js"), encoding="utf-8") as f:
+            js = f.read()
+        bereiche = js[js.index("const BEREICHE = ["):js.index("const NEBEN")]
+        bnamen = set(re.findall(r'\["([a-z]+)", \[', bereiche))           # Bereiche; „uebersicht“ ist Bereich und Seite
+        seiten = set(re.findall(r'"([a-z]+)"', bereiche)) - (bnamen - {"uebersicht"})
+        seiten |= set(re.findall(r'"([a-z]+)"', js[js.index("const NEBEN"):js.index("const ALT")].split("//")[0]))
+        funk = js[js.index("const SEITEN = {"):js.index("// Bereiche (seit 0.17)")]
+        for sprache, start in (("de", "  de: {"), ("en", "  en: {")):
+            t = js[js.index(start):]
+            reiter = t[t.index("reiter: {"):t.index("}", t.index("reiter: {"))]
+            ber = t[t.index("bereiche: {"):t.index("}", t.index("bereiche: {"))]
+            self.assertEqual([s for s in sorted(seiten) if not re.search(r"\b" + s + r":", reiter)], [], sprache)
+            self.assertEqual([b for b in sorted(bnamen) if not re.search(r"\b" + b + r":", ber)], [], sprache)
+        self.assertEqual([s for s in sorted(seiten) if not re.search(r"\b" + s + r"[:,]", funk)], [])
+        alt = dict(re.findall(r'(\w+): "(\w+)"', js[js.index("const ALT = {"):js.index("};", js.index("const ALT = {"))]))
+        self.assertEqual([z for z in alt.values() if z not in seiten], [])
+
     def test_benachrichtigung_beide_sprachen(self):
         import benachrichtigung as BN
         self.assertEqual(set(BN.TEXTE["de"]), set(BN.TEXTE["en"]))

@@ -20,7 +20,7 @@ SignageCast at its tailnet address. Display, commands and the **terminal** (remo
 
 ## The easy way: login links (since 0.42)
 
-**Settings → Remote sites** → service *Tailscale – login link*:
+**Displays → Remote sites** → service *Tailscale – login link*:
 
 1. **Set up Tailscale** – SignageCast installs Tailscale from the official package archive (signing key pinned). In a
    Proxmox container the page first shows two lines for the Proxmox host (`/dev/net/tun`, see below).
@@ -92,7 +92,7 @@ SignageCast creates the one-time keys and deletes removed players through the AP
 - **Headscale:** `headscale apikeys create --expiration 365d`. The user ID is optional (`headscale users list`); the
   tag must be allowed in the Headscale policy (`tagOwners`).
 
-In SignageCast: **Settings → Remote sites** → service, the tailnet address of SignageCast, the access data, the tag →
+In SignageCast: **Displays → Remote sites** → service, the tailnet address of SignageCast, the access data, the tag →
 *Save* → *Check connection* (shows how many devices are in the tailnet and whether SignageCast was found).
 
 The access data is kept only in `/var/lib/signagecast/fernnetz.json` (readable only by the service). It is shown as
@@ -117,7 +117,7 @@ as well.
 
 ## 4. Create the player
 
-*TVs → Set up → Add player* (or *Image again* on an existing card) → tick **At another site (through Tailscale)** → create
+*Displays → + New device → Add player* (or *Image again* on an existing card) → tick **At another site (through Tailscale)** → create
 and write the image as usual. Take the player to its site and switch it on: Wi-Fi as usual (hotspot and QR code if
 needed). Within about a minute it joins the tailnet; its card shows the tailnet address and whether the connection is
 **direct** or goes **through a relay**.
@@ -145,7 +145,7 @@ key is invalid at once.
 
 ## Deutsch (kurz)
 
-**Einfach per Anmelde-Link (seit 0.42):** Einstellungen → **Fernstandorte** → *Tailscale – per Anmelde-Link* →
+**Einfach per Anmelde-Link (seit 0.42):** Displays → **Fernstandorte** → *Tailscale – per Anmelde-Link* →
 **Tailscale einrichten** (installiert das offizielle Paket; im Proxmox-Container erst zwei Zeilen auf dem Host, zeigt die
 Seite) → **Mit Tailscale verbinden** (Anmeldung im neuen Fenster) → **Einschalten** → empfohlene **Zugriffsregel**
 kopieren und im Regel-Editor von Tailscale einfügen. Player mit Häkchen *An einem anderen Standort*: beim ersten Start
@@ -165,7 +165,7 @@ Erweitert (unten): OAuth-Client (SignageCast erzeugt Einmal-Schlüssel und lösc
    Namensauflösung des Servers unberührt bleibt), Adresse mit `tailscale ip -4`. Docker/NAS: Tailscale auf
    dem Host.
 2. **Zugang:** Tailscale – OAuth-Client mit *Auth Keys: Write* und *Devices Core: Write*, Tag `tag:signagecast-player`;
-   Headscale – `headscale apikeys create`. In SignageCast: **Einstellungen → Fernstandorte** → speichern →
+   Headscale – `headscale apikeys create`. In SignageCast: **Displays → Fernstandorte** → speichern →
    *Verbindung prüfen*. Die Zugangsdaten liegen nur in `fernnetz.json` (Rechte 600), nicht in Sicherungen, nicht im MCP.
 3. **Zugriffsregel** aus der Seite übernehmen – Player dürfen nur SignageCast erreichen. Achtung: Ein Abschnitt `acls`
    ersetzt „alle dürfen alles“, eigene Regeln mit hineinnehmen.

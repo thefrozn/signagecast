@@ -17,12 +17,15 @@ that video, so the TV needs no app, no login and no updates.
 
 | Area | Pages | What you do there |
 |---|---|---|
-| **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every TV, viewers, CPU/RAM, time check, Home Assistant |
-| **TVs** | TVs · Players | Per TV in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded; players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)) |
-| **Content** | Layouts · Data sources · Media · Gallery · Clips · Radio · Announcements | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, gallery folders (pictures/PDFs for slideshows), scheduled clips, radio stations, announcement panel, emergency screen and messages via webhook |
-| **Live videos** | Streams · Categories · Rotation & quality · Search | Live cams; categories (edit, create, switch on/off for all TVs or per TV); minutes per stream, daylight, minimum quality and strikes; nightly search |
-| **Settings** | General · Home Assistant · Notifications · Storage locations (· Access in Docker) | Language, weather, location, time source; HA address and guide; outgoing notifications via Telegram/e-mail/HA; NAS/cloud folders for all file dialogs; admin password |
-| **System** | Updates · Backup · Storage · Performance · Log | Signed updates, maintenance window, encrypted backups, free space and what uses it, performance test, switching off the stream without viewers, change log |
+| **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every channel, viewers, CPU/RAM, time check, Home Assistant |
+| **Displays** | Channels · Devices · Remote sites · + New device | A **channel** is what a TV shows – per channel in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded. **Devices** are the players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); remote sites via Tailscale/Headscale ([REMOTE.md](REMOTE.md)); *+ New device* creates images and pairs players |
+| **Content** | Layouts · Data sources · Media · Gallery · Clips | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, gallery folders (pictures/PDFs for slideshows), scheduled clips |
+| **Videos & radio** | Streams · Categories · Stream search · Rules · Radio | Live cams; categories (edit, create, switch on/off for all channels or per channel); nightly search; minutes per stream, daylight, minimum quality and strikes; radio stations |
+| **Settings** | General · Home Assistant · Storage locations · AI assistants · Notifications · Announcement panel (· Access in Docker) | Language, weather, location, time source; HA address and guide; NAS/cloud folders for all file dialogs; Claude & co.; outgoing notifications via Telegram/e-mail/HA; voice, templates and accounts of the panel, emergency templates, messages via webhook; admin password |
+| **System** | Health · Updates · Backup · Log | Free space and what uses it, performance test, switching off the stream without viewers; signed updates, maintenance window; encrypted backups; change log |
+
+**📢 Announcement** (button at the top right, on every page): send an announcement or a ticker to chosen channels, or
+trigger and end the emergency screen.
 
 Every page has its own address (e.g. `…/index.html#benachrichtigung`). Unsaved changes are marked on their card;
 rarely needed options are folded under “Advanced”. On a new installation a short assistant asks for language,
@@ -31,21 +34,21 @@ location and (optionally) Home Assistant and shows the TV address.
 ## 3. Typical tasks
 
 ### More than animals: cities, beaches, space …
-Live videos → Categories → **More topics**: cities & squares, beaches & coasts,
+Videos & radio → Categories → **More topics**: cities & squares, beaches & coasts,
 mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders. Each topic has
 its own nightly search (only while it is switched on), sorts what it finds into its category and takes the location
 from the title (daylight rule as for animals; space and northern lights ignore it). On an update new categories start
 **switched off**, so your rotation does not change until you switch them on. Per TV you can switch categories off again
-under TVs → Live video → Categories.
+under Displays → Channels → Live video → Categories.
 
 ### Edit categories or create your own (since 0.37)
-Live videos → **Categories** shows every category with the number of its streams and where it is switched off. Open
+Videos & radio → **Categories** shows every category with the number of its streams and where it is switched off. Open
 one to change:
 - **Name** – empty keeps the built-in name (translated); own categories need one.
 - **Group** – *Animals* or *More topics* (only decides where it is listed and which filters apply).
-- **Switched on** – for all TVs and, with several TVs, per TV (the same switches as on the TV card).
+- **Switched on** – for all channels and, with several channels, per channel (the same switches as on the channel card).
 - **Search terms** – up to 6, one per line; each is one YouTube request per nightly search. The search only runs while
-  the category is switched on for all TVs. Animal categories can stay empty – the general animal search (Search page)
+  the category is switched on for all channels. Animal categories can stay empty – the general animal search (Stream search page)
   fills them.
 - **Words in the title** – one must appear in the title of a found stream (regular expressions allowed). For animals
   they also sort the finds of the general animal search: the first matching category wins, otherwise *Newly found*.
@@ -58,7 +61,7 @@ Built-in categories can be **reset to default** but not deleted; unchanged ones 
 delete your own category you choose where its streams go; it disappears from all TVs.
 
 ### Switch the TV on and off via Home Assistant
-TVs → TV card → *Switch via HA*: the TV's entity (`media_player`, `switch` or `remote`). When “black” starts in the
+Displays → Channels → *Switch via HA*: the TV's entity (`media_player`, `switch` or `remote`). When “black” starts in the
 schedule the TV is switched off, when it ends switched on again (also for the emergency screen). Since 0.37:
 - the card and the overview show whether the TV is **on, off or unreachable** according to HA (asked once a minute);
 - **after switching on** SignageCast waits until the TV is ready (up to 90 s) and can **select a source** (media_player,
@@ -70,13 +73,13 @@ schedule the TV is switched off, when it ends switched on again (also for the em
 - “Run now (test)” runs this immediately while the TV is on.
 
 ### Show something different at night
-TVs → *Schedule*: add a time range with another layout or “black”. A schedule always wins over the carousel.
+Displays → Channels → *Schedule*: add a time range with another layout or “black”. A schedule always wins over the carousel.
 
 ### Rotate several layouts
-TVs → *Carousel*: tick the layouts and set the minutes. Example: weather dashboard and photo layout every 5 minutes.
+Displays → Channels → *Carousel*: tick the layouts and set the minutes. Example: weather dashboard and photo layout every 5 minutes.
 
 ### Own pictures and videos instead of (or between) live cams
-Content → Media → upload JPG/PNG/MP4 (H.264)/WebM. Then TVs → *Video source*: “own media” or “mixed” (every N-th item own media).
+Content → Media → upload JPG/PNG/MP4 (H.264)/WebM. Then Displays → Channels → *Video source*: “own media” or “mixed” (every N-th item own media).
 
 ### When the internet is gone (since 0.38)
 Nothing to set up. If YouTube is not reachable (checked once a minute, two failures in a row), the video window shows
@@ -93,13 +96,13 @@ Layouts without a clock may stand still (e.g. only text or a picture). TVs in di
 itself) are not checked this way.
 
 ### Undo a layout change, bring back a deleted layout (since 0.38)
-Layout → ⋯ on the layout → *Versions*: the last 10 versions with time and user; *Restore* replaces the layout (the
+Content → Layouts → ⋯ on the layout → *Versions*: the last 10 versions with time and user; *Restore* replaces the layout (the
 current one becomes a version), *Download* saves one as file. Below the layouts, *Deleted layouts* brings back
 deleted ones.
 
 ### Let an AI build a layout (since 0.38)
-Layout → *Create with AI …* → *Copy instructions*. Paste them into an AI (ChatGPT, Claude, Gemini …), describe your wish
-at the marked place (“MY WISH: …”), copy the answer, then Layout → *Paste text …* → *Apply*. SignageCast repairs what
+Content → Layouts → *Create with AI …* → *Copy instructions*. Paste them into an AI (ChatGPT, Claude, Gemini …), describe your wish
+at the marked place (“MY WISH: …”), copy the answer, then Content → Layouts → *Paste text …* → *Apply*. SignageCast repairs what
 it can and lists it (unknown elements, invalid values, pictures that are not here yet). Then open the layout, upload
 pictures and choose Home Assistant entities. The format is described in [LAYOUT-FORMAT.md](LAYOUT-FORMAT.md) –
 generated from the code, so it is always current.
@@ -125,7 +128,7 @@ the configured location (Settings → General → Location), coloured by level (
 10 minutes and only while a layout uses the element. Outside Germany there are no data.
 
 ### Put a short message on all TVs (webhook)
-Content → Announcements → *Message via webhook* → **Create new key**. The key is shown **only once** – store it, e.g. in a password
+Settings → Announcement panel → *Message via webhook* → **Create new key**. The key is shown **only once** – store it, e.g. in a password
 manager. Then any system in your network can send:
 
 ```sh
@@ -163,11 +166,14 @@ with `signagecast_webhook: "Bearer <key>"` in `secrets.yaml`, and in an automati
 `action: rest_command.signagecast_meldung` with `data: {text: "Doorbell", stil: warnung}`.
 
 ### Announcements from the reception
-Content → Announcements: download a voice (Kerstin or Thorsten, once), add an account with a password and tick the
-TVs it may reach. At the reception open `http://<IP>:8890/pult`, log in, choose TVs, click a template (the first “…”
+From the admin itself (since 0.49): **📢 Announcement** at the top right – text, channels, display time, read aloud;
+the same page shows a ticker or the emergency screen.
+
+Settings → Announcement panel: download a voice (Kerstin or Thorsten, once), add an account with a password and tick the
+channels it may reach. At the reception open `http://<IP>:8890/pult`, log in, choose channels, click a template (the first “…”
 is selected – type the name), tick “read aloud” and send. The call appears in the middle of the screen and is read
 after a chime; because of the stream it takes about 6–10 seconds. Names are not stored (memory only, 2 hours).
-TVs reachable by a panel account record real sound so that announcements can be heard.
+Channels reachable by a panel account record real sound so that announcements can be heard.
 
 Since 0.38 an account can get more rights (tick them at the account): **ticker message** (runs along the bottom of the
 chosen TVs for 15 min – 12 h, optionally red), **switch layout for a while** (15 min – 12 h, before schedule and
@@ -206,7 +212,7 @@ are) – keep your originals.
 SignageCast never fills its disk. A reserve of **2 GB or 10 % of the disk** (whichever is more) always stays free for
 streams, logs and automatic backups. Uploads (gallery, media, PDFs, pictures, backups to restore) are checked
 **before** anything is transferred – the announced size has to fit above the reserve – and again for every chunk.
-**System → Storage** shows free space and what uses it (gallery, media, backups, clip cache …) with links to clean up.
+**System → Health** shows free space and what uses it (gallery, media, backups, clip cache …) with links to clean up.
 Below twice the reserve the to-do list and notifications (event “Storage getting low or full”) warn; at the reserve
 uploads and the clip cache stop, everything already there keeps running.
 
@@ -235,8 +241,9 @@ counts: from 2026-12-23 until 2027-01-02 shows the text from the morning of 23 D
 editor marks such elements with ⏱. Combine it with a condition if needed (both must apply).
 
 ### Emergency screen
-Content → Announcements → **Emergency screen**: enter templates (the first is used from the admin and the webhook),
-optionally a warning tone, then *Trigger now* (all TVs or one) and *End*. It shows the text in red across the whole
+Settings → Announcement panel → **Emergency screen**: enter templates (the first is used by the webhook) and
+optionally a warning tone. To trigger it: **📢 Announcement** at the top right → *Emergency screen* → choose a template or type
+a text, all channels or one → *Trigger now*; *End* stops it. It shows the text in red across the whole
 screen above every layout – also during “black” – and stays until someone ends it, even across a restart. Panel
 accounts with **may trigger the emergency screen** get a red section in the panel. By webhook (key from “Message via
 webhook”):
@@ -250,7 +257,7 @@ The warning tone is audible only on TVs that record sound (sound on, or reachabl
 An emergency screen is an additional notice, not a replacement for a certified alarm system.
 
 ### Really switch TVs off at night
-TVs → **Switch via HA**: enter the TV's entity in Home Assistant (`media_player.…`, `switch.…` for a smart plug, or
+Displays → Channels → **Switch via HA**: enter the TV's entity in Home Assistant (`media_player.…`, `switch.…` for a smart plug, or
 `remote.…`), save, try *Off (test)* and *On (test)*. From then on the TV is switched off when “black” starts in its
 schedule and on again when it ends or an emergency screen comes – only at that moment, so a TV switched on by hand at
 night stays on. Switching on works only if Home Assistant can do it (Samsung and LG usually need Wake-on-LAN in their
@@ -259,16 +266,16 @@ address by itself (start page or autostart of its browser).
 
 ### Play on a Raspberry Pi at the TV
 
-From 0.23 (experimental): **TVs → Set up** creates a ready SD card image per screen (Wi-Fi included);
-**TVs → Devices** manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
+From 0.23 (experimental): **Displays → + New device** creates a ready SD card image per screen (Wi-Fi included);
+**Displays → Devices** manages all Pis – status, screenshot, TV on/off via HDMI-CEC, rotation, Wi-Fi change, updates. Step by step:
 [Raspberry Pi as player](PLAYER.md). Pi 3 and Zero 2 W need the TV on H.264 / Full HD.
 Since 0.33 a Pi that allows it opens a **terminal** (root shell in the browser) from its card – off by default,
 see [Remote maintenance](PLAYER.md#remote-maintenance--terminal-in-the-browser-since-033).
 Since 0.41 a player can stand **at another site** and reach SignageCast through Tailscale or Headscale
-(*Settings → Remote sites*, then tick *At another site* for its image) – see [REMOTE.md](REMOTE.md).
+(*Displays → Remote sites*, then tick *At another site* for its image) – see [REMOTE.md](REMOTE.md).
 
 ### Output and capture size
-TVs → **Video stream**, per TV:
+Displays → Channels → **Video stream**, per channel:
 
 | Setting | Values | Meaning |
 |---|---|---|
@@ -276,7 +283,7 @@ TVs → **Video stream**, per TV:
 | **Capture (browser)** | 720p · **1080p** · 1440p | Size in which the browser draws the TV page (the layout stays 1920 × 1080 points and is only rasterised coarser or finer). 720p saves CPU and fetches live videos in 720p; 1440p is sharper for text on a 4K output but needs clearly more CPU. More than the output brings nothing. A change briefly restarts the stream. |
 
 ### Choose the encoder (advanced)
-TVs → **Video stream** → **Encoding (advanced)**, per TV. Normally leave everything on *Automatic*. Every option has an
+Displays → Channels → **Video stream** → **Encoding (advanced)**, per channel. Normally leave everything on *Automatic*. Every option has an
 explanation in the admin; in short:
 
 | Setting | Values | Meaning |
@@ -288,7 +295,7 @@ explanation in the admin; in short:
 
 Encoders that do not work on this computer are greyed out with the reason. Before a changed setting is used,
 SignageCast encodes one second as a test; if that fails, the TV stays on *Automatic* and the TV page says why. Saving
-restarts the stream of that TV (a few seconds black). Then check **System → Performance**: a speed below 1.0× means the
+restarts the stream of that TV (a few seconds black). Then check **System → Health**: a speed below 1.0× means the
 setting is too heavy (measured on an i5-7500T: software *medium* without tune ran at only 0.73× real time).
 
 ### Get notified when something breaks
@@ -362,23 +369,29 @@ It is never shown again. Create a new one and update the senders.
 
 ## Deutsch (kurz)
 
-Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Fernseher → Einrichten – fertiges Image je Bildschirm mit WLAN,
-zentrale Verwaltung unter Fernseher → Geräte; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
-Seit 0.41 auch **an anderen Standorten** über Tailscale oder Headscale (Einstellungen → Fernstandorte, beim Image
+Seit 0.49 ist die Verwaltung neu geordnet: Übersicht · **Displays** (Kanäle, Geräte, Fernstandorte, + Neues Gerät) · Inhalte
+(Layouts, Datenquellen, Medien, Galerie, Einspieler) · **Videos & Radio** (Streams, Kategorien, Stream-Suche, Regeln, Radio) ·
+Einstellungen (Allgemein, Home Assistant, Speicherorte, KI-Assistenten, Benachrichtigungen, Durchsage-Pult) · System
+(Zustand, Updates, Sicherung, Protokoll); **📢 Durchsage** oben rechts sendet Durchsage, Laufschrift oder Notfall-Vollbild.
+Ein **Kanal** ist das, was ein Fernseher zeigt (früher hieß er selbst „Fernseher“).
+
+Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Displays → + Neues Gerät – fertiges Image je Bildschirm mit WLAN,
+zentrale Verwaltung unter Displays → Geräte; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
+Seit 0.41 auch **an anderen Standorten** über Tailscale oder Headscale (Displays → Fernstandorte, beim Image
 „An einem anderen Standort“) – [REMOTE.md](REMOTE.md#deutsch-kurz).
 
 Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, ohne sie zu erledigen – Tipps dauerhaft, „Neue Version“ nur für diese Version, Probleme bis sie einmal behoben waren (tritt es wieder auf, erscheint es wieder). „Startpasswort ändern“ lässt sich nicht ausblenden; Benachrichtigungen kommen weiter.
 
-Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
+Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Videos & Radio → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
 
-Seit 0.37: **Kategorien bearbeiten und eigene anlegen** unter Live-Videos → **Kategorien**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
+Seit 0.37: **Kategorien bearbeiten und eigene anlegen** unter Videos & Radio → **Kategorien**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
 
 Seit 0.38: **Internet weg** – das Videofenster zeigt eigene Medien im Kreis (ohne Medien ein ruhiges Bild zur
 Tageszeit) statt Schwarz oder Fehler, keine Strikes; Kachel *Internet* in der Übersicht, Ereignis „Internet nicht
 erreichbar“ (die Entwarnung nennt den Zeitraum). **Bildprüfung** – alle 2 min ein Miniaturbild je laufendem Fernseher:
 schwarz oder (mit sichtbarer Uhr) stehend, dreimal hintereinander → TV-Seite neu laden, beim nächsten Mal Wiedergabe neu
 starten und melden. **Änderungsprotokoll** (System → Protokoll: wer, wann, was – nie Werte), **Layout-Versionen**
-(⋯ → Versionen, die letzten 10, auch gelöschte Layouts) und **Layout mit KI bauen** (Layout → „Mit KI erstellen …“ →
+(⋯ → Versionen, die letzten 10, auch gelöschte Layouts) und **Layout mit KI bauen** (Inhalte → Layouts → „Mit KI erstellen …“ →
 Anleitung kopieren, Antwort mit „Text einfügen …“ übernehmen; der Import repariert und nennt jede Änderung; Format in
 [LAYOUT-FORMAT.md](LAYOUT-FORMAT.md)). **Pult-Rechte** je Zugang: Laufschrift-Meldung, Layout vorübergehend
 umschalten, Fernseher über HA ein/aus.
@@ -393,7 +406,7 @@ Das Handbuch erklärt den Alltag: Zeitplan und Karussell je Fernseher, eigene Me
 **Webseiten als Bildschirmfoto** (Baustein „Webseite“ → Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten
 verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtbar),
 **Unwetterwarnungen des DWD** als Layout-Baustein (Stufenfarben, nur Deutschland, Abruf alle 10 min nur bei Nutzung),
-**Meldung per Webhook** (Schlüssel unter Inhalte → Durchsagen erzeugen – wird nur einmal angezeigt –, dann
+**Meldung per Webhook** (Schlüssel unter Einstellungen → Durchsage-Pult erzeugen – wird nur einmal angezeigt –, dann
 `POST http://<IP>:8890/meldung` mit `Authorization: Bearer <Schlüssel>` und JSON `text`, `dauer`, `stil`, optional `tv`;
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,
@@ -405,7 +418,7 @@ verkleinert, nur diese Fassung bleibt; Reihenfolge per Ziehen, mehrere auswähle
 füllen, Reihenfolge wie im Ordner/Name/neueste/zufällig, überblenden oder direkt – alle Fernseher zeigen dasselbe Bild.
 Auch als **Hintergrund-Diashow**. Die Bilder kommen nicht in die Sicherung (die Ordnernamen schon).
 **Speicherwächter**: Reserve von 2 GB bzw. 10 % der Platte bleibt immer frei; Uploads werden schon vor dem Übertragen
-abgelehnt, wenn sie nicht passen. **System → Speicher** zeigt, was wie viel belegt; bei wenig Platz Hinweis unter
+abgelehnt, wenn sie nicht passen. **System → Zustand** zeigt, was wie viel belegt; bei wenig Platz Hinweis unter
 „Zu erledigen“ und Benachrichtigung, ist die Reserve erreicht, sind Uploads gesperrt – alles andere läuft weiter.
 Seit 0.48: **Speicherorte** – Einstellungen → Speicherorte: WebDAV (Nextcloud, ownCloud, NAS), SMB (nur SMB3) oder ein
 Ordner auf dem Server (unter /mnt, /media, /srv; Docker: Volume nach /speicherorte) einmal eintragen, standardmäßig nur
@@ -414,10 +427,10 @@ lesend. Danach hat jedes Dateifeld den Knopf **Aus Speicherort**. Galerie-Ordner
 Datenquellen lesen ihre Datei bei jedem Abruf aus dem Speicherort, und die automatische Sicherung kann zusätzlich in
 einen Speicherort mit Schreibrecht (experimentell). Passwörter bleiben nur auf dem Server (nicht in Sicherungen).
 Seit 0.21: **PDF** als Baustein (bis 50 Seiten, blättert nach der Uhr), **Zeitraum** je Baustein
-(„ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (Inhalte → Durchsagen; im Pult für Zugänge mit
+(„ab“/„bis“, ohne Uhrzeit der ganze Tag), **Notfall-Vollbild** (📢 Durchsage oben rechts, Vorlagen unter Einstellungen → Durchsage-Pult; im Pult für Zugänge mit
 dem Recht dazu; Webhook `POST /alarm`, beenden mit `{"aus": true}`) und **Fernseher über Home Assistant schalten**
-(Fernseher → „Über HA schalten“: bei „schwarz“ aus, danach wieder an – nur beim Wechsel).
-Seit 0.22: **Kodierung je Fernseher** (Fernseher → Videostream → „Kodierung (für Fortgeschrittene)“): Encoder
+(Displays → Kanäle → „Über HA schalten“: bei „schwarz“ aus, danach wieder an – nur beim Wechsel).
+Seit 0.22: **Kodierung je Fernseher** (Displays → Kanäle → Videostream → „Kodierung (für Fortgeschrittene)“): Encoder
 (Automatisch, VAAPI, Intel Quick Sync ab 11./12. Generation, NVIDIA NVENC experimentell, Software libx264), Preset
 (ultrafast bis medium, Standard veryfast), Tune (zerolatency oder keins) und B-Frames (0–4, Standard 0) – mit Erklärung
 je Feld; was hier nicht geht, ist ausgegraut, jede Änderung wird vorher kurz probekodiert, sonst bleibt „Automatisch“.

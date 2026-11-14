@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.49.0 (2026-11-14)
+- **Admin menu reordered** so that every topic has exactly one place and the order follows the work:
+  Overview · **Displays** (Channels, Devices, Remote sites, *+ New device*) · Content (Layouts, Data sources, Media,
+  Gallery, Clips) · **Videos & radio** (Streams, Categories, Stream search, Rules, Radio) · Settings (General, Home
+  Assistant, Storage locations, AI assistants, Notifications, Announcement panel, Access in Docker) · System
+  (**Health**, Updates, Backup, Log). Remote sites moved from Settings to Displays, Radio from Content to Videos & radio,
+  *Rotation & quality* is now *Rules*, *Performance* and *Storage* are one page *Health* (with switching off the
+  stream without viewers).
+- **Channels:** what a TV shows (layout, schedule, live video, sound, its own address) is now called a **channel**, the
+  hardware at the TV a **device** – in the admin, the panel, notifications and the docs. Where the real TV is meant
+  (HDMI-CEC, switching via Home Assistant, the TV's browser) it stays “TV”. API and MCP names do not change.
+- **📢 Announcement button** at the top right on every page: send an announcement (text, channels, display time, read
+  aloud) or a ticker, trigger and end the emergency screen – right from the admin. Voice, templates, panel accounts
+  and the webhook stay under *Settings → Announcement panel*.
+- Old page addresses (`#leistung`, `#speicher`, …) and remembered pages lead to the new place; all hints and the
+  docs use the new names. A test checks that every page in the menu has a name in both languages.
+
 ## v0.48.1 (2026-11-14)
 - **Correct menu paths in hints and docs:** several texts pointed to places that no longer exist – the initial
   password hint (*Settings → Access*, not *System → Access*), the voice hint of the announcement panel (*Content →

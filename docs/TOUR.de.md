@@ -4,6 +4,8 @@ Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Brow
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
 angebunden). Die Verwaltung zeigt Version 0.33 (Übersicht 0.35, Player 0.36, Kategorien 0.37) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
 Einstellungen und System.
+**Seit 0.49 ist das Menü neu geordnet** (Übersicht, Displays, Inhalte, Videos & Radio, Einstellungen, System; die
+Einstellungen eines Fernsehers heißen jetzt *Kanal*); die Texte unten nutzen schon die neuen Namen, neue Bilder folgen.
 
 **🇬🇧 [English version](TOUR.md)**
 
@@ -88,7 +90,7 @@ bleibt SignageCast bei „Automatisch“. Felder, die für den aktiven Encoder n
 ![Kodierung je Fernseher](tour/de/05a-encoding.jpg)
 
 ### 8. Player – Raspberry Pi, PC oder Browser (experimentell)
-Fernseher → *Geräte*: Ein Player am Fernseher zeigt SignageCast – auch an Fernsehern ohne brauchbaren Browser.
+Displays → *Geräte*: Ein Player am Fernseher zeigt SignageCast – auch an Fernsehern ohne brauchbaren Browser.
 *Player hinzufügen*: Name eingeben, Fernseher, **Modell** und Netzwerk (LAN oder WLAN) wählen, fertiges Image
 herunterladen und auf eine SD-Karte oder einen USB-Stick schreiben; am Gerät musst du nichts eintippen. Oder ein Image
 für viele Geräte: Jedes zeigt einen 6-stelligen Code auf dem Fernseher, den du unter *Player koppeln* eingibst.
@@ -123,7 +125,7 @@ oder spätestens nach 60 Minuten endet die Sitzung.
 ![Terminal zu einem Raspberry Pi im Browser](tour/de/05c-remote-terminal.jpg)
 
 ### 10. Layouts und Editor
-Inhalte → Layout beginnt mit allen Layouts als Kacheln – Mini-Vorschau, auf welchem Fernseher es läuft, Bearbeiten
+Inhalte → Layouts beginnt mit allen Layouts als Kacheln – Mini-Vorschau, auf welchem Fernseher es läuft, Bearbeiten
 sowie Kopieren / Exportieren / Löschen im Menü „⋯“. „Neues Layout“ fragt nach Name und Ausgangspunkt (leer, Vorlage
 oder Kopie), so wird nie ein bestehendes Layout überschrieben.
 
@@ -194,7 +196,7 @@ nächtlicher Suche; eingebaute lassen sich auf den Standard zurücksetzen.
 Mindestqualität (360p … 1080p) und die Strike-Regeln.
 
 ### 15. Radio
-Inhalte → Radio: eigene Sender (MP3/AAC, auch .m3u/.pls), Vorschläge für deinen Standort von radio-browser.info und ein
+Videos & Radio → Radio: eigene Sender (MP3/AAC, auch .m3u/.pls), Vorschläge für deinen Standort von radio-browser.info und ein
 Puffer, der kurze Aussetzer überbrückt.
 
 ![Radiosender](tour/de/10-radio.jpg)
@@ -252,7 +254,7 @@ ruckelt.
 ![Benachrichtigungen](tour/de/17-notifications.jpg)
 
 ### 23. Leistungstest
-System → Leistung misst 10 Sekunden lang, wie flüssig jeder laufende Fernseher gezeichnet und kodiert wird – Bilder/s
+System → Zustand misst 10 Sekunden lang, wie flüssig jeder laufende Fernseher gezeichnet und kodiert wird – Bilder/s
 der TV-Seite und des Encoders, Tempo, verworfene oder doppelte Bilder, CPU je Fernseher, Speicher, Grafikeinheit – und
 gibt konkrete Empfehlungen. Eine zweite Seite, auf dem Abspielgerät geöffnet, misst dort Übertragung und Wiedergabe.
 Darunter: nach wie vielen Sekunden ohne Zuschauer der Videostream eines Fernsehers abschaltet.
@@ -260,7 +262,7 @@ Darunter: nach wie vielen Sekunden ohne Zuschauer der Videostream eines Fernsehe
 ![Leistungstest mit Empfehlungen](tour/de/18-performance.jpg)
 
 ### 24. Durchsagen, Notfall-Vollbild und Webhook
-Inhalte → Durchsagen: das Pult für den Empfang (`http://<IP>:8890/pult` – es sendet und beendet Durchsagen,
+Einstellungen → Durchsage-Pult: das Pult für den Empfang (`http://<IP>:8890/pult` – es sendet und beendet Durchsagen,
 mehr nur mit weiteren Rechten des Zugangs),
 die Stimme (offline mit Piper: Kerstin oder Thorsten), Gong, Zugänge mit eigenem Passwort und den Fernsehern, die sie
 erreichen dürfen, und Vorlagen. Weiter unten das **Notfall-Vollbild** mit Vorlagen und Webhook-Befehlen und die

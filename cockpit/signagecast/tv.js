@@ -15,38 +15,45 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Fernseher", player: "Geräte", einrichten: "Einrichten", layout: "Layout", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Rotation & Qualität", suche: "Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", pult: "Durchsagen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher", speicherorte: "Speicherorte" },
-    pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Fernseher – keine Einstellungen. Adresse:",
+    reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+              video: "Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher", speicherorte: "Speicherorte" },
+    pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Kanäle – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
-          gong: "Gong vor der Durchsage", dauer: "Standard-Anzeigedauer (s)", zugaenge: "Zugänge", zugangText: "Jeder Zugang hat ein eigenes Passwort und darf nur die angehakten Fernseher erreichen (keiner angehakt = alle).",
+          gong: "Gong vor der Durchsage", dauer: "Standard-Anzeigedauer (s)", zugaenge: "Zugänge", zugangText: "Jeder Zugang hat ein eigenes Passwort und darf nur die angehakten Kanäle erreichen (keiner angehakt = alle).",
           name: "Name", pwNeu: "neues Passwort", pwGesetzt: "Passwort gesetzt", pwFehlt: "noch kein Passwort", zugangNeu: "Zugang hinzufügen",
           entfernen: "Entfernen", vorlagen: "Vorlagen", vorlagenText: "Eine Vorlage je Zeile; „…“ markiert die Lücke für den Namen.",
-          art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Fernseher mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
+          art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Kanäle mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
           darfAlarm: "darf das Notfall-Vollbild auslösen",
           recht: { meldung: "darf Laufschrift-Meldungen senden", layout: "darf das Layout vorübergehend umschalten", schalten: "darf Fernseher ein- und ausschalten (HA)" } },
-    al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Fernseher → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
-          vorlagen: "Vorlagen (eine je Zeile)", ton: "Warnton alle 10 Sekunden (hörbar auf Fernsehern mit Ton oder Pult-Vorlesen)", an: "Jetzt auslösen", aus: "Beenden", alle: "alle Fernseher",
+    al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Displays → Kanäle → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
+          vorlagen: "Vorlagen (eine je Zeile)", ton: "Warnton alle 10 Sekunden (hörbar auf Kanälen mit Ton oder Pult-Vorlesen)", an: "Jetzt auslösen", aus: "Beenden", alle: "alle Kanäle",
           wirklich: "Notfall-Vollbild wirklich jetzt auf den Fernsehern zeigen?", laeuft: (z, v) => `Notfall-Vollbild läuft seit ${z} Uhr (${v})`,
-          webhook: "Per Webhook (Schlüssel aus „Meldung per Webhook“):", beendet: "Notfall-Vollbild beendet", ausgeloest: "Notfall-Vollbild ausgelöst" },
-    lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Fernseher läuft.",
+          webhook: "Per Webhook (Schlüssel aus „Meldung per Webhook“):", beendet: "Notfall-Vollbild beendet", ausgeloest: "Notfall-Vollbild ausgelöst", ausloesenWo: "📢 Auslösen unter „Durchsage“" },
+    ds: { durchsage: "Durchsage", durchsageText: "Ein Text groß in der Bildmitte, auf Wunsch vorgelesen – z. B. „Bitte zur Rezeption“.",
+          vorlage: "– Vorlage wählen –", textPlatz: "Text der Durchsage", keinerAlle: "Keinen Kanal angehakt = alle Kanäle.",
+          ohneStimme: "Vorlesen geht erst, wenn unter Einstellungen → Durchsage-Pult eine Stimme geladen ist.", senden: "Durchsage senden", dauer: "Anzeigedauer (s)",
+          gesendet: "Durchsage wird gezeigt", lauf: "Laufschrift", laufText: "Ein Text läuft unten durchs Bild, bis die Zeit um ist oder du ihn beendest.",
+          wieLange: "Wie lange", warnung: "als Warnung (rot)", laufSenden: "Laufschrift zeigen", laufAus: "Laufschrift beenden",
+          laufAn: "Laufschrift wird gezeigt", laufBeendet: "Laufschrift beendet", min: (n) => `${n} min`, std: (n) => `${n} h`,
+          eigenerText: "oder eigener Text", einstellungen: "Stimme, Vorlagen und Zugänge für das Pult am Empfang:", keinText: "Bitte einen Text eingeben." },
+    lt: { server: "Server: Erzeugung und Kodierung", serverText: "Misst 10 Sekunden lang, wie flüssig SignageCast die Bilder erzeugt und kodiert – am besten, während der ruckelnde Kanal läuft.",
           start: "Test starten (10 s)", laeuftTest: "Test läuft …", system: "System", cpu: "CPU", kerne: "Kerne", ram: "Speicher frei", gpu: "Grafikeinheit",
           seite: "Bilder/s TV-Seite", kodierung: "Bilder/s Kodierung", tempo: "Tempo", verloren: "verworfen/doppelt", cpuKette: "CPU (Kerne)", aus: "läuft nicht",
           ziel: "Ziel: 25 Bilder/s, Tempo 1,0×", tonNeu: "Ton und Stream neu starten", tonNeuText: "Hilft, wenn die Aufnahme viele Bilder doppelt (Ruckeln trotz flüssiger Seite). Die Fernseher sind dabei kurz schwarz.", tonNeuOk: "Ton und Stream werden neu gestartet", geraet: "Auf dem Abspielgerät testen", geraetText: "Übertragung und Wiedergabe lassen sich nur auf dem Gerät messen, auf dem es ruckelt. Öffne diese Adresse dort im Browser (gleiches Netz):",
           letzteGeraete: "Ergebnisse von Geräten", keine: "noch keine", empfehlungen: "Empfehlungen",
           empf: {
-            keine_kette: () => "Gerade läuft kein Fernseher. Erst den Stream auf dem Fernseher (oder im Browser) öffnen, dann testen.",
-            seite_langsam: (p) => `„${p.tv}“: Die TV-Seite schafft nur ${p.fps} Bilder/s (Ziel 25). Das Layout ist zu aufwendig für die CPU – Webseiten-, Kamera- und Diagramm-Bausteine kosten am meisten. Layout entschlacken, weniger Fernseher gleichzeitig oder dem Container mehr Kerne geben.`,
-            kodierung_langsam: (p) => `„${p.tv}“: Die Kodierung läuft nur mit ${p.tempo}× Echtzeit. ${p.aufloesung === 2160 ? "Ausgabe auf Full HD stellen oder " : ""}Bitrate senken; bei mehreren Fernsehern ist die Grafikeinheit ausgelastet.`,
+            keine_kette: () => "Gerade läuft kein Kanal. Erst den Stream auf dem Fernseher (oder im Browser) öffnen, dann testen.",
+            seite_langsam: (p) => `„${p.tv}“: Die TV-Seite schafft nur ${p.fps} Bilder/s (Ziel 25). Das Layout ist zu aufwendig für die CPU – Webseiten-, Kamera- und Diagramm-Bausteine kosten am meisten. Layout entschlacken, weniger Kanäle gleichzeitig oder dem Container mehr Kerne geben.`,
+            kodierung_langsam: (p) => `„${p.tv}“: Die Kodierung läuft nur mit ${p.tempo}× Echtzeit. ${p.aufloesung === 2160 ? "Ausgabe auf Full HD stellen oder " : ""}Bitrate senken; bei mehreren Kanälen ist die Grafikeinheit ausgelastet.`,
             bilder_verloren: (p) => `„${p.tv}“: ${p.n} Bilder verworfen oder doppelt – die Erzeugung hält nicht Schritt. Meist CPU-Last (siehe oben).`,
             ton_doppelt: (p) => `„${p.tv}“: ${p.n} Bilder doppelt, obwohl die Seite flüssig läuft – die Aufnahme bekommt zu wenig Rechenzeit (z. B. andere Gäste auf demselben Host) oder die Grafikeinheit ist am Limit. Abhilfe: dem Container Vorrang geben (Proxmox: cpuunits), Ausgabe auf Full HD; einmalig hilft „Ton und Stream neu starten“.`,
-            cpu_hoch: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Fernseher). Je Fernseher etwa 1 Kern einplanen – in Proxmox mehr Kerne zuweisen oder weniger Fernseher gleichzeitig.`,
-            cpu_knapp: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Fernseher) – wenig Reserve. Ein weiterer Fernseher oder ein aufwendiges Layout kann zum Ruckeln führen.`,
-            ram_knapp: (p) => `Nur noch ${p.frei} MB Speicher frei. Je Fernseher etwa 0,9 GB einplanen – dem Container mehr Speicher geben.`,
+            cpu_hoch: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Kanäle). Je Kanal etwa 1 Kern einplanen – in Proxmox mehr Kerne zuweisen oder weniger Kanäle gleichzeitig.`,
+            cpu_knapp: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Kanäle) – wenig Reserve. Ein weiterer Kanal oder ein aufwendiges Layout kann zum Ruckeln führen.`,
+            ram_knapp: (p) => `Nur noch ${p.frei} MB Speicher frei. Je Kanal etwa 0,9 GB einplanen – dem Container mehr Speicher geben.`,
             gpu_hoch: (p) => `Die Grafikeinheit läuft mit ${p.gpu} % ihres Höchsttakts – nahe an der Grenze. Bitrate oder Auflösung senken.`,
-            software: () => "Keine Grafikeinheit – Video wird per CPU kodiert (nur Full HD, H.264). Für 4K oder mehrere Fernseher die Intel-/AMD-Grafik an den Container durchreichen.",
+            software: () => "Keine Grafikeinheit – Video wird per CPU kodiert (nur Full HD, H.264). Für 4K oder mehrere Kanäle die Intel-/AMD-Grafik an den Container durchreichen.",
             mediamtx_langsam: (p) => `MediaMTX hat in den letzten 10 Minuten ${p.n}-mal Bilder weggeworfen („reader is too slow“) – sichtbar als Sprung um etwa eine Sekunde. Abhilfe: Update auf SignageCast 0.19.2 (größere Warteschlange) bzw. Ausgabe auf Full HD oder niedrigere Bitrate.`,
             server_ok: () => "Server in Ordnung: Erzeugung und Kodierung schaffen Echtzeit. Ruckelt es trotzdem, liegt es an Übertragung oder Abspielgerät – Test auf dem Gerät (unten).",
           } },
@@ -56,24 +63,24 @@ const TEXTE = {
             browser: ["Browser des Fernsehers", "Smart-TV, Fire TV, Android-TV-Box oder ein Tablet: eine Adresse als Startseite."],
             pi: ["Raspberry Pi", "Für Fernseher ohne brauchbaren Browser: fertiges Image auf eine SD-Karte schreiben, per HDMI anschließen."],
             pc: ["PC", "Mini-PC oder alter Laptop: fertiges Image auf einen USB-Stick, startet direkt in die Anzeige."] },
-          fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Fernseher – findest du in den Bereichen oben.",
+          fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Streams, Radio, mehr Kanäle – findest du in den Bereichen oben.",
           fertigPlayer: "Fertig! Lege jetzt den Player an: Image erstellen, schreiben, einstecken – er meldet sich danach von selbst unter „Geräte“.",
           zumPlayer: "Player anlegen", lokal: "„localhost“ erreicht der Fernseher nicht – nimm die IP dieses Computers im Heimnetz (Docker: SC_HOST_IP setzen).",
           mehr: "Außerdem möglich", mehrListe: { fern: "Fernstandorte – Player an anderen Orten über Tailscale oder Headscale", ki: "KI-Assistenten – Claude & Co. bauen Layouts und schreiben Laufschriften", pult: "Durchsage-Pult – eine eigene Seite nur für Meldungen, z. B. am Empfang" },
           weiter: "Weiter", zurueck: "Zurück", ueberspringen: "Überspringen", spaeter: "Später einrichten", los: "Zur Übersicht" },
     pl: { titel: "Player: Raspberry Pi, PC oder Browser", zitat: (s) => `„${s}“`, text: "Ein Raspberry Pi am Fernseher zeigt den Stream per HDMI – auch an Fernsehern ohne brauchbaren Browser. Du erstellst hier ein fertiges Image, schreibst es auf eine SD-Karte, steckst sie ein – fertig. Danach verwaltest du alle Geräte unter „Geräte“.",
-          modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Fernseher dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
+          modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Kanal dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           ram: "Arbeitsspeicher: Für den Stream reicht 1 GB (Zero 2 W: 512 MB). Für den Direktmodus mindestens 2 GB, besser 4 GB – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe; mit Schreibschutz liegt auch alles, was der Browser speichert, im Arbeitsspeicher. Schätzwerte, auf echten Pis noch nicht gemessen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
-          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Geräte → Karte des Pi → Anzeige).",
+          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Displays → Geräte → Karte des Pi → Anzeige).",
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisAlt: (s) => `veraltet – bitte neu laden (SignageCast ${s})`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
-          koppeln: "Player koppeln (ein Image für mehrere Geräte)", koppelnText: "Ein Image für beliebig viele Pis oder PCs: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jedes Gerät zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Fernseher wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
+          koppeln: "Player koppeln (ein Image für mehrere Geräte)", koppelnText: "Ein Image für beliebig viele Pis oder PCs: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jedes Gerät zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Kanal wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
           sammelImage: "Image für mehrere Geräte herunterladen", fuer: "Für", code: "Code vom Fernseher", codePlatz: "123 456", koppelnKnopf: "Koppeln",
           gekoppelt: "Gekoppelt – der Pi startet in wenigen Sekunden.", wartend: (n) => n === 1 ? "1 Pi zeigt gerade einen Code" : `${n} Pis zeigen gerade einen Code`,
           keinerWartet: "Gerade zeigt kein Pi einen Code.",
-          neu: "Player hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Fernseher", keinTv: "– noch keiner –", modell: "Modell",
+          neu: "Player hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Kanal", keinTv: "– noch keiner –", modell: "Modell",
           m: { pi45: "Pi 5, Pi 4 oder Pi 400", pi3: "Pi 3 oder Zero 2 W" }, netz: "Netzwerk", kabel: "LAN-Kabel", wlan: "WLAN",
           wlanGesp: "Gespeichertes WLAN", wlanNeu: "neues WLAN eingeben", ssid: "WLAN-Name (SSID)", pw: "WLAN-Passwort", merken: "WLAN in der Verwaltung speichern (für weitere Pis)",
           merkenText: "Gespeichert wird nur der WPA-Schlüssel, nicht das Passwort selbst. Er gibt trotzdem Zugang zum WLAN – Sicherungen enthalten ihn nur „mit Zugangsdaten“.",
@@ -87,7 +94,7 @@ const TEXTE = {
           liste: "Geräte", keine: "Noch kein Gerät – richte unter „Einrichten“ einen Raspberry Pi, PC oder Browser ein.", neuGeraet: "Neues Gerät einrichten", zuGeraete: "Zu „Geräte“", angelegt: "Angelegt – nach dem ersten Start meldet sich das Gerät unter „Geräte“.", online: "online", offline: "offline", nieGesehen: "hat sich noch nie gemeldet",
           zuletzt: (z) => `zuletzt ${z}`, seit: (z) => `seit ${z}`, ip: "IP", netzArt: { kabel: "Kabel", wlan: "WLAN", hotspot: "Hotspot (Einrichtung)", keins: "kein Netz" },
           temp: "Temperatur", version: "Player", hdmi: "Bildschirm", keinHdmi: "kein Bildschirm erkannt", video: "Video",
-          zustand: { start: "startet", fern_link: "wartet auf Freigabe in Tailscale", koppeln: "wartet auf Kopplung", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Fernseher zugewiesen", aus: "Bildschirm aus (Zeitplan)",
+          zustand: { start: "startet", fern_link: "wartet auf Freigabe in Tailscale", koppeln: "wartet auf Kopplung", spielt: "spielt", verbinde: "verbindet …", kein_tv: "kein Kanal zugewiesen", aus: "Bildschirm aus (Zeitplan)",
                      stream_fehler: "Stream-Fehler", gesperrt: "entfernt", unbekannt: "dem Server unbekannt", direkt: "zeigt die Seite direkt", direkt_start: "Browser startet …" },
           drehung: "Drehung", aufloesung: "Ausgabe", a: { auto: "wie der Fernseher meldet", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Lautstärke (%)", cec: "Fernseher nach Zeitplan ein- und ausschalten (HDMI-CEC)", cecText: "Wenn das Layout „schwarz“ ist (Zeitplan des Fernsehers), schaltet der Pi den Fernseher per HDMI aus und danach wieder ein. Am Fernseher muss CEC an sein (Samsung „Anynet+“, LG „SimpLink“, Sony „Bravia Sync“).",
@@ -106,7 +113,7 @@ const TEXTE = {
             wartet: "wartet auf den Player", offline: "noch nicht abgeholt – ist der Player online?", abgeholt: (s) => `abgeholt nach ${s}`,
             umsetzen: "wird umgesetzt …", uebernommen: "übernommen", ok: "erledigt", fehler: "fehlgeschlagen", auto: "automatisch",
             terminal: "Terminal", laeuft: "läuft",
-            e: { tv: "Fernseher", anzeige_modus: "Anzeige", drehung: "Drehung", aufloesung: "Ausgabe", lautstaerke: "Lautstärke", hwdec: "Video-Dekodierung",
+            e: { tv: "Kanal", anzeige_modus: "Anzeige", drehung: "Drehung", aufloesung: "Ausgabe", lautstaerke: "Lautstärke", hwdec: "Video-Dekodierung",
                  schreibschutz: "Schreibschutz", wlan: "WLAN" },
             modus: { stream: "Stream", direkt: "Direkt" }, an: "an", aus: "aus",
             h: { ersetzt: "durch eine neuere Änderung ersetzt", dienst_neu: "verworfen – SignageCast wurde neu gestartet, bevor der Player es abholte",
@@ -136,8 +143,8 @@ const TEXTE = {
           entfernen: "Entfernen", entfernenFrage: (n) => `Player „${n}“ entfernen? Sein Schlüssel wird ungültig, der Pi zeigt dann nur noch einen Hinweis.`,
           befehlOk: "Befehl gesendet – der Player holt ihn in wenigen Sekunden ab", bildAlt: (z) => `Bildschirmfoto von ${z}`, netzwerke: "WLANs auf dem Player",
           update: "Letztes Systemupdate",
-          h: { pi_kein_tv: "Kein Fernseher zugewiesen – der Pi zeigt nur einen Hinweis.", pi_h265: "Pi 3/Zero 2 W kann H.265 nicht flüssig abspielen: beim Fernseher den Codec „H.264“ wählen.",
-               pi_4k: "Pi 3/Zero 2 W schafft kein 4K: beim Fernseher die Auflösung „Full HD“ wählen.", pi5_h264_4k: "Der Pi 5 dekodiert H.264 nur per CPU – 4K ruckelt. Beim Fernseher „H.265“ oder „Full HD“ wählen.",
+          h: { pi_kein_tv: "Kein Kanal zugewiesen – der Pi zeigt nur einen Hinweis.", pi_h265: "Pi 3/Zero 2 W kann H.265 nicht flüssig abspielen: beim Kanal den Codec „H.264“ wählen.",
+               pi_4k: "Pi 3/Zero 2 W schafft kein 4K: beim Kanal die Auflösung „Full HD“ wählen.", pi5_h264_4k: "Der Pi 5 dekodiert H.264 nur per CPU – 4K ruckelt. Beim Kanal „H.265“ oder „Full HD“ wählen.",
                pi_strom: "Der Pi meldet Unterspannung oder Drosselung – offizielles Netzteil nehmen.", pi_heiss: "Der Pi ist sehr warm (über 80 °C) – Gehäuse mit Kühlung oder Lüfter.",
                pi_kein_hdmi: "Kein Bildschirm erkannt – HDMI-Kabel prüfen (Pi 4/5: den Anschluss neben dem Strom nehmen).",
                pi_direkt_pi3: "Der Direktmodus braucht einen Pi 4 oder Pi 5 – dieser Pi zeigt den Stream.",
@@ -160,10 +167,10 @@ const TEXTE = {
             live: "Live-System: läuft schreibgeschützt (Stromausfälle schaden nicht). Systemupdates gibt es nicht – für neue Software „Image erneut herunterladen“ und den Stick neu beschreiben.",
             neustart: "PC neu starten", m: "PC (x86-64, UEFI) – experimentell" },
           br: { m: "Browser-Gerät (nur Link, ohne Image)", titel: "Browser-Gerät",
-            text: "Für Geräte, die schon einen Browser haben: Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus Kiosk) oder einfach ein Browser im Vollbild (F11). Es gibt kein Image – du bekommst einen geheimen Link, der genau diesen Fernseher zeigt. Ohne Bildschirmfoto, Rückfall auf den Stream und Fernwartung; „online“ heißt: die Seite holt ihre Daten (alle 15 s).",
+            text: "Für Geräte, die schon einen Browser haben: Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus Kiosk) oder einfach ein Browser im Vollbild (F11). Es gibt kein Image – du bekommst einen geheimen Link, der genau diesen Kanal zeigt. Ohne Bildschirmfoto, Rückfall auf den Stream und Fernwartung; „online“ heißt: die Seite holt ihre Daten (alle 15 s).",
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
             neu: "Neuen Link erzeugen", neuFrage: "Neuen Link erzeugen? Der bisherige gilt dann sofort nicht mehr – Geräte damit zeigen einen Fehler, bis der neue eingetragen ist.", neuOk: "Neuer Link erstellt",
-            linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Fernseher – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
+            linkText: "Im Browser des Geräts als Startseite setzen (Kiosk-CD: als Startadresse). Wer den Link kennt, sieht diesen Kanal – nicht die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist unverschlüsseltes HTTP, also nur im eigenen Netz verwenden." } },
     fern: { titel: "Player an anderem Standort", text: "Ein Pi oder PC an einem anderen Ort (Praxis, Ferienwohnung, Filiale) erreicht SignageCast über Tailscale. An keinem Router wird ein Port geöffnet; Anzeige, Befehle und das Terminal laufen wie zu Hause.",
           link: { s1: "1. Tailscale auf diesem Server", s2: "2. Mit deinem Tailscale-Konto verbinden", s3: "3. Einschalten",
                   einrichten: "Tailscale einrichten", einrichtenText: "Installiert Tailscale aus dem offiziellen Paketarchiv (etwa 1 Minute).", laeuft: "wird eingerichtet …",
@@ -186,7 +193,7 @@ const TEXTE = {
           boxText: (ip) => `Der Player tritt beim ersten Start mit einem Einmal-Schlüssel (7 Tage gültig) dem Tailnet bei und spricht SignageCast unter ${ip} an. Nur mit dem Image für genau dieses Gerät.`,
           boxLink: "Beim ersten Start meldet sich der Player per Link an: Steht er noch hier, erscheint auf seiner Karte „Player freigeben“; am anderen Ort zeigt der Fernseher einen QR-Code. Nur mit dem Image für genau dieses Gerät.",
           freigeben: "Player freigeben (Tailscale)", freigebenText: "Öffnet Tailscale – anmelden und bestätigen. Danach verbindet sich der Player von selbst.",
-          ohneTag: "Ohne Tag angemeldet: Die Zugriffsregel fehlt – dieser Player kann alle Geräte in deinem Tailnet erreichen, und seine Anmeldung läuft nach 180 Tagen ab. Regel einfügen (Einstellungen → Fernstandorte), dann neues Image.",
+          ohneTag: "Ohne Tag angemeldet: Die Zugriffsregel fehlt – dieser Player kann alle Geräte in deinem Tailnet erreichen, und seine Anmeldung läuft nach 180 Tagen ab. Regel einfügen (Displays → Fernstandorte), dann neues Image.",
           zeile: "Anderer Standort", wartet: "Image erstellt – noch nicht beigetreten", direkt: "direkt", relay: (r) => `über Relay ${r}`,
           fehler: { fehlt: "Image vor 0.41 ohne Tailscale – neues Image erstellen", abgemeldet: "vom Tailnet abgemeldet – neues Image erstellen", startet: "startet …" },
           entfernt: "Player entfernt – auch aus dem Tailnet", nichtGefunden: "Player entfernt – im Tailnet nicht (mehr) gefunden",
@@ -215,7 +222,7 @@ const TEXTE = {
             quelle: "Herkunft", alle: "alle", zeit: "Zeit", wer: "Wer", was: "Was", leer: "Noch keine Einträge.", mehr: "Ältere zeigen",
             quellen: { verwaltung: "Verwaltung", pult: "Pult", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "nur Schwarz", steht: "Bild stand still" },
             layouts: { neu: "neue Layouts", geaendert: "Layouts geändert", geloescht: "Layouts gelöscht" },
-            bereich: { fernseher: "Fernseher", layouts: "Layouts", video: "Video", medien: "Medien", quellen: "Datenquellen", radio: "Radio", einspieler: "Einspieler",
+            bereich: { fernseher: "Kanäle", layouts: "Layouts", video: "Video", medien: "Medien", quellen: "Datenquellen", radio: "Radio", einspieler: "Einspieler",
                        kategorien: "Kategorien", standort: "Standort", anzeige: "Anzeige", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen",
                        sicherung: "Sicherung", pult: "Durchsage-Pult", alarm: "Notfall-Vollbild", webhook: "Webhook", stream: "Stream", sprache: "Sprache", updates: "Updates" },
             aktion: { einstellungen: "Einstellungen gespeichert", webhook_neu: "neuer Webhook-Schlüssel", medien_neu: "Medium hochgeladen", medien_loeschen: "Medium gelöscht",
@@ -237,7 +244,7 @@ const TEXTE = {
                       "player_*": (a) => `Player: ${{ neu: "neu angelegt", koppeln: "gekoppelt", einstellungen: "Einstellungen", wlan: "WLAN", image: "Image erstellt", entfernen: "entfernt", aendern: "geändert", befehl: "Befehl", "link-neu": "neuer Link" }[a] || a}`,
                       "terminal_*": (a) => a === "start" ? "Terminal geöffnet" : "Terminal beendet" } },
     internet: "Internet", online: "erreichbar", offline: "nicht erreichbar", onlineText: "Live-Kameras laufen",
-    offlineSeit: (z) => `seit ${z} – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
+    offlineSeit: (z) => `seit ${z} – die Kanäle zeigen eigene Medien bzw. ein Ersatzbild`,
     bildBefund: { schwarz: "Bildprüfung: zeigt nur Schwarz", steht: "Bildprüfung: Bild steht still" },
     pultLayout: (n, bis, von) => `Layout „${n}“ vom Pult (${von}) bis ${bis}`,
     todoTitel: "Zu erledigen", todoOk: "Alles in Ordnung.",
@@ -246,8 +253,8 @@ const TEXTE = {
     todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
     todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
     todo: { speicherort: (n) => `Speicherort „${n}“ war beim letzten Zugriff nicht erreichbar`,
-            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Fernseher → Einrichten neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
-            internet: (s) => `Internet seit ${s} nicht erreichbar – die Fernseher zeigen eigene Medien bzw. ein Ersatzbild`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Displays → + Neues Gerät neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
+            internet: (s) => `Internet seit ${s} nicht erreichbar – die Kanäle zeigen eigene Medien bzw. ein Ersatzbild`,
             bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
             player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
@@ -258,11 +265,11 @@ const TEXTE = {
             doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“`,
             speicher: (st, f) => st === "rot" ? `Speicher voll (${f} GB frei) – Uploads gesperrt, bitte aufräumen` : `Speicher wird knapp (${f} GB frei) – bitte aufräumen` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
-    bereiche: { uebersicht: "Übersicht", fernseher: "Fernseher", inhalte: "Inhalte", videoton: "Live-Videos", einstellungen: "Einstellungen", system: "System" },
-    fernseherText: "Jeder Fernseher öffnet im Browser seine eigene Adresse und kann eigenen Ton, Sender und eigene Kategorien haben.",
-    adresse: "Adresse am Fernseher", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
+    bereiche: { uebersicht: "Übersicht", displays: "Displays", inhalte: "Inhalte", videoton: "Videos & Radio", einstellungen: "Einstellungen", system: "System" },
+    fernseherText: "Ein Kanal ist das, was ein Fernseher zeigt: Layout, Zeitplan, Live-Videos und Ton. Jeder Kanal hat eine eigene Adresse – ein Gerät oder der Browser des Fernsehers öffnet sie.",
+    adresse: "Adresse des Kanals", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
-    kennung: "Kennung (a–z, 0–9, steht in der Adresse)", fernseherNeu: "Fernseher hinzufügen", fernseherWeg: "Fernseher entfernen",
+    kennung: "Kennung (a–z, 0–9, steht in der Adresse)", fernseherNeu: "Kanal hinzufügen", fernseherWeg: "Kanal entfernen",
     schalten: "Über HA schalten", schaltenText: "Entität des Fernsehers in Home Assistant (media_player, switch oder remote). Beginnt im Zeitplan „schwarz“, wird er ausgeschaltet, danach wieder eingeschaltet – nur beim Wechsel, Einschalten von Hand bleibt also. Einschalten klappt nur, wenn es in HA geht (Samsung/LG oft nur mit Wake-on-LAN). Erst speichern, dann testen.",
     schaltenAus: "Aus (Test)", schaltenAn: "An (Test)", schaltenOk: "An Home Assistant geschickt",
     haQuelle: "Quelle wählen", quellenHolen: "Quellen aus HA holen",
@@ -281,10 +288,10 @@ const TEXTE = {
     haZustandNoch: "Zustand laut Home Assistant: wird abgefragt (einmal je Minute) …",
     haZustandLang: (z, roh, q, zeit) => `Zustand laut Home Assistant: ${z} (${roh}${q ? ", Quelle " + q : ""}), Stand ${zeit}.`,
     nachZuletzt: (n) => `Zuletzt ${n.zeit}: ${n.fehler ? "nicht ausgeführt – " + n.fehler : (n.schritte.length ? n.schritte.map((x) => x === "quelle" ? "Quelle gewählt" : "Seite geöffnet").join(", ") : "nichts nötig")}`,
-    wirklichTvWeg: "Diesen Fernseher entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Fernseher",
+    wirklichTvWeg: "Diesen Kanal entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Kanal",
     tvHinweis: "Ton, Sender, Lautstärke und Videos wirken sofort; Ausgabe und Bitrate beim nächsten Start des Streams.",
     meineSender: "Meine Sender", keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
-    senderNutzung: "Welcher Fernseher welchen Sender spielt, stellst du im Reiter „Fernseher“ ein (Ton = Radio).",
+    senderNutzung: "Welcher Kanal welchen Sender spielt, stellst du unter „Kanäle“ ein (Ton = Radio).",
     eigenerSender: "Eigenen Sender hinzufügen", senderAdresse: "Stream-Adresse (MP3/AAC, auch .m3u/.pls)", senderName: "Name",
     senderAnzeigen: "Sendernamen am Fernseher zeigen", puffer: "Puffer (Vorlauf)",
     pufferText: "Überbrückt Aussetzer des Senders bis zu dieser Länge. Das Radio startet um diese Zeit verzögert (auch beim Senderwechsel). 0 = ohne Puffer, direkt vom Sender.", inNaehe: "Sender passend zum Standort", regionWoerter:
@@ -296,21 +303,21 @@ const TEXTE = {
     playlistUebernehmen: "Sender übernehmen", playlistPruefen: "Prüfe die Einträge …",
     playlistErgebnis: (n, d) => `${n} Sender übernommen${d ? `, ${d} schon vorhanden` : ""}.`,
     ortSuche: "Ort suchen (z. B. Köln)", ortGesetzt: "Standort gespeichert", zeigenAuf: "„Jetzt zeigen“ auf",
-    alleTv: "allen Fernsehern", tonAnzeige: "Ton",
+    alleTv: "allen Kanälen", tonAnzeige: "Ton",
     epText: "Zu festen Minuten unterbricht ein Beitrag die Rotation im Videofenster und läuft ganz durch – z. B. „tagesschau in 100 Sekunden“ zur vollen und halben Stunde. Mit Ton ist das Radio solange stumm.",
     epNeu: "Einspieler hinzufügen", epQuelle: "Quelle", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (immer die aktuelle Ausgabe)", video: "Video-Adresse (MP4)", youtube: "YouTube-Video oder Kanal (neuestes Video)" },
     epUrl: "Adresse / Link", epMinuten: "Minuten der Stunde", epAndere: "andere (z. B. 0,20,40)", epZeit: "nur zwischen", epTon: "mit Ton",
-    epFernseher: "Fernseher (keiner gewählt = alle)", epAktiv: "aktiv", epJetzt: "Jetzt zeigen", epJetztOk: "Läuft in bis zu 15 s am Fernseher",
+    epFernseher: "Kanäle (keiner gewählt = alle)", epAktiv: "aktiv", epJetzt: "Jetzt zeigen", epJetztOk: "Läuft in bis zu 15 s am Fernseher",
     epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.",
     wetterQuelle: "Wetterquelle", wetterQuelleArt: { met: "Eigenes Wetter (MET Norway, für den Standort)", ha: "Home Assistant (Wetter-Entität)" },
     metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort (unten auf dieser Seite) – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
-    bnTitel: "Benachrichtigungen", bnText: "SignageCast meldet sich bei Ausfall eines Fernsehers, fehlgeschlagenem Update oder Sicherung und wenn Home Assistant länger als 5 Minuten nicht erreichbar ist – jeweils einmal, mit Entwarnung.",
+    bnTitel: "Benachrichtigungen", bnText: "SignageCast meldet sich bei Ausfall eines Kanals, fehlgeschlagenem Update oder Sicherung und wenn Home Assistant länger als 5 Minuten nicht erreichbar ist – jeweils einmal, mit Entwarnung.",
     bnTelegram: "Telegram", bnBotToken: "Bot-Token", bnChatId: "Chat-ID", bnEmail: "E-Mail (SMTP)", bnServer: "SMTP-Server", bnPort: "Port",
     bnSicherheit: "Verschlüsselung", bnBenutzer: "Benutzer", bnPasswort: "Passwort", bnAbsender: "Absender", bnEmpfaenger: "Empfänger (mit Komma trennen)",
     bnHA: "Home Assistant", bnDienst: "Benachrichtigungsdienst", bnAktiv: "aktiv", bnTest: "Testnachricht", bnTestOk: "Testnachricht gesendet",
-    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Fernsehers", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Fernseher ruckelt (zu wenige Bilder/s)", internet: "Internet nicht erreichbar (Entwarnung mit Zeitraum)", speicher: "Speicher wird knapp oder ist voll" },
+    bnEreignisse: "Melden bei", bnEr: { ausfall: "Ausfall eines Kanals", update: "Update fehlgeschlagen", sicherung: "Sicherung fehlgeschlagen", ha: "Home Assistant getrennt", leistung: "Kanal ruckelt (zu wenige Bilder/s)", internet: "Internet nicht erreichbar (Entwarnung mit Zeitraum)", speicher: "Speicher wird knapp oder ist voll" },
     bnLetzte: "Zuletzt gesendet",
-    whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Fernseher legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
+    whTitel: "Meldung per Webhook", whText: "Andere Systeme (z. B. Home Assistant) können eine kurze Meldung als Banner auf die Kanäle legen – über jedes Layout. Nur mit geheimem Schlüssel; der Schlüssel wird nur einmal nach dem Erzeugen angezeigt.",
     whAktiv: "Meldungen annehmen", whNeu: "Neuen Schlüssel erzeugen", whVorhanden: "Schlüssel gesetzt (••••)", whKeiner: "noch kein Schlüssel",
     whEinmal: "Nur jetzt sichtbar – bitte sicher ablegen:", whBeispiel: "Beispiel (Text, Dauer in Sekunden, Stil info/warnung, optional tv=<Kennung>):",
     whNeuFrage: "Neuen Schlüssel erzeugen? Der alte gilt danach nicht mehr.",
@@ -370,24 +377,24 @@ const TEXTE = {
     sonne: "Mindest-Sonnenhöhe (Grad)", mindeststufe: "Mindestqualität", schlecht: "so lange darunter, dann weiter (s)",
     grenze: "Strikes bis ein Stream nicht mehr läuft", sperre: "nach Strike überspringen für (Stunden)",
     kod: { titel: "Kodierung (für Fortgeschrittene)", encoder: "Encoder", preset: "Preset", tune: "Tune", bframes: "B-Frames",
-      text: "Normalerweise passt „Automatisch“. Eine Änderung startet den Stream dieses Fernsehers neu (ein paar Sekunden schwarz); SignageCast probiert sie vorher kurz aus und bleibt bei „Automatisch“, wenn sie hier nicht läuft. Danach unter System → Leistung prüfen, ob die Kodierung mithält.",
+      text: "Normalerweise passt „Automatisch“. Eine Änderung startet den Stream dieses Kanals neu (ein paar Sekunden schwarz); SignageCast probiert sie vorher kurz aus und bleibt bei „Automatisch“, wenn sie hier nicht läuft. Danach unter System → Zustand prüfen, ob die Kodierung mithält.",
       art: { auto: "Automatisch (empfohlen)", vaapi: "Intel/AMD-Grafik (VAAPI)", qsv: "Intel Quick Sync (QSV)", nvenc: "NVIDIA NVENC (experimentell)", software: "Software (libx264)" },
       info: { auto: "Nimmt die Grafikeinheit per VAAPI, ohne nutzbare Grafik Software.",
         vaapi: "Video-Einheit der Intel- oder AMD-Grafik über die offene Schnittstelle VAAPI – sparsam, 4K, H.264 und H.265. Kennt kein Preset und kein Tune.",
         qsv: "Intels eigener Weg zur selben Video-Einheit (Quick Sync über oneVPL), mit Presets. Braucht Intel-Grafik ab der 11./12. Generation (z. B. N100, Core ab Tiger Lake); bei älterer Intel-Grafik VAAPI nehmen.",
         nvenc: "Video-Einheit einer NVIDIA-Grafikkarte. Experimentell und ungetestet: Karte und NVIDIA-Treiber müssen im Container verfügbar sein (/dev/nvidia*, bei Docker --gpus all) – das richtet SignageCast nicht selbst ein.",
-        software: "Der Prozessor kodiert H.264 (libx264): geht überall, kostet aber etwa 1–2 Kerne je Fernseher; immer Full HD und höchstens 8 Mbit/s." },
+        software: "Der Prozessor kodiert H.264 (libx264): geht überall, kostet aber etwa 1–2 Kerne je Kanal; immer Full HD und höchstens 8 Mbit/s." },
       grund: { keine_grafik: "keine Grafik (/dev/dri) gefunden", qsv_alt: "braucht Intel-Grafik ab der 11./12. Generation", keine_nvidia: "keine NVIDIA-Karte gefunden" },
       presetInfo: "Wie gründlich der Encoder rechnet: ultrafast ist am schnellsten, medium liefert bei gleicher Bitrate das schönste Bild, braucht aber deutlich mehr Rechenzeit – schafft der Rechner es nicht, ruckelt das Bild. Quick Sync und NVENC bekommen die passende eigene Stufe.",
       tuneArt: { zerolatency: "zerolatency (empfohlen)", keins: "keins" },
       tuneInfo: "zerolatency trimmt den Encoder auf geringe Verzögerung (kein Vorausschauen, jedes Bild sofort raus) – für Live-Bilder empfohlen, kostet etwas Bildqualität. „keins“ schaut einige Bilder voraus: etwas schöner, aber träger.",
       bfInfo: "B-Frames sind Zwischenbilder, die auch auf spätere Bilder verweisen: etwa 5–15 % weniger Daten, aber mehr Verzögerung, und manche Fernseher-Browser ruckeln damit. 0 ist für Live-Streams die sichere Wahl.",
       ohne: "VAAPI kennt kein Preset und kein Tune – die Felder wirken nur bei Software, Quick Sync und NVENC.",
-      fehler: (enc, g) => `Die Einstellung läuft hier nicht (${enc}: ${g}) – dieser Fernseher nutzt deshalb „Automatisch“.`,
+      fehler: (enc, g) => `Die Einstellung läuft hier nicht (${enc}: ${g}) – dieser Kanal nutzt deshalb „Automatisch“.`,
       aktiv: "Derzeit aktiv", std: "Standard", standard: "Zurück auf Standard" },
     codec: "Codec", codecArt: { auto: "Automatisch (empfohlen)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatisch: 4K als H.265 (halbe Datenmenge, können fast alle 4K-Fernseher), Full HD als H.264 (läuft auf praktisch jedem Fernseher, Browser und Player). H.264 wählen, wenn ein Gerät ruckelt oder kein Bild zeigt – z. B. ältere Fernseher, Firefox; H.265 braucht bei gleicher Qualität etwa 30–40 % weniger Bitrate.",
-    kategorien: "Kategorien", kategorienAlle: "Kategorien (für alle Fernseher)", streamTechnik: "Videostream", abschaltenTitel: "Videostream ohne Zuschauer",
+    kategorien: "Kategorien", kategorienAlle: "Kategorien (für alle Kanäle)", streamTechnik: "Videostream", abschaltenTitel: "Videostream ohne Zuschauer",
     abschnitt: { anzeige: "Anzeige", video: "Live-Video", ton: "Ton" }, aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
     aufnahme: "Aufnahme (Browser)", aufnahmeArt: { 720: "720p – spart CPU", 1080: "1080p (empfohlen)", 1440: "1440p – schärfer, braucht mehr CPU" },
     aufnahmeText: "Größe, in der der Browser die TV-Seite zeichnet; die Grafikeinheit rechnet auf die Ausgabe um. Mehr als die Ausgabe bringt nichts. Live-Videos im Layout folgen der Aufnahme (720p holt von YouTube 720p). Eine Änderung startet den Stream kurz neu.",
@@ -421,7 +428,7 @@ const TEXTE = {
     karussell: "Layout-Karussell", karussellText: "Wechselt alle paar Minuten zwischen den gewählten Layouts (mindestens zwei). Ein Zeitplan hat Vorrang.",
     karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt",
     videoQuelleArt: { youtube: "Live-Streams (YouTube)", medien: "nur eigene Medien", gemischt: "gemischt" }, medienAlle: "jedes N-te Mal ein eigenes Medium",
-    medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Fernseher unter „Fernseher“ einstellen: nur eigene Medien oder gemischt mit den Live-Streams. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
+    medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Kanal unter „Kanäle“ einstellen: nur eigene Medien oder gemischt mit den Live-Streams. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
     medHoch: "Dateien hochladen", medLaedt: (n, p) => `Lade ${n} … ${p} %`, medKeine: "Noch keine eigenen Medien.", medDauer: "Anzeigedauer (s)",
     // Galerie und Speicher (seit 0.45)
     galText: "Ordner mit Bildern (JPG, PNG, WebP, GIF) und PDFs für den Layout-Baustein „Galerie“ oder als Hintergrund-Diashow. Fotos werden beim Hochladen auf höchstens 4K verkleinert – nur diese Fassung wird gespeichert. Die Bilder liegen nur hier und kommen nicht in die Sicherung (die Ordnernamen schon).",
@@ -460,14 +467,14 @@ const TEXTE = {
            stadt: "Städte & Plätze", strand: "Strände & Küsten", berge: "Berge & Ski", hafen: "Häfen & Schiffe",
            flug: "Flughäfen & Flugzeuge", bahn: "Züge & Bahn", weltraum: "Weltraum & Erde", natur: "Naturschauspiele" },
     katGruppe: { tiere: "Tiere", themen: "Weitere Themen" },
-    katText: "Hier legst du fest, was eine Kategorie ausmacht: eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen, und ob Tag/Nacht am Ort zählt. Gefundene Tier-Streams werden über die Wörter einsortiert (erste passende Kategorie, sonst „Neu gefunden“). Ein- und ausschalten geht für alle Fernseher oder je Fernseher.",
+    katText: "Hier legst du fest, was eine Kategorie ausmacht: eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen, und ob Tag/Nacht am Ort zählt. Gefundene Tier-Streams werden über die Wörter einsortiert (erste passende Kategorie, sonst „Neu gefunden“). Ein- und ausschalten geht für alle Kanäle oder je Kanal.",
     katNeu: "Neue Kategorie", katEigene: "eigene", katGeaendert: "geändert", katNamePflicht: "Name (Pflicht)", katGruppeWahl: "Gruppe",
     katNeuText: "Hier landen gefundene Tier-Streams, die zu keiner Kategorie passen. Sie hat keine eigene Suche.",
-    katWo: "Eingeschaltet", katAlle: "Für alle Fernseher", katStreams: (n) => `${n} Streams`, katEinStream: "1 Stream",
+    katWo: "Eingeschaltet", katAlle: "Für alle Kanäle", katStreams: (n) => `${n} Streams`, katEinStream: "1 Stream",
     katAusAlle: "aus", katAusBei: (l) => `aus bei ${l}`, katMitSuche: (n) => n === 1 ? "1 Suchbegriff" : `${n} Suchbegriffe`, katNameFeld: "Name",
     katBegriffe: (n) => `Suchbegriffe (je Zeile einer, höchstens ${n})`,
     katBegriffeTiere: "Leer = nur die allgemeine Tiersuche (Seite Suche) füllt diese Kategorie. Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf.",
-    katBegriffeThemen: "Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf. Gesucht wird nur, solange die Kategorie für alle Fernseher eingeschaltet ist.",
+    katBegriffeThemen: "Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf. Gesucht wird nur, solange die Kategorie für alle Kanäle eingeschaltet ist.",
     katWoerter: "Wörter im Titel (je Zeile eines, reguläre Ausdrücke erlaubt)",
     katWoerterTiere: "Ein Wort muss im Titel stehen. Sortiert auch Funde der allgemeinen Tiersuche hierher.",
     katWoerterThemen: "Ein Wort muss im Titel stehen. Leer = jeder Titel (außer Musik, Spiele u. Ä.).",
@@ -478,38 +485,45 @@ const TEXTE = {
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "TVs", player: "Devices", einrichten: "Set up", layout: "Layout", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Rotation & quality", suche: "Search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", pult: "Announcements", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage", speicherorte: "Storage locations" },
-    pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen TVs – no settings. Address:",
+    reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+              video: "Rules", suche: "Stream search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage", speicherorte: "Storage locations" },
+    pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen channels – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
-          gong: "Chime before the announcement", dauer: "Default display time (s)", zugaenge: "Accounts", zugangText: "Each account has its own password and may only reach the ticked TVs (none ticked = all).",
+          gong: "Chime before the announcement", dauer: "Default display time (s)", zugaenge: "Accounts", zugangText: "Each account has its own password and may only reach the ticked channels (none ticked = all).",
           name: "Name", pwNeu: "new password", pwGesetzt: "password set", pwFehlt: "no password yet", zugangNeu: "Add account",
           entfernen: "Remove", vorlagen: "Templates", vorlagenText: "One template per line; “…” marks the gap for the name.",
-          art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "TVs with a panel account record real sound (for reading aloud).",
+          art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "Channels with a panel account record real sound (for reading aloud).",
           darfAlarm: "may trigger the emergency screen",
           recht: { meldung: "may send ticker messages", layout: "may switch the layout for a while", schalten: "may switch TVs on and off (HA)" } },
-    al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (TVs → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
-          vorlagen: "Templates (one per line)", ton: "Warning tone every 10 seconds (audible on TVs with sound or panel read-aloud)", an: "Trigger now", aus: "End", alle: "all TVs",
+    al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (Displays → Channels → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
+          vorlagen: "Templates (one per line)", ton: "Warning tone every 10 seconds (audible on channels with sound or panel read-aloud)", an: "Trigger now", aus: "End", alle: "all channels",
           wirklich: "Really show the emergency screen on the TVs now?", laeuft: (z, v) => `Emergency screen showing since ${z} (${v === "Verwaltung" ? "admin" : v})`,
-          webhook: "Via webhook (key from “Message via webhook”):", beendet: "Emergency screen ended", ausgeloest: "Emergency screen triggered" },
-    lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering TV is running.",
+          webhook: "Via webhook (key from “Message via webhook”):", beendet: "Emergency screen ended", ausgeloest: "Emergency screen triggered", ausloesenWo: "📢 Trigger under “Announcement”" },
+    ds: { durchsage: "Announcement", durchsageText: "A text shown large in the middle of the picture, optionally read aloud – e.g. “Please come to the reception”.",
+          vorlage: "– choose a template –", textPlatz: "Text of the announcement", keinerAlle: "No channel ticked = all channels.",
+          ohneStimme: "Reading aloud works once a voice is loaded under Settings → Announcement panel.", senden: "Send announcement", dauer: "Display time (s)",
+          gesendet: "Announcement is showing", lauf: "Ticker", laufText: "A text runs along the bottom of the picture until the time is up or you end it.",
+          wieLange: "How long", warnung: "as a warning (red)", laufSenden: "Show ticker", laufAus: "End ticker",
+          laufAn: "Ticker is showing", laufBeendet: "Ticker ended", min: (n) => `${n} min`, std: (n) => `${n} h`,
+          eigenerText: "or your own text", einstellungen: "Voice, templates and accesses for the panel at the reception:", keinText: "Please enter a text." },
+    lt: { server: "Server: rendering and encoding", serverText: "Measures for 10 seconds how smoothly SignageCast renders and encodes the picture – best while the stuttering channel is running.",
           start: "Start test (10 s)", laeuftTest: "Test running …", system: "System", cpu: "CPU", kerne: "cores", ram: "Memory free", gpu: "Graphics unit",
           seite: "Frames/s TV page", kodierung: "Frames/s encoding", tempo: "Speed", verloren: "dropped/duplicated", cpuKette: "CPU (cores)", aus: "not running",
           ziel: "Target: 25 frames/s, speed 1.0×", tonNeu: "Restart sound and stream", tonNeuText: "Helps when the capture duplicates many frames (stutter although the page renders smoothly). The TVs go black briefly.", tonNeuOk: "Sound and stream are restarting", geraet: "Test on the playback device", geraetText: "Transfer and playback can only be measured on the device that stutters. Open this address there in the browser (same network):",
           letzteGeraete: "Results from devices", keine: "none yet", empfehlungen: "Recommendations",
           empf: {
-            keine_kette: () => "No TV is running right now. Open the stream on the TV (or in a browser) first, then test.",
-            seite_langsam: (p) => `“${p.tv}”: the TV page reaches only ${p.fps} frames/s (target 25). The layout is too heavy for the CPU – web page, camera and chart elements cost the most. Simplify the layout, run fewer TVs at once or give the container more cores.`,
-            kodierung_langsam: (p) => `“${p.tv}”: encoding runs at only ${p.tempo}× real time. ${p.aufloesung === 2160 ? "Set the output to Full HD or " : ""}lower the bitrate; with several TVs the graphics unit is at its limit.`,
+            keine_kette: () => "No channel is running right now. Open the stream on the TV (or in a browser) first, then test.",
+            seite_langsam: (p) => `“${p.tv}”: the TV page reaches only ${p.fps} frames/s (target 25). The layout is too heavy for the CPU – web page, camera and chart elements cost the most. Simplify the layout, run fewer channels at once or give the container more cores.`,
+            kodierung_langsam: (p) => `“${p.tv}”: encoding runs at only ${p.tempo}× real time. ${p.aufloesung === 2160 ? "Set the output to Full HD or " : ""}lower the bitrate; with several channels the graphics unit is at its limit.`,
             bilder_verloren: (p) => `“${p.tv}”: ${p.n} frames dropped or duplicated – rendering cannot keep up. Usually CPU load (see above).`,
             ton_doppelt: (p) => `“${p.tv}”: ${p.n} frames duplicated although the page renders smoothly – the capture gets too little CPU time (e.g. other guests on the same host) or the graphics unit is at its limit. Remedy: give the container priority (Proxmox: cpuunits), Full HD output; once: “Restart sound and stream”.`,
-            cpu_hoch: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} TVs). Plan about 1 core per TV – assign more cores in Proxmox or run fewer TVs at once.`,
-            cpu_knapp: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} TVs) – little headroom. Another TV or a heavy layout may cause stutter.`,
-            ram_knapp: (p) => `Only ${p.frei} MB memory free. Plan about 0.9 GB per TV – give the container more memory.`,
+            cpu_hoch: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} channels). Plan about 1 core per channel – assign more cores in Proxmox or run fewer channels at once.`,
+            cpu_knapp: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} channels) – little headroom. Another channel or a heavy layout may cause stutter.`,
+            ram_knapp: (p) => `Only ${p.frei} MB memory free. Plan about 0.9 GB per channel – give the container more memory.`,
             gpu_hoch: (p) => `The graphics unit runs at ${p.gpu} % of its maximum clock – close to the limit. Lower bitrate or resolution.`,
-            software: () => "No graphics unit – video is encoded by the CPU (Full HD, H.264 only). For 4K or several TVs pass the Intel/AMD graphics through to the container.",
+            software: () => "No graphics unit – video is encoded by the CPU (Full HD, H.264 only). For 4K or several channels pass the Intel/AMD graphics through to the container.",
             mediamtx_langsam: (p) => `MediaMTX discarded frames ${p.n} times in the last 10 minutes (“reader is too slow”) – visible as a jump of about one second. Remedy: update to SignageCast 0.19.2 (larger queue) or Full HD output / lower bitrate.`,
             server_ok: () => "Server is fine: rendering and encoding keep up with real time. If it still stutters, transfer or the playback device is the cause – test on the device (below).",
           } },
@@ -519,24 +533,24 @@ const TEXTE = {
             browser: ["TV browser", "Smart TV, Fire TV, Android TV box or a tablet: one address as start page."],
             pi: ["Raspberry Pi", "For TVs without a usable browser: write a ready image to an SD card, connect via HDMI."],
             pc: ["PC", "Mini PC or old laptop: write a ready image to a USB stick, starts straight into the display."] },
-          fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more TVs – is in the areas above.",
+          fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, streams, radio, more channels – is in the areas above.",
           fertigPlayer: "Done! Now add the player: create the image, write it, plug it in – it then shows up under “Devices” by itself.",
           zumPlayer: "Add player", lokal: "The TV cannot reach “localhost” – use this computer's IP in your home network (Docker: set SC_HOST_IP).",
           mehr: "Also possible", mehrListe: { fern: "Remote sites – players in other places via Tailscale or Headscale", ki: "AI assistants – Claude & co. build layouts and write tickers", pult: "Announcement desk – a page just for messages, e.g. at the reception" },
           weiter: "Next", zurueck: "Back", ueberspringen: "Skip", spaeter: "Set up later", los: "Go to overview" },
     pl: { titel: "Players: Raspberry Pi, PC or browser", zitat: (s) => `“${s}”`, text: "A Raspberry Pi at the TV shows the stream via HDMI – also on TVs without a usable browser. Create a ready image here, write it to an SD card, plug it in – done. Afterwards you manage all devices under “Devices”.",
-          modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the TV to codec “H.264” and resolution “Full HD”.",
+          modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the channel to codec “H.264” and resolution “Full HD”.",
           ram: "Memory: 1 GB is enough for the stream (Zero 2 W: 512 MB). Direct mode needs at least 2 GB, better 4 GB – especially with videos, cameras, web pages or 4K output; with write protection everything the browser stores is kept in memory too. Estimates, not yet measured on real Pis.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
-          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Devices → the Pi's card → Display).",
+          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Displays → Devices → the Pi's card → Display).",
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisAlt: (s) => `outdated – please reload (SignageCast ${s})`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
-          koppeln: "Pair a player (one image for several devices)", koppelnText: "One image for any number of Pis or PCs: it contains the server address and Wi-Fi, but no key yet. At startup each device shows a 6-digit code on the TV – enter it here, choose name and TV, done. The key is negotiated securely and never travels over the network.",
+          koppeln: "Pair a player (one image for several devices)", koppelnText: "One image for any number of Pis or PCs: it contains the server address and Wi-Fi, but no key yet. At startup each device shows a 6-digit code on the TV – enter it here, choose name and channel, done. The key is negotiated securely and never travels over the network.",
           sammelImage: "Download image for several devices", fuer: "For", code: "Code from the TV", codePlatz: "123 456", koppelnKnopf: "Pair",
           gekoppelt: "Paired – the Pi starts in a few seconds.", wartend: (n) => n === 1 ? "1 Pi is showing a code" : `${n} Pis are showing a code`,
           keinerWartet: "No Pi is showing a code right now.",
-          neu: "Add player", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the TV", keinTv: "– none yet –", modell: "Model",
+          neu: "Add player", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the channel", keinTv: "– none yet –", modell: "Model",
           m: { pi45: "Pi 5, Pi 4 or Pi 400", pi3: "Pi 3 or Zero 2 W" }, netz: "Network", kabel: "LAN cable", wlan: "Wi-Fi",
           wlanGesp: "Saved Wi-Fi", wlanNeu: "enter new Wi-Fi", ssid: "Wi-Fi name (SSID)", pw: "Wi-Fi password", merken: "Save the Wi-Fi in the admin (for more Pis)",
           merkenText: "Only the WPA key is stored, not the password itself. It still grants access to the Wi-Fi – backups contain it only “with credentials”.",
@@ -550,7 +564,7 @@ const TEXTE = {
           liste: "Devices", keine: "No device yet – set up a Raspberry Pi, PC or browser under “Set up”.", neuGeraet: "Set up a new device", zuGeraete: "Go to “Devices”", angelegt: "Added – after its first start the device reports under “Devices”.", online: "online", offline: "offline", nieGesehen: "has never reported",
           zuletzt: (z) => `last seen ${z}`, seit: (z) => `since ${z}`, ip: "IP", netzArt: { kabel: "cable", wlan: "Wi-Fi", hotspot: "hotspot (setup)", keins: "no network" },
           temp: "Temperature", version: "Player", hdmi: "Screen", keinHdmi: "no screen detected", video: "Video",
-          zustand: { start: "starting", fern_link: "waiting for approval in Tailscale", koppeln: "waiting for pairing", spielt: "playing", verbinde: "connecting …", kein_tv: "no TV assigned", aus: "screen off (schedule)",
+          zustand: { start: "starting", fern_link: "waiting for approval in Tailscale", koppeln: "waiting for pairing", spielt: "playing", verbinde: "connecting …", kein_tv: "no channel assigned", aus: "screen off (schedule)",
                      stream_fehler: "stream error", gesperrt: "removed", unbekannt: "unknown to the server", direkt: "shows the page directly", direkt_start: "browser starting …" },
           drehung: "Rotation", aufloesung: "Output", a: { auto: "as the TV reports", "720": "720p", "1080": "Full HD", "2160": "4K" },
           lautstaerke: "Volume (%)", cec: "Switch the TV on and off by schedule (HDMI-CEC)", cecText: "When the layout is “black” (schedule of the TV), the Pi switches the TV off via HDMI and on again later. CEC must be enabled on the TV (Samsung “Anynet+”, LG “SimpLink”, Sony “Bravia Sync”).",
@@ -569,7 +583,7 @@ const TEXTE = {
             wartet: "waiting for the player", offline: "not picked up yet – is the player online?", abgeholt: (s) => `picked up after ${s}`,
             umsetzen: "being applied …", uebernommen: "applied", ok: "done", fehler: "failed", auto: "automatic",
             terminal: "Terminal", laeuft: "running",
-            e: { tv: "TV", anzeige_modus: "Display", drehung: "Rotation", aufloesung: "Output", lautstaerke: "Volume", hwdec: "Video decoding",
+            e: { tv: "Channel", anzeige_modus: "Display", drehung: "Rotation", aufloesung: "Output", lautstaerke: "Volume", hwdec: "Video decoding",
                  schreibschutz: "Write protection", wlan: "Wi-Fi" },
             modus: { stream: "stream", direkt: "direct" }, an: "on", aus: "off",
             h: { ersetzt: "replaced by a newer change", dienst_neu: "dropped – SignageCast restarted before the player picked it up",
@@ -599,8 +613,8 @@ const TEXTE = {
           entfernen: "Remove", entfernenFrage: (n) => `Remove player “${n}”? Its key becomes invalid; the Pi then only shows a note.`,
           befehlOk: "Command sent – the player picks it up within a few seconds", bildAlt: (z) => `Screenshot from ${z}`, netzwerke: "Wi-Fi networks on the player",
           update: "Last system update",
-          h: { pi_kein_tv: "No TV assigned – the Pi only shows a note.", pi_h265: "Pi 3/Zero 2 W cannot play H.265 smoothly: choose codec “H.264” for the TV.",
-               pi_4k: "Pi 3/Zero 2 W cannot do 4K: choose resolution “Full HD” for the TV.", pi5_h264_4k: "The Pi 5 decodes H.264 on the CPU only – 4K stutters. Choose “H.265” or “Full HD” for the TV.",
+          h: { pi_kein_tv: "No channel assigned – the Pi only shows a note.", pi_h265: "Pi 3/Zero 2 W cannot play H.265 smoothly: choose codec “H.264” for the channel.",
+               pi_4k: "Pi 3/Zero 2 W cannot do 4K: choose resolution “Full HD” for the channel.", pi5_h264_4k: "The Pi 5 decodes H.264 on the CPU only – 4K stutters. Choose “H.265” or “Full HD” for the channel.",
                pi_strom: "The Pi reports under-voltage or throttling – use the official power supply.", pi_heiss: "The Pi is very warm (above 80 °C) – use a case with cooling or a fan.",
                pi_kein_hdmi: "No screen detected – check the HDMI cable (Pi 4/5: use the port next to the power).",
                pi_direkt_pi3: "Direct mode needs a Pi 4 or Pi 5 – this Pi shows the stream.",
@@ -623,10 +637,10 @@ const TEXTE = {
             live: "Live system: runs write-protected (power cuts do no harm). There are no system updates – for new software use “Download image again” and rewrite the stick.",
             neustart: "Restart PC", m: "PC (x86-64, UEFI) – experimental" },
           br: { m: "Browser device (link only, no image)", titel: "Browser device",
-            text: "For devices that already have a browser: smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk) or just a browser in full screen (F11). There is no image – you get a secret link that shows exactly this TV. No screenshot, no fallback to the stream, no remote maintenance; “online” means: the page fetches its data (every 15 s).",
+            text: "For devices that already have a browser: smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk) or just a browser in full screen (F11). There is no image – you get a secret link that shows exactly this channel. No screenshot, no fallback to the stream, no remote maintenance; “online” means: the page fetches its data (every 15 s).",
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
             neu: "Create new link", neuFrage: "Create a new link? The current one stops working immediately – devices using it show an error until the new one is entered.", neuOk: "New link created",
-            linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this TV – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
+            linkText: "Set it as the start page in the device’s browser (kiosk CD: as start address). Whoever knows the link sees this channel – not the admin. Treat it like a password; port 8890 is unencrypted HTTP, so only use it in your own network." } },
     fern: { titel: "Players at another site", text: "A Pi or PC at another place (office, holiday flat, branch) reaches SignageCast through Tailscale. No port is opened on any router; display, commands and the terminal work as at home.",
           link: { s1: "1. Tailscale on this server", s2: "2. Connect your Tailscale account", s3: "3. Switch on",
                   einrichten: "Set up Tailscale", einrichtenText: "Installs Tailscale from the official package archive (about 1 minute).", laeuft: "setting up …",
@@ -649,7 +663,7 @@ const TEXTE = {
           boxText: (ip) => `On its first start the player joins the tailnet with a one-time key (valid 7 days) and talks to SignageCast at ${ip}. Only with the image for exactly this device.`,
           boxLink: "On its first start the player logs in by link: while it is still here, its card shows “Approve player”; at the other site the TV shows a QR code. Only with the image for exactly this device.",
           freigeben: "Approve player (Tailscale)", freigebenText: "Opens Tailscale – log in and confirm. The player then connects by itself.",
-          ohneTag: "Logged in without tag: the access rule is missing – this player can reach all devices in your tailnet, and its login expires after 180 days. Add the rule (Settings → Remote sites), then a new image.",
+          ohneTag: "Logged in without tag: the access rule is missing – this player can reach all devices in your tailnet, and its login expires after 180 days. Add the rule (Displays → Remote sites), then a new image.",
           zeile: "Other site", wartet: "Image created – not joined yet", direkt: "direct", relay: (r) => `through relay ${r}`,
           fehler: { fehlt: "Image before 0.41 without Tailscale – create a new image", abgemeldet: "logged out of the tailnet – create a new image", startet: "starting …" },
           entfernt: "Player removed – also from the tailnet", nichtGefunden: "Player removed – not (or no longer) found in the tailnet",
@@ -678,7 +692,7 @@ const TEXTE = {
             quelle: "Origin", alle: "all", zeit: "Time", wer: "Who", was: "What", leer: "No entries yet.", mehr: "Show older",
             quellen: { verwaltung: "Admin", pult: "Panel", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "only black", steht: "picture frozen" },
             layouts: { neu: "new layouts", geaendert: "layouts changed", geloescht: "layouts deleted" },
-            bereich: { fernseher: "TVs", layouts: "Layouts", video: "Video", medien: "Media", quellen: "Data sources", radio: "Radio", einspieler: "Clips",
+            bereich: { fernseher: "Channels", layouts: "Layouts", video: "Video", medien: "Media", quellen: "Data sources", radio: "Radio", einspieler: "Clips",
                        kategorien: "Categories", standort: "Location", anzeige: "Display", ha: "Home Assistant", benachrichtigung: "Notifications",
                        sicherung: "Backup", pult: "Announcement panel", alarm: "Emergency screen", webhook: "Webhook", stream: "Stream", sprache: "Language", updates: "Updates" },
             aktion: { einstellungen: "Settings saved", webhook_neu: "new webhook key", medien_neu: "Medium uploaded", medien_loeschen: "Medium deleted",
@@ -700,7 +714,7 @@ const TEXTE = {
                       "player_*": (a) => `Player: ${{ neu: "created", koppeln: "paired", einstellungen: "settings", wlan: "Wi-Fi", image: "image created", entfernen: "removed", aendern: "changed", befehl: "command", "link-neu": "new link" }[a] || a}`,
                       "terminal_*": (a) => a === "start" ? "Terminal opened" : "Terminal closed" } },
     internet: "Internet", online: "reachable", offline: "not reachable", onlineText: "Live cams are running",
-    offlineSeit: (z) => `since ${z} – the TVs show own media or a fallback picture`,
+    offlineSeit: (z) => `since ${z} – the channels show own media or a fallback picture`,
     bildBefund: { schwarz: "Picture check: shows only black", steht: "Picture check: picture frozen" },
     pultLayout: (n, bis, von) => `Layout “${n}” from the panel (${von}) until ${bis}`,
     todoTitel: "To do", todoOk: "All good.",
@@ -709,8 +723,8 @@ const TEXTE = {
     todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
     todoEin: "Show again", todoAusgeblendet: "hidden",
     todo: { speicherort: (n) => `Storage location “${n}” was not reachable on last access`,
-            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under TVs → Set up so new devices get all fixes (e.g. Wi-Fi on first start)`,
-            internet: (s) => `Internet not reachable since ${s} – the TVs show own media or a fallback picture`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under Displays → + New device so new devices get all fixes (e.g. Wi-Fi on first start)`,
+            internet: (s) => `Internet not reachable since ${s} – the channels show own media or a fallback picture`,
             bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
             player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
@@ -721,11 +735,11 @@ const TEXTE = {
             doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test`,
             speicher: (st, f) => st === "rot" ? `Storage full (${f} GB free) – uploads blocked, please clean up` : `Storage getting low (${f} GB free) – please clean up` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
-    bereiche: { uebersicht: "Overview", fernseher: "TVs", inhalte: "Content", videoton: "Live videos", einstellungen: "Settings", system: "System" },
-    fernseherText: "Each TV opens its own address in the browser and can have its own sound, station and categories.",
-    adresse: "Address on the TV", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
+    bereiche: { uebersicht: "Overview", displays: "Displays", inhalte: "Content", videoton: "Videos & radio", einstellungen: "Settings", system: "System" },
+    fernseherText: "A channel is what a TV shows: layout, schedule, live videos and sound. Each channel has its own address – a device or the TV's browser opens it.",
+    adresse: "Channel address", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
-    kennung: "Identifier (a–z, 0–9, part of the address)", fernseherNeu: "Add TV", fernseherWeg: "Remove TV",
+    kennung: "Identifier (a–z, 0–9, part of the address)", fernseherNeu: "Add channel", fernseherWeg: "Remove channel",
     schalten: "Switch via HA", schaltenText: "The TV's entity in Home Assistant (media_player, switch or remote). When “black” starts in the schedule it is switched off, afterwards on again – only at the change, so switching on by hand stays. Switching on only works if HA can do it (Samsung/LG often only with Wake-on-LAN). Save first, then test.",
     schaltenAus: "Off (test)", schaltenAn: "On (test)", schaltenOk: "Sent to Home Assistant",
     haQuelle: "Select source", quellenHolen: "Get sources from HA",
@@ -744,10 +758,10 @@ const TEXTE = {
     haZustandNoch: "State according to Home Assistant: being queried (once a minute) …",
     haZustandLang: (z, roh, q, zeit) => `State according to Home Assistant: ${z} (${roh}${q ? ", source " + q : ""}), as of ${zeit}.`,
     nachZuletzt: (n) => `Last ${n.zeit}: ${n.fehler ? "not done – " + n.fehler : (n.schritte.length ? n.schritte.map((x) => x === "quelle" ? "source selected" : "page opened").join(", ") : "nothing needed")}`,
-    wirklichTvWeg: "Remove this TV? Its address will stop working.", weitererTv: "Another TV",
+    wirklichTvWeg: "Remove this channel? Its address will stop working.", weitererTv: "Another channel",
     tvHinweis: "Sound, station, volume and videos apply immediately; output and bitrate at the next stream start.",
     meineSender: "My stations", keineSender: "No stations yet – load suggestions below or enter your own address.",
-    senderNutzung: "Which TV plays which station is set in the “TVs” tab (sound = radio).",
+    senderNutzung: "Which channel plays which station is set under “Channels” (sound = radio).",
     eigenerSender: "Add your own station", senderAdresse: "Stream address (MP3/AAC, also .m3u/.pls)", senderName: "Name",
     senderAnzeigen: "Show station name on the TV", puffer: "Buffer (lead time)",
     pufferText: "Bridges dropouts of the station up to this length. The radio starts delayed by this time (also when switching stations). 0 = no buffer, directly from the station.", inNaehe: "Stations matching your location", regionWoerter:
@@ -759,21 +773,21 @@ const TEXTE = {
     playlistUebernehmen: "Add stations", playlistPruefen: "Checking the entries …",
     playlistErgebnis: (n, d) => `${n} stations added${d ? `, ${d} already present` : ""}.`,
     ortSuche: "Search place (e.g. Munich)", ortGesetzt: "Location saved", zeigenAuf: "“Show now” on",
-    alleTv: "all TVs", tonAnzeige: "Sound",
+    alleTv: "all channels", tonAnzeige: "Sound",
     epText: "At fixed minutes a clip interrupts the rotation in the video window and plays completely – e.g. the 100-second news on the hour and half hour. With sound, the radio is muted meanwhile.",
     epNeu: "Add clip", epQuelle: "Source", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (always the latest)", video: "Video address (MP4)", youtube: "YouTube video or channel (latest video)" },
     epUrl: "Address / link", epMinuten: "Minutes of the hour", epAndere: "other (e.g. 0,20,40)", epZeit: "only between", epTon: "with sound",
-    epFernseher: "TVs (none selected = all)", epAktiv: "active", epJetzt: "Show now", epJetztOk: "Plays on the TV within 15 s",
+    epFernseher: "Channels (none selected = all)", epAktiv: "active", epJetzt: "Show now", epJetztOk: "Plays on the TV within 15 s",
     epStand: "Version", epFehler: "Error", epKeine: "No clips yet.",
     wetterQuelle: "Weather source", wetterQuelleArt: { met: "Own weather (MET Norway, for the location)", ha: "Home Assistant (weather entity)" },
     metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location (further down on this page) – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
-    bnTitel: "Notifications", bnText: "SignageCast reports when a TV fails, an update or backup fails, and when Home Assistant is unreachable for more than 5 minutes – once each, with an all-clear.",
+    bnTitel: "Notifications", bnText: "SignageCast reports when a channel fails, an update or backup fails, and when Home Assistant is unreachable for more than 5 minutes – once each, with an all-clear.",
     bnTelegram: "Telegram", bnBotToken: "Bot token", bnChatId: "Chat ID", bnEmail: "E-mail (SMTP)", bnServer: "SMTP server", bnPort: "Port",
     bnSicherheit: "Encryption", bnBenutzer: "User", bnPasswort: "Password", bnAbsender: "Sender", bnEmpfaenger: "Recipients (comma separated)",
     bnHA: "Home Assistant", bnDienst: "Notify service", bnAktiv: "active", bnTest: "Test message", bnTestOk: "Test message sent",
-    bnEreignisse: "Notify on", bnEr: { ausfall: "TV failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "TV stutters (too few frames/s)", internet: "Internet not reachable (all-clear with period)", speicher: "Storage getting low or full" },
+    bnEreignisse: "Notify on", bnEr: { ausfall: "Channel failure", update: "Update failed", sicherung: "Backup failed", ha: "Home Assistant disconnected", leistung: "Channel stutters (too few frames/s)", internet: "Internet not reachable (all-clear with period)", speicher: "Storage getting low or full" },
     bnLetzte: "Last sent",
-    whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the TVs – above any layout. Only with a secret key; the key is shown only once after it is created.",
+    whTitel: "Message via webhook", whText: "Other systems (e.g. Home Assistant) can put a short message as a banner on the channels – above any layout. Only with a secret key; the key is shown only once after it is created.",
     whAktiv: "Accept messages", whNeu: "Create new key", whVorhanden: "Key set (••••)", whKeiner: "no key yet",
     whEinmal: "Visible only now – please store it safely:", whBeispiel: "Example (text, duration in seconds, style info/warnung, optional tv=<id>):",
     whNeuFrage: "Create a new key? The old one stops working.",
@@ -826,8 +840,8 @@ const TEXTE = {
       upd_container: "With Docker/Podman update via the image (docker pull)",
       e_zahl: "not a number: {w}", e_bereich: "{w} is not between {lo} and {hi}", e_wert: "invalid value: {w}",
       e_objekt: "settings must be an object", e_layout: "Layout {name}: {d}", e_layout_doppelt: "duplicate layout identifier: {id}",
-      e_tv_doppelt: "duplicate TV identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160", e_aufnahme: "capture only 720, 1080 or 1440",
-      e_tv_fehlt: "at least one TV is required", e_zeitzone: "unknown time zone {zz}", e_stufe: "unknown level",
+      e_tv_doppelt: "duplicate channel identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160", e_aufnahme: "capture only 720, 1080 or 1440",
+      e_tv_fehlt: "at least one channel is required", e_zeitzone: "unknown time zone {zz}", e_stufe: "unknown level",
       e_suchmuster: "invalid search pattern: {x}", e_ortsmuster: "invalid place pattern: {m}",
       e_kat_doppelt: "duplicate category identifier: {id}", e_kat_name: "Own category needs a name", e_kat_max: "At most {n} categories",
       e_kat_begriffe: "{name}: at most {n} search terms", e_kat_unbekannt: "Unknown category", e_kat_eingebaut: "Built-in categories cannot be deleted",
@@ -845,14 +859,14 @@ const TEXTE = {
       l_imp_bild: "Picture/PDF “{w}” does not exist here – please upload it in the editor",
       l_imp_quelle: "Element {b}: data source “{q}” does not exist here – please create it or choose one in the editor",
       l_imp_bedingung: "Element {b}: invalid condition – left out", l_version_fehlt: "This version no longer exists",
-      p_recht: "This account may not do that", p_kein_schalten: "No switch from Home Assistant is set for this TV",
+      p_recht: "This account may not do that", p_kein_schalten: "No switch from Home Assistant is set for this channel",
       ki_name: "Please enter a name for the computer (letters, digits, spaces, . @ -)", ki_doppelt: "There is already a computer with this name",
       ki_max: "At most {n} computers", ki_adresse: "Invalid address of this machine",
       fn_art: "Unknown kind for remote sites", fn_server: "Address of SignageCast in the tailnet: the tailnet IP (100.x.y.z)",
       fn_tag: "Tag as tag:name (lower-case letters, digits, hyphen)", fn_zugang: "Access data incomplete",
       fn_benutzer: "Headscale user: the number (ID) from “headscale users list” – or leave empty",
       fn_api: "Tailscale/Headscale refuses: {d}", fn_nicht_erreichbar: "Tailscale/Headscale not reachable: {d}",
-      fn_aus: "Remote sites are not set up (Settings → Remote sites)",
+      fn_aus: "Remote sites are not set up (Displays → Remote sites)",
       fn_server_fehlt: "SignageCast ({d}) is not in this tailnet – check the address or set up Tailscale on this server",
       fn_userspace: "Tailscale runs in userspace mode on this server – then the admin is reachable from the tailnet without login. Please set up /dev/net/tun (guide REMOTE.md) and switch userspace mode off",
       fn_kein_tailscale: "Tailscale is not set up on this server – first “Set up Tailscale”",
@@ -866,10 +880,10 @@ const TEXTE = {
       r_hls: "HLS radio (m3u8) is not supported – please use an MP3/AAC address", r_keine_adresse: "Playlist contains no stream address",
       r_kein_audio: "Not an audio stream (content: {typ})", r_verschachtelt: "Too many nested playlists",
       r_playlist_leer: "No stream address (http/https) found in the playlist",
-      d_text_tv: "Text and at least one TV required", d_stimme_fehlt: "Voice not loaded yet (Admin → Content → Announcements)",
+      d_text_tv: "Text and at least one channel required", d_stimme_fehlt: "Voice not loaded yet (Admin → Settings → Announcement panel)",
       d_stimme: "unknown voice", bn_kanal: "unknown channel",
       l_pdf: "invalid PDF", l_zeitraum: "Period: date as YYYY-MM-DD, optionally with time",
-      sp_voll: "Not enough storage: {frei} GB free, {reserve} GB stay free as a reserve for operation (about {bedarf} GB needed) – clean up under System → Storage",
+      sp_voll: "Not enough storage: {frei} GB free, {reserve} GB stay free as a reserve for operation (about {bedarf} GB needed) – clean up under System → Health",
       gal_ordner: "Unknown gallery folder", gal_ordner_viele: "At most 50 gallery folders",
       gal_benutzt: "The folder is still shown – change these layouts first: {layouts}", gal_art: "Only pictures (JPG, PNG, WebP, GIF) and PDFs",
       gal_heic: "HEIC photos (iPhone) please as JPG: upload via the phone's photo picker (converts by itself) or on the iPhone Settings → Camera → Formats → “Most Compatible”",
@@ -895,13 +909,13 @@ const TEXTE = {
       pdf_art: "Not a PDF file", pdf_werkzeug: "pdftoppm missing (package poppler-utils) – please update SignageCast",
       pdf_zeit: "Converting takes longer than {s} s – please use a smaller PDF", pdf_kaputt: "PDF not readable: {d}",
       al_text: "Text for the emergency screen missing",
-      sch_entitaet: "No entity for switching is set for this TV",
+      sch_entitaet: "No entity for switching is set for this channel",
       sch_keine_ip: "The address of this server is unknown (Docker: set SC_HOST_IP)", sch_nichts: "Nothing is set for this TV after switching on",
       e_ha_daten: "Data for the HA service must be a JSON object (at most 1000 characters)",
       sch_an_nicht: "Home Assistant cannot switch {e} on – the device does not offer it (Samsung/LG often only with Wake-on-LAN)",
       sch_aus_nicht: "Home Assistant cannot switch {e} off – the device does not offer it",
       pi_ssid: "Wi-Fi name missing or longer than 32 characters", pi_wlan_pw: "Wi-Fi password: 8 to 63 characters",
-      pi_wlan_unbekannt: "This Wi-Fi is not saved (any more)", pi_name: "Player name missing", pi_tv: "Unknown TV", pi_lautstaerke: "Volume 0 to 100",
+      pi_wlan_unbekannt: "This Wi-Fi is not saved (any more)", pi_name: "Player name missing", pi_tv: "Unknown channel", pi_lautstaerke: "Volume 0 to 100",
       pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_offline: "The Pi is not reachable right now",
       pi_fernwartung_aus: "This Pi does not allow remote maintenance – switch it on on the SD card (when creating the image) or on its setup page",
       pi_fernwartung_alt: "The agent on this Pi cannot do remote maintenance yet – it updates itself at its next report, please try again shortly", pi_server: "Server address as http://IP:port",
@@ -963,24 +977,24 @@ const TEXTE = {
     sonne: "Minimum sun elevation (degrees)", mindeststufe: "Minimum quality", schlecht: "below it for this long, then skip (s)",
     grenze: "Strikes until a stream stops playing", sperre: "after a strike skip for (hours)",
     kod: { titel: "Encoding (advanced)", encoder: "Encoder", preset: "Preset", tune: "Tune", bframes: "B-frames",
-      text: "“Automatic” is normally right. A change restarts this TV's stream (black for a few seconds); SignageCast tries it briefly first and stays with “Automatic” if it does not work here. Afterwards check under System → Performance whether encoding keeps up.",
+      text: "“Automatic” is normally right. A change restarts this channel's stream (black for a few seconds); SignageCast tries it briefly first and stays with “Automatic” if it does not work here. Afterwards check under System → Health whether encoding keeps up.",
       art: { auto: "Automatic (recommended)", vaapi: "Intel/AMD graphics (VAAPI)", qsv: "Intel Quick Sync (QSV)", nvenc: "NVIDIA NVENC (experimental)", software: "Software (libx264)" },
       info: { auto: "Uses the graphics unit via VAAPI, software without usable graphics.",
         vaapi: "Video unit of Intel or AMD graphics via the open VAAPI interface – efficient, 4K, H.264 and H.265. Has no preset and no tune.",
         qsv: "Intel's own way to the same video unit (Quick Sync via oneVPL), with presets. Needs Intel graphics of the 11th/12th generation or newer (e.g. N100, Core from Tiger Lake); with older Intel graphics use VAAPI.",
         nvenc: "Video unit of an NVIDIA graphics card. Experimental and untested: card and NVIDIA driver must be available in the container (/dev/nvidia*, Docker --gpus all) – SignageCast does not set this up itself.",
-        software: "The processor encodes H.264 (libx264): works everywhere but costs about 1–2 cores per TV; always Full HD and at most 8 Mbit/s." },
+        software: "The processor encodes H.264 (libx264): works everywhere but costs about 1–2 cores per channel; always Full HD and at most 8 Mbit/s." },
       grund: { keine_grafik: "no graphics (/dev/dri) found", qsv_alt: "needs Intel graphics of the 11th/12th generation or newer", keine_nvidia: "no NVIDIA card found" },
       presetInfo: "How thoroughly the encoder works: ultrafast is the fastest, medium gives the nicest picture at the same bitrate but needs much more computing time – if the computer cannot keep up, the picture stutters. Quick Sync and NVENC get their matching own level.",
       tuneArt: { zerolatency: "zerolatency (recommended)", keins: "none" },
       tuneInfo: "zerolatency tunes the encoder for low delay (no look-ahead, every frame out at once) – recommended for live pictures, costs a little quality. “none” looks a few frames ahead: slightly nicer but slower to react.",
       bfInfo: "B-frames are in-between frames that also refer to later frames: about 5–15 % less data, but more delay, and some TV browsers stutter with them. 0 is the safe choice for live streams.",
       ohne: "VAAPI has no preset and no tune – the fields only apply to software, Quick Sync and NVENC.",
-      fehler: (enc, g) => `The setting does not work here (${enc}: ${g}) – this TV therefore uses “Automatic”.`,
+      fehler: (enc, g) => `The setting does not work here (${enc}: ${g}) – this channel therefore uses “Automatic”.`,
       aktiv: "Currently active", std: "default", standard: "Back to default" },
     codec: "Codec", codecArt: { auto: "Automatic (recommended)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatic: 4K as H.265 (half the data, supported by almost all 4K TVs), Full HD as H.264 (plays on practically every TV, browser and player). Choose H.264 if a device stutters or shows no picture – e.g. older TVs, Firefox; H.265 needs about 30–40 % less bitrate for the same quality.",
-    kategorien: "Categories", kategorienAlle: "Categories (for all TVs)", streamTechnik: "Video stream", abschaltenTitel: "Video stream without viewers",
+    kategorien: "Categories", kategorienAlle: "Categories (for all channels)", streamTechnik: "Video stream", abschaltenTitel: "Video stream without viewers",
     abschnitt: { anzeige: "Display", video: "Live video", ton: "Sound" }, aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
     aufnahme: "Capture (browser)", aufnahmeArt: { 720: "720p – saves CPU", 1080: "1080p (recommended)", 1440: "1440p – sharper, needs more CPU" },
     aufnahmeText: "Size in which the browser draws the TV page; the graphics unit converts it to the output. More than the output brings nothing. Live videos in the layout follow the capture (720p fetches 720p from YouTube). A change briefly restarts the stream.",
@@ -1014,7 +1028,7 @@ const TEXTE = {
     karussell: "Layout carousel", karussellText: "Switches between the chosen layouts every few minutes (at least two). A schedule takes priority.",
     karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows",
     videoQuelleArt: { youtube: "live streams (YouTube)", medien: "own media only", gemischt: "mixed" }, medienAlle: "every N-th time own media",
-    medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per TV under “TVs”: own media only or mixed with the live streams. Pictures stay for their duration, videos play completely.",
+    medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per channel under “Channels”: own media only or mixed with the live streams. Pictures stay for their duration, videos play completely.",
     medHoch: "Upload files", medLaedt: (n, p) => `Uploading ${n} … ${p} %`, medKeine: "No own media yet.", medDauer: "Duration (s)",
     // Gallery and storage (since 0.45)
     galText: "Folders with pictures (JPG, PNG, WebP, GIF) and PDFs for the layout element “Gallery” or as a background slideshow. Photos are scaled down to at most 4K when uploaded – only this version is stored. The pictures are kept only here and are not part of the backup (the folder names are).",
@@ -1053,14 +1067,14 @@ const TEXTE = {
            stadt: "Cities & squares", strand: "Beaches & coasts", berge: "Mountains & ski", hafen: "Harbours & ships",
            flug: "Airports & planes", bahn: "Trains & railways", weltraum: "Space & Earth", natur: "Natural wonders" },
     katGruppe: { tiere: "Animals", themen: "More topics" },
-    katText: "Define what a category is: its own YouTube search terms, words that must appear in the title and whether day/night at the location matters. Found animal streams are sorted by the words (first matching category, otherwise “Newly found”). Switch categories on and off for all TVs or per TV.",
+    katText: "Define what a category is: its own YouTube search terms, words that must appear in the title and whether day/night at the location matters. Found animal streams are sorted by the words (first matching category, otherwise “Newly found”). Switch categories on and off for all channels or per channel.",
     katNeu: "New category", katEigene: "own", katGeaendert: "changed", katNamePflicht: "Name (required)", katGruppeWahl: "Group",
     katNeuText: "Found animal streams that match no category end up here. It has no search of its own.",
-    katWo: "Switched on", katAlle: "For all TVs", katStreams: (n) => `${n} streams`, katEinStream: "1 stream",
+    katWo: "Switched on", katAlle: "For all channels", katStreams: (n) => `${n} streams`, katEinStream: "1 stream",
     katAusAlle: "off", katAusBei: (l) => `off on ${l}`, katMitSuche: (n) => n === 1 ? "1 search term" : `${n} search terms`, katNameFeld: "Name",
     katBegriffe: (n) => `Search terms (one per line, at most ${n})`,
     katBegriffeTiere: "Empty = only the general animal search (Search page) fills this category. Each term is one YouTube request per search run.",
-    katBegriffeThemen: "Each term is one YouTube request per search run. The search only runs while the category is on for all TVs.",
+    katBegriffeThemen: "Each term is one YouTube request per search run. The search only runs while the category is on for all channels.",
     katWoerter: "Words in the title (one per line, regular expressions allowed)",
     katWoerterTiere: "One word must appear in the title. Also sorts finds of the general animal search into this category.",
     katWoerterThemen: "One word must appear in the title. Empty = any title (except music, games and the like).",
@@ -1150,29 +1164,31 @@ const ungespeichert = () => !!document.querySelector("#inhalt .karte.geaendert")
 window.addEventListener("beforeunload", (e) => { if (ungespeichert()) { e.preventDefault(); e.returnValue = ""; } });
 
 // ---------- Reiter ----------
-// Zwei Teile auf einer Seite: jeder zeichnet in seinen eigenen Kasten (seit 0.31.1)
-const zweiTeile = (a, b) => async (i) => {
-  i.innerHTML = `<div id="teilA"></div><div id="teilB"></div>`;
-  await a($("#teilA")); await b($("#teilB"));
+// Mehrere Teile auf einer Seite: jeder zeichnet in seinen eigenen Kasten (seit 0.31.1, seit 0.49 beliebig viele)
+const teile = (...fs) => async (i) => {
+  i.innerHTML = fs.map((_, n) => `<div id="teil${n}"></div>`).join("");
+  for (let n = 0; n < fs.length; n++) await fs[n]($("#teil" + n));
 };
 const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
-                 galerie: galerieSeite, speicher: speicherSeite,
+                 galerie: galerieSeite,
                  streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
-                 pult: zweiTeile(pultSeite, webhookKarte),
-                 updates: updatesSeite, sicherung: sicherungSeite, leistung: zweiTeile(leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
+                 pult: teile(pultSeite, webhookKarte), durchsage: durchsageSeite,
+                 updates: updatesSeite, sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
                  protokoll: protokollSeite, ki: kiSeite, fern: fernSeite, speicherorte: speicherorteSeite };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
-// Seit 0.31.1 neu geordnet: Inhalte (was gezeigt/gespielt wird), Live-Videos (Streams und ihre Regeln), Einstellungen
-// (Grundlagen und Verbindungen), System (Betrieb). Die Kennungen der Seiten (#video, #pult …) bleiben gleich.
-const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher", "player", "einrichten"]],
-                  ["inhalte", ["layout", "quellen", "medien", "galerie", "einspieler", "radio", "pult"]],
-                  ["videoton", ["streams", "kategorien", "video", "suche"]],
-                  ["einstellungen", CONTAINER ? ["allgemein", "ha", "benachrichtigung", "speicherorte", "ki", "fern", "zugang"] : ["allgemein", "ha", "benachrichtigung", "speicherorte", "ki", "fern"]],
-                  ["system", ["updates", "sicherung", "speicher", "leistung", "protokoll"]]];
-const ALT = { anzeige: "allgemein", verbindung: "ha" };              // gemerkte Reiter bis 0.16
+// Seit 0.49 neu geordnet: Displays (Kanäle = was ein Fernseher zeigt, Geräte = Hardware), Inhalte, Videos & Radio,
+// Einstellungen (Grundlagen, Verbindungen, Pult), System (Betrieb); Durchsage als Knopf im Kopf.
+// Die Kennungen der Seiten (#fernseher = Kanäle, #video = Regeln …) bleiben gleich, alte leitet ALT weiter.
+const BEREICHE = [["uebersicht", ["uebersicht"]], ["displays", ["fernseher", "player", "fern", "einrichten"]],
+                  ["inhalte", ["layout", "quellen", "medien", "galerie", "einspieler"]],
+                  ["videoton", ["streams", "kategorien", "suche", "video", "radio"]],
+                  ["einstellungen", ["allgemein", "ha", "speicherorte", "ki", "benachrichtigung", "pult"].concat(CONTAINER ? ["zugang"] : [])],
+                  ["system", ["zustand", "updates", "sicherung", "protokoll"]]];
+const NEBEN = ["durchsage"];                                           // Seiten ohne Reiter (Knopf im Kopf)
+const ALT = { anzeige: "allgemein", verbindung: "ha", leistung: "zustand", speicher: "zustand" };  // gemerkte Reiter bis 0.16 bzw. 0.48
 let aktiv = "uebersicht", timer = null;
-const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || BEREICHE[0];
+const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || (NEBEN.includes(k) ? ["", []] : BEREICHE[0]);
 function reiterZeichnen() {
   const [bereich, unter] = bereichVon(aktiv);
   const nav = $("#reiter"), sub = $("#unter"), menue = $("#menue");
@@ -1183,20 +1199,28 @@ function reiterZeichnen() {
     nav.appendChild(k);
   }
   const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
-                  fernseher: "#show-something-different-at-night" }[aktiv] || "";
-  nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener"
-    href="https://github.com/thefrozn/signagecast/blob/main/docs/${aktiv === "player" || aktiv === "einrichten" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "") : "MANUAL.md" + anker}">?</a>`));
+                  fernseher: "#show-something-different-at-night", pult: "#announcements-from-the-reception",
+                  durchsage: "#announcements-from-the-reception", galerie: "#show-a-folder-of-pictures-gallery-since-045",
+                  speicherorte: "#pictures-and-files-from-a-nas-or-cloud-storage-locations-since-048" }[aktiv] || "";
+  const doku = aktiv === "player" || aktiv === "einrichten" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "")
+    : aktiv === "fern" ? "REMOTE.md" : "MANUAL.md" + anker;
+  nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener" href="https://github.com/thefrozn/signagecast/blob/main/docs/${doku}">?</a>`));
   sub.hidden = unter.length < 2;
   for (const s of unter) {
-    const k = el(`<button class="${s === aktiv ? "an" : ""}">${esc(T.reiter[s])}</button>`);
+    const k = el(`<button class="${[s === aktiv ? "an" : "", s === "einrichten" ? "neu" : ""].join(" ").trim()}">${esc(T.reiter[s])}</button>`);
     k.onclick = () => zeigeSeite(s);
     sub.appendChild(k);
   }
   menue.innerHTML = BEREICHE.map(([b, seiten]) => seiten.length < 2
     ? `<option value="${seiten[0]}">${esc(T.bereiche[b])}</option>`
-    : `<optgroup label="${esc(T.bereiche[b])}">${seiten.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("")}</optgroup>`).join("");
+    : `<optgroup label="${esc(T.bereiche[b])}">${seiten.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("")}</optgroup>`).join("")
+    + NEBEN.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("");
   menue.value = aktiv;
   menue.onchange = () => zeigeSeite(menue.value);
+  const ds = $("#durchsageKnopf");                                     // Durchsage als Knopf im Kopf (seit 0.49)
+  ds.textContent = "📢 " + T.reiter.durchsage;
+  ds.classList.toggle("an", aktiv === "durchsage");
+  ds.onclick = () => zeigeSeite("durchsage");
 }
 const merk = {};                                                       // zuletzt offene Unterseite je Bereich
 function zeigeSeite(k) {
@@ -1364,8 +1388,7 @@ async function pultSeite(inhalt) {
         <label>${esc(T.al.vorlagen)}</label><textarea id="alVorlagen" rows="3" class="breit">${esc(A.vorlagen.join("\n"))}</textarea>
         <div class="zeile"><label><input type="checkbox" id="alTon" ${A.ton ? "checked" : ""}> ${esc(T.al.ton)}</label></div>
         <div class="zeile"><button class="knopf haupt" id="alOk">${esc(T.speichern)}</button>
-          <select id="alTv"><option value="">${esc(T.al.alle)}</option>${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select>
-          <button class="knopf gefahr" id="alAn">${esc(T.al.an)}</button><button class="knopf" id="alAus" ${al.jetzt ? "" : "disabled"}>${esc(T.al.aus)}</button></div>
+          <a class="knopf" href="#durchsage">${esc(T.al.ausloesenWo)}</a></div>
         <p class="leise">${esc(T.al.webhook)}</p><pre>curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)}/alarm -H "Authorization: Bearer …" -d '{"text": "…"}'
 curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)}/alarm -H "Authorization: Bearer …" -d '{"aus": true}'</pre></div>`;
     const lesen = () => {                       // Eingaben in P übernehmen (vor Neuzeichnen und Speichern)
@@ -1387,20 +1410,72 @@ curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)
     $("#zNeu").onclick = () => { lesen(); P.zugaenge.push({ id: Math.random().toString(36).slice(2, 10).padEnd(8, "0"), name: "Rezeption", passwort: "", fernseher: [] }); zeichnen(); };
     $("#puOk").onclick = (e) => { lesen(); speichernE({ pult: P, alarm: A }, e.target).then(() => { Object.assign(P, JSON.parse(JSON.stringify(E.pult))); zeichnen(); }); };
     $("#alOk").onclick = $("#puOk").onclick;
-    $("#alAn").onclick = (e) => {
-      lesen();
-      const text = A.vorlagen[0];
-      if (!text || !confirm(T.al.wirklich + "\n\n" + text)) return;
-      aktion(e.target, async () => { const r = await senden("/api/alarm", { text, fernseher: $("#alTv").value ? [$("#alTv").value] : [] });
-        al.jetzt = r.jetzt; zeichnen(); }, T.al.ausgeloest);
-    };
-    $("#alAus").onclick = (e) => { lesen(); aktion(e.target, async () => { await senden("/api/alarm", { aus: true }); al.jetzt = null; zeichnen(); }, T.al.beendet); };
     $("#puProbe").onclick = (e) => aktion(e.target, () => senden("/api/pult/probe", { tv: $("#puProbeTv").value }), T.pu.probeOk);
     inhalt.querySelectorAll("[data-laden]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
       await senden("/api/pult/stimme-laden", { stimme: b.dataset.laden });
       clearInterval(timer);
       timer = setInterval(async () => { const i = await holen("/api/pult"); Object.assign(info, i); lesen(); zeichnen(); if (!i.laden.laeuft) clearInterval(timer); }, 3000);
     }, null); });
+  };
+  zeichnen();
+}
+
+// ---------- Durchsage (Knopf im Kopf, seit 0.49) ----------
+// Senden wie am Pult, aber mit den Rechten der Verwaltung: Durchsage in der Bildmitte, Laufschrift, Notfall-Vollbild.
+// Stimme, Vorlagen und Zugänge stehen unter Einstellungen → Durchsage-Pult.
+async function durchsageSeite(inhalt) {
+  const [info, al] = await Promise.all([holen("/api/pult"), holen("/api/alarm")]);
+  const P = E.pult, A = E.alarm, D = T.ds;
+  const stimme = !!(info.stimmen[P.stimme] || {}).bereit;
+  const kanaele = (name) => E.fernseher.length < 2 ? "" : `<div class="zeile">${E.fernseher.map((t) => `<label class="abstand-r"><input type="checkbox" name="${name}" value="${esc(t.id)}"> ${esc(t.name)}</label>`).join("")}</div>
+      <p class="leise">${esc(D.keinerAlle)}</p>`;
+  const gewaehlt = (name) => [...inhalt.querySelectorAll(`[name=${name}]:checked`)].map((c) => c.value);
+  const zeichnen = () => {
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(D.durchsage)}</h2><p class="leise">${esc(D.durchsageText)}</p>
+        ${P.vorlagen.length ? `<div class="zeile"><select id="dsVorlage" class="breit"><option value="">${esc(D.vorlage)}</option>
+          ${P.vorlagen.map((v, i) => `<option value="${i}">${esc(v)}</option>`).join("")}</select></div>` : ""}
+        <textarea id="dsText" rows="2" class="voll640 fliess" maxlength="200" placeholder="${esc(D.textPlatz)}"></textarea>
+        ${kanaele("dsTv")}
+        <div class="zeile"><label>${esc(D.dauer)}</label><input type="number" id="dsDauer" min="10" max="3600" value="${P.dauer_s}" class="b80">
+          <label><input type="checkbox" id="dsVorlesen" ${P.vorlesen && stimme ? "checked" : ""} ${stimme ? "" : "disabled"}> ${esc(T.pu.vorlesen)}</label></div>
+        ${stimme ? "" : `<p class="leise">${esc(D.ohneStimme)}</p>`}
+        <div class="zeile"><button class="knopf haupt" id="dsSenden">${esc(D.senden)}</button></div></div>
+      <div class="karte"><h2>${esc(D.lauf)}</h2><p class="leise">${esc(D.laufText)}</p>
+        <input type="text" id="lfText" class="voll640" maxlength="200">
+        ${kanaele("lfTv")}
+        <div class="zeile"><label>${esc(D.wieLange)}</label><select id="lfDauer">${[900, 1800, 3600, 7200, 14400, 28800, 43200].map((x) =>
+          `<option value="${x}" ${x === 3600 ? "selected" : ""}>${x < 3600 ? D.min(x / 60) : D.std(x / 3600)}</option>`).join("")}</select>
+          <label><input type="checkbox" id="lfWarn"> ${esc(D.warnung)}</label></div>
+        <div class="zeile"><button class="knopf haupt" id="lfSenden">${esc(D.laufSenden)}</button><button class="knopf" id="lfAus">${esc(D.laufAus)}</button></div></div>
+      <div class="karte"><h2>⚠ ${esc(T.al.titel)}</h2><p class="leise">${esc(T.al.text)}</p>
+        ${al.jetzt ? `<p class="schlecht"><b>${esc(T.al.laeuft(al.jetzt.zeit, al.jetzt.von))}:</b> ${esc(al.jetzt.text)}</p>` : ""}
+        ${A.vorlagen.length ? `<div class="zeile"><select id="alVorlage" class="breit">${A.vorlagen.map((v, i) => `<option value="${i}">${esc(v)}</option>`).join("")}</select></div>` : ""}
+        <input type="text" id="alEigen" class="voll640" maxlength="200" placeholder="${esc(D.eigenerText)}">
+        <div class="zeile"><select id="alTv"><option value="">${esc(T.al.alle)}</option>${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select>
+          <button class="knopf gefahr" id="alAn">${esc(T.al.an)}</button><button class="knopf" id="alAus" ${al.jetzt ? "" : "disabled"}>${esc(T.al.aus)}</button></div></div>
+      <p class="leise">${esc(D.einstellungen)} <a href="#pult">${esc(T.bereiche.einstellungen)} → ${esc(T.reiter.pult)}</a></p>`;
+    if ($("#dsVorlage")) $("#dsVorlage").onchange = () => { const v = P.vorlagen[Number($("#dsVorlage").value)]; if (v !== undefined && $("#dsVorlage").value !== "") $("#dsText").value = v; };
+    $("#dsSenden").onclick = (e) => {
+      const text = $("#dsText").value.trim();
+      if (!text) { melden(D.keinText, true); return; }
+      aktion(e.target, () => senden("/api/durchsage", { text, fernseher: gewaehlt("dsTv"), dauer_s: Number($("#dsDauer").value) || P.dauer_s,
+                                                       vorlesen: $("#dsVorlesen").checked }), D.gesendet);
+    };
+    $("#lfSenden").onclick = (e) => {
+      const text = $("#lfText").value.trim();
+      if (!text) { melden(D.keinText, true); return; }
+      aktion(e.target, () => senden("/api/meldung", { text, fernseher: gewaehlt("lfTv"), dauer_s: Number($("#lfDauer").value),
+                                                     stil: $("#lfWarn").checked ? "warnung" : "info" }), D.laufAn);
+    };
+    $("#lfAus").onclick = (e) => aktion(e.target, () => senden("/api/meldung", { aus: true, fernseher: gewaehlt("lfTv") }), D.laufBeendet);
+    $("#alAn").onclick = (e) => {
+      const text = $("#alEigen").value.trim() || ($("#alVorlage") ? A.vorlagen[Number($("#alVorlage").value)] : "") || "";
+      if (!text) { melden(D.keinText, true); return; }
+      if (!confirm(T.al.wirklich + "\n\n" + text)) return;
+      aktion(e.target, async () => { const r = await senden("/api/alarm", { text, fernseher: $("#alTv").value ? [$("#alTv").value] : [] });
+        al.jetzt = r.jetzt; zeichnen(); }, T.al.ausgeloest);
+    };
+    $("#alAus").onclick = (e) => aktion(e.target, async () => { await senden("/api/alarm", { aus: true }); al.jetzt = null; zeichnen(); }, T.al.beendet);
   };
   zeichnen();
 }
@@ -3460,7 +3535,7 @@ async function galerieSeite(inhalt) {
         <div class="spbalken" role="img" aria-label="${esc(T.galBelegt(groesseText(g.belegt), gbText(g.grenze)))}"><div class="sp-galerie" data-breite="${pct}%"></div></div>
         <p>${esc(T.galBelegt(groesseText(g.belegt), gbText(g.grenze)))} · ${esc(T.galPlatzFuer(platz.toLocaleString(ORT())))}</p>
         ${g.grenze < g.grenze_gb * 1024 ** 3 - 1e8 ? `<p class="leise">${esc(T.galGrenzePlatz(gbText(g.grenze)))}</p>` : ""}
-        ${sp.stufe !== "gruen" ? `<p class="${sp.stufe === "rot" ? "schlecht" : "warn"}"><a href="#speicher">${esc(T.galStufe[sp.stufe])}</a></p>` : ""}
+        ${sp.stufe !== "gruen" ? `<p class="${sp.stufe === "rot" ? "schlecht" : "warn"}"><a href="#zustand">${esc(T.galStufe[sp.stufe])}</a></p>` : ""}
         <div class="zeile"><label for="galGrenze">${esc(T.galGrenze)}</label><input type="number" id="galGrenze" class="schmal" min="1" max="2000" value="${g.grenze_gb}">
           <button class="knopf" id="galGrenzeOk">${esc(T.speichern)}</button></div></div>
       <div class="karte" id="galKarte"><div class="zeile galordner">${g.ordner.map((x) => `<button class="knopf ${x.id === GAL_ORDNER ? "haupt" : ""}" data-ordner="${esc(x.id)}">${esc(x.name)} <span class="leise">${x.anzahl}</span></button>`).join("")}
