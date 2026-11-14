@@ -2,9 +2,8 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.33 (overview 0.35, players 0.36, categories 0.37) with the six areas Overview, TVs, Content, Live videos, Settings and System.
-**Since 0.49 the menu is ordered differently** (Overview, Displays, Content, Videos & radio, Settings, System; a TV's
-settings are now a *channel*); the texts below already use the new names, new pictures follow.
+0.50 with the six areas Overview, Displays, Content, Videos & radio, Settings and System and the **📢 Announcement**
+button at the top right.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
@@ -59,33 +58,39 @@ next to Cockpit's own pages. If your server already runs Cockpit, SignageCast in
 ### 6. Overview
 At the top a **to-do list**: problems first (e.g. Home Assistant not reachable), then tips (automatic backup off, no
 notification set up) – each entry links to the page where you fix it; the ✕ hides it (tips for good, problems until they were
-solved once, since 0.35). Below, every TV with its state, current stream,
+solved once, since 0.35). Below, every channel with its state, current stream,
 resolution and sound, then viewers, weather source, time check against NTP (“time from the host, synchronised”), video
 encoding (graphics unit or software fallback), Home Assistant connection, streams in rotation, CPU, RAM and uptime.
 Since 0.38 a tile shows whether the **internet** is reachable (without it the TVs show own media or a calm picture),
-and a TV card says when the **picture check** found a black or frozen picture.
+and a channel card says when the **picture check** found a black or frozen picture.
 
 ![Overview](tour/04-overview.jpg)
 
-### 7. TVs
-Each TV has its own address and a card in three parts: **Display** (layout, optional schedule with another layout or
-black at certain times, layout carousel, switching the TV via Home Assistant), **Live video** (on/off, what the video
-window shows, categories) and **Sound** (radio or the original sound of the cams, volume). Under *Video stream*: output
-Full HD (default) or 4K, the **capture size** the browser draws in (720p saves CPU, 1440p is sharper), bitrate and codec.
-Since 0.37 *Switch via HA* also shows whether the TV is on or off according to Home Assistant and can, after switching
-on, select a source (e.g. HDMI 2) and open the TV page (LG webOS, Android TV / Fire TV or an own HA service).
+### 7. Displays → Channels
+A **channel** is what a TV shows – with its own address that a device or the TV's browser opens. The list shows for
+each channel its layout, state, schedule and carousel, which devices show it right now (online or offline) and its
+address.
 
-![TV settings](tour/05-tvs.jpg)
+![Channels as a list](tour/05-tvs.jpg)
 
-Under *Video stream* → **Encoding (advanced)**: encoder (Automatic, Intel/AMD graphics, Quick Sync, NVENC, software),
-preset, tune and B-frames per TV. A change is tried briefly first; if it does not work here, SignageCast stays with
+*Edit* opens one channel with five tabs: **Display & schedule** (layout, optional schedule with another layout or black
+at certain times, layout carousel), **Live video** (on/off, what the video window shows, categories), **Sound** (radio
+or the original sound of the cams, volume), **On/off (HA)** (switching via Home Assistant, state according to HA, after
+switching on select a source and open the TV page – LG webOS, Android TV / Fire TV or an own HA service) and **Video
+stream** (output Full HD or 4K, capture size – 720p saves CPU, 1440p is sharper –, bitrate and codec). Each channel is
+saved on its own; the open tab stays.
+
+![A channel with a schedule](tour/05f-channel.jpg)
+
+In the *Video stream* tab → **Encoding (advanced)**: encoder (Automatic, Intel/AMD graphics, Quick Sync, NVENC, software),
+preset, tune and B-frames per channel. A change is tried briefly first; if it does not work here, SignageCast stays with
 “Automatic”. Fields that do not apply to the active encoder are explained right there.
 
-![Encoding settings per TV](tour/05a-encoding.jpg)
+![Encoding settings per channel](tour/05a-encoding.jpg)
 
-### 8. Players – Raspberry Pi, PC or browser (experimental)
-Displays → *Devices*: a player at the TV shows SignageCast – also on TVs without a usable browser. *Add player*: enter a
-name, pick the TV, the **model** and the network (LAN or Wi-Fi), download a ready image and write it to an SD card or
+### 8. Devices – Raspberry Pi, PC or browser (experimental)
+Displays → *Devices*: a player at the TV shows a channel – also on TVs without a usable browser. Displays → *+ New
+device* → *Add player*: enter a name, pick the channel, the **model** and the network (LAN or Wi-Fi), download a ready image and write it to an SD card or
 USB stick; nothing to type at the device. Or download one image for many devices: each shows a 6-digit code on the TV,
 which you enter under *Pair a player*.
 
@@ -118,7 +123,7 @@ cannot reach Pis that do not. No open port and no SSH on the Pi; input and outpu
 ![Terminal to a Raspberry Pi in the browser](tour/05c-remote-terminal.jpg)
 
 ### 10. Layouts and editor
-Content → Layouts starts with all layouts as tiles – mini preview, on which TV each one is shown, edit, and copy /
+Content → Layouts starts with all layouts as tiles – mini preview, on which channel each one is shown, edit, and copy /
 export / delete in the “⋯” menu. “New layout” asks for a name and a starting point (empty, template or copy), so an
 existing layout is never overwritten.
 
@@ -165,7 +170,7 @@ parsed, never executed.
 
 ![Data source created from a curl command](tour/08-curl-import.jpg)
 
-### 13. Live videos – streams
+### 13. Videos & radio – streams
 The built-in list of wildlife and nature live streams, plus streams found by the nightly search. Every stream has a
 **state** – ready, night (with “daylight in …”), not live, resolution too low, paused after a strike, location
 unknown – and the chips above the list filter by it (with counts), next to text, category and origin (fixed / found).
@@ -174,17 +179,17 @@ favourites, reject unwanted ones.
 
 ![Stream list with states and filters](tour/09-streams.jpg)
 
-### 14. Live videos – categories, rotation & quality
+### 14. Videos & radio – categories and rules
 **Categories** (since 0.37 an own page) are grouped into **Animals** and **More topics** (cities & squares, beaches &
 coasts, mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders). Each
 one can be edited: name, group, up to 6 own YouTube search terms, words that must appear in the title, “ignore
-day/night”, on/off for all TVs or per TV – with the number of its streams. Found animal streams are sorted into the
+day/night”, on/off for all channels or per channel – with the number of its streams. Found animal streams are sorted into the
 first category whose words match. **New category** adds your own (e.g. lighthouses) with its own nightly search;
 built-in ones can be reset to default.
 
 ![Categories](tour/09a-categories.jpg)
 
-*Rotation & quality*: minutes per stream, only streams where it is daytime, minimum sun elevation; under *Advanced*
+*Rules*: minutes per stream, only streams where it is daytime, minimum sun elevation; under *Advanced*
 the minimum quality (360p … 1080p) and the strike rules.
 
 ### 15. Radio
@@ -201,8 +206,8 @@ container preloads each new edition (complete or only the first MB), so the clip
 
 ### 17. Settings → General
 Language and weather source, location by place search, time source: NTP server (default: the country pool) and time
-zone – if the host keeps its clock synchronised, nothing is corrected. Home Assistant and notifications have their own
-pages next to it. Unsaved changes are marked on their card, and you are asked before leaving the page.
+zone – if the host keeps its clock synchronised, nothing is corrected. Home Assistant, storage locations, AI assistants,
+notifications and the announcement panel have their own pages next to it. Unsaved changes are marked on their card, and you are asked before leaving the page.
 
 ![Settings: display, location and time source](tour/12-settings.jpg)
 
@@ -232,30 +237,37 @@ initial password is printed in the container log. The password is changed under 
 ![Login page of the container image](tour/15-docker-login.jpg)
 
 ### 21. On the phone
-The admin works on a phone as well – the areas become one menu; switch elements on and off, change sizes, sound, sources.
+The admin works on a phone as well – the areas become one menu, the announcement button stays at the top; switch elements on and off, change sizes, sound, sources.
 
 <img src="tour/16-mobile.jpg" width="320" alt="Admin on a phone">
 
 ### 22. Notifications
 Telegram, e-mail (SMTP) and Home Assistant, each with a test button; rarely needed options under “Advanced”, and what
-to report: TV failure, failed update or backup, Home Assistant disconnected, TV stutters.
+to report: channel failure, failed update or backup, Home Assistant disconnected, channel stutters.
 
 ![Notifications](tour/17-notifications.jpg)
 
-### 23. Performance test
-System → Health measures for 10 seconds how smoothly every running TV is rendered and encoded – frames/s of the
-TV page and of the encoder, speed, dropped or duplicated frames, CPU per TV, memory, graphics unit – and gives concrete
+### 23. Health and performance test
+System → Health shows at the top how much disk space is free and what uses it. The **performance test** measures for
+10 seconds how smoothly every running channel is rendered and encoded – frames/s of the
+TV page and of the encoder, speed, dropped or duplicated frames, CPU per channel, memory, graphics unit – and gives concrete
 recommendations. A second page, opened on the playback device, measures transfer and playback there. Below: after how
-many seconds without viewers a TV's video stream switches off.
+many seconds without viewers a channel's video stream switches off.
 
 ![Performance test with recommendations](tour/18-performance.jpg)
 
 ### 24. Announcements, emergency screen and webhook
-Settings → Announcement panel: the panel for the reception (`http://<IP>:8890/pult` – it sends and ends
-announcements, nothing else unless the account has more rights), the voice (offline with Piper: Kerstin or Thorsten), chime, accounts with their own password and the
-TVs they may reach, and templates. Further down the **emergency screen** with its templates and webhook commands, and
-**messages via webhook**: other systems (e.g. Home Assistant) put a short banner on the TVs, with a key shown only once.
-Since 0.38 a panel account can also get the rights to send a **ticker message**, **switch the layout for a while** and
-**switch TVs on/off** via Home Assistant.
+**📢 Announcement** at the top right – on every page: an announcement shown large in the middle of the picture (choose a
+template or type a text, channels, display time, read aloud), a **ticker** along the bottom, or trigger and end the
+**emergency screen**.
 
-![Announcements, emergency screen and webhook](tour/19-announcements.jpg)
+![Announcement, ticker and emergency screen](tour/19a-announce.jpg)
+
+Settings → Announcement panel: the panel for the reception (`http://<IP>:8890/pult` – it sends and ends
+announcements, nothing else unless the account has more rights), the voice (offline with Piper: Kerstin or Thorsten),
+chime, accounts with their own password and the channels they may reach, and templates. Further down the templates and
+the warning tone of the **emergency screen**, the webhook commands and **messages via webhook**: other systems (e.g.
+Home Assistant) put a short banner on the channels, with a key shown only once. Since 0.38 a panel account can also get
+the rights to send a **ticker message**, **switch the layout for a while** and **switch TVs on/off** via Home Assistant.
+
+![Announcement panel, emergency templates and webhook](tour/19-announcements.jpg)

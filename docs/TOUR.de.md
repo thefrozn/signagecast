@@ -2,10 +2,8 @@
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
-angebunden). Die Verwaltung zeigt Version 0.33 (Übersicht 0.35, Player 0.36, Kategorien 0.37) mit den sechs Bereichen Übersicht, Fernseher, Inhalte, Live-Videos,
-Einstellungen und System.
-**Seit 0.49 ist das Menü neu geordnet** (Übersicht, Displays, Inhalte, Videos & Radio, Einstellungen, System; die
-Einstellungen eines Fernsehers heißen jetzt *Kanal*); die Texte unten nutzen schon die neuen Namen, neue Bilder folgen.
+angebunden). Die Verwaltung zeigt Version 0.50 mit den sechs Bereichen Übersicht, Displays, Inhalte, Videos & Radio,
+Einstellungen und System und dem Knopf **📢 Durchsage** oben rechts.
 
 **🇬🇧 [English version](TOUR.md)**
 
@@ -64,34 +62,39 @@ Menüpunkt neben Cockpits eigenen Seiten. Läuft auf deinem Server schon Cockpit
 Oben die Liste **Zu erledigen**: zuerst Probleme (z. B. Home Assistant nicht erreichbar), dann Tipps (automatische
 Sicherung aus, keine Benachrichtigung eingerichtet) – jeder Eintrag führt zur Seite, auf der du es behebst; das ✕ blendet ihn aus (Tipps dauerhaft, Probleme bis
 sie einmal behoben waren, seit 0.35). Darunter
-jeder Fernseher mit Zustand, aktuellem Stream, Auflösung und Ton, dann Zuschauer, Wetter, Zeitabgleich mit NTP („Zeit
+jeder Kanal mit Zustand, aktuellem Stream, Auflösung und Ton, dann Zuschauer, Wetter, Zeitabgleich mit NTP („Zeit
 vom Host, synchronisiert“), Videokodierung (Grafikeinheit oder Software), Home Assistant, Streams in Rotation, CPU,
 RAM und Laufzeit. Seit 0.38 zeigt eine Kachel, ob das **Internet** erreichbar ist (ohne zeigen die Fernseher eigene
-Medien oder ein ruhiges Bild), und die Karte eines Fernsehers sagt, wenn die **Bildprüfung** ein schwarzes oder
+Medien oder ein ruhiges Bild), und die Karte eines Kanals sagt, wenn die **Bildprüfung** ein schwarzes oder
 stehendes Bild gefunden hat.
 
 ![Übersicht](tour/de/04-overview.jpg)
 
-### 7. Fernseher
-Jeder Fernseher hat eine eigene Adresse und eine Karte in drei Teilen: **Anzeige** (Layout, optionaler Zeitplan mit
-anderem Layout oder schwarz zu bestimmten Zeiten, Layout-Karussell, Ein- und Ausschalten über Home Assistant),
-**Live-Video** (an/aus, was das Videofenster zeigt, Kategorien) und **Ton** (Radio oder Originalton der Kameras,
-Lautstärke). Unter *Videostream*: Ausgabe Full HD (Standard) oder 4K, die **Aufnahmegröße**, in der der Browser zeichnet
-(720p spart CPU, 1440p ist schärfer), Bitrate und Codec. Seit 0.37 zeigt *Über HA schalten* außerdem, ob der Fernseher
-laut Home Assistant an oder aus ist, und kann nach dem Einschalten eine Quelle wählen (z. B. HDMI 2) und die TV-Seite
-öffnen (LG webOS, Android TV / Fire TV oder ein eigener HA-Dienst).
+### 7. Displays → Kanäle
+Ein **Kanal** ist das, was ein Fernseher zeigt – mit eigener Adresse, die ein Gerät oder der Browser des Fernsehers
+öffnet. Die Liste zeigt je Kanal Layout, Zustand, Zeitplan und Karussell, welche Geräte ihn gerade zeigen (online oder
+offline) und seine Adresse.
 
-![Fernseher-Einstellungen](tour/de/05-tvs.jpg)
+![Kanäle als Liste](tour/de/05-tvs.jpg)
 
-Unter *Videostream* → **Kodierung (für Fortgeschrittene)**: Encoder (Automatisch, Intel/AMD-Grafik, Quick Sync, NVENC,
-Software), Preset, Tune und B-Frames je Fernseher. Eine Änderung wird erst kurz ausprobiert; läuft sie hier nicht,
+*Bearbeiten* öffnet einen Kanal mit fünf Reitern: **Anzeige & Zeitplan** (Layout, optionaler Zeitplan mit anderem
+Layout oder schwarz zu bestimmten Zeiten, Layout-Karussell), **Live-Video** (an/aus, was das Videofenster zeigt,
+Kategorien), **Ton** (Radio oder Originalton der Kameras, Lautstärke), **Ein/Aus (HA)** (Ein- und Ausschalten über Home
+Assistant, Zustand laut HA, nach dem Einschalten Quelle wählen und die TV-Seite öffnen – LG webOS, Android TV / Fire TV
+oder ein eigener HA-Dienst) und **Videostream** (Ausgabe Full HD oder 4K, Aufnahmegröße – 720p spart CPU, 1440p ist
+schärfer –, Bitrate und Codec). Gespeichert wird je Kanal; der offene Reiter bleibt dabei stehen.
+
+![Ein Kanal mit Zeitplan](tour/de/05f-channel.jpg)
+
+Im Reiter *Videostream* → **Kodierung (für Fortgeschrittene)**: Encoder (Automatisch, Intel/AMD-Grafik, Quick Sync, NVENC,
+Software), Preset, Tune und B-Frames je Kanal. Eine Änderung wird erst kurz ausprobiert; läuft sie hier nicht,
 bleibt SignageCast bei „Automatisch“. Felder, die für den aktiven Encoder nicht gelten, sind direkt dort erklärt.
 
-![Kodierung je Fernseher](tour/de/05a-encoding.jpg)
+![Kodierung je Kanal](tour/de/05a-encoding.jpg)
 
-### 8. Player – Raspberry Pi, PC oder Browser (experimentell)
-Displays → *Geräte*: Ein Player am Fernseher zeigt SignageCast – auch an Fernsehern ohne brauchbaren Browser.
-*Player hinzufügen*: Name eingeben, Fernseher, **Modell** und Netzwerk (LAN oder WLAN) wählen, fertiges Image
+### 8. Geräte – Raspberry Pi, PC oder Browser (experimentell)
+Displays → *Geräte*: Ein Player am Fernseher zeigt einen Kanal – auch an Fernsehern ohne brauchbaren Browser.
+Displays → *+ Neues Gerät* → *Player hinzufügen*: Name eingeben, Kanal, **Modell** und Netzwerk (LAN oder WLAN) wählen, fertiges Image
 herunterladen und auf eine SD-Karte oder einen USB-Stick schreiben; am Gerät musst du nichts eintippen. Oder ein Image
 für viele Geräte: Jedes zeigt einen 6-stelligen Code auf dem Fernseher, den du unter *Player koppeln* eingibst.
 
@@ -125,7 +128,7 @@ oder spätestens nach 60 Minuten endet die Sitzung.
 ![Terminal zu einem Raspberry Pi im Browser](tour/de/05c-remote-terminal.jpg)
 
 ### 10. Layouts und Editor
-Inhalte → Layouts beginnt mit allen Layouts als Kacheln – Mini-Vorschau, auf welchem Fernseher es läuft, Bearbeiten
+Inhalte → Layouts beginnt mit allen Layouts als Kacheln – Mini-Vorschau, auf welchem Kanal es läuft, Bearbeiten
 sowie Kopieren / Exportieren / Löschen im Menü „⋯“. „Neues Layout“ fragt nach Name und Ausgangspunkt (leer, Vorlage
 oder Kopie), so wird nie ein bestehendes Layout überschrieben.
 
@@ -173,7 +176,7 @@ außer du wählst es). Der Befehl wird nur gelesen, nie ausgeführt.
 
 ![Datenquelle aus einem curl-Befehl](tour/de/08-curl-import.jpg)
 
-### 13. Live-Videos – Streams
+### 13. Videos & Radio – Streams
 Die eingebaute Liste mit Tier- und Natur-Livestreams plus die Funde der nächtlichen Suche. Jeder Stream hat einen
 **Zustand** – bereit, Nacht (mit „Tageslicht in …“), nicht live, Auflösung zu gering, nach Strike pausiert, Ort
 unbekannt –, und die Knöpfe über der Liste filtern danach (mit Anzahl), dazu Text, Kategorie und Herkunft (fest /
@@ -182,17 +185,17 @@ angekündigt wird. Lieblinge schützen, Unerwünschtes ablehnen.
 
 ![Streamliste mit Zuständen und Filtern](tour/de/09-streams.jpg)
 
-### 14. Live-Videos – Kategorien, Rotation & Qualität
+### 14. Videos & Radio – Kategorien und Regeln
 **Kategorien** (seit 0.37 eine eigene Seite) sind in **Tiere** und **Weitere Themen** gegliedert (Städte & Plätze,
 Strände & Küsten, Berge & Ski, Häfen & Schiffe, Flughäfen & Flugzeuge, Züge & Bahn, Weltraum & Erde, Naturschauspiele).
 Jede lässt sich bearbeiten: Name, Gruppe, bis zu 6 eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen,
-„Tag/Nacht egal“, ein/aus für alle Fernseher oder je Fernseher – mit der Zahl ihrer Streams. Gefundene Tier-Streams
+„Tag/Nacht egal“, ein/aus für alle Kanäle oder je Kanal – mit der Zahl ihrer Streams. Gefundene Tier-Streams
 landen in der ersten Kategorie, deren Wörter passen. **Neue Kategorie** legt eigene an (z. B. Leuchttürme) mit eigener
 nächtlicher Suche; eingebaute lassen sich auf den Standard zurücksetzen.
 
 ![Kategorien](tour/de/09a-categories.jpg)
 
-*Rotation & Qualität*: Minuten je Stream, nur Streams, wo vor Ort Tag ist, Mindest-Sonnenhöhe; unter *Erweitert* die
+*Regeln*: Minuten je Stream, nur Streams, wo vor Ort Tag ist, Mindest-Sonnenhöhe; unter *Erweitert* die
 Mindestqualität (360p … 1080p) und die Strike-Regeln.
 
 ### 15. Radio
@@ -209,8 +212,8 @@ lädt jede neue Ausgabe vorab (ganz oder nur das erste MB), damit der Einspieler
 
 ### 17. Einstellungen → Allgemein
 Sprache und Wetterquelle, Standort per Ortssuche, Zeitquelle: NTP-Server (Standard: der Pool des Landes) und Zeitzone –
-hält der Host seine Uhr synchron, wird nichts korrigiert. Home Assistant und Benachrichtigungen haben eigene Seiten
-daneben. Ungespeicherte Änderungen werden an ihrer Karte markiert, und vor dem Verlassen der Seite wird gefragt.
+hält der Host seine Uhr synchron, wird nichts korrigiert. Home Assistant, Speicherorte, KI-Assistenten,
+Benachrichtigungen und das Durchsage-Pult haben eigene Seiten daneben. Ungespeicherte Änderungen werden an ihrer Karte markiert, und vor dem Verlassen der Seite wird gefragt.
 
 ![Einstellungen: Anzeige, Standort und Zeitquelle](tour/de/12-settings.jpg)
 
@@ -241,34 +244,39 @@ Startpasswort steht im Container-Protokoll. Geändert wird es unter Einstellunge
 ![Anmeldeseite des Container-Images](tour/de/15-docker-login.jpg)
 
 ### 21. Auf dem Handy
-Die Verwaltung geht auch auf dem Handy – die Bereiche werden zu einem Menü; Bausteine ein- und ausschalten, Größen,
+Die Verwaltung geht auch auf dem Handy – die Bereiche werden zu einem Menü, der Durchsage-Knopf bleibt oben; Bausteine ein- und ausschalten, Größen,
 Ton, Quellen ändern.
 
 <img src="tour/de/16-mobile.jpg" width="320" alt="Verwaltung auf dem Handy">
 
 ### 22. Benachrichtigungen
 Telegram, E-Mail (SMTP) und Home Assistant, jeweils mit Test-Knopf; selten gebrauchte Optionen unter „Erweitert“, und
-wann gemeldet wird: Fernseher ausgefallen, Update oder Sicherung fehlgeschlagen, Home Assistant getrennt, Fernseher
-ruckelt.
+wann gemeldet wird: Kanal ausgefallen, Update oder Sicherung fehlgeschlagen, Home Assistant getrennt, Kanal ruckelt.
 
 ![Benachrichtigungen](tour/de/17-notifications.jpg)
 
-### 23. Leistungstest
-System → Zustand misst 10 Sekunden lang, wie flüssig jeder laufende Fernseher gezeichnet und kodiert wird – Bilder/s
-der TV-Seite und des Encoders, Tempo, verworfene oder doppelte Bilder, CPU je Fernseher, Speicher, Grafikeinheit – und
+### 23. Zustand und Leistungstest
+System → Zustand zeigt oben, wie viel Speicher frei ist und was ihn belegt. Der **Leistungstest** misst 10 Sekunden lang, wie flüssig jeder laufende Kanal gezeichnet und kodiert wird – Bilder/s
+der TV-Seite und des Encoders, Tempo, verworfene oder doppelte Bilder, CPU je Kanal, Speicher, Grafikeinheit – und
 gibt konkrete Empfehlungen. Eine zweite Seite, auf dem Abspielgerät geöffnet, misst dort Übertragung und Wiedergabe.
-Darunter: nach wie vielen Sekunden ohne Zuschauer der Videostream eines Fernsehers abschaltet.
+Darunter: nach wie vielen Sekunden ohne Zuschauer der Videostream eines Kanals abschaltet.
 
 ![Leistungstest mit Empfehlungen](tour/de/18-performance.jpg)
 
 ### 24. Durchsagen, Notfall-Vollbild und Webhook
+**📢 Durchsage** oben rechts – auf jeder Seite: eine Durchsage groß in der Bildmitte (Vorlage wählen oder Text tippen,
+Kanäle, Anzeigedauer, vorlesen), eine **Laufschrift** unten durchs Bild oder das **Notfall-Vollbild** auslösen und
+beenden.
+
+![Durchsage, Laufschrift und Notfall-Vollbild](tour/de/19a-announce.jpg)
+
 Einstellungen → Durchsage-Pult: das Pult für den Empfang (`http://<IP>:8890/pult` – es sendet und beendet Durchsagen,
 mehr nur mit weiteren Rechten des Zugangs),
-die Stimme (offline mit Piper: Kerstin oder Thorsten), Gong, Zugänge mit eigenem Passwort und den Fernsehern, die sie
-erreichen dürfen, und Vorlagen. Weiter unten das **Notfall-Vollbild** mit Vorlagen und Webhook-Befehlen und die
-**Meldung per Webhook**: Andere Systeme (z. B. Home Assistant) legen ein kurzes Banner auf die Fernseher, mit einem
+die Stimme (offline mit Piper: Kerstin oder Thorsten), Gong, Zugänge mit eigenem Passwort und den Kanälen, die sie
+erreichen dürfen, und Vorlagen. Weiter unten die Vorlagen und der Warnton des **Notfall-Vollbilds**, die Webhook-Befehle
+und die **Meldung per Webhook**: Andere Systeme (z. B. Home Assistant) legen ein kurzes Banner auf die Kanäle, mit einem
 Schlüssel, der nur einmal angezeigt wird. Seit 0.38 kann ein Pult-Zugang zusätzlich die Rechte bekommen,
 **Laufschrift-Meldungen** zu senden, **das Layout vorübergehend umzuschalten** und **Fernseher über Home Assistant
 ein- und auszuschalten**.
 
-![Durchsagen, Notfall-Vollbild und Webhook](tour/de/19-announcements.jpg)
+![Durchsage-Pult, Notfall-Vorlagen und Webhook](tour/de/19-announcements.jpg)
