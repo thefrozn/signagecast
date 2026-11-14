@@ -159,7 +159,7 @@ DE = {
     "r_verschachtelt": "Zu viele verschachtelte Playlists",
     "r_playlist_leer": "Keine Stream-Adresse (http/https) in der Playlist gefunden",
     "d_text_tv": "Text und mindestens ein Fernseher nötig",
-    "d_stimme_fehlt": "Stimme noch nicht geladen (Verwaltung → Einstellungen → Durchsage-Pult)",
+    "d_stimme_fehlt": "Stimme noch nicht geladen (Verwaltung → Inhalte → Durchsagen)",
     "d_stimme": "unbekannte Stimme",
     "bn_kanal": "unbekannter Kanal",
     # seit 0.21: PDF, Zeitraum, Notfall-Vollbild, Fernseher schalten

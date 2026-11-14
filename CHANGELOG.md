@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.48.1 (2026-11-14)
+- **Correct menu paths in hints and docs:** several texts pointed to places that no longer exist – the initial
+  password hint (*Settings → Access*, not *System → Access*), the voice hint of the announcement panel (*Content →
+  Announcements*), the encoding hint and notifications (*System → Performance*), direct mode on a Pi (the device's
+  card → *Display*), and a few spots in INSTALL, MANUAL, PLAYER, REMOTE and the tour. No change in function.
+
 ## v0.48.0 (2026-11-12)
 - **Storage locations:** new page *Settings → Storage locations* – enter a folder on a NAS or in a cloud once and use
   it everywhere: **WebDAV** (Nextcloud, ownCloud, many NAS), **SMB** (Windows shares, NAS; SMB3 only) or a **folder on

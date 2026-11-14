@@ -63,7 +63,7 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
   ```
   The ports are then 8888 (TVs), 19090 (admin) and 8890 (webhook, panel, Pi players) directly on the host.
 - **Admin:** http://&lt;host&gt;:**19090** – the initial password is printed in the log: `docker logs signagecast`
-  (line “Startpasswort der Verwaltung / initial admin password”, or set your own with `-e SC_PASSWORT=…`). Change it under **System → Access**.
+  (line “Startpasswort der Verwaltung / initial admin password”, or set your own with `-e SC_PASSWORT=…`). Change it under **Settings → Access**.
   No Cockpit inside the container.
 - `SC_HOST_IP` = the IP of the Docker host; the Home Assistant guide in the admin shows it (HA sees the host's IP).
 - All settings and data are in the volume `/data`. **Update:** `docker pull ghcr.io/thefrozn/signagecast:latest`, then
@@ -94,7 +94,7 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 ## First steps
 
 1. Open the admin (see the table above; accept the certificate warning on port 9090) and log in. Then change the
-   initial password (Cockpit: top right → Accounts → tvadmin → Set password; Docker/NAS: **System → Access**).
+   initial password (Cockpit: top right → Accounts → tvadmin → Set password; Docker/NAS: **Settings → Access**).
 2. On a new installation a short **assistant** asks for language, location and (optionally) Home Assistant and shows
    the TV address. Later: **Settings → Home Assistant** – enter the address and follow the guide shown there. Home
    Assistant trusts the container via `trusted_networks` – no password or token is stored.

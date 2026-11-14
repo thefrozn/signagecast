@@ -105,7 +105,7 @@ def einrichten():
     if d.get("start"):
         # zweisprachig: die NAS-Anleitungen verweisen auf „Startpasswort der Verwaltung“
         print(f"SignageCast – Startpasswort der Verwaltung / initial admin password: {d['start']}  "
-              "(ändern unter System → Zugang / change it under System → Access)", flush=True)
+              "(ändern unter Einstellungen → Zugang / change it under Settings → Access)", flush=True)
 
 
 def passwort_ok(pw):

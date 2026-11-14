@@ -88,7 +88,7 @@ bleibt SignageCast bei „Automatisch“. Felder, die für den aktiven Encoder n
 ![Kodierung je Fernseher](tour/de/05a-encoding.jpg)
 
 ### 8. Player – Raspberry Pi, PC oder Browser (experimentell)
-Fernseher → *Player*: Ein Player am Fernseher zeigt SignageCast – auch an Fernsehern ohne brauchbaren Browser.
+Fernseher → *Geräte*: Ein Player am Fernseher zeigt SignageCast – auch an Fernsehern ohne brauchbaren Browser.
 *Player hinzufügen*: Name eingeben, Fernseher, **Modell** und Netzwerk (LAN oder WLAN) wählen, fertiges Image
 herunterladen und auf eine SD-Karte oder einen USB-Stick schreiben; am Gerät musst du nichts eintippen. Oder ein Image
 für viele Geräte: Jedes zeigt einen 6-stelligen Code auf dem Fernseher, den du unter *Player koppeln* eingibst.

@@ -117,7 +117,7 @@ as well.
 
 ## 4. Create the player
 
-*Players → Add player* (or *Image again* on an existing card) → tick **At another site (through Tailscale)** → create
+*TVs → Set up → Add player* (or *Image again* on an existing card) → tick **At another site (through Tailscale)** → create
 and write the image as usual. Take the player to its site and switch it on: Wi-Fi as usual (hotspot and QR code if
 needed). Within about a minute it joins the tailnet; its card shows the tailnet address and whether the connection is
 **direct** or goes **through a relay**.

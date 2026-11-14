@@ -76,7 +76,7 @@ TVs → *Schedule*: add a time range with another layout or “black”. A sched
 TVs → *Carousel*: tick the layouts and set the minutes. Example: weather dashboard and photo layout every 5 minutes.
 
 ### Own pictures and videos instead of (or between) live cams
-Media → upload JPG/PNG/MP4 (H.264)/WebM. Then TVs → *Video source*: “own media” or “mixed” (every N-th item own media).
+Content → Media → upload JPG/PNG/MP4 (H.264)/WebM. Then TVs → *Video source*: “own media” or “mixed” (every N-th item own media).
 
 ### When the internet is gone (since 0.38)
 Nothing to set up. If YouTube is not reachable (checked once a minute, two failures in a row), the video window shows

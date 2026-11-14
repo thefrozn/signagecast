@@ -81,7 +81,7 @@ open and 60 new requests per hour. Pairing needs an image from 0.25 on.
 
 ## Direct mode (since 0.24, experimental)
 
-Under *Settings → Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
+Under *Devices* → the Pi's card → *Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
 kiosk shell `cage` (no desktop) and opens the page from your server. Text and ticker are sharp, there is no stream
 delay, and the server does not need to render or encode anything for this Pi. Sound (radio, announcements, gong) comes
 from the Pi's HDMI.
@@ -295,7 +295,7 @@ wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht n
 
 ## Direktmodus (seit 0.24, experimentell)
 
-Unter *Einstellungen → Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
+Unter *Geräte* → Karte des Pi → *Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
 Kiosk-Rahmen `cage` (ohne Desktop) und öffnet die Seite von deinem Server. Schrift und Laufband sind gestochen scharf,
 es gibt keine Stream-Verzögerung, und der Server muss für diesen Pi nichts zeichnen oder kodieren. Der Ton (Radio,
 Durchsagen, Gong) kommt aus dem HDMI des Pi.

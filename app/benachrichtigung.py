@@ -13,10 +13,10 @@ TEXTE = {
         "update": ("SignageCast: Update fehlgeschlagen", "{aktion}: {meldung} ({zeit})"),
         "sicherung": ("SignageCast: Sicherung fehlgeschlagen", "Die automatische Sicherung um {zeit} ist fehlgeschlagen: {fehler}"),
         "doppelt": ("SignageCast: „{tv}“ ruckelt", "Die Aufnahme für „{tv}“ verdoppelt seit 3 Minuten viele Bilder. "
-                    "Abhilfe: System → Leistungstest → „Ton und Stream neu starten“."),
+                    "Abhilfe: System → Leistung → „Ton und Stream neu starten“."),
         "doppelt_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die Aufnahme für „{tv}“ läuft wieder ohne doppelte Bilder."),
         "leistung": ("SignageCast: „{tv}“ ruckelt", "Die TV-Seite für „{tv}“ erreicht seit 5 Minuten nur {fps} Bilder/s (Ziel 25). "
-                     "Leistungstest in der Verwaltung: System → Leistungstest."),
+                     "Leistungstest in der Verwaltung: System → Leistung."),
         "leistung_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die TV-Seite für „{tv}“ erreicht wieder genug Bilder/s."),
         "ha": ("SignageCast: Home Assistant nicht erreichbar", "Seit {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder."),
@@ -45,10 +45,10 @@ TEXTE = {
         "update": ("SignageCast: update failed", "{aktion}: {meldung} ({zeit})"),
         "sicherung": ("SignageCast: backup failed", "The automatic backup at {zeit} failed: {fehler}"),
         "doppelt": ("SignageCast: “{tv}” is stuttering", "The capture for “{tv}” has been duplicating many frames for 3 minutes. "
-                    "Remedy: System → Performance test → “Restart sound and stream”."),
+                    "Remedy: System → Performance → “Restart sound and stream”."),
         "doppelt_vorbei": ("SignageCast: “{tv}” is smooth again", "The capture for “{tv}” runs without duplicate frames again."),
         "leistung": ("SignageCast: “{tv}” is stuttering", "The TV page for “{tv}” has only reached {fps} frames/s for 5 minutes (target 25). "
-                     "Performance test in the admin: System → Performance test."),
+                     "Performance test in the admin: System → Performance."),
         "leistung_vorbei": ("SignageCast: “{tv}” is smooth again", "The TV page for “{tv}” reaches enough frames/s again."),
         "ha": ("SignageCast: Home Assistant not reachable", "Since {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant connected again", "The connection to Home Assistant is back."),

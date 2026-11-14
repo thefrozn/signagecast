@@ -82,7 +82,7 @@ preset, tune and B-frames per TV. A change is tried briefly first; if it does no
 ![Encoding settings per TV](tour/05a-encoding.jpg)
 
 ### 8. Players – Raspberry Pi, PC or browser (experimental)
-TVs → *Players*: a player at the TV shows SignageCast – also on TVs without a usable browser. *Add player*: enter a
+TVs → *Devices*: a player at the TV shows SignageCast – also on TVs without a usable browser. *Add player*: enter a
 name, pick the TV, the **model** and the network (LAN or Wi-Fi), download a ready image and write it to an SD card or
 USB stick; nothing to type at the device. Or download one image for many devices: each shows a 6-digit code on the TV,
 which you enter under *Pair a player*.
