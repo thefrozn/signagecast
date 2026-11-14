@@ -16,7 +16,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Medien", updates: "Updates", sicherung: "Sicherung",
+              video: "Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Mediathek", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher", speicherorte: "Speicherorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Kanäle – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
@@ -31,6 +31,10 @@ const TEXTE = {
           vorlagen: "Vorlagen (eine je Zeile)", ton: "Warnton alle 10 Sekunden (hörbar auf Kanälen mit Ton oder Pult-Vorlesen)", an: "Jetzt auslösen", aus: "Beenden", alle: "alle Kanäle",
           wirklich: "Notfall-Vollbild wirklich jetzt auf den Fernsehern zeigen?", laeuft: (z, v) => `Notfall-Vollbild läuft seit ${z} Uhr (${v})`,
           webhook: "Per Webhook (Schlüssel aus „Meldung per Webhook“):", beendet: "Notfall-Vollbild beendet", ausgeloest: "Notfall-Vollbild ausgelöst", ausloesenWo: "📢 Auslösen unter „Durchsage“" },
+    mediathek: { medien: "Medien fürs Videofenster", galerie: "Galerien für Layouts", orte: "Dateien von NAS oder Cloud holen:" },
+    kanalTeil: { anzeige: "Anzeige & Zeitplan", video: "Live-Video", ton: "Ton", schalten: "Ein/Aus (HA)", stream: "Videostream" },
+    kanalListe: { alle: "Alle Kanäle", layout: "Layout", bearbeiten: "Bearbeiten", keinGeraet: "keines – Adresse im Browser des Fernsehers öffnen",
+                  zeitplan: (n) => `Zeitplan: ${n} Zeitraum${n === 1 ? "" : "e"}`, karussell: "Karussell", ha: "über HA geschaltet", ohneVideo: "ohne Live-Video" },
     ds: { durchsage: "Durchsage", durchsageText: "Ein Text groß in der Bildmitte, auf Wunsch vorgelesen – z. B. „Bitte zur Rezeption“.",
           vorlage: "– Vorlage wählen –", textPlatz: "Text der Durchsage", keinerAlle: "Keinen Kanal angehakt = alle Kanäle.",
           ohneStimme: "Vorlesen geht erst, wenn unter Einstellungen → Durchsage-Pult eine Stimme geladen ist.", senden: "Durchsage senden", dauer: "Anzeigedauer (s)",
@@ -486,7 +490,7 @@ const TEXTE = {
   },
   en: {
     reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Rules", suche: "Stream search", verbindung: "Connection", medien: "Media", updates: "Updates", sicherung: "Backup",
+              video: "Rules", suche: "Stream search", verbindung: "Connection", medien: "Media library", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage", speicherorte: "Storage locations" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen channels – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
@@ -501,6 +505,10 @@ const TEXTE = {
           vorlagen: "Templates (one per line)", ton: "Warning tone every 10 seconds (audible on channels with sound or panel read-aloud)", an: "Trigger now", aus: "End", alle: "all channels",
           wirklich: "Really show the emergency screen on the TVs now?", laeuft: (z, v) => `Emergency screen showing since ${z} (${v === "Verwaltung" ? "admin" : v})`,
           webhook: "Via webhook (key from “Message via webhook”):", beendet: "Emergency screen ended", ausgeloest: "Emergency screen triggered", ausloesenWo: "📢 Trigger under “Announcement”" },
+    mediathek: { medien: "Media for the video window", galerie: "Galleries for layouts", orte: "Fetch files from a NAS or cloud:" },
+    kanalTeil: { anzeige: "Display & schedule", video: "Live video", ton: "Sound", schalten: "On/off (HA)", stream: "Video stream" },
+    kanalListe: { alle: "All channels", layout: "Layout", bearbeiten: "Edit", keinGeraet: "none – open the address in the TV's browser",
+                  zeitplan: (n) => `Schedule: ${n} time range${n === 1 ? "" : "s"}`, karussell: "Carousel", ha: "switched via HA", ohneVideo: "no live video" },
     ds: { durchsage: "Announcement", durchsageText: "A text shown large in the middle of the picture, optionally read aloud – e.g. “Please come to the reception”.",
           vorlage: "– choose a template –", textPlatz: "Text of the announcement", keinerAlle: "No channel ticked = all channels.",
           ohneStimme: "Reading aloud works once a voice is loaded under Settings → Announcement panel.", senden: "Send announcement", dauer: "Display time (s)",
@@ -889,7 +897,7 @@ const TEXTE = {
       gal_heic: "HEIC photos (iPhone) please as JPG: upload via the phone's photo picker (converts by itself) or on the iPhone Settings → Camera → Formats → “Most Compatible”",
       gal_gross: "File larger than {mb} MB", gal_pixel: "Picture too large ({mp} megapixels, at most 100)", gal_kaputt: "Picture not readable: {d}",
       gal_zeit: "Converting takes longer than {s} s", gal_viele: "At most {n} files per folder",
-      gal_voll: "The gallery is full ({gb} GB) – delete pictures or raise the limit under Content → Gallery",
+      gal_voll: "The gallery is full ({gb} GB) – delete pictures or raise the limit under Content → Media library → Galleries",
       so_unbekannt: "This storage location does not exist (any more) – add it under Settings → Storage locations",
       so_viele: "At most {n} storage locations", so_art: "Type: folder on the server, WebDAV or SMB",
       so_adresse: "WebDAV address like https://cloud.example.org/remote.php/dav/files/name/ (without user and password in it)",
@@ -1169,8 +1177,16 @@ const teile = (...fs) => async (i) => {
   i.innerHTML = fs.map((_, n) => `<div id="teil${n}"></div>`).join("");
   for (let n = 0; n < fs.length; n++) await fs[n]($("#teil" + n));
 };
-const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite, medien: medienSeite, einspieler: einspielerSeite,
-                 galerie: galerieSeite,
+// Mediathek (seit 0.50): Medien und Galerie als zwei Reiter einer Seite; Adressen #medien und #galerie bleiben
+const mediathek = (art, f) => async (i) => {
+  i.innerHTML = `<nav class="kanal-reiter">${["medien", "galerie"].map((x) =>
+      `<button type="button" data-zu="${x}" class="${x === art ? "an" : ""}">${esc(T.mediathek[x])}</button>`).join("")}</nav><div id="mtInhalt"></div>
+    <p class="leise">${esc(T.mediathek.orte)} <a href="#speicherorte">${esc(T.bereiche.einstellungen)} → ${esc(T.reiter.speicherorte)}</a></p>`;
+  i.querySelectorAll("[data-zu]").forEach((b) => { b.onclick = () => zeigeSeite(b.dataset.zu); });
+  await f($("#mtInhalt"));
+};
+const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite, medien: mediathek("medien", medienSeite), einspieler: einspielerSeite,
+                 galerie: mediathek("galerie", galerieSeite),
                  streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: teile(pultSeite, webhookKarte), durchsage: durchsageSeite,
@@ -1181,14 +1197,15 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSei
 // Einstellungen (Grundlagen, Verbindungen, Pult), System (Betrieb); Durchsage als Knopf im Kopf.
 // Die Kennungen der Seiten (#fernseher = Kanäle, #video = Regeln …) bleiben gleich, alte leitet ALT weiter.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["displays", ["fernseher", "player", "fern", "einrichten"]],
-                  ["inhalte", ["layout", "quellen", "medien", "galerie", "einspieler"]],
+                  ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
                   ["videoton", ["streams", "kategorien", "suche", "video", "radio"]],
                   ["einstellungen", ["allgemein", "ha", "speicherorte", "ki", "benachrichtigung", "pult"].concat(CONTAINER ? ["zugang"] : [])],
                   ["system", ["zustand", "updates", "sicherung", "protokoll"]]];
 const NEBEN = ["durchsage"];                                           // Seiten ohne Reiter (Knopf im Kopf)
+const UNTER = { galerie: "medien" };                                   // Seiten als Reiter einer anderen (seit 0.50: Mediathek)
 const ALT = { anzeige: "allgemein", verbindung: "ha", leistung: "zustand", speicher: "zustand" };  // gemerkte Reiter bis 0.16 bzw. 0.48
 let aktiv = "uebersicht", timer = null;
-const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(k)) || (NEBEN.includes(k) ? ["", []] : BEREICHE[0]);
+const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(UNTER[k] || k)) || (NEBEN.includes(k) ? ["", []] : BEREICHE[0]);
 function reiterZeichnen() {
   const [bereich, unter] = bereichVon(aktiv);
   const nav = $("#reiter"), sub = $("#unter"), menue = $("#menue");
@@ -1207,7 +1224,7 @@ function reiterZeichnen() {
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener" href="https://github.com/thefrozn/signagecast/blob/main/docs/${doku}">?</a>`));
   sub.hidden = unter.length < 2;
   for (const s of unter) {
-    const k = el(`<button class="${[s === aktiv ? "an" : "", s === "einrichten" ? "neu" : ""].join(" ").trim()}">${esc(T.reiter[s])}</button>`);
+    const k = el(`<button class="${[s === (UNTER[aktiv] || aktiv) ? "an" : "", s === "einrichten" ? "neu" : ""].join(" ").trim()}">${esc(T.reiter[s])}</button>`);
     k.onclick = () => zeigeSeite(s);
     sub.appendChild(k);
   }
@@ -1215,7 +1232,7 @@ function reiterZeichnen() {
     ? `<option value="${seiten[0]}">${esc(T.bereiche[b])}</option>`
     : `<optgroup label="${esc(T.bereiche[b])}">${seiten.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("")}</optgroup>`).join("")
     + NEBEN.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("");
-  menue.value = aktiv;
+  menue.value = UNTER[aktiv] || aktiv;
   menue.onchange = () => zeigeSeite(menue.value);
   const ds = $("#durchsageKnopf");                                     // Durchsage als Knopf im Kopf (seit 0.49)
   ds.textContent = "📢 " + T.reiter.durchsage;
@@ -1226,7 +1243,9 @@ const merk = {};                                                       // zuletz
 function zeigeSeite(k) {
   k = ALT[k] || k;
   if (!SEITEN[k]) k = "uebersicht";
-  if (k !== aktiv && ungespeichert() && !confirm(T.ungespeichertFrage)) { history.replaceState(null, "", "#" + aktiv); reiterZeichnen(); return; }
+  // Auch derselbe Reiter zeichnet neu (z. B. „Kanäle“ zurück zur Liste) – ungespeicherte Eingaben gingen dabei verloren
+  if (ungespeichert() && !confirm(T.ungespeichertFrage)) { history.replaceState(null, "", "#" + aktiv); reiterZeichnen(); return; }
+  if (k === "fernseher") kanalOffen = null;                            // seit 0.50: „Kanäle“ zeigt immer die Liste
   aktiv = k;
   merk[bereichVon(k)[0]] = k;
   if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k);
@@ -2754,21 +2773,59 @@ function nachText(sta, t) {
   const n = (((sta || {}).schalten || {})[t.id] || {}).nach;
   return n ? T.nachZuletzt(n) : "";
 }
+// Seit 0.50: Liste aller Kanäle; ein Klick öffnet einen Kanal mit Reitern, gespeichert wird je Kanal
+const KANAL_TEILE = ["anzeige", "video", "ton", "schalten", "stream"];
+let kanalOffen = null, kanalTeil = "anzeige";                         // offener Kanal (Kennung, "+" = neu) und Reiter
 async function fernseherSeite(inhalt) {
-  const st = await holen("/api/ha/einrichtung");
+  const [st, pl] = await Promise.all([holen("/api/ha/einrichtung"), holen("/api/player").catch(() => ({ geraete: [] }))]);
   let sta = await holen("/api/status").catch(() => ({}));
   const ip = st.eigene_ip || location.hostname;
+  const adresse = (t) => `http://${ip}:${st.stream_port || 8888}/${t.id}`;
+  let neu = null;                                                      // neuer, noch nicht gespeicherter Kanal
+  const listeZeichnen = () => {
+    const K = T.kanalListe;
+    inhalt.innerHTML = `<p class="leise">${esc(T.fernseherText)} ${esc(T.tvHinweis)}</p>
+      <div class="raster kanalliste">${E.fernseher.map((t) => {
+        const z = (sta.fernseher || []).find((x) => x.id === t.id) || {};
+        const ger = (pl.geraete || []).filter((g) => g.tv === t.id);
+        const lay = (E.layouts.find((l) => l.id === t.layout) || {}).name || t.layout || "–";
+        const merk = [(t.zeitplan || []).length ? K.zeitplan((t.zeitplan || []).length) : "", (t.karussell || {}).aktiv ? K.karussell : "",
+                      t.ha_schalten ? K.ha : "", t.video ? "" : K.ohneVideo].filter(Boolean);
+        return `<div class="karte kanal"><h2>${esc(t.name)} <span class="leise">/${esc(t.id)}</span></h2>
+          <div>${esc(K.layout)}: <b>${esc(lay)}</b> · ${z.laeuft ? `<span class="gut">${esc(T.laeuft)}</span>` : `<span class="leise">${esc(T.aus)}</span>`}</div>
+          ${merk.length ? `<div class="leise">${esc(merk.join(" · "))}</div>` : ""}
+          <div class="leise">${esc(T.reiter.player)}: ${ger.length ? ger.map((g) => `<span class="${g.online ? "gut" : "schlecht"}">●</span> ${esc(g.name)}`).join(", ") : esc(K.keinGeraet)}</div>
+          <div class="zeile"><code>${esc(adresse(t))}</code></div>
+          <div class="zeile"><button class="knopf haupt" data-oeffnen="${esc(t.id)}">${esc(K.bearbeiten)}</button></div></div>`;
+      }).join("")}</div>
+      <div class="zeile"><button class="knopf" id="tvPlus">+ ${esc(T.fernseherNeu)}</button></div>`;
+    inhalt.querySelectorAll("[data-oeffnen]").forEach((b) => { b.onclick = () => { kanalOffen = b.dataset.oeffnen; zeichnen(); }; });
+    $("#tvPlus").onclick = () => {
+      let n = 2; while (E.fernseher.some((t) => t.id === "tv" + n)) n++;
+      neu = { id: "tv" + n, name: T.weitererTv + " " + n, video: true, ton: "aus", radio_sender: "", lautstaerke: 70,
+              kategorien_aus: [], aufloesung: 1080, aufnahme: 1080, bitrate_mbit: 8, codec: "auto",
+              encoder: "auto", preset: "veryfast", tune: "zerolatency", bframes: 0 };
+      kanalOffen = "+"; zeichnen();
+    };
+  };
   const zeichnen = () => {
-    inhalt.innerHTML = `<p class="leise">${esc(T.fernseherText)} ${esc(T.tvHinweis)}</p><div id="tvListe"></div>
-      <div class="zeile"><button class="knopf" id="tvPlus">${esc(T.fernseherNeu)}</button>
-        <button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
+    const i = E.fernseher.findIndex((x) => x.id === kanalOffen);
+    if (!(kanalOffen === "+" && neu) && i < 0) { kanalOffen = null; neu = null; return listeZeichnen(); }
+    const t = kanalOffen === "+" ? neu : E.fernseher[i];
+    inhalt.innerHTML = `<div class="zeile"><button class="knopf" id="zurListe">← ${esc(T.kanalListe.alle)}</button></div><div id="tvListe"></div>`;
+    $("#zurListe").onclick = () => {
+      if (ungespeichert() && !confirm(T.ungespeichertFrage)) return;
+      kanalOffen = null; neu = null; zeichnen();
+    };
     const liste = $("#tvListe");
-    E.fernseher.forEach((t, i) => {
-      const k = el(`<div class="karte" data-i="${i}">
+    [t].forEach((t) => {
+      const k = el(`<div class="karte">
+        <h2>${esc(t.name)} <span class="leise">/${esc(t.id)}</span></h2>
         <div class="zeile"><label>${esc(T.senderName)}</label><input type="text" name="name" value="${esc(t.name)}"></div>
         <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" class="b140"></div>
         <div class="zeile"><label>${esc(T.adresse)}</label><code>http://${esc(ip)}:${esc(st.stream_port || 8888)}/${esc(t.id)}</code></div>
-        <h3>${esc(T.abschnitt.anzeige)}</h3>
+        <nav class="kanal-reiter">${KANAL_TEILE.map((x) => `<button type="button" data-zu="${x}">${esc(T.kanalTeil[x])}</button>`).join("")}</nav>
+        <div class="kanal-teil" data-teil="anzeige">
         <div class="zeile"><label>${esc(T.layoutWahl)}</label><select name="layout">${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === t.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
         <details ${(t.zeitplan || []).length ? "open" : ""}><summary>${esc(T.zeitplan)} (${(t.zeitplan || []).length})</summary>
           <p class="leise">${esc(T.zeitplanText)}</p><div name="zeiten">${(t.zeitplan || []).map((z) => zeitZeile(z)).join("")}</div>
@@ -2778,7 +2835,7 @@ async function fernseherSeite(inhalt) {
           <div class="zeile"><label>${esc(T.karussellAn)}</label>${schalter("k_aktiv", (t.karussell || {}).aktiv)}
             <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" class="b80"></div>
           ${E.layouts.map((l) => `<label class="abstand-r"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
-        <details ${t.ha_schalten ? "open" : ""}><summary>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}${haZustandText(sta, t) ? " · " + esc(haZustandText(sta, t)) : ""}</summary><p class="leise">${esc(T.schaltenText)}</p>
+        </div><div class="kanal-teil" data-teil="schalten"><h3>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}${haZustandText(sta, t) ? " · " + esc(haZustandText(sta, t)) : ""}</h3><p class="leise">${esc(T.schaltenText)}</p>
           <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
             <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div>
           <p class="leise" name="haZustand">${esc(haZustandText(sta, t, true))}</p>
@@ -2791,21 +2848,21 @@ async function fernseherSeite(inhalt) {
           <div name="eigenTeil"><div class="zeile"><label>${esc(T.haDienst)}</label><input type="text" name="ha_dienst" value="${esc(t.ha_dienst || "")}" placeholder="script.turn_on" spellcheck="false"></div>
             <textarea name="ha_daten" rows="3" spellcheck="false" placeholder='{"entity_id": "script.tv_seite", "variables": {"adresse": "{url}"}}'>${esc(t.ha_daten || "")}</textarea></div>
           <p class="leise" name="oeffnenInfo"></p>
-          <div class="zeile"><button class="knopf" name="nachTest">${esc(T.nachTest)}</button><span class="leise" name="nachErg">${esc(nachText(sta, t))}</span></div></details>
-        <h3>${esc(T.abschnitt.video)}</h3>
+          <div class="zeile"><button class="knopf" name="nachTest">${esc(T.nachTest)}</button><span class="leise" name="nachErg">${esc(nachText(sta, t))}</span></div></div>
+        <div class="kanal-teil" data-teil="video">
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" class="b70"></span></div>
         <details><summary>${esc(T.kategorien)} (${katIds().length - t.kategorien_aus.length}/${katIds().length})</summary>
         ${katSchalter("kat_", t.kategorien_aus)}</details>
-        <h3>${esc(T.abschnitt.ton)}</h3>
+        </div><div class="kanal-teil" data-teil="ton">
         <div class="zeile"><label>${esc(T.ton)}</label><select name="ton">${Object.keys(T.tonArt).map((x) => `<option value="${x}" ${x === t.ton ? "selected" : ""}>${esc(T.tonArt[x])}</option>`).join("")}</select></div>
         <div class="zeile" name="senderZeile"><label>${esc(T.sender)}</label><select name="radio_sender" class="breit"><option value="">${esc(T.keinSender)}</option>
           ${E.radio.sender.map((x) => `<option value="${esc(x.id)}" ${x.id === t.radio_sender ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
         <div class="zeile"><label>${esc(T.lautstaerke)}</label><input type="range" name="lautstaerke" min="0" max="100" value="${t.lautstaerke}"><span class="leise" name="lw">${t.lautstaerke} %</span></div>
-        <details><summary>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}${(t.aufnahme || 1080) !== 1080 ? " (" + esc(T.aufnahme) + " " + t.aufnahme + "p)" : ""}, ${t.bitrate_mbit} Mbit/s, ${
+        </div><div class="kanal-teil" data-teil="stream"><h3>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}${(t.aufnahme || 1080) !== 1080 ? " (" + esc(T.aufnahme) + " " + t.aufnahme + "p)" : ""}, ${t.bitrate_mbit} Mbit/s, ${
           (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}${
-          t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</summary>
+          t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</h3>
         <div class="zeile"><label>${esc(T.aufloesung)}</label><select name="aufloesung"><option value="2160" ${t.aufloesung === 2160 ? "selected" : ""}>4K (3840×2160)</option>
           <option value="1080" ${t.aufloesung === 1080 ? "selected" : ""}>Full HD (1920×1080)</option></select></div>
         <div class="zeile"><label>${esc(T.aufnahme)}</label><select name="aufnahme">${[720, 1080, 1440].map((h) =>
@@ -2814,8 +2871,9 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.bitrate)}</label><input type="number" name="bitrate_mbit" min="2" max="40" value="${t.bitrate_mbit}"></div>
         <div class="zeile"><label>${esc(T.codec)}</label><select name="codec">${Object.keys(T.codecArt).map((k) =>
           `<option value="${k}" ${k === (t.codec || "auto") ? "selected" : ""}>${esc(T.codecArt[k])}</option>`).join("")}</select></div>
-        <p class="leise">${esc(T.codecText)}</p>${kodierungTeil(t, sta)}</details>
-        ${E.fernseher.length > 1 ? `<div class="zeile"><button class="knopf gefahr" name="weg">${esc(T.fernseherWeg)}</button></div>` : ""}</div>`);
+        <p class="leise">${esc(T.codecText)}</p>${kodierungTeil(t, sta)}</div>
+        <div class="zeile"><button class="knopf haupt" name="ok">${esc(T.speichern)}</button>
+          ${E.fernseher.length > 1 && !neu ? `<button class="knopf gefahr" name="weg">${esc(T.fernseherWeg)}</button>` : ""}</div></div>`);
       const zeitenAnbinden = () => k.querySelectorAll("[name=zweg]").forEach((b) => { b.onclick = () => b.closest(".zeile").remove(); });
       zeitenAnbinden();
       k.querySelector("[name=zeitPlus]").onclick = () => { k.querySelector("[name=zeiten]").insertAdjacentHTML("beforeend", zeitZeile({ von: "23:00", bis: "06:00", layout: "schwarz" })); zeitenAnbinden(); };
@@ -2846,11 +2904,30 @@ async function fernseherSeite(inhalt) {
       for (const [n, an] of [["schAus", false], ["schAn", true]])
         k.querySelector(`[name=${n}]`).onclick = (ev) => aktion(ev.target, () => senden("/api/fernseher/schalten", { tv: t.id, an }), T.schaltenOk);
       const weg = k.querySelector("[name=weg]");
-      if (weg) weg.onclick = () => { if (confirm(T.wirklichTvWeg)) { E.fernseher = lesen().filter((_, j) => j !== i); zeichnen(); } };
+      if (weg) weg.onclick = (ev) => {
+        if (!confirm(T.wirklichTvWeg)) return;
+        const vorher = E;
+        speichernE({ fernseher: E.fernseher.filter((_, j) => j !== i) }, ev.target).then(() => { if (E !== vorher) { kanalOffen = null; zeichnen(); } });
+      };
+      k.querySelector("[name=ok]").onclick = async (ev) => {
+        const kanal = lesen(), vorher = E;
+        await speichernE({ fernseher: neu ? [...E.fernseher, kanal] : E.fernseher.map((x, j) => j === i ? kanal : x) }, ev.target);
+        if (E === vorher) return;                                     // Fehler: Eingaben bleiben stehen
+        neu = null; kanalOffen = kanal.id;
+        sta = await holen("/api/status").catch(() => sta);           // Ergebnis der Probe-Kodierung anzeigen
+        zeichnen();
+      };
+      const reiter = (x) => {
+        kanalTeil = KANAL_TEILE.includes(x) ? x : "anzeige";
+        k.querySelectorAll(".kanal-teil").forEach((d) => { d.hidden = d.dataset.teil !== kanalTeil; });
+        k.querySelectorAll("[data-zu]").forEach((b) => b.classList.toggle("an", b.dataset.zu === kanalTeil));
+      };
+      k.querySelectorAll("[data-zu]").forEach((b) => { b.onclick = () => reiter(b.dataset.zu); });
+      reiter(kanalTeil);
       liste.appendChild(k);
     });
-    const lesen = () => [...liste.children].map((k) => {
-      const t = E.fernseher[Number(k.dataset.i)];
+    const lesen = () => {
+      const k = liste.firstElementChild;
       const w = (n) => k.querySelector(`[name=${n}]`);
       return { ...t, name: w("name").value, id: w("id").value.trim().toLowerCase(), video: w("video").checked, ton: w("ton").value,
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
@@ -2864,19 +2941,6 @@ async function fernseherSeite(inhalt) {
                             layouts: [...k.querySelectorAll("[name=k_l]:checked")].map((c) => c.value) },
                zeitplan: [...k.querySelectorAll("[name=zeiten] .zeile")].map((z) => ({ von: z.querySelector("[name=zvon]").value,
                  bis: z.querySelector("[name=zbis]").value, layout: z.querySelector("[name=zlayout]").value })) };
-    });
-    $("#tvPlus").onclick = () => {
-      const alt = lesen();
-      let n = 2; while (alt.some((t) => t.id === "tv" + n)) n++;
-      E.fernseher = [...alt, { id: "tv" + n, name: T.weitererTv + " " + n, video: true, ton: "aus", radio_sender: "", lautstaerke: 70,
-                                kategorien_aus: [], aufloesung: 1080, aufnahme: 1080, bitrate_mbit: 8, codec: "auto",
-                                encoder: "auto", preset: "veryfast", tune: "zerolatency", bframes: 0 }];
-      zeichnen();
-    };
-    $("#ok").onclick = async (e) => {
-      await speichernE({ fernseher: lesen() }, e.target);
-      sta = await holen("/api/status").catch(() => sta);     // Ergebnis der Probe-Kodierung anzeigen
-      zeichnen();
     };
   };
   zeichnen();

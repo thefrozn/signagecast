@@ -231,7 +231,7 @@ DE = {
     "gal_kaputt": "Bild nicht lesbar: {d}",
     "gal_zeit": "Umwandeln dauert länger als {s} s",
     "gal_viele": "Höchstens {n} Dateien je Ordner",
-    "gal_voll": "Die Galerie ist voll ({gb} GB) – Bilder löschen oder unter Inhalte → Galerie die Grenze erhöhen",
+    "gal_voll": "Die Galerie ist voll ({gb} GB) – Bilder löschen oder unter Inhalte → Mediathek → Galerien die Grenze erhöhen",
     # seit 0.48: Speicherorte (NAS, Cloud, Ordner auf dem Server)
     "so_unbekannt": "Diesen Speicherort gibt es nicht (mehr) – unter Einstellungen → Speicherorte eintragen",
     "so_viele": "Höchstens {n} Speicherorte",

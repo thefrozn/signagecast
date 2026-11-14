@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.50.0 (2026-11-14)
+- **Channels as a list:** *Displays → Channels* now lists every channel with its layout, state (running or off),
+  schedule/carousel/HA, the devices showing it (online/offline) and its address. *Edit* opens one channel with tabs
+  **Display & schedule**, **Live video**, **Sound**, **On/off (HA)** and **Video stream** instead of one long form for all
+  TVs. **Saved per channel** – a mistake in one channel no longer blocks the others; the open tab stays after saving.
+  *Add channel* opens the new channel straight away; *Remove channel* asks and saves at once.
+- Clicking *Channels* again (or leaving a channel) asks first if there are unsaved changes.
+- **Media library:** *Media* and *Gallery* are one menu item with two tabs (*Media for the video window*, *Galleries
+  for layouts*) and a link to the storage locations; the addresses `#medien` and `#galerie` stay.
+
 ## v0.49.0 (2026-11-14)
 - **Admin menu reordered** so that every topic has exactly one place and the order follows the work:
   Overview · **Displays** (Channels, Devices, Remote sites, *+ New device*) · Content (Layouts, Data sources, Media,

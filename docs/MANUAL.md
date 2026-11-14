@@ -18,8 +18,8 @@ that video, so the TV needs no app, no login and no updates.
 | Area | Pages | What you do there |
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every channel, viewers, CPU/RAM, time check, Home Assistant |
-| **Displays** | Channels · Devices · Remote sites · + New device | A **channel** is what a TV shows – per channel in sections: display (layout, schedule, carousel, switch via HA), live video (on/off, video source, categories), sound; video stream technology folded. **Devices** are the players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); remote sites via Tailscale/Headscale ([REMOTE.md](REMOTE.md)); *+ New device* creates images and pairs players |
-| **Content** | Layouts · Data sources · Media · Gallery · Clips | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras, own pictures and videos, gallery folders (pictures/PDFs for slideshows), scheduled clips |
+| **Displays** | Channels · Devices · Remote sites · + New device | A **channel** is what a TV shows. The list shows every channel with layout, state, devices and address; *Edit* opens it with tabs *Display & schedule* (layout, schedule, carousel), *Live video* (on/off, video source, categories), *Sound*, *On/off (HA)* and *Video stream* (resolution, bitrate, encoding) – saved per channel. **Devices** are the players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); remote sites via Tailscale/Headscale ([REMOTE.md](REMOTE.md)); *+ New device* creates images and pairs players |
+| **Content** | Layouts · Data sources · Media library · Clips | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras; media library with two tabs: own pictures and videos for the video window, gallery folders (pictures/PDFs for slideshows); scheduled clips |
 | **Videos & radio** | Streams · Categories · Stream search · Rules · Radio | Live cams; categories (edit, create, switch on/off for all channels or per channel); nightly search; minutes per stream, daylight, minimum quality and strikes; radio stations |
 | **Settings** | General · Home Assistant · Storage locations · AI assistants · Notifications · Announcement panel (· Access in Docker) | Language, weather, location, time source; HA address and guide; NAS/cloud folders for all file dialogs; Claude & co.; outgoing notifications via Telegram/e-mail/HA; voice, templates and accounts of the panel, emergency templates, messages via webhook; admin password |
 | **System** | Health · Updates · Backup · Log | Free space and what uses it, performance test, switching off the stream without viewers; signed updates, maintenance window; encrypted backups; change log |
@@ -79,7 +79,7 @@ Displays → Channels → *Schedule*: add a time range with another layout or �
 Displays → Channels → *Carousel*: tick the layouts and set the minutes. Example: weather dashboard and photo layout every 5 minutes.
 
 ### Own pictures and videos instead of (or between) live cams
-Content → Media → upload JPG/PNG/MP4 (H.264)/WebM. Then Displays → Channels → *Video source*: “own media” or “mixed” (every N-th item own media).
+Content → Media library → *Media for the video window* → upload JPG/PNG/MP4 (H.264)/WebM. Then Displays → Channels → *Video source*: “own media” or “mixed” (every N-th item own media).
 
 ### When the internet is gone (since 0.38)
 Nothing to set up. If YouTube is not reachable (checked once a minute, two failures in a row), the video window shows
@@ -194,7 +194,7 @@ apart. Pages change by the clock, so several TVs turn pages together. *Fit* show
 upload replaces the file in this element only – save the layout afterwards.
 
 ### Show a folder of pictures (gallery, since 0.45)
-**Content → Gallery:** create a folder (e.g. “Family”, “Notices”) and drag pictures (JPG, PNG, WebP, GIF) and PDFs into
+**Content → Media library → Galleries:** create a folder (e.g. “Family”, “Notices”) and drag pictures (JPG, PNG, WebP, GIF) and PDFs into
 it – or choose files or a whole folder; from a phone use the file picker (iPhone photos arrive as JPG). Photos are
 scaled down to at most 3840 × 2160 when uploaded and only this version is kept; PDFs become one picture per page. Drag
 thumbnails to change the order, tick several to delete them. Limits: 50 MB per photo, 100 MB per PDF, 1000 files per
@@ -227,7 +227,7 @@ tick *Allow writing* (only needed for backups).
 
 Afterwards every file field in the admin has a **From storage location** button: browse the folders and pick one or
 several files. Gallery pictures, media and backups to restore are fetched by the server itself; other files (CSV,
-playlist, layout, background picture, PDF up to 25 MB) run through the normal import. In **Content → Gallery** a folder
+playlist, layout, background picture, PDF up to 25 MB) run through the normal import. In **Content → Media library → Galleries** a folder
 can be **linked** to a folder of a location: new and changed pictures arrive by themselves (every 5–1440 minutes or
 *Sync now*), deleted ones disappear (can be switched off), the order follows the file names; pictures you upload by hand
 stay. A **data source** can read its file from a location on every fetch (origin *File from storage location*). Under
@@ -370,10 +370,12 @@ It is never shown again. Create a new one and update the senders.
 ## Deutsch (kurz)
 
 Seit 0.49 ist die Verwaltung neu geordnet: Übersicht · **Displays** (Kanäle, Geräte, Fernstandorte, + Neues Gerät) · Inhalte
-(Layouts, Datenquellen, Medien, Galerie, Einspieler) · **Videos & Radio** (Streams, Kategorien, Stream-Suche, Regeln, Radio) ·
+(Layouts, Datenquellen, Mediathek mit Medien und Galerien, Einspieler) · **Videos & Radio** (Streams, Kategorien, Stream-Suche, Regeln, Radio) ·
 Einstellungen (Allgemein, Home Assistant, Speicherorte, KI-Assistenten, Benachrichtigungen, Durchsage-Pult) · System
 (Zustand, Updates, Sicherung, Protokoll); **📢 Durchsage** oben rechts sendet Durchsage, Laufschrift oder Notfall-Vollbild.
-Ein **Kanal** ist das, was ein Fernseher zeigt (früher hieß er selbst „Fernseher“).
+Ein **Kanal** ist das, was ein Fernseher zeigt (früher hieß er selbst „Fernseher“). Seit 0.50 zeigt „Kanäle“ eine Liste;
+*Bearbeiten* öffnet einen Kanal mit den Reitern Anzeige & Zeitplan, Live-Video, Ton, Ein/Aus (HA) und Videostream – gespeichert
+wird je Kanal.
 
 Seit 0.23 (experimentell): **Raspberry Pi als Player** unter Displays → + Neues Gerät – fertiges Image je Bildschirm mit WLAN,
 zentrale Verwaltung unter Displays → Geräte; Anleitung in [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player).
@@ -411,7 +413,7 @@ verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtb
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,
 Test-Knopf je Kanal.
-Seit 0.45: **Galerie** – Inhalte → Galerie: Ordner anlegen, Bilder (JPG, PNG, WebP, GIF) und PDFs hineinziehen oder
+Seit 0.45: **Galerie** – Inhalte → Mediathek → Galerien: Ordner anlegen, Bilder (JPG, PNG, WebP, GIF) und PDFs hineinziehen oder
 auswählen (auch ganze Ordner, vom Handy über die Dateiauswahl). Fotos werden beim Hochladen auf höchstens 4K
 verkleinert, nur diese Fassung bleibt; Reihenfolge per Ziehen, mehrere auswählen und löschen. Im Layout der Baustein
 **Galerie** (oder die Vorlage „Galerie Vollbild“): Sekunden je Bild, einpassen (Rand schwarz oder unscharf) oder

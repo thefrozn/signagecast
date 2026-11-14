@@ -335,13 +335,13 @@ Minimum size 3 × 3 cells.
 | `sekunden` | integer 3–3600 | `15` |
 | `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
 
-### `galerie` – slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Gallery); the user picks the folder
+### `galerie` – slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Media library → Galleries); the user picks the folder
 
 Minimum size 3 × 3 cells.
 
 | Option | Value | Default |
 |---|---|---|
-| `ordner` | id of a gallery folder (Content → Gallery), "" = none; the user picks it later in the editor | `""` |
+| `ordner` | id of a gallery folder (Content → Media library → Galleries), "" = none; the user picks it later in the editor | `""` |
 | `sekunden` | integer 3–3600 | `10` |
 | `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
 | `rand` | one of "schwarz", "unscharf" | `"schwarz"` |

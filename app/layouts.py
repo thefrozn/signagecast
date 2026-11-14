@@ -121,7 +121,7 @@ _qid.art = "id of one of your own data sources (Content → Data sources), \"\" 
 _pfad.art = 'path into the data source answer, e.g. "current.temp" or "items.0.title"'
 _url.art = "web address starting with http:// or https://"
 _pdf.art = '16 hex characters of an uploaded PDF ("" = none; the user uploads it later)'
-_gid.art = 'id of a gallery folder (Content → Gallery), "" = none; the user picks it later in the editor'
+_gid.art = 'id of a gallery folder (Content → Media library → Galleries), "" = none; the user picks it later in the editor'
 _symbole.art = 'list of rules {"text": "word in the title", "icon": "mdi-…", "farbe": "#rrggbb"} (max 12)'
 _raeume.art = 'list of {"name": "Living room", "entity": "sensor.living_room_temperature"} (max 8)'
 
@@ -170,7 +170,7 @@ TYPEN = {
                    "versatz_x": (_zahl(0, 10000), 0), "versatz_y": (_zahl(0, 10000), 0)},
     # seit 0.21: PDF Seite für Seite (app/pdf.py wandelt beim Hochladen in Bilder um)
     "pdf":        {"datei": (_pdf, ""), "sekunden": (_zahl(3, 3600), 15), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen")},
-    # seit 0.45: Ordner mit Bildern/PDFs (Inhalte → Galerie), Folie für Folie nach der Uhr
+    # seit 0.45: Ordner mit Bildern/PDFs (Inhalte → Mediathek → Galerien), Folie für Folie nach der Uhr
     "galerie":    {"ordner": (_gid, ""), "sekunden": (_zahl(3, 3600), 10), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen"),
                    "rand": (_wahl("schwarz", "unscharf"), "schwarz"), "reihenfolge": (_wahl("eigene", "name", "neu", "zufall"), "eigene"),
                    "uebergang": (_wahl("blenden", "hart"), "blenden")},
@@ -431,7 +431,7 @@ TYP_TEXT = {
     "webcam": "IP camera (own data source of type video)", "diagramm": "history chart of a value",
     "unwetter": "official severe weather warnings (Germany, DWD)", "webseite": "web page (embedded or as screenshot)",
     "pdf": "PDF shown page by page",
-    "galerie": "slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Gallery); the user picks the folder",
+    "galerie": "slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Media library → Galleries); the user picks the folder",
 }
 
 

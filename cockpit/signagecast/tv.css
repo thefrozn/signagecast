@@ -52,6 +52,9 @@ ul.todo li.aus { opacity: .7; } ul.todo li.todo-versteckt { font-size: .9em; } u
 details.erweitert { border-top: 1px dashed var(--linie); margin-top: 12px; }
 details.erweitert > summary { color: var(--leise); font-weight: 500; }
 @media (max-width: 640px) { #reiter, #unter { display: none; } #menue { display: block; } }
+nav.kanal-reiter { border-bottom: 1px solid var(--linie); margin: 10px 0 12px; }   /* Reiter im Kanal (seit 0.50) */
+.kanalliste .karte.kanal h2 { margin-bottom: 6px; }
+.kanalliste .karte.kanal code { word-break: break-all; }
 textarea.fliess { min-height: 60px; font: inherit; }   /* Fließtext statt Code (seit 0.49) */
 h1 button.kopf-knopf { margin-left: auto; font-size: 14px; font-weight: 500; }   /* Durchsage (seit 0.49) */
 h1 button.kopf-knopf.an { border-color: var(--akzent); color: var(--akzent); }
