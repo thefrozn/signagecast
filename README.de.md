@@ -23,7 +23,25 @@
   <a href="README.md">English</a>
 </p>
 
-![Fernseher mit Uhr, Wetter, Live-Kamera und Werten aus Home Assistant](docs/tour/de/01-tv-wohnzimmer.jpg)
+![Fernseher mit Uhr, Wetter und Werten neben wechselnden Live-Kameras](docs/tour/de/01-tv-wohnzimmer.gif)
+
+<p align="center"><sub>Aufgenommen auf einer Demo-Instanz, gekürzt: Live-Kamera und Werte wechseln von selbst. Animation läuft nicht? <a href="docs/tour/de/01-tv-wohnzimmer.jpg">Standbild</a>.</sub></p>
+
+**Schnellstart** – in der Shell eines Proxmox-VE-Hosts:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
+```
+
+oder mit Docker / Podman (`SC_HOST_IP` = die IP deines Docker-Hosts):
+
+```bash
+docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
+  -p 8888:8888 -p 19090:19090 -v signagecast:/data \
+  -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
+```
+
+Weitere Wege (Debian, Windows, QNAP, Synology) und was danach zu öffnen ist: [Installation](#installation).
 
 SignageCast zeigt Uhr, Wetter und auf Wunsch Werte aus **Home Assistant** neben einem großen Fenster mit
 **Live-Kameras von Tieren und Natur** – immer von einem Ort, an dem gerade Tag ist. Das Bild gestaltest du im

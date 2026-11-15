@@ -24,7 +24,25 @@
   <a href="README.de.md">Deutsch</a>
 </p>
 
-![A TV showing clock, weather, a live cam and Home Assistant values](docs/tour/01-tv-living-room.jpg)
+![A TV showing clock, weather and values next to live cams that change](docs/tour/01-tv-living-room.gif)
+
+<p align="center"><sub>Recorded on a demo instance, shortened: the live cam and the values change by themselves. Animation not playing? <a href="docs/tour/01-tv-living-room.jpg">Still picture</a>.</sub></p>
+
+**Quick start** – on the shell of a Proxmox VE host:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
+```
+
+or with Docker / Podman (`SC_HOST_IP` = the IP of your Docker host):
+
+```bash
+docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
+  -p 8888:8888 -p 19090:19090 -v signagecast:/data \
+  -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
+```
+
+Other ways (Debian, Windows, QNAP, Synology) and what to open afterwards: [Installation](#installation).
 
 SignageCast shows clock, weather and – if you like – values from **Home Assistant** next to a large window with **live
 nature and wildlife cams**, always from a place where it is daytime. You design the screen in a **drag-and-drop editor**
