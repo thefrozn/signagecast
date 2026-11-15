@@ -95,6 +95,14 @@ TV page is reloaded; if it happens again the playback is restarted and a notific
 Layouts without a clock may stand still (e.g. only text or a picture). TVs in direct mode (player shows the page
 itself) are not checked this way.
 
+### The server or the network fails (since 0.51)
+Players in **direct mode** with an image from 0.51 on keep showing their last layout with the last values from their
+offline copy – also after a restart without network. Live videos, cameras and radio are replaced by own media or a
+calm picture, a crossed-out globe stands at the top right. **Announcements and the emergency screen do not reach these
+screens until the connection is back**, and schedules stand still. Channels shown as a stream (TV browser, stream
+mode) stop when the server stops. Size and state of the copy: *Displays → Devices* (card of the device), limit under
+*+ New device → Advanced*. Details: [PLAYER.md](PLAYER.md#offline-copy-since-051).
+
 ### Undo a layout change, bring back a deleted layout (since 0.38)
 Content → Layouts → ⋯ on the layout → *Versions*: the last 10 versions with time and user; *Restore* replaces the layout (the
 current one becomes a version), *Download* saves one as file. Below the layouts, *Deleted layouts* brings back
@@ -439,3 +447,11 @@ je Feld; was hier nicht geht, ist ausgegraut, jede Änderung wird vorher kurz pr
 Seit 0.29: **Ausgabe** Standard Full HD (ein 4K-Fernseher rechnet selbst hoch; spart Bitrate) und **Aufnahme (Browser)** je
 Fernseher: 720p (spart CPU, Live-Videos in 720p), 1080p (Standard) oder 1440p (schärfer, deutlich mehr CPU) – das Layout
 bleibt 1920 × 1080 Punkte. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.
+
+**Server oder Netz fällt aus (seit 0.51):** Player im **Direktmodus** mit Image ab 0.51 zeigen ihr letztes Layout mit dem
+letzten Datenstand aus ihrer Offline-Kopie weiter – auch nach einem Neustart ohne Netz. Statt Live-Videos, Kameras und
+Radio laufen eigene Medien oder ein ruhiges Bild, oben rechts steht eine durchgestrichene Weltkugel. **Durchsagen und
+der Notfallbildschirm erreichen diese Bildschirme erst wieder, wenn die Verbindung zurück ist**, Zeitpläne stehen
+still. Kanäle, die als Stream laufen (Browser des Fernsehers, Stream-Modus), bleiben stehen, wenn der Server steht.
+Größe und Stand der Kopie: *Displays → Geräte* (Karte des Geräts), Grenze unter *+ Neues Gerät → Erweitert*.
+Mehr: [PLAYER.md](PLAYER.md#offline-kopie-seit-051).

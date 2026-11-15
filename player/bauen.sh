@@ -32,9 +32,17 @@ IMG=$A/os.img
 echo "== Platz schaffen und einhängen"
 truncate -s +2048M "$IMG"                # Platz für mpv und Chromium
 parted -s "$IMG" resizepart 2 100%
+# Offline-Kopie (seit 0.51): eigene Partition „SCCACHE“ (ext4) hinter dem System – beschreibbar trotz Schreibschutz.
+# Im Image nur 256 MB; der Agent vergrößert sie beim ersten Start bis zum Ende der Karte.
+ENDE=$(stat -c %s "$IMG")
+truncate -s +256M "$IMG"
+parted -s "$IMG" mkpart primary ext4 "${ENDE}B" 100%
 LOOP=$(losetup -fP --show "$IMG")
 e2fsck -fy "${LOOP}p2" >/dev/null || true
 resize2fs "${LOOP}p2" >/dev/null
+# 4-KB-Blöcke, wenige Inodes und Reserve zum Wachsen bis 256 GB: als kleines Dateisystem angelegt hätte es sonst
+# 1-KB-Blöcke und nach dem Vergrößern rund 6 % Verwaltungsdaten
+mkfs.ext4 -q -L SCCACHE -m 0 -b 4096 -i 65536 -E resize=67108864 "${LOOP}p3"
 mkdir "$A/root"
 mount "${LOOP}p2" "$A/root"
 mount "${LOOP}p1" "$A/root/boot/firmware"
@@ -50,7 +58,7 @@ install -m 644 "$HIER/tailscale.sh" "$A/root/tmp/tailscale.sh"
 chroot "$A/root" /bin/sh -eu <<'CHROOT'
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
-apt-get install -y -q --no-install-recommends mpv qrencode overlayroot iw rfkill unattended-upgrades
+apt-get install -y -q --no-install-recommends mpv qrencode overlayroot iw rfkill unattended-upgrades parted e2fsprogs
 # Direktmodus (seit 0.24): Chromium in cage (Wayland-Kiosk), seatd vergibt den Bildschirm ohne Anmeldung, grim macht
 # Bildschirmfotos, wlr-randr stellt Auflösung und Drehung ein, amixer die Lautstärke
 apt-get install -y -q --no-install-recommends cage seatd grim wlr-randr alsa-utils fonts-dejavu-core fonts-noto-color-emoji

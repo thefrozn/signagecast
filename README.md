@@ -81,6 +81,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - Any TV browser that plays H.265 – just open one address
 - Raspberry Pi or PC from a ready image, managed centrally
 - Direct mode: the player shows the page itself, no encoding on the server
+- Offline copy: if the server or the network fails, the player keeps showing its last layout – also after a cold start ([details](docs/PLAYER.md#offline-copy-since-051))
 - Browser device: a secret link for a smart TV or kiosk browser
 - Players at another site through Tailscale or Headscale ([REMOTE.md](docs/REMOTE.md))
 

@@ -19,6 +19,7 @@ from streams import DATEN
 from meldung import Meldung as Fehler
 import fernwartung as FW
 import speicher as SP
+import offline as OFF
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AGENT = os.path.join(BASIS, "player", "agent.py")
@@ -82,7 +83,7 @@ def dh_ableiten(geheim, fremd, a_pub, b_pub):
 
 
 def _leer():
-    return {"geraete": [], "wlan": [], "server": "", "stream_port": 0, "entfernt": []}
+    return {"geraete": [], "wlan": [], "server": "", "stream_port": 0, "entfernt": [], "offline_mb": OFF.GRENZE_STANDARD_MB}
 
 
 def laden():
@@ -420,6 +421,14 @@ def einstellen(d):
             if p and not 1 <= p <= 65535:
                 raise Fehler("pi_port")
             daten["stream_port"] = p
+        if "offline_mb" in d:                         # Offline-Kopie der Player (seit 0.51): 0 = aus
+            try:
+                n = int(d["offline_mb"] or 0)
+            except (TypeError, ValueError):
+                raise Fehler("pi_offline_mb") from None
+            if n < 0 or n > OFF.GRENZE_MAX_MB or 0 < n < 32:
+                raise Fehler("pi_offline_mb")
+            daten["offline_mb"] = n
         speichern(daten)
 
 
@@ -630,7 +639,8 @@ def liste(hinweise):
         aus.append(dict({k: v for k, v in g.items() if k not in ("schluessel", "wlan_soll", "hotspot_pw")},
                         online=online(g["id"]), zuletzt=int(z) if z else None, seit=int(s.get("seit") or 0) or None,
                         link_pfad="/anzeige/" + anzeige_schluessel(g) if g.get("modell") == BROWSER else None,
-                        bericht=s.get("bericht") or {}, ip=s.get("ip"), wlan_offen=(g.get("wlan_soll") or {}).get("netze", [{}])[0].get("ssid"),
+                        bericht={k: v for k, v in (s.get("bericht") or {}).items() if k != "offline"},
+                        offline=OFF.bericht((s.get("bericht") or {}).get("offline")), ip=s.get("ip"), wlan_offen=(g.get("wlan_soll") or {}).get("netze", [{}])[0].get("ssid"),
                         befehle=[b["art"] for b in befehle.get(g["id"], [])], ergebnisse=ergebnisse.get(g["id"], []),
                         bild=int(os.path.getmtime(bild)) if os.path.exists(bild) else None,
                         protokoll=os.path.exists(os.path.join(ORDNER, g["id"] + ".log")), hinweise=hinweise(g),

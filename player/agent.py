@@ -17,11 +17,14 @@
 # /etc/signagecast-pc; statt der Boot-Partition nimmt er die Datenpartition des Sticks (SC_BOOT, start.sh). Unterschiede:
 # Modell aus DMI, Bildschirm an jedem Anschluss (HDMI, DisplayPort, …), Ton über den angeschlossenen HDMI/DP-Ausgang,
 # Video-Dekodierung per VAAPI, Schreibschutz immer an (live), kein Systemupdate (das kommt mit einem neuen Image).
+# Offline-Kopie (seit 2.0 / SignageCast 0.51): Im Direktmodus zeigt Chromium die Seite über einen lokalen Dienst dieses
+# Agenten (127.0.0.1:8891), der alle Dateien des Kanals auf der Partition SCCACHE hält – fällt der Server oder das Netz
+# aus, läuft das letzte Layout mit dem letzten Datenstand weiter, auch nach einem Kaltstart (siehe „Offline“ unten).
 # Nur Python-Standardbibliothek; läuft als root (WLAN, CEC, Neustart), mpv und Chromium als Benutzer „signage“.
 import base64, fcntl, hashlib, hmac, json, os, pty, re, secrets, select, shutil, signal, socket, struct, subprocess, sys, termios, threading, time, urllib.error, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.9"
+VERSION = "2.0"
 PC = os.path.exists("/etc/signagecast-pc")       # PC-Player (seit 1.5)
 BOOT = os.environ.get("SC_BOOT", "/boot/firmware")
 KONFIG = os.environ.get("SC_KONFIG", BOOT + "/signagecast.json")
@@ -737,6 +740,7 @@ def ton_geraet():
 class Server:
     def __init__(self, k):
         self.k, self.versatz = k, 0
+        self.abweichung = 0                 # Serverzeit minus eigene Uhr (letzte Antwort)
         self.ersatz = None                  # anderer Standort per Link (seit 1.8): bis zur Anmeldung die Adresse im Heimnetz
 
     def basis(self):
@@ -758,6 +762,7 @@ class Server:
             inhalt, kopf, code = f.read(), f.headers, f.code
         if kopf.get("X-Server-Zeit", "").isdigit():
             abw = int(kopf["X-Server-Zeit"]) - time.time()
+            self.abweichung = abw
             if abs(abw - self.versatz) > 60:          # Uhr des Pi (ohne Echtzeituhr) weicht ab: Serverzeit nehmen
                 self.versatz = abw
         erwartet = hmac.new(bytes.fromhex(self.k["schluessel"]), f"antwort\n{jetzt}\n".encode() + inhalt, "sha256").hexdigest()
@@ -1119,6 +1124,8 @@ class Hotspot:
         self.anzeigen()
 
     def anzeigen(self):
+        if self.p.browser.laeuft():         # Offline-Kopie läuft: die Seite bleibt stehen, der Hotspot wartet im Hintergrund
+            return
         t, pw = self.p.t, self.p.k.get("hotspot_pw") or "signagecast"
         zeilen = [t["wlan_titel"], t["wlan1"], t["wlan1b"].format(ssid=self.ssid(), pw=pw), t["wlan2"], t["wlan3"]]
         if self.fehler:
@@ -1198,6 +1205,629 @@ class Hotspot:
 
 
 # ---------- Player ----------
+# ---------- Offline-Kopie (seit 2.0 / SignageCast 0.51) ----------
+# Direktmodus ohne Server: Der Player hält auf einer eigenen Partition („SCCACHE“, ext4 – nur Images ab 0.51) die TV-Seite
+# mit allen Dateien seines Kanals und den letzten Datenstand. Chromium zeigt immer http://127.0.0.1:8891/ – ein kleiner
+# Dienst in diesem Agenten liefert Dateien aus der Kopie, holt Daten vom Server und nimmt bei einem Ausfall den letzten
+# Stand (mit „offline“: die Seite zeigt dann eigene Medien oder ein lokales Bild statt der Livestreams). Ist der Server
+# zurück, kommt die nächste Abfrage (alle 15 s) wieder von ihm – ohne Neustart. Durchsagen und Notfallbild gibt es
+# offline nicht. Dateien kommen über den Anzeige-Zugang dieses Geräts; die Liste ist signiert, jede Datei wird gegen
+# ihre SHA-256 geprüft.
+CACHE_MARKE = "SCCACHE"
+CACHE = os.environ.get("SC_CACHE", "/run/signagecast-cache")
+OFFLINE_PORT = int(os.environ.get("SC_OFFLINE_PORT", "8891"))
+OFFLINE_DYN_MAX = 64 << 20          # zuletzt gesehene Bilder aus Datenquellen, Webseiten-Fotos, Galerie-Listen
+OFFLINE_DYN_DATEI = 8 << 20
+OFFLINE_RESERVE = 16 << 20
+OFFLINE_LIVE = re.compile(r"/(hlscam|radio|qvideo|einspieler|durchsage|kamera)/")     # nie aufheben: nur durchreichen
+OFFLINE_PFAD = re.compile(r"/([A-Za-z0-9_\-][A-Za-z0-9_.\-]*/)*[A-Za-z0-9_\-][A-Za-z0-9_.\-]*")
+OFFLINE_SOLL = ("name", "stream", "lautstaerke", "modus", "drehung", "aufloesung", "hwdec", "schreibschutz", "bildschirm", "offline")
+OFFLINE_TYPEN = {"html": "text/html; charset=utf-8", "js": "text/javascript; charset=utf-8", "css": "text/css; charset=utf-8",
+                 "json": "application/json; charset=utf-8", "svg": "image/svg+xml", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+                 "png": "image/png", "webp": "image/webp", "gif": "image/gif", "woff2": "font/woff2", "woff": "font/woff",
+                 "ttf": "font/ttf", "mp4": "video/mp4", "webm": "video/webm", "wav": "audio/wav", "ico": "image/x-icon"}
+
+
+def cache_einhaengen():
+    """Partition SCCACHE suchen, prüfen, (Pi) bis zum Ende der Karte vergrößern und einhängen. '' = keine (altes Image)."""
+    if os.environ.get("SC_CACHE"):
+        return CACHE if os.path.isdir(CACHE) else ""
+    if lauf("mountpoint", "-q", CACHE)[0] == 0:
+        return CACHE
+    code, teil = lauf("blkid", "-L", CACHE_MARKE)
+    teil = teil.splitlines()[0].strip() if code == 0 and teil else ""
+    if not teil.startswith("/dev/"):
+        return ""
+    name = os.path.basename(teil)
+    platte, nr = lauf("lsblk", "-no", "PKNAME", teil)[1].strip(), lesen(f"/sys/class/block/{name}/partition")
+    if not PC and platte and nr.isdigit():        # Pi: die Partition ist die letzte – den Rest der Karte dazunehmen
+        lauf("parted", "-s", "/dev/" + platte, "resizepart", nr, "100%")
+        lauf("partprobe", "/dev/" + platte)
+    lauf("e2fsck", "-p", teil, zeit=300)
+    os.makedirs(CACHE, exist_ok=True)
+    code, aus = lauf("mount", "-t", "ext4", "-o", "rw,noatime,nodev,nosuid,noexec", teil, CACHE)
+    if code != 0:
+        log("Offline-Kopie: Partition lässt sich nicht einhängen:", aus[-200:])
+        return ""
+    if not PC:                                    # erst eingehängt vergrößern: ausgehängt verlangt resize2fs „e2fsck -f“
+        lauf("resize2fs", teil, zeit=300)
+    return CACHE
+
+
+def offline_auswahl(dateien, grenze_bytes):
+    """Was in die Grenze passt (nach Rang, kleine zuerst): (behalten, ausgelassen). Rang 0 (die Seite) bleibt immer –
+    wie app/offline.py."""
+    behalten, weg, summe = [], [], 0
+    for d in sorted(dateien, key=lambda d: (d["r"], d["g"], d["p"])):
+        if d["r"] == 0 or summe + d["g"] <= grenze_bytes:
+            behalten.append(d)
+            summe += d["g"]
+        else:
+            weg.append(d)
+    return behalten, weg
+
+
+def offline_fassung(d, da, jetzt=None):
+    """Letzter Datenstand für die Seite, wenn der Server nicht antwortet: ohne alles, was das Netz braucht (Livestreams,
+    Einspieler, Radio) und ohne Durchsage, Alarm und Meldung – die könnten längst vorbei sein. `da(adresse)` sagt, ob
+    eine Datei in der Kopie liegt (eigene Medien, die nicht hineinpassten, fallen weg)."""
+    jetzt = time.time() if jetzt is None else jetzt
+    d = dict(d)
+    medien = lambda liste: [m for m in liste or [] if isinstance(m, dict) and da(str(m.get("url") or ""))]
+    e = dict(d.get("ersatz") or {})
+    e["medien"] = medien(e.get("medien"))
+    d.update(offline=True, player_offline=True, ersatz=e, medien=medien(d.get("medien")), streams=[], einspieler=[],
+             einspieler_jetzt=None, vorrang=None, radio=None, durchsage=None, alarm=None, meldung_extern=None, fernwartung=False,
+             zeit=int(jetzt), jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M", time.localtime(jetzt)))
+    return d
+
+
+class Offline:
+    def __init__(self, player):
+        self.p, self.wurzel, self.grund = player, "", "kein_speicher"
+        self.sperre = threading.Lock()
+        self.dateien, self.stand, self.version, self.ausgelassen = {}, "", "", 0     # Liste des Servers: Adresse -> Eintrag
+        self.da = set()                     # Summen der Dateien, die vollständig in der Kopie liegen
+        self.veraltet = False               # der Server hat eine andere Version als die Liste: Seite solange durchreichen
+        self.letzte, self.letzte_roh, self.gesichert, self.gesichert_layout = None, b"", 0, ""
+        self.weg_seit, self.ok_zeit = 0, 0  # Server antwortet der Seite nicht (seit) / zuletzt geantwortet
+        self.laeuft, self.naechster, self.abgleich_zeit, self.soll_alt = False, 0, 0, None
+        self.dyn_zeit, self.uhr_geschaetzt, self.uhr_gemerkt, self.http = {}, False, 0, None
+
+    # --- Speicher ---
+    def pfad(self, *teile):
+        return os.path.join(self.wurzel, *teile)
+
+    def datei(self, summe):
+        return self.pfad("d", summe[:2], summe)
+
+    def starten(self):
+        """Beim Start des Agenten: Partition einhängen, gemerkten Stand laden, Uhr vorstellen, lokalen Dienst starten."""
+        ort = cache_einhaengen()
+        if not ort:
+            return
+        self.wurzel = os.path.join(ort, "offline")
+        try:
+            for o in ("d", "dyn"):
+                os.makedirs(self.pfad(o), exist_ok=True)
+            for n in os.listdir(self.wurzel):           # Reste eines Stromausfalls
+                if n.endswith(".neu"):
+                    os.unlink(self.pfad(n))
+        except OSError as f:
+            log("Offline-Kopie: Speicher nicht beschreibbar:", f)
+            self.wurzel, self.grund = "", "speicher_fehler"
+            return
+        self.grund = ""
+        self.uhr_stellen()
+        self.index_laden()
+        try:
+            self.letzte_roh = open(self.pfad("daten.json"), "rb").read()
+            self.letzte = json.loads(self.letzte_roh)
+            self.gesichert_layout = json.dumps(self.letzte.get("layout"), sort_keys=True)
+        except (OSError, ValueError, AttributeError):
+            self.letzte, self.letzte_roh = None, b""
+        try:
+            self.http = ThreadingHTTPServer(("127.0.0.1", OFFLINE_PORT), offline_bearbeiter(self))
+            self.http.daemon_threads = True
+            threading.Thread(target=self.http.serve_forever, daemon=True).start()
+        except OSError as f:
+            log("Offline-Kopie: lokaler Dienst startet nicht:", f)
+            self.http, self.grund = None, "dienst_fehler"
+        log(f"Offline-Kopie: {len(self.da)} von {len(self.dateien)} Dateien, {self.belegt() >> 20} MB belegt")
+
+    def bereit(self):
+        return bool(self.wurzel and self.http)
+
+    def schreiben(self, name, roh):
+        """Erst daneben schreiben, dann umbenennen – ein Stromausfall lässt die alte oder die neue Datei zurück."""
+        tmp = self.pfad(name + ".neu")
+        with open(tmp, "wb") as f:
+            f.write(roh)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, self.pfad(name))
+
+    def index_laden(self):
+        try:
+            i = json.load(open(self.pfad("index.json")))
+            dateien = {d["p"]: d for d in i["dateien"] if self.eintrag_ok(d)}
+        except (OSError, ValueError, KeyError, TypeError):
+            return
+        da = set()
+        for d in dateien.values():
+            try:
+                if os.path.getsize(self.datei(d["h"])) == d["g"]:
+                    da.add(d["h"])
+            except OSError:
+                pass
+        with self.sperre:
+            self.dateien, self.da, self.version, self.ausgelassen = dateien, da, str(i.get("version") or ""), int(i.get("ausgelassen") or 0)
+            self.stand = str(i.get("stand") or "") if len(da) == len({d["h"] for d in dateien.values()}) else ""
+
+    @staticmethod
+    def eintrag_ok(d):
+        return (isinstance(d, dict) and isinstance(d.get("p"), str) and bool(OFFLINE_PFAD.fullmatch(d["p"])) and ".." not in d["p"]
+                and isinstance(d.get("h"), str) and bool(re.fullmatch(r"[0-9a-f]{64}", d["h"]))
+                and type(d.get("g")) is int and d["g"] >= 0 and type(d.get("r")) is int)
+
+    def belegt(self):
+        n = 0
+        for wurzel, _, namen in os.walk(self.wurzel or "/nonexistent"):
+            for x in namen:
+                try:
+                    n += os.path.getsize(os.path.join(wurzel, x))
+                except OSError:
+                    pass
+        return n
+
+    def platz(self):
+        """So viel darf die Kopie höchstens belegen: die Partition ohne Reserve und ohne den Platz für zuletzt gesehene Bilder."""
+        try:
+            s = os.statvfs(self.wurzel)
+        except OSError:
+            return 0
+        return max(0, s.f_blocks * s.f_frsize * 9 // 10 - OFFLINE_DYN_MAX - OFFLINE_RESERVE)
+
+    # --- Uhr (ein Pi hat keine Echtzeituhr) ---
+    def uhr_stellen(self):
+        """Kaltstart ohne Netz: Die Uhr steht dann auf einem alten Wert – ab der zuletzt gemerkten Zeit weiterlaufen lassen."""
+        try:
+            gemerkt = int(open(self.pfad("zeit")).read().strip())
+        except (OSError, ValueError):
+            return
+        if time.time() < gemerkt and gemerkt < 4102444800:
+            if lauf("date", "-s", f"@{gemerkt}")[0] == 0:
+                self.uhr_geschaetzt = True
+                log("Uhr auf die zuletzt gemerkte Zeit gestellt (kein Netz, keine Echtzeituhr) – wird nach der Verbindung korrigiert")
+
+    def uhr_merken(self, jetzt):
+        if self.wurzel and jetzt - self.uhr_gemerkt > 300:
+            self.uhr_gemerkt = jetzt
+            try:
+                self.schreiben("zeit", str(int(jetzt)).encode())
+            except OSError:
+                pass
+
+    def uhr_korrigieren(self, abweichung):
+        """Nach dem ersten Kontakt: Hat das Netz die Uhr noch nicht gestellt (kein Zeitserver erreichbar), die Serverzeit nehmen."""
+        if not self.uhr_geschaetzt:
+            return False
+        self.uhr_geschaetzt = False
+        if abs(abweichung) < 30 or lauf("timedatectl", "show", "-p", "NTPSynchronized", "--value")[1].strip() == "yes":
+            return False
+        ok = lauf("date", "-s", f"@{int(time.time() + abweichung)}")[0] == 0
+        log("Uhr nach der Serverzeit gestellt:", "ok" if ok else "Fehler")
+        return ok
+
+    # --- Stand des Servers merken (für den Kaltstart ohne Netz) ---
+    def soll_merken(self, soll):
+        if not self.wurzel:
+            return
+        kurz = {k: soll.get(k) for k in OFFLINE_SOLL if k in soll}
+        if kurz != self.soll_alt:
+            try:
+                self.schreiben("soll.json", json.dumps(kurz).encode())
+                self.soll_alt = kurz
+            except OSError:
+                pass
+
+    def soll_laden(self):
+        try:
+            d = json.load(open(self.pfad("soll.json")))
+        except (OSError, ValueError):
+            return {}
+        self.soll_alt = d if isinstance(d, dict) else None
+        return dict(self.soll_alt or {})
+
+    def gewuenscht(self):
+        """Der Server kann es (ab 0.51) und es ist eingeschaltet (Grenze > 0)."""
+        if not self.bereit():
+            return False
+        o = self.p.soll.get("offline")
+        return isinstance(o, dict) and int(o.get("grenze_mb") or 0) > 0
+
+    def nutzbar(self):
+        """Reicht die Kopie, um ohne Server zu zeigen? Die ganze Seite (Rang 0) und ein Datenstand müssen da sein."""
+        if not self.gewuenscht() or self.letzte is None:
+            return False
+        with self.sperre:
+            seite = [d for d in self.dateien.values() if d["r"] == 0]
+            return bool(seite) and all(d["h"] in self.da for d in seite)
+
+    def eintrag(self, adresse):
+        """Datei aus der Kopie für diese Adresse – oder None (dann holt sie der Dienst vom Server)."""
+        with self.sperre:
+            d = self.dateien.get(adresse)
+            if not d or d["h"] not in self.da or (self.veraltet and d["r"] == 0 and not self.weg_seit):
+                return None
+            return d
+
+    def bericht(self):
+        if not self.bereit():
+            return {"bereit": False, "grund": self.grund}
+        with self.sperre:
+            summen = {d["h"]: d["g"] for d in self.dateien.values()}
+            fehlt = sum(1 for h in summen if h not in self.da)
+            return {"bereit": True, "grund": "", "stand": self.stand, "bytes": sum(g for h, g in summen.items() if h in self.da),
+                    "platz": self.platz(), "dateien": len(summen) - fehlt, "fehlt": fehlt, "ausgelassen": self.ausgelassen,
+                    "vollstaendig": bool(summen) and not fehlt and not self.ausgelassen, "offline": bool(self.weg_seit),
+                    "seit": int(self.weg_seit), "abgleich": int(self.abgleich_zeit)}
+
+    # --- Abgleich mit dem Server ---
+    def schritt(self, jetzt):
+        """Aus der Hauptschleife: Uhrzeit merken; ändert sich der Stand des Servers (oder fehlt etwas), im Hintergrund abgleichen."""
+        if not self.bereit():
+            return
+        self.uhr_merken(jetzt)
+        o = self.p.soll.get("offline")
+        if not isinstance(o, dict) or jetzt - self.p.kontakt > 60 or self.laeuft or jetzt < self.naechster:
+            return
+        if int(o.get("grenze_mb") or 0) <= 0:
+            if self.dateien or self.letzte is not None:
+                self.leeren()
+            return
+        if o.get("stand") and o.get("stand") != self.stand:
+            self.laeuft, self.naechster = True, jetzt + 60
+            threading.Thread(target=self.abgleichen, args=(int(o["grenze_mb"]),), daemon=True).start()
+
+    def leeren(self):
+        """In der Verwaltung ausgeschaltet: Kopie löschen."""
+        with self.sperre:
+            self.dateien, self.da, self.stand, self.version, self.ausgelassen = {}, set(), "", "", 0
+            self.letzte, self.letzte_roh = None, b""
+        for n in ("index.json", "daten.json", "soll.json"):
+            try:
+                os.unlink(self.pfad(n))
+            except OSError:
+                pass
+        for o in ("d", "dyn"):
+            shutil.rmtree(self.pfad(o), ignore_errors=True)
+            os.makedirs(self.pfad(o), exist_ok=True)
+        log("Offline-Kopie gelöscht (in der Verwaltung ausgeschaltet)")
+
+    def abgleichen(self, grenze_mb):
+        try:
+            self._abgleichen(grenze_mb)
+        except (OSError, PermissionError, ValueError, KeyError, TypeError) as f:
+            log("Offline-Kopie: Abgleich abgebrochen:", repr(f)[:200])
+        finally:
+            if not self.stand:                      # unvollständig: in 5 min noch einmal
+                self.naechster = time.time() + 300
+            self.laeuft = False
+
+    def _abgleichen(self, grenze_mb):
+        code, roh = self.p.server.anfrage("/player/offline", {}, zeit=180)
+        if code != 200:
+            return
+        liste = json.loads(roh)
+        alle = [d for d in liste["dateien"] if self.eintrag_ok(d)]
+        behalten, weg = offline_auswahl(alle, min(grenze_mb << 20, self.platz()))
+        neu = {d["p"]: d for d in behalten}
+        gebraucht = {d["h"] for d in behalten}
+        with self.sperre:
+            self.dateien, self.version, self.ausgelassen, self.veraltet = neu, str(liste.get("version") or ""), len(weg), False
+            self.da &= gebraucht
+            self.stand = ""
+        self.schreiben("index.json", json.dumps({"stand": str(liste.get("stand") or ""), "version": self.version, "ausgelassen": len(weg),
+                                                 "dateien": behalten}).encode())
+        for wurzel, _, namen in os.walk(self.pfad("d")):       # was die neue Liste nicht mehr nennt, macht zuerst Platz
+            for n in namen:
+                if n not in gebraucht or n.endswith(".neu"):
+                    try:
+                        os.unlink(os.path.join(wurzel, n))
+                    except OSError:
+                        pass
+        fehler = 0
+        for d in behalten:
+            if d["h"] in self.da:
+                continue
+            ziel = self.datei(d["h"])
+            try:
+                if os.path.getsize(ziel) == d["g"]:
+                    with self.sperre:
+                        self.da.add(d["h"])
+                    continue
+            except OSError:
+                pass
+            if self.holen(d, ziel):
+                with self.sperre:
+                    self.da.add(d["h"])
+            else:
+                fehler += 1
+                if fehler >= 5:
+                    break
+        self.abgleich_zeit = time.time()
+        if not fehler:
+            with self.sperre:
+                self.stand = str(liste.get("stand") or "")
+            lauf("sync")
+            log(f"Offline-Kopie abgeglichen: {len(behalten)} Dateien" + (f", {len(weg)} passen nicht in die Grenze" if weg else ""))
+
+    def oben(self, adresse, kopf=None, zeit=20):
+        """GET an den Server mit dem Anzeige-Zugang dieses Geräts (derselbe Schlüssel wie im Link des Direktmodus)."""
+        k = self.p.k
+        zugang = hmac.new(bytes.fromhex(k["schluessel"]), b"anzeige", "sha256").hexdigest()[:32]
+        anf = urllib.request.Request(self.p.server.basis() + adresse, headers=dict(kopf or {}, Cookie="sc_anzeige=" + zugang,
+                                     **{"User-Agent": f"SignageCast-Player/{VERSION}"}))
+        return urllib.request.urlopen(anf, timeout=zeit)
+
+    def holen(self, d, ziel):
+        """Eine Datei laden und gegen Größe und SHA-256 der signierten Liste prüfen."""
+        tmp = ziel + ".neu"
+        try:
+            s = os.statvfs(self.wurzel)
+            if s.f_bavail * s.f_frsize < d["g"] + OFFLINE_RESERVE:
+                return False
+            os.makedirs(os.path.dirname(ziel), exist_ok=True)
+            h, n = hashlib.sha256(), 0
+            with self.oben(d["p"], zeit=60) as r, open(tmp, "wb") as f:
+                while True:
+                    teil = r.read(1 << 18)
+                    if not teil:
+                        break
+                    n += len(teil)
+                    if n > d["g"]:
+                        break
+                    h.update(teil)
+                    f.write(teil)
+                    time.sleep(0.005)                # der Anzeige nicht die Leitung und die CPU nehmen
+                f.flush()
+                os.fsync(f.fileno())
+            if n != d["g"] or h.hexdigest() != d["h"]:
+                log("Offline-Kopie: Datei passt nicht zur Liste, verworfen:", d["p"])
+                os.unlink(tmp)
+                return False
+            os.replace(tmp, ziel)
+            return True
+        except (OSError, ValueError) as f:
+            log("Offline-Kopie:", d["p"], str(f)[:120])
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            return False
+
+    # --- Daten für die Seite ---
+    def daten(self, abfrage=""):
+        """/daten.json: vom Server (und merken) – antwortet er nicht, der letzte Stand als Offline-Fassung. None: nichts da."""
+        jetzt = time.time()
+        try:
+            with self.oben("/daten.json" + ("?" + abfrage if abfrage else ""), zeit=4 if self.weg_seit else 8) as r:
+                roh = r.read(8 << 20)
+            d = json.loads(roh)
+            if not isinstance(d, dict) or not d.get("ok"):
+                raise ValueError("keine Daten")
+        except urllib.error.HTTPError as f:
+            if f.code in (403, 404):            # Gerät entfernt oder ohne Kanal: nichts Altes zeigen
+                return f.code, f.read()
+            d = None
+        except (OSError, ValueError):
+            d = None
+        if d is not None:
+            if self.weg_seit:
+                log(f"Server wieder da nach {int(jetzt - self.weg_seit)} s – Daten kommen wieder von ihm")
+            self.weg_seit, self.ok_zeit = 0, jetzt
+            self.veraltet = bool(self.version and d.get("version") and d["version"] != self.version)
+            self.letzte, self.letzte_roh = d, roh
+            layout = json.dumps(d.get("layout"), sort_keys=True)
+            if self.gewuenscht() and (jetzt - self.gesichert > 300 or layout != self.gesichert_layout):
+                try:                                 # höchstens alle 5 min auf die Karte, bei einem neuen Layout sofort
+                    self.schreiben("daten.json", roh)
+                    self.gesichert, self.gesichert_layout = jetzt, layout
+                except OSError:
+                    pass
+            return 200, roh
+        if self.letzte is None or not self.gewuenscht():
+            return 502, b'{"ok": false}'
+        if not self.weg_seit:
+            self.weg_seit = jetzt
+            log("Server antwortet nicht – die Seite läuft mit dem letzten Stand weiter")
+        return 200, json.dumps(offline_fassung(self.letzte, lambda a: self.eintrag(a) is not None, jetzt), ensure_ascii=False).encode()
+
+    # --- zuletzt gesehene Antworten (Bilder aus Datenquellen, Webseiten-Fotos, Galerie-Listen) ---
+    def dyn_pfad(self, adresse):
+        return self.pfad("dyn", hashlib.sha256(adresse.encode()).hexdigest()[:32])
+
+    def dyn_merken(self, adresse, typ, roh):
+        """Höchstens alle 10 min je Adresse und nur, wenn sich der Inhalt geändert hat (schont die Karte)."""
+        jetzt = time.time()
+        if not self.gewuenscht() or len(roh) > OFFLINE_DYN_DATEI or jetzt - self.dyn_zeit.get(adresse, 0) < 600:
+            return
+        self.dyn_zeit[adresse] = jetzt
+        kopf = json.dumps({"typ": typ, "summe": hashlib.sha256(roh).hexdigest()}).encode() + b"\n"
+        ziel = self.dyn_pfad(adresse)
+        try:
+            with open(ziel, "rb") as f:
+                if f.readline() == kopf:
+                    return
+        except OSError:
+            pass
+        try:
+            alle = sorted((os.path.getmtime(p), os.path.getsize(p), p) for p in (os.path.join(self.pfad("dyn"), n) for n in os.listdir(self.pfad("dyn"))))
+            summe = sum(a[1] for a in alle)
+            while alle and summe + len(roh) > OFFLINE_DYN_MAX:      # die ältesten zuerst
+                _, g, p = alle.pop(0)
+                os.unlink(p)
+                summe -= g
+            self.schreiben(os.path.join("dyn", os.path.basename(ziel)), kopf + roh)
+        except OSError:
+            pass
+
+    def dyn_lesen(self, adresse):
+        try:
+            with open(self.dyn_pfad(adresse), "rb") as f:
+                kopf = json.loads(f.readline())
+                return str(kopf.get("typ") or "application/octet-stream"), f.read()
+        except (OSError, ValueError, AttributeError):
+            return None
+
+
+def offline_bearbeiter(o):
+    class Bearbeiter(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, *a):
+            pass
+
+        def senden(self, code, roh, typ="application/json; charset=utf-8", cache="no-store", kopf=None):
+            self.send_response(code)
+            self.send_header("Content-Type", typ)
+            self.send_header("Cache-Control", cache)
+            self.send_header("Content-Length", str(len(roh)))
+            for k, v in (kopf or {}).items():
+                self.send_header(k, v)
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(roh)
+
+        def do_GET(self):
+            try:
+                self.antworten()
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
+
+        do_HEAD = do_GET
+
+        def antworten(self):
+            if (self.headers.get("Host") or "").split(":")[0] not in ("127.0.0.1", "localhost"):
+                return self.senden(403, b'{"ok": false}')       # nur der eigene Browser (kein DNS-Rebinding)
+            u = urllib.parse.urlparse(self.path)
+            pfad = "/index.html" if u.path == "/" else u.path
+            if pfad == "/daten.json":
+                code, roh = o.daten(u.query)
+                return self.senden(code, roh)
+            if pfad == "/durchsage.json":
+                return self.durchsage(u.query)
+            if not OFFLINE_PFAD.fullmatch(pfad) or ".." in pfad or pfad.startswith(("/api/", "/player/", "/anzeige/")):
+                return self.senden(404, b'{"ok": false}')
+            d = o.eintrag(pfad)
+            if d:
+                return self.datei(o.datei(d["h"]), pfad, d)
+            self.durchreichen(pfad, u.query)
+
+        def durchsage(self, abfrage):
+            """Long-Polling des Servers durchreichen; ohne Server ruhig warten (Durchsagen gibt es offline nicht)."""
+            try:
+                with o.oben("/durchsage.json" + ("?" + abfrage if abfrage else ""), zeit=4 if o.weg_seit else 35) as r:
+                    return self.senden(200, r.read(1 << 20))
+            except (OSError, ValueError):
+                time.sleep(10)
+                self.senden(200, b'{"ok": true, "durchsage": null, "alarm": null, "stand": "offline"}')
+
+        def datei(self, ort, pfad, d):
+            typ = OFFLINE_TYPEN.get(pfad.rsplit(".", 1)[-1].lower(), "application/octet-stream")
+            marke = '"' + d["h"][:32] + '"'
+            if self.headers.get("If-None-Match") == marke:
+                self.send_response(304)
+                self.send_header("ETag", marke)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            try:
+                f = open(ort, "rb")
+            except OSError:
+                return self.durchreichen(pfad, "")
+            with f:
+                start, ende, code = 0, d["g"] - 1, 200
+                m = re.fullmatch(r"bytes=(\d*)-(\d*)", self.headers.get("Range") or "")
+                if m and (m.group(1) or m.group(2)) and d["g"]:
+                    if m.group(1):
+                        start, ende = int(m.group(1)), min(int(m.group(2)), d["g"] - 1) if m.group(2) else d["g"] - 1
+                    else:
+                        start = max(0, d["g"] - int(m.group(2)))
+                    if start > ende:
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{d['g']}")
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
+                    code = 206
+                self.send_response(code)
+                self.send_header("Content-Type", typ)
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("ETag", marke)
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Length", str(ende - start + 1))
+                if code == 206:
+                    self.send_header("Content-Range", f"bytes {start}-{ende}/{d['g']}")
+                self.end_headers()
+                if self.command == "HEAD":
+                    return
+                f.seek(start)
+                rest = ende - start + 1
+                while rest > 0:
+                    teil = f.read(min(1 << 18, rest))
+                    if not teil:
+                        break
+                    self.wfile.write(teil)
+                    rest -= len(teil)
+
+        def durchreichen(self, pfad, abfrage):
+            """Vom Server holen (auch Datenströme: Kameras, Radio). Kleine Antworten merken – fällt der Server aus, kommt
+            die zuletzt gesehene (Bild einer Datenquelle, Foto einer Webseite, Liste einer Galerie)."""
+            q = [(k, v) for k, v in urllib.parse.parse_qsl(abfrage, keep_blank_values=True)]
+            adresse = pfad + ("?" + urllib.parse.urlencode(q) if q else "")
+            marke = pfad + ("?" + urllib.parse.urlencode([x for x in q if x[0] != "t"]) if [x for x in q if x[0] != "t"] else "")
+            live = bool(OFFLINE_LIVE.match(pfad))
+            kopf = {k: self.headers[k] for k in ("Range",) if self.headers.get(k)}
+            try:
+                r = o.oben(adresse, kopf, zeit=4 if o.weg_seit else 30)
+            except urllib.error.HTTPError as f:
+                return self.senden(f.code, f.read(1 << 16), f.headers.get("Content-Type") or "application/json")
+            except (OSError, ValueError):
+                alt = None if live else o.dyn_lesen(marke)
+                return self.senden(200, alt[1], alt[0]) if alt else self.senden(504, b'{"ok": false}')
+            with r:
+                typ = r.headers.get("Content-Type") or "application/octet-stream"
+                laenge = r.headers.get("Content-Length")
+                if not live and r.status == 200 and laenge and laenge.isdigit() and int(laenge) <= OFFLINE_DYN_DATEI:
+                    try:
+                        roh = r.read()
+                    except OSError:
+                        return self.senden(504, b'{"ok": false}')
+                    o.dyn_merken(marke, typ, roh)
+                    return self.senden(200, roh, typ, r.headers.get("Cache-Control") or "no-cache")
+                self.send_response(r.status)
+                for k in ("Content-Type", "Content-Length", "Content-Range", "Accept-Ranges", "Cache-Control"):
+                    if r.headers.get(k):
+                        self.send_header(k, r.headers[k])
+                if not laenge:
+                    self.send_header("Connection", "close")
+                    self.close_connection = True
+                self.end_headers()
+                if self.command == "HEAD":
+                    return
+                try:
+                    while True:
+                        teil = r.read1(65536)
+                        if not teil:
+                            break
+                        self.wfile.write(teil)
+                except OSError:
+                    self.close_connection = True
+    return Bearbeiter
+
+
 class Player:
     def __init__(self, k):
         self.k = k
@@ -1218,6 +1848,7 @@ class Player:
         self.kopplung, self.koppel_pause = None, 0     # laufende Kopplung (Image für mehrere Pis)
         self.terminal, self.fw_hinweis_an = None, False    # Fernwartung (seit 1.3)
         self.fern = Fernnetz(self)                         # anderer Standort (seit 1.7)
+        self.offline = Offline(self)                       # Offline-Kopie für den Direktmodus (seit 2.0)
 
     # --- Einrichtung beim Start ---
     def einrichten(self):
@@ -1322,7 +1953,7 @@ class Player:
                 "ergebnisse": self.ergebnisse[:10], "browser": Browser.verfuegbar(), "modus_ist": "direkt" if self.browser.laeuft() else "stream",
                 "rueckfall": self.rueckfall if time.time() < self.rueckfall_bis else "",
                 "fernwartung": bool(self.k.get("fernwartung")), "terminal": bool(self.terminal and self.terminal.offen),
-                "fern": self.fern.bericht()}
+                "fern": self.fern.bericht(), "offline": self.offline.bericht()}
 
     def melden_versuch(self):
         try:
@@ -1345,6 +1976,9 @@ class Player:
             return False
         self.ergebnisse = []
         self.kontakt = time.time()
+        self.offline.soll_merken(self.soll)
+        if self.offline.uhr_korrigieren(self.server.abweichung):
+            self.server.versatz = 0
         return True
 
     # --- Befehle ---
@@ -1502,6 +2136,7 @@ class Player:
                 self.befehle()
                 self.fernwartung()
         self.fernwartung_hinweis()
+        self.offline.schritt(jetzt)
         if self.wlan_laeuft:
             self.browser.beenden()
             return
@@ -1523,16 +2158,19 @@ class Player:
         elif art == "keins" and not self.hotspot.aktiv and jetzt - self.offline_seit > (30 if not self.k.get("wlan") else 120):
             self.hotspot.starten()
             self.hotspot_seit = jetzt
-            return
+            if not direkt:
+                return
         if self.hotspot.aktiv:
             if jetzt - self.hotspot_seit > 300 and self.k.get("wlan") and not self.hotspot.gaeste():
                 self.hotspot.stoppen()
-                self.anzeige.zeigen([self.t["suche"]])
+                if not direkt:
+                    self.anzeige.zeigen([self.t["suche"]])
                 wlan_verbindungen(self.k["wlan"], self.k.get("land") or "DE")
                 if not wlan_verbinden(0, 60):
                     self.hotspot.starten()
                     self.hotspot_seit = time.time()
-            return
+            if not direkt:                          # mit Offline-Kopie läuft die Seite weiter, der Hotspot im Hintergrund
+                return
         if not self.k.get("schluessel"):
             return self.koppel_schritt(jetzt)
         if self.erkennen_bis > jetzt:
@@ -1541,11 +2179,12 @@ class Player:
         if self.zustand in ("gesperrt", "unbekannt", "fern_weg"):
             self.anzeige.zeigen([self.t[self.zustand], self.k.get("name", "")])
             return
-        if not online and self.fern.url:            # anderer Standort per Link: hier freigeben (seit 1.8)
+        if not online and self.fern.url and not direkt:   # anderer Standort per Link: hier freigeben (seit 1.8)
             self.zustand = "fern_link"
             self.anzeige.zeigen([self.t["fern_link"], self.k.get("name", ""), self.t["fern_link2"]], qr=self.fern.url)
             return
-        if not online and not self.anzeige.url:
+        aus_gemerkt = self.soll.get("bildschirm") == "aus" and self.offline.nutzbar()   # offline: letzter Zustand bleibt
+        if not online and not self.anzeige.url and not direkt and not aus_gemerkt:
             self.zustand = "verbinde"
             self.anzeige.zeigen([self.t["verbinde"] if jetzt - START < 90 else self.t["kein_server"],
                                  self.k.get("name", ""), self.server.basis()] + ([self.zustand_text] if self.zustand_text else []))
@@ -1649,10 +2288,13 @@ class Player:
     def direkt_gewuenscht(self, jetzt):
         s = self.soll
         return (s.get("modus") == "direkt" and Browser.verfuegbar() and jetzt >= self.rueckfall_bis and bool(s.get("stream"))
-                and jetzt - self.kontakt < 120 and s.get("bildschirm") != "aus" and not self.hotspot.aktiv
+                and (jetzt - self.kontakt < 120 or self.offline.nutzbar()) and s.get("bildschirm") != "aus"
+                and (not self.hotspot.aktiv or self.offline.nutzbar())
                 and self.erkennen_bis <= jetzt and self.zustand not in ("gesperrt", "unbekannt", "fern_weg") and not re.search(r"Pi 3|Zero 2", modell()))
 
     def direkt_url(self):
+        if self.offline.gewuenscht():               # seit 2.0: über den lokalen Dienst (Offline-Kopie)
+            return f"http://127.0.0.1:{OFFLINE_PORT}/"
         return self.server.basis() + "/anzeige/" + hmac.new(bytes.fromhex(self.k["schluessel"]), b"anzeige", "sha256").hexdigest()[:32]
 
     def direkt_problem(self, grund, jetzt):
@@ -1667,6 +2309,8 @@ class Player:
     def direkt_schritt(self, jetzt):
         if self.anzeige.laeuft():                   # mpv gibt den Bildschirm frei (nur einer kann ihn belegen)
             self.anzeige.beenden()
+        if self.browser.laeuft() and self.browser.url != self.direkt_url():
+            self.browser.beenden()                  # Offline-Kopie ein- oder ausgeschaltet: andere Adresse
         if not self.browser.laeuft():
             if self.browser.gestartet:              # lief und ist beendet: abgestürzt
                 self.direkt_problem("abgestuerzt", jetzt)
@@ -1685,6 +2329,13 @@ class Player:
         self.anzeige.starten(dict(STANDARD_ANZEIGE, **(self.k.get("anzeige") or {})))
         self.anzeige.zeigen([self.t["start"], self.k.get("name", "")])
         self.einrichten()
+        try:
+            self.offline.starten()
+            if self.offline.bereit() and not self.soll:   # Kaltstart: bis zur ersten Antwort gilt der zuletzt gemerkte Stand
+                self.soll = self.offline.soll_laden()
+                self.modus_alt = self.soll.get("modus")
+        except Exception as f:              # die Offline-Kopie darf den Start nie verhindern
+            log("Offline-Kopie:", repr(f)[:200])
         gesund_seit = time.time()
         while True:
             try:

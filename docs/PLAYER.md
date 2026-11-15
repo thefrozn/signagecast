@@ -96,9 +96,48 @@ from the Pi's HDMI.
 - **Fallback:** if the browser crashes or the page does not load three times within 10 minutes, the Pi shows the
   stream for one hour; the admin shows a note. *Restart player* tries direct mode again right away.
 - Images created **before 0.24** have no browser – the admin says so; download and flash a new image.
-- Security: the Pi opens `http://<server>:8890/anzeige/<key>`. The key is derived from the device key and only gives
+- Security: the Pi opens `http://<server>:8890/anzeige/<key>` (with an offline copy, since 0.51, its own local service
+  fetches from there). The key is derived from the device key and only gives
   access to the page of **its own TV** (no admin API; only the cameras in that TV's layout). Removing the Pi makes it
   invalid at once.
+
+## Offline copy (since 0.51)
+
+> **Status:** tested on the PC player. On the **Raspberry Pi it has not been tested on real hardware yet** (0.51.0) –
+> only the image, its partitions and the agent were checked. Please report what you see.
+
+A player in direct mode keeps showing its page when the **server or the network fails** – also after a cold start
+without any connection. It needs an **image created with 0.51 or newer**: only those have the extra partition
+(`SCCACHE`) the copy lives on, because the system itself is write-protected. Older players work as before; their card
+says *not possible – create a new image*.
+
+- **What is kept:** the TV page with scripts, fonts and pictures, the pictures and logos of all layouts the channel can
+  show (base layout, schedule, carousel), gallery and PDF pages, own media, the layout and the last values of all data
+  sources (including the last picture of a data source or web page screenshot).
+- **What is not kept:** live streams (YouTube, IP cameras, radio, clips from the net). Offline the video window shows
+  **own media** in a loop or, without media, a calm local picture – the same switch the server uses when the internet
+  is gone, now triggered by the player itself.
+- **Announcements, tickers sent by webhook and the emergency screen do not work offline.** They need the server; one
+  that was showing when the connection broke is hidden.
+- **Symbol:** while the player shows the copy, a crossed-out globe stands at the top right.
+- **Back online:** the page asks every 15 s; the next answer comes from the server again – changes arrive within a
+  minute, without a restart and without the page reloading (it only rebuilds when the layout changed).
+- **Size:** *Displays → + New device → Advanced → Offline copy at most (MB)*, default 512, `0` switches it off and
+  deletes the copy. If the space is not enough, own media are dropped first, then gallery/PDF pages, then layout
+  pictures; the page itself always stays. The device card shows *Offline copy: 143 of 512 MB · complete* (or how many
+  files are missing or do not fit). On a Pi the partition grows to the end of the SD card on first start; on a PC
+  player it is 1 GB (missing on CD/Ventoy – no offline copy there).
+- **Schedules stand still offline:** which layout is shown and *screen off* are decided by the server. Offline the
+  player keeps the last layout and the last screen state.
+- **Clock:** a Pi has no real-time clock. After a cold start without network the clock continues from the last time
+  the player noted (every 5 minutes) – it is late by the time the Pi was switched off. As soon as the network or the
+  server is back, it is corrected.
+- **No network at all:** after 2 minutes the Pi still opens its setup hotspot, but in the background – the page stays
+  on the TV. The hotspot's name is `SignageCast-<name>`; without an offline copy the QR code appears as before.
+- **How it works:** Chromium opens `http://127.0.0.1:8891/`, a small service inside the player agent (reachable only
+  on the player itself). The server sends a signed list of files with size and SHA-256; the player fetches them with
+  its display access and checks each one. Files are written next to the old one and renamed, the last data at most
+  every 5 minutes – a power cut leaves the old or the new state.
 
 ## Remote maintenance – terminal in the browser (since 0.33)
 
@@ -310,9 +349,49 @@ Durchsagen, Gong) kommt aus dem HDMI des Pi.
 - **Rückfall:** Stürzt der Browser ab oder lädt die Seite dreimal in 10 Minuten nicht, zeigt der Pi eine Stunde lang den
   Stream; die Verwaltung zeigt einen Hinweis. *Player neu starten* versucht den Direktmodus sofort wieder.
 - Images von **vor 0.24** haben keinen Browser – die Verwaltung sagt das; neues Image herunterladen und flashen.
-- Sicherheit: Der Pi öffnet `http://<Server>:8890/anzeige/<Schlüssel>`. Der Schlüssel ist aus dem Geräteschlüssel
+- Sicherheit: Der Pi öffnet `http://<Server>:8890/anzeige/<Schlüssel>` (mit Offline-Kopie, seit 0.51, holt sein
+  lokaler Dienst von dort). Der Schlüssel ist aus dem Geräteschlüssel
   abgeleitet und gibt nur die Seite **seines Fernsehers** frei (keine Verwaltungs-API; nur die Kameras aus dessen
   Layout). Entfernen macht ihn sofort ungültig.
+
+## Offline-Kopie (seit 0.51)
+
+> **Stand:** auf dem PC-Player getestet. Auf dem **Raspberry Pi noch nicht auf echter Hardware getestet** (0.51.0) –
+> geprüft sind nur das Image, seine Partitionen und der Agent. Rückmeldungen sind willkommen.
+
+Ein Player im Direktmodus zeigt seine Seite weiter, wenn der **Server oder das Netz ausfällt** – auch nach einem
+Kaltstart ganz ohne Verbindung. Dafür braucht er ein **Image ab 0.51**: Nur diese haben die zusätzliche Partition
+(`SCCACHE`), auf der die Kopie liegt, denn das System selbst ist schreibgeschützt. Ältere Player laufen wie bisher;
+auf ihrer Karte steht *nicht möglich – dafür ein neues Image erstellen*.
+
+- **Was aufgehoben wird:** die TV-Seite mit Skripten, Schriften und Bildern, die Bilder und Logos aller Layouts, die
+  der Kanal zeigen kann (Grundlayout, Zeitplan, Karussell), Galerie- und PDF-Seiten, eigene Medien, das Layout und die
+  letzten Werte aller Datenquellen (auch das letzte Bild einer Datenquelle oder das Foto einer Webseite).
+- **Was nicht:** Livestreams (YouTube, IP-Kameras, Radio, Einspieler aus dem Netz). Offline zeigt das Videofenster
+  **eigene Medien** im Kreis oder – ohne Medien – ein ruhiges lokales Bild. Das ist dieselbe Umschaltung, die der
+  Server auslöst, wenn das Internet weg ist; jetzt löst sie der Player selbst aus.
+- **Durchsagen, Meldungen per Webhook und der Notfallbildschirm funktionieren offline nicht.** Sie brauchen den
+  Server; was beim Abbruch gerade zu sehen war, wird ausgeblendet.
+- **Symbol:** Solange der Player die Kopie zeigt, steht oben rechts eine durchgestrichene Weltkugel.
+- **Wieder verbunden:** Die Seite fragt alle 15 s; die nächste Antwort kommt wieder vom Server – Änderungen sind
+  innerhalb einer Minute da, ohne Neustart und ohne dass die Seite neu lädt (sie baut nur bei geändertem Layout neu).
+- **Größe:** *Displays → + Neues Gerät → Erweitert → Offline-Kopie höchstens (MB)*, Standard 512, `0` schaltet aus und
+  löscht die Kopie. Reicht der Platz nicht, fallen zuerst die eigenen Medien weg, dann Galerie-/PDF-Seiten, dann
+  Layout-Bilder; die Seite selbst bleibt immer. Die Gerätekarte zeigt *Offline-Kopie: 143 von 512 MB · vollständig*
+  (oder wie viele Dateien fehlen bzw. nicht hineinpassen). Auf einem Pi wächst die Partition beim ersten Start bis zum
+  Ende der SD-Karte; beim PC-Player hat sie 1 GB (auf CD/Ventoy fehlt sie – dort gibt es keine Offline-Kopie).
+- **Zeitpläne stehen offline still:** Welches Layout läuft und *Bildschirm aus* entscheidet der Server. Offline bleibt
+  der Player beim letzten Layout und beim letzten Zustand des Bildschirms.
+- **Uhr:** Ein Pi hat keine Echtzeituhr. Nach einem Kaltstart ohne Netz läuft die Uhr ab der Zeit weiter, die sich der
+  Player zuletzt gemerkt hat (alle 5 Minuten) – sie geht um die Zeit nach, die der Pi ausgeschaltet war. Sobald das
+  Netz oder der Server wieder da ist, wird sie korrigiert.
+- **Gar kein Netz:** Nach 2 Minuten öffnet der Pi weiterhin seinen Einrichtungs-Hotspot, aber im Hintergrund – die
+  Seite bleibt auf dem Fernseher. Der Hotspot heißt `SignageCast-<Name>`; ohne Offline-Kopie erscheint wie bisher der
+  QR-Code.
+- **Technik:** Chromium öffnet `http://127.0.0.1:8891/`, einen kleinen Dienst im Player-Agenten (nur am Player selbst
+  erreichbar). Der Server schickt eine signierte Liste der Dateien mit Größe und SHA-256; der Player holt sie mit
+  seinem Anzeige-Zugang und prüft jede einzelne. Dateien werden daneben geschrieben und umbenannt, der letzte
+  Datenstand höchstens alle 5 Minuten – ein Stromausfall lässt den alten oder den neuen Stand zurück.
 
 ## Fernwartung – Terminal im Browser (seit 0.33)
 

@@ -59,6 +59,15 @@ see [NOTICE.md](../NOTICE.md).
   the code at `POST /mcp/koppeln` for a key and keeps it in `~/.signagecast/mcp-<id>.json` (600). Wrong keys/codes:
   1 s delay, 10 per minute and address → 429. Requests with `Origin` → 403. Right *lesen* → only tools without
   changes, in the list and when called.
+- **Offline copy (since 0.51):** players in direct mode with an image from 0.51 on report `offline` in
+  `/player/melden`; the answer carries a fingerprint of everything their channel needs. When it changes, the player
+  asks `/player/offline` (signed like all player answers) for the list – path, size, SHA-256 and rank (0 page, 1 layout
+  pictures, 2 gallery/PDF, 3 own media; `app/offline.py`) – and fetches the files through its display access
+  (`/anzeige` cookie, only its own channel). On the player (`player/agent.py`, class `Offline`): partition `SCCACHE`
+  (ext4, mounted `noexec`), files stored under their checksum, a local service on `127.0.0.1:8891` that serves the
+  copy, passes live data through and, when the server does not answer, returns the last `daten.json` with `offline`
+  and `player_offline` set and without streams, clips, radio, announcement, alarm and message. The limit
+  (`offline_mb`, default 512, 0 = off) is in `player.json`. Details and limits: [PLAYER.md](PLAYER.md#offline-copy-since-051).
 
 ## Updates and backups
 
@@ -106,6 +115,11 @@ Seit 0.38: **Internet-Prüfung** (je Minute eine TCP-Verbindung zum YouTube-Play
 → eigene Medien bzw. lokales Bild, keine Strikes), **Bildprüfung** (alle 2 min ein Graustufenbild 160 × 90 vom
 virtuellen Bildschirm, nicht vom Stream – schwarz oder mit Uhr stehend → neu laden, dann Kette neu starten und melden),
 **Protokoll** und **Layout-Versionen** in `/var/lib/signagecast/` (Teil der Sicherung).
+
+**Offline-Kopie (seit 0.51):** Player im Direktmodus (Image ab 0.51, Partition `SCCACHE`) halten Seite, Bilder, eigene
+Medien und den letzten Datenstand lokal; Chromium zeigt `127.0.0.1:8891` (Dienst im Agenten). Der Server nennt die
+Dateien in einer signierten Liste mit SHA-256 (`/player/offline`, `app/offline.py`); ohne Server liefert der Player den
+letzten Stand ohne Livestreams, Durchsage und Alarm. Mehr: [PLAYER.md](PLAYER.md#offline-kopie-seit-051).
 
 **Updates & Sicherung:** Reiter „Updates“ (System- und SignageCast-Updates per Knopf oder automatisch im Wartungsfenster,
 nur wenn niemand zuschaut; Rückkehr zur vorigen Version, automatisch bei Fehlern) und „Sicherung“ (ZIP, mit Zugangsdaten

@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.51.0 (2026-11-15)
+- **Offline copy for players in direct mode** (Raspberry Pi and PC player): if the server or the network fails, the
+  player keeps showing its last layout with the last values of all data sources – for as long as it takes, and also
+  after a cold start without any connection. Live streams, cameras and radio are replaced by own media or a calm local
+  picture (the player now triggers that switch itself); a crossed-out globe at the top right shows the state. When
+  the server is back, changes arrive within a minute without a restart.
+  **Needs a new image (0.51):** the copy lives on its own partition `SCCACHE`; players with older images work as before
+  and say so on their card. **Announcements and the emergency screen do not work offline**; schedules (layout by time,
+  screen off) stand still at the last state.
+  **Tested on the PC player** (server stopped for 22 hours, cold start without network, reconnect). **Not yet tested
+  on a real Raspberry Pi** – the Pi could not be emulated; only the image, its partitions and the agent were checked.
+- *Displays → + New device → Advanced → Offline copy at most (MB)* (default 512, 0 = off). The device card shows how
+  much is used, whether the copy is complete and whether the player is showing it right now. If space runs out, own
+  media are dropped first, the page never.
+- Player agent 2.0: local service on `127.0.0.1:8891`, signed file list with SHA-256 per file (`/player/offline`), last
+  server state and time kept for a cold start; the clock of a Pi without network continues from the last noted time
+  and is corrected after reconnecting. The setup hotspot runs in the background while the copy is shown.
+- Docs: [PLAYER.md](docs/PLAYER.md#offline-copy-since-051), HOW-IT-WORKS.md, REMOTE.md.
+
 ## v0.50.0 (2026-11-14)
 - **Channels as a list:** *Displays → Channels* now lists every channel with its layout, state (running or off),
   schedule/carousel/HA, the devices showing it (online/offline) and its address. *Edit* opens one channel with tabs

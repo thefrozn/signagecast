@@ -64,6 +64,7 @@ import pdf as PDF                             # noqa: E402
 import speicher as SP                         # noqa: E402
 import galerie as GAL                         # noqa: E402
 import player as PL                           # noqa: E402
+import offline as OFF                          # noqa: E402
 import fernwartung as FW                      # noqa: E402
 import netz as NZ                             # noqa: E402
 import protokoll as PR                        # noqa: E402
@@ -1300,6 +1301,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             antwort, typ = b'{"ok": true}', "application/json"
         elif pfad == "/player/agent":
             antwort, typ = open(PL.AGENT, "rb").read(), "text/x-python"
+        elif pfad == "/player/offline":                 # Dateiliste für die Offline-Kopie (seit 0.51)
+            antwort, typ = json.dumps(offline_dateien(g) or {"ok": True, "stand": "", "version": VERSION, "grenze_mb": 0, "dateien": []}).encode(), "application/json"
         elif pfad in ("/player/terminal/ein", "/player/terminal/aus"):   # Fernwartung (seit 0.33)
             try:
                 d = json.loads(roh or b"{}")
@@ -1335,7 +1338,48 @@ def player_antwort(g, bericht, ip):
     t = next((t for t in einst()["fernseher"] if t["id"] == g["tv"]), None)
     stream = {"port": PL.daten["stream_port"] or HLS_PORT, "pfad": t["id"]} if t else None
     bildschirm = schalten_soll(t) if t and g["cec_zeitplan"] else None
-    return PL.melden(g, bericht, ip, stream, bildschirm)
+    antwort = PL.melden(g, bericht, ip, stream, bildschirm)
+    if isinstance(bericht, dict) and isinstance(bericht.get("offline"), dict):   # Player mit Offline-Kopie (seit 0.51)
+        o = offline_dateien(g)
+        antwort["offline"] = {"stand": o["stand"], "grenze_mb": o["grenze_mb"]} if o else {"stand": "", "grenze_mb": 0}
+    return antwort
+
+
+# ---------- Offline-Kopie (seit 0.51) ----------
+_offline_merker = {}      # Kanal -> (Zeit, Antwort): die Liste je Kanal höchstens alle 10 s neu aufbauen
+
+
+def offline_dateien(g):
+    """Alles, was der Player dieses Geräts ohne Server braucht (siehe offline.py). None: kein Kanal oder ausgeschaltet."""
+    e = einst()
+    t = next((t for t in e["fernseher"] if t["id"] == g["tv"]), None)
+    grenze = OFF.grenze_mb(PL.daten.get("offline_mb"))
+    if not t or not grenze:
+        return None
+    alt = _offline_merker.get(t["id"])
+    if alt and time.time() - alt[0] < 10 and alt[1]["grenze_mb"] == grenze:
+        return alt[1]
+    ein = [(a, p, OFF.RANG_SEITE) for a, p in OFF.www_dateien(WWW)]
+    ls = OFF.layouts_fuer(t, e["layouts"])
+    ein += [("/bild/" + n, os.path.join(BILDER, n), OFF.RANG_LAYOUT) for n in OFF.bild_namen(ls)]
+    ordner_da = {o["id"] for o in e["galerie"]["ordner"]}
+    for l in ls:
+        for x in l.get("elemente", []):
+            d = x["optionen"].get("datei") if x["typ"] == "pdf" else None
+            if d and PDF.NAME.fullmatch(d):
+                ein += [(f"/pdf/{d}/{n}.jpg", os.path.join(PDF_ORDNER, d, f"{n}.jpg"), OFF.RANG_GALERIE)
+                        for n in range(1, PDF.seiten(PDF_ORDNER, d) + 1)]
+        for oid in galerie_im_layout(l):
+            if oid in ordner_da:
+                for f in GALERIE.folien(oid):
+                    ein += [("/" + u, os.path.join(GALERIE.dateien, u[len("galerie/"):]), OFF.RANG_GALERIE)
+                            for u in (f["u"], f.get("h")) if u]
+    if t["video"]:
+        ein += [("/medien/" + m["datei"], os.path.join(MEDIEN, m["datei"]), OFF.RANG_MEDIEN) for m in e["medien"] if m["aktiv"]]
+    dateien = OFF.liste(ein)
+    antwort = {"ok": True, "stand": OFF.stand(dateien, VERSION, grenze), "version": VERSION, "grenze_mb": grenze, "dateien": dateien}
+    _offline_merker[t["id"]] = (time.time(), antwort)
+    return antwort
 
 
 def player_hinweise(g):
@@ -3341,6 +3385,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "jetzt": int(time.time()), "geraete": PL.liste(player_hinweise), "basis": PL.basis_info("pi", VERSION), "basis_pc": PL.basis_info("pc", VERSION),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
+                                      "offline_mb": OFF.grenze_mb(PL.daten.get("offline_mb")),
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend(),
                                       "fern": {"art": FERN.k["art"], "server": FERN.k["server"]} if FERN.aktiv() else None})
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/aus", pfad)

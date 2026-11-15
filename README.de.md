@@ -82,6 +82,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - Jeder Fernseher-Browser, der H.265 abspielt – nur eine Adresse öffnen
 - Raspberry Pi oder PC aus einem fertigen Image, zentral verwaltet
 - Direktmodus: der Player zeigt die Seite selbst, der Server muss nichts kodieren
+- Offline-Kopie: fällt der Server oder das Netz aus, zeigt der Player sein letztes Layout weiter – auch nach einem Kaltstart ([Details](docs/PLAYER.md#offline-kopie-seit-051))
 - Browser-Gerät: ein geheimer Link für Smart-TV oder Kiosk-Browser
 - Player an anderen Standorten über Tailscale oder Headscale ([REMOTE.md](docs/REMOTE.md#deutsch-kurz))
 

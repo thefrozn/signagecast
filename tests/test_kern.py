@@ -595,7 +595,7 @@ class Direktmodus024(unittest.TestCase):
         PL = self.PL
         g = PL.neu({"name": "Flur", "tv": "tv"}, {"tv"})
         k = {"id": g["id"], "schluessel": g["schluessel"], "server": "http://x:8890"}
-        url = agent.Player.direkt_url(types.SimpleNamespace(server=agent.Server(k), k=k))
+        url = agent.Player.direkt_url(types.SimpleNamespace(server=agent.Server(k), k=k, offline=agent.Offline(None)))
         tok = PL.anzeige_schluessel(g)
         self.assertEqual(url, "http://x:8890/anzeige/" + tok)
         self.assertNotIn(g["schluessel"], url)
@@ -696,7 +696,7 @@ class Direktmodus024(unittest.TestCase):
             p.befehle()
             self.assertTrue(p.direkt_gewuenscht(time.time()))
             p.soll["befehle"] = []
-            p.browser.starten("u")                          # Seite lädt nicht: Server sieht 90 s keine Abrufe
+            p.browser.starten(p.direkt_url())               # Seite lädt nicht: Server sieht 90 s keine Abrufe
             p.browser.gestartet -= 100
             p.soll["direkt_abruf"] = None
             p.direkt_schritt(time.time())
@@ -3389,3 +3389,281 @@ class Speicherorte048(unittest.TestCase):
         finally:
             D.ORTE = alt_orte
             D.GALERIE.loeschen("abgl", [e["id"] for e in D.GALERIE.liste("abgl")])
+
+
+class Offline051(unittest.TestCase):
+    """Offline-Kopie für Player im Direktmodus (seit 0.51): Dateiliste des Servers, lokaler Dienst und Abgleich im Agenten."""
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player"))
+        import agent, offline, player
+        cls.A, cls.OFF, cls.PL = agent, offline, player
+
+    def test_grenze_und_auswahl(self):
+        OFF, A = self.OFF, self.A
+        self.assertEqual([OFF.grenze_mb(x) for x in (None, "x", 0, -5, 1, 512, 10 ** 9)], [512, 512, 0, 0, 32, 512, OFF.GRENZE_MAX_MB])
+        d = [{"p": "/medien/gross.mp4", "g": 900, "h": "c" * 64, "r": 3}, {"p": "/index.html", "g": 500, "h": "a" * 64, "r": 0},
+             {"p": "/bild/x.jpg", "g": 300, "h": "b" * 64, "r": 1}, {"p": "/medien/klein.mp4", "g": 100, "h": "d" * 64, "r": 3}]
+        behalten, weg = OFF.auswahl(d, 950)
+        self.assertEqual([x["p"] for x in behalten], ["/index.html", "/bild/x.jpg", "/medien/klein.mp4"])   # Medien fallen zuerst weg
+        self.assertEqual([x["p"] for x in weg], ["/medien/gross.mp4"])
+        self.assertEqual([x["p"] for x in OFF.auswahl(d, 10)[0]], ["/index.html"])                       # die Seite bleibt immer
+        self.assertEqual(A.offline_auswahl(d, 950), OFF.auswahl(d, 950))                                 # Agent rechnet gleich
+        self.assertEqual(A.offline_auswahl(d, 10), OFF.auswahl(d, 10))
+
+    def test_liste_nur_erlaubte_pfade(self):
+        OFF = self.OFF
+        o = tempfile.mkdtemp()
+        for n, inhalt in (("index.html", b"<html>"), ("seite.js", b"x=1"), ("pult.html", b"pult"), ("QUELLEN.md", b"#")):
+            open(os.path.join(o, n), "wb").write(inhalt)
+        os.makedirs(os.path.join(o, "mdi", "fonts"))
+        open(os.path.join(o, "mdi", "fonts", "a.woff2"), "wb").write(b"font")
+        www = OFF.www_dateien(o)
+        self.assertEqual([a for a, _ in www], ["/index.html", "/seite.js", "/mdi/fonts/a.woff2"])       # ohne Pult und Notizen
+        l = OFF.liste([(a, pf, 0) for a, pf in www] + [("/api/x", os.path.join(o, "seite.js"), 0), ("/../etc/passwd", "/etc/passwd", 0),
+                                                       ("/bild/fehlt.jpg", os.path.join(o, "fehlt"), 1), ("/index.html", os.path.join(o, "seite.js"), 0)])
+        self.assertEqual(sorted(x["p"] for x in l), ["/api/x", "/index.html", "/mdi/fonts/a.woff2", "/seite.js"])
+        import hashlib
+        self.assertEqual(next(x for x in l if x["p"] == "/index.html")["h"], hashlib.sha256(b"<html>").hexdigest())
+        self.assertNotEqual(OFF.stand(l, "1", 512), OFF.stand(l, "2", 512))
+        layouts = [{"id": "a", "hintergrund": {"bild": "0123456789abcdef.jpg"}, "elemente": [{"typ": "logo", "optionen": {"bild": "fedcba9876543210.png"}}]},
+                   {"id": "b", "elemente": [{"typ": "logo", "optionen": {"bild": "1111111111111111.png"}}]}]
+        self.assertEqual(OFF.bild_namen(layouts[:1]), ["0123456789abcdef.jpg", "fedcba9876543210.png"])
+        tv = {"layout": "a", "zeitplan": [{"layout": "schwarz"}], "karussell": {"layouts": ["b"]}}
+        self.assertEqual([x["id"] for x in OFF.layouts_fuer(tv, layouts)], ["a", "b"])
+        self.assertIsNone(OFF.bericht("x"))
+        b = OFF.bericht({"bereit": True, "bytes": 5, "fehlt": "<b>", "grund": "x" * 99, "fremd": 1})
+        self.assertEqual((b["bytes"], b["fehlt"], len(b["grund"]), "fremd" in b), (5, 0, 20, False))
+
+    def test_offline_fassung(self):
+        A = self.A
+        d = {"ok": True, "layout": {"id": "a"}, "werte": {"x": 1}, "offline": False, "streams": [{"id": 1}], "alarm": {"id": "a", "text": "Feuer"},
+             "durchsage": {"id": "d"}, "meldung_extern": {"text": "x", "bis": 9e12}, "radio": {"url": "/radio/tv/a"}, "einspieler": [{"id": "e"}],
+             "medien": [{"url": "/medien/a.mp4"}, {"url": "/medien/b.mp4"}], "ersatz": {"medien": [{"url": "/medien/a.mp4"}, {"url": "/medien/b.mp4"}], "bild": "bilder/x.jpg"}}
+        f = A.offline_fassung(d, lambda a: a == "/medien/a.mp4", 1_800_000_000)
+        self.assertTrue(f["offline"] and f["player_offline"])
+        self.assertEqual((f["streams"], f["einspieler"], f["alarm"], f["durchsage"], f["meldung_extern"], f["radio"]), ([], [], None, None, None, None))
+        self.assertEqual(f["ersatz"], {"medien": [{"url": "/medien/a.mp4"}], "bild": "bilder/x.jpg"})    # nur, was in der Kopie liegt
+        self.assertEqual((f["layout"], f["werte"], f["zeit"]), ({"id": "a"}, {"x": 1}, 1_800_000_000))    # letzter Datenstand bleibt
+        self.assertEqual(d["alarm"]["text"], "Feuer")                                                     # Vorlage unverändert
+        self.assertNotIn("player_offline", json.dumps(__import__("dienst").tv_daten("tv")))             # das Feld setzt nie der Server
+
+    def test_einstellung_und_alte_daten(self):
+        PL = self.PL
+        alt = dict(PL.daten)
+        try:
+            self.assertEqual(PL._leer()["offline_mb"], 512)
+            PL.daten.clear(); PL.daten.update(dict(PL._leer(), **{"geraete": [], "server": ""}))       # alte player.json ohne das Feld
+            self.assertEqual(PL.daten["offline_mb"], 512)
+            PL.einstellen({"offline_mb": 0})
+            self.assertEqual(PL.daten["offline_mb"], 0)
+            PL.einstellen({"offline_mb": "2048"})
+            self.assertEqual(PL.daten["offline_mb"], 2048)
+            for falsch in (5, -1, 10 ** 7, "viel"):
+                with self.assertRaises(Exception):
+                    PL.einstellen({"offline_mb": falsch})
+            self.assertEqual(PL.daten["offline_mb"], 2048)
+        finally:
+            PL.daten.clear(); PL.daten.update(alt)
+
+    def test_server_aus_kaltstart_und_wieder_da(self):
+        """Ganzer Weg: abgleichen, Server stoppen (Seite läuft weiter), Agent neu starten ohne Server, Server wieder da."""
+        import dienst as D, hashlib, threading, urllib.request, urllib.error
+        A, PL = self.A, self.PL
+        alt_daten, alt_port, alt_env = dict(PL.daten), A.OFFLINE_PORT, {k: os.environ.get(k) for k in ("SC_PORT", "SC_CACHE")}
+        alt_cache, alt_lauf, alt_log = A.CACHE, A.lauf, A.log
+        zustand = {}
+
+        def server_an(port_d=0, port_p=0):
+            zustand["d"] = D.Server(("127.0.0.1", port_d), D.Bearbeiter)
+            zustand["p"] = D.PultServer(("127.0.0.1", port_p), D.WebhookBearbeiter)
+            for s in (zustand["d"], zustand["p"]):
+                threading.Thread(target=s.serve_forever, daemon=True).start()
+            os.environ["SC_PORT"] = str(zustand["d"].server_address[1])
+            return zustand["d"].server_address[1], zustand["p"].server_address[1]
+
+        def server_aus():
+            for s in (zustand["d"], zustand["p"]):
+                s.shutdown(); s.server_close()
+
+        def lokal(pfad, kopf=None):
+            anf = urllib.request.Request(f"http://127.0.0.1:{A.OFFLINE_PORT}{pfad}", headers=kopf or {})
+            with urllib.request.urlopen(anf, timeout=30) as r:
+                return r.status, r.read(), r.headers
+
+        import socket
+        with socket.socket() as so:
+            so.bind(("127.0.0.1", 0))
+            A.OFFLINE_PORT = so.getsockname()[1]
+        A.CACHE = os.environ["SC_CACHE"] = tempfile.mkdtemp()
+        A.lauf = lambda *a, **k: (0, "") if a[:1] == ("sync",) else alt_lauf(*a, **k)
+        A.log = lambda *a: None
+        medium = os.path.join(D.MEDIEN, "00112233aabbccdd.mp4")
+        p = p2 = None
+        try:
+            os.makedirs(D.MEDIEN, exist_ok=True)
+            open(medium, "wb").write(os.urandom(70_000))
+            alt_einst = D.zustand["einstellungen"]
+            D.zustand["einstellungen"] = E.pruefen(dict(alt_einst, medien=[
+                {"id": "film1", "name": "Film", "art": "video", "datei": "00112233aabbccdd.mp4", "dauer_s": 5, "aktiv": True}]))
+            port_d, port_p = server_an()
+            PL.daten.clear(); PL.daten.update(PL._leer())
+            tv = D.einst()["fernseher"][0]["id"]
+            g = PL.neu({"name": "Flur", "tv": tv, "anzeige_modus": "direkt"}, {tv})
+            k = {"id": g["id"], "schluessel": g["schluessel"], "server": f"http://127.0.0.1:{port_p}", "name": "Flur"}
+            p = A.Player(k)
+            p.offline.starten()
+            self.assertTrue(p.offline.bereit())
+            self.assertFalse(p.offline.nutzbar())                       # noch nichts abgeglichen
+            self.assertTrue(p.melden_versuch())
+            o = p.soll["offline"]
+            self.assertEqual(o["grenze_mb"], 512)
+            self.assertTrue(o["stand"])
+            self.assertEqual(p.direkt_url(), f"http://127.0.0.1:{A.OFFLINE_PORT}/")
+            # vor dem Abgleich reicht der Dienst alles vom Server durch
+            self.assertEqual(lokal("/stil.css")[1], open(os.path.join(D.WWW, "stil.css"), "rb").read())
+            p.offline._abgleichen(o["grenze_mb"])
+            self.assertEqual(p.offline.stand, o["stand"])
+            b = p.offline.bericht()
+            self.assertTrue(b["vollstaendig"] and b["bytes"] > 1_000_000 and not b["fehlt"])
+            self.assertIn("/medien/00112233aabbccdd.mp4", p.offline.dateien)
+            self.assertNotIn("/pult.html", p.offline.dateien)
+            self.assertTrue(all(x.startswith("/") and not x.startswith("/api/") for x in p.offline.dateien))
+            code, roh, kopf = lokal("/daten.json?tv=fremd")
+            d = json.loads(roh)
+            self.assertTrue(d["ok"] and d["tv"] == tv and "player_offline" not in d)
+            self.assertTrue(p.offline.nutzbar())
+            p.offline.dyn_merken("/qbild/quelle?p=bild", "image/png", b"zuletzt gesehen")
+            # --- Server stoppen: Seite, Dateien und der letzte Datenstand kommen aus der Kopie ---
+            server_aus()
+            code, roh, kopf = lokal("/qbild/quelle?p=bild&t=123")           # Bild einer Datenquelle: das zuletzt gesehene
+            self.assertEqual((roh, kopf["Content-Type"]), (b"zuletzt gesehen", "image/png"))
+            with self.assertRaises(urllib.error.HTTPError) as fehler:    # Livestreams gibt es offline nicht
+                lokal("/hlscam/cam_a/index.m3u8")
+            self.assertEqual(fehler.exception.code, 504)
+            code, roh, kopf = lokal("/")
+            self.assertEqual(roh, open(os.path.join(D.WWW, "index.html"), "rb").read())
+            self.assertIn("text/html", kopf["Content-Type"])
+            self.assertEqual(lokal("/mdi/fonts/materialdesignicons-webfont.woff2")[2]["Content-Type"], "font/woff2")
+            f = json.loads(lokal("/daten.json")[1])
+            self.assertTrue(f["offline"] and f["player_offline"] and f["layout"] == d["layout"])
+            self.assertEqual((f["streams"], f["alarm"], f["durchsage"]), ([], None, None))
+            self.assertEqual([m["url"] for m in f["ersatz"]["medien"]], ["/medien/00112233aabbccdd.mp4"])
+            code, teil, kopf = lokal("/medien/00112233aabbccdd.mp4", {"Range": "bytes=100-199"})
+            self.assertEqual((code, teil, kopf["Content-Range"]), (206, open(medium, "rb").read()[100:200], "bytes 100-199/70000"))
+            with self.assertRaises(urllib.error.HTTPError) as fehler:
+                lokal("/api/player")
+            self.assertEqual(fehler.exception.code, 404)
+            with self.assertRaises(urllib.error.HTTPError) as fehler:    # Fremder Host-Kopf (DNS-Rebinding)
+                lokal("/", {"Host": "boese.example"})
+            self.assertEqual(fehler.exception.code, 403)
+            self.assertFalse(p.melden_versuch())
+            p.kontakt = time.time() - 3 * 3600                          # seit Stunden kein Kontakt
+            alt_v, alt_m = A.Browser.verfuegbar, A.modell
+            A.Browser.verfuegbar, A.modell = staticmethod(lambda: True), lambda: "Raspberry Pi 4 Model B Rev 1.5"
+            try:
+                p.soll["modus"] = "direkt"
+                self.assertTrue(p.direkt_gewuenscht(time.time()))       # bleibt im Direktmodus
+                p.hotspot.aktiv = True
+                self.assertTrue(p.direkt_gewuenscht(time.time()))       # auch mit Hotspot im Hintergrund
+                p.hotspot.aktiv = False
+                p.soll["offline"] = {"stand": "", "grenze_mb": 0}       # ausgeschaltet: wie früher nach 2 min Hinweis
+                self.assertFalse(p.direkt_gewuenscht(time.time()))
+                self.assertTrue(p.direkt_url().startswith(k["server"] + "/anzeige/"))
+                p.soll["offline"] = o
+                p.offline.soll_merken(p.soll)
+                # --- Kaltstart ohne Server: neuer Agent, derselbe Speicher ---
+                p.offline.http.shutdown(); p.offline.http.server_close()
+                p2 = A.Player(dict(k))
+                p2.offline.starten()
+                p2.soll = p2.offline.soll_laden()
+                self.assertEqual((p2.soll["modus"], p2.soll["stream"]["pfad"], p2.soll["offline"]["stand"]), ("direkt", tv, o["stand"]))
+                self.assertNotIn("befehle", p2.soll)
+                self.assertTrue(p2.offline.nutzbar() and p2.direkt_gewuenscht(time.time()))
+                self.assertEqual(p2.offline.stand, o["stand"])
+                f2 = json.loads(lokal("/daten.json")[1])
+                self.assertTrue(f2["player_offline"] and f2["layout"] == d["layout"])
+                self.assertEqual(lokal("/seite.js")[1], open(os.path.join(D.WWW, "seite.js"), "rb").read())
+            finally:
+                A.Browser.verfuegbar, A.modell = alt_v, alt_m
+            # --- Server wieder da: die nächste Abfrage kommt wieder von ihm ---
+            server_an(port_d, port_p)
+            d2 = json.loads(lokal("/daten.json")[1])
+            self.assertTrue(d2["ok"] and "player_offline" not in d2 and not p2.offline.weg_seit)
+            # --- eine Datei, die nicht zur signierten Liste passt, wird verworfen ---
+            falsch = {"p": "/stil.css", "g": os.path.getsize(os.path.join(D.WWW, "stil.css")), "h": "0" * 64, "r": 0}
+            self.assertFalse(p2.offline.holen(falsch, p2.offline.datei(falsch["h"])))
+            self.assertFalse(os.path.exists(p2.offline.datei(falsch["h"])))
+            # --- neue Server-Version: bis zur neuen Liste kommt die Seite vom Server, nie gemischt ---
+            p2.offline.version = "0.0.1"
+            lokal("/daten.json")
+            self.assertTrue(p2.offline.veraltet)
+            self.assertIsNone(p2.offline.eintrag("/seite.js"))
+            self.assertIsNotNone(p2.offline.eintrag("/medien/00112233aabbccdd.mp4"))
+            # --- ausschalten löscht die Kopie ---
+            p2.soll, p2.kontakt = {"offline": {"stand": "", "grenze_mb": 0}}, time.time()
+            p2.offline.schritt(time.time())
+            self.assertEqual((p2.offline.dateien, p2.offline.belegt()), ({}, len(open(p2.offline.pfad("zeit")).read())))
+        finally:
+            for x in (p, p2):
+                if x and x.offline.http:
+                    try:
+                        x.offline.http.shutdown(); x.offline.http.server_close()
+                    except Exception:
+                        pass
+            try:
+                server_aus()
+            except Exception:
+                pass
+            A.OFFLINE_PORT, A.CACHE, A.lauf, A.log = alt_port, alt_cache, alt_lauf, alt_log
+            for n, w in alt_env.items():
+                os.environ.pop(n, None) if w is None else os.environ.__setitem__(n, w)
+            PL.daten.clear(); PL.daten.update(alt_daten)
+            try:
+                os.unlink(medium)
+            except OSError:
+                pass
+            if "alt_einst" in locals():
+                D.zustand["einstellungen"] = alt_einst
+
+    def test_uhr(self):
+        A = self.A
+        alt_lauf, alt_log, alt_env, alt_cache = A.lauf, A.log, os.environ.get("SC_CACHE"), A.CACHE
+        rufe = []
+        A.lauf = lambda *a, **k: (rufe.append(a), (0, "no"))[1]
+        A.log = lambda *a: None
+        try:
+            o = A.Offline(None)
+            o.wurzel = tempfile.mkdtemp()
+            o.uhr_merken(time.time())
+            self.assertAlmostEqual(int(open(o.pfad("zeit")).read()), time.time(), delta=5)
+            o.uhr_stellen()                                              # Uhr geht nicht nach: nichts tun
+            self.assertEqual((rufe, o.uhr_geschaetzt), ([], False))
+            spaeter = int(time.time()) + 86400
+            open(o.pfad("zeit"), "w").write(str(spaeter))                # Kaltstart: Uhr steht vor der gemerkten Zeit
+            o.uhr_stellen()
+            self.assertEqual((rufe, o.uhr_geschaetzt), ([("date", "-s", f"@{spaeter}")], True))
+            self.assertFalse(o.uhr_korrigieren(3))                       # Uhr stimmt schon (Zeitserver war schneller)
+            self.assertFalse(o.uhr_geschaetzt)
+            o.uhr_geschaetzt = True
+            rufe.clear()
+            self.assertTrue(o.uhr_korrigieren(-7200))                    # sonst nach dem ersten Kontakt die Serverzeit
+            self.assertEqual(rufe[-1][:2], ("date", "-s"))
+            self.assertAlmostEqual(int(rufe[-1][2][1:]), time.time() - 7200, delta=5)
+            self.assertFalse(o.uhr_korrigieren(-7200))                   # nur einmal
+        finally:
+            A.lauf, A.log, A.CACHE = alt_lauf, alt_log, alt_cache
+
+    def test_seite_admin_und_images(self):
+        wurzel = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        lies = lambda *t: open(os.path.join(wurzel, *t), encoding="utf-8").read()
+        self.assertIn("mdi-web-off", lies("www", "seite.js"))
+        self.assertIn("web-off", lies("www", "mdi", "css", "materialdesignicons.min.css"))
+        self.assertIn("#offline", lies("www", "stil.css"))
+        tv = lies("cockpit", "signagecast", "tv.js")
+        self.assertEqual(tv.count("offlineMbText:"), 2)                  # Deutsch und Englisch
+        self.assertEqual(tv.count("offlineKeinSpeicher:"), 2)
+        self.assertIn("SCCACHE", lies("player", "bauen.sh"))
+        self.assertIn("SCCACHE", lies("player", "pc", "bauen.sh"))
+        self.assertIn('CACHE_MARKE = "SCCACHE"', lies("player", "agent.py"))
+

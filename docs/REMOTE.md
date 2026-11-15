@@ -138,6 +138,10 @@ key is invalid at once.
 
 ## Limits
 
+- **If the tunnel or your internet fails**, a player in direct mode with an image from 0.51 on keeps showing its last
+  layout from its [offline copy](PLAYER.md#offline-copy-since-051) – own media instead of live streams, no
+  announcements and no emergency screen until the connection is back. The first copy is loaded through the tunnel:
+  with many own media set the limit (*Offline copy at most*) to what your upload can deliver.
 - Images before 0.41 have no Tailscale – create a new image.
 - Pairing-code images (one image for several devices) cannot be used at another site – there would have to be a
   reusable key in them.
@@ -174,3 +178,8 @@ Erweitert (unten): OAuth-Client (SignageCast erzeugt Einmal-Schlüssel und lösc
 
 Empfehlung: **Direktmodus** – durch den Tunnel gehen nur Seite und Daten, YouTube kommt vor Ort aus dem Internet.
 Images vor 0.41 haben kein Tailscale (neues Image erstellen).
+
+**Fällt der Tunnel oder das Internet aus,** zeigt ein Player im Direktmodus mit Image ab 0.51 sein letztes Layout aus der
+[Offline-Kopie](PLAYER.md#offline-kopie-seit-051) weiter – eigene Medien statt Livestreams, keine Durchsagen und kein
+Notfallbild, bis die Verbindung zurück ist. Die erste Kopie kommt durch den Tunnel: bei vielen eigenen Medien die
+Grenze (*Offline-Kopie höchstens*) an den Upload zu Hause anpassen.

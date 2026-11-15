@@ -9,6 +9,7 @@
 #   - Partition 2: EFI-Systempartition mit shim, GRUB und Kernel von Debian (alle signiert) – Secure Boot darf an bleiben
 #   - Partition 3: kleine FAT-Partition „SCDATEN“: dort merkt sich der Player Kopplung, WLAN und Agent-Updates
 #     (auf CD/Ventoy fehlt sie – dann gilt das bis zum Neustart; die Einstellungen kommen ohnehin vom Server)
+#   - Partition 4 (seit 0.51): ext4 „SCCACHE“, 1 GB – die Offline-Kopie für den Direktmodus (fehlt auf CD/Ventoy)
 # Nur UEFI (kein altes BIOS). Das System läuft schreibgeschützt (squashfs + RAM-Schicht): Stromausfälle schaden nicht.
 #
 #   sh player/pc/bauen.sh <ausgabeordner> <version>
@@ -23,14 +24,14 @@ trap 'rm -rf "$A"' EXIT
 echo "== Werkzeuge"
 apt-get update -q
 DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mmdebstrap squashfs-tools xorriso mtools \
-  dosfstools shim-signed grub-efi-amd64-signed python3 xz-utils ca-certificates gpg >/dev/null
+  dosfstools e2fsprogs shim-signed grub-efi-amd64-signed python3 xz-utils ca-certificates gpg >/dev/null
 
 echo "== Debian 13 mit Player"
 # Pakete: Kernel + live-boot (startet aus dem squashfs), Netz (NetworkManager, auch Hotspot), Anzeige wie beim Pi
 # (mpv für Stream und Hinweise, cage + Chromium für den Direktmodus), Grafik- und Video-Treiber (VAAPI), Firmware für
 # gängige WLAN-Karten und Grafik, Mikrocode. Kein Desktop, kein SSH.
 PAKETE="linux-image-amd64 live-boot systemd-sysv systemd-timesyncd udev dbus kmod iproute2 iputils-ping procps less nano
-  tzdata ca-certificates python3 dosfstools util-linux pciutils usbutils zstd
+  tzdata ca-certificates python3 dosfstools e2fsprogs util-linux pciutils usbutils zstd
   network-manager dnsmasq-base wpasupplicant iw rfkill wireless-regdb
   mpv qrencode cage seatd grim wlr-randr alsa-utils fonts-dejavu-core fonts-noto-color-emoji chromium
   libgl1-mesa-dri libegl1 va-driver-all intel-media-va-driver mesa-va-drivers
@@ -92,12 +93,16 @@ mcopy -i "$A/efi.img" /usr/lib/grub/x86_64-efi-signed/gcdx64.efi.signed ::/EFI/b
 mkfs.vfat -n SCDATEN -C "$A/daten.img" 32768 >/dev/null
 printf 'SignageCast Player: Gerätedatei, Kopplung, WLAN und Agent-Updates dieses Players.\r\nBitte nicht löschen.\r\n' > "$A/LIESMICH.txt"
 mcopy -i "$A/daten.img" "$A/LIESMICH.txt" ::/LIESMICH.txt
+# Offline-Kopie (seit 0.51): leere ext4-Partition, der Agent hängt sie nach ihrem Namen ein
+truncate -s 1024M "$A/cache.img"
+mkfs.ext4 -q -F -L SCCACHE -m 0 "$A/cache.img"
 
 echo "== ISO bauen"
 IMG=$A/signagecast-pc.iso
 xorriso -as mkisofs -o "$IMG" -iso-level 3 -r -J -joliet-long -V SIGNAGECAST \
   -partition_offset 16 -appended_part_as_gpt \
   -append_partition 2 0xef "$A/efi.img" -append_partition 3 0x0c "$A/daten.img" \
+  -append_partition 4 0x83 "$A/cache.img" \
   -e --interval:appended_partition_2:all:: -no-emul-boot \
   "$I" 2>&1 | grep -v '^xorriso : UPDATE' || true
 [ -s "$IMG" ]

@@ -89,6 +89,10 @@ const TEXTE = {
           wlanGesp: "Gespeichertes WLAN", wlanNeu: "neues WLAN eingeben", ssid: "WLAN-Name (SSID)", pw: "WLAN-Passwort", merken: "WLAN in der Verwaltung speichern (für weitere Pis)",
           merkenText: "Gespeichert wird nur der WPA-Schlüssel, nicht das Passwort selbst. Er gibt trotzdem Zugang zum WLAN – Sicherungen enthalten ihn nur „mit Zugangsdaten“.",
           erweitert: "Erweitert", server: "Server-Adresse für die Pis", serverText: "Leer = automatisch. Ändern, wenn die Pis den Server unter einer anderen Adresse erreichen (z. B. anderer Port im Container).",
+          offlineMb: "Offline-Kopie höchstens (MB)", offlineMbText: "Player im Direktmodus (Image ab 0.51) halten eine Kopie ihrer Seite, Bilder und eigenen Medien und zeigen sie weiter, wenn der Server oder das Netz ausfällt. Reicht der Platz nicht, fallen zuerst die eigenen Medien weg. 0 = aus (die Kopie wird gelöscht).",
+          offlineZeile: "Offline-Kopie", offlineAus: "ausgeschaltet", offlineKeinSpeicher: "nicht möglich – dafür ein neues Image (ab 0.51) erstellen", offlineFehler: "Speicher im Player nicht nutzbar",
+          offlineStand: (mb, max) => `${mb} von ${max} MB`, offlineVoll: "vollständig", offlineFehlt: (n) => `${n} ${n === 1 ? "Datei fehlt" : "Dateien fehlen"} noch`,
+          offlineAusgelassen: (n) => `${n} ${n === 1 ? "Datei passt" : "Dateien passen"} nicht in die Grenze`, offlineLaeuft: "zeigt gerade den letzten Stand (Server nicht erreichbar)",
           streamPort: "Stream-Port von außen", streamPortText: "Leer = wie eingestellt. Nur nötig, wenn der Container den Stream-Port auf einen anderen Port abbildet.",
           gespeicherte: "Gespeicherte WLANs", vergessen: "Vergessen", erstellen: "Image erstellen und herunterladen", laedtHerunter: "Download startet …",
           schritte: "So geht es weiter", s1: "Raspberry Pi Imager öffnen → Gerät wählen → Betriebssystem: ganz unten „Eigenes Image“ (Use custom) → die heruntergeladene Datei → SD-Karte → Weiter.",
@@ -563,6 +567,10 @@ const TEXTE = {
           wlanGesp: "Saved Wi-Fi", wlanNeu: "enter new Wi-Fi", ssid: "Wi-Fi name (SSID)", pw: "Wi-Fi password", merken: "Save the Wi-Fi in the admin (for more Pis)",
           merkenText: "Only the WPA key is stored, not the password itself. It still grants access to the Wi-Fi – backups contain it only “with credentials”.",
           erweitert: "Advanced", server: "Server address for the Pis", serverText: "Empty = automatic. Change it if the Pis reach the server under a different address (e.g. other port in a container).",
+          offlineMb: "Offline copy at most (MB)", offlineMbText: "Players in direct mode (image 0.51 or newer) keep a copy of their page, pictures and own media and keep showing it when the server or the network fails. If space runs out, own media are dropped first. 0 = off (the copy is deleted).",
+          offlineZeile: "Offline copy", offlineAus: "switched off", offlineKeinSpeicher: "not possible – create a new image (0.51 or newer)", offlineFehler: "storage in the player not usable",
+          offlineStand: (mb, max) => `${mb} of ${max} MB`, offlineVoll: "complete", offlineFehlt: (n) => `${n} ${n === 1 ? "file" : "files"} still missing`,
+          offlineAusgelassen: (n) => `${n} ${n === 1 ? "file does" : "files do"} not fit into the limit`, offlineLaeuft: "showing the last state right now (server not reachable)",
           streamPort: "Stream port from outside", streamPortText: "Empty = as configured. Only needed if the container maps the stream port to a different port.",
           gespeicherte: "Saved Wi-Fi networks", vergessen: "Forget", erstellen: "Create and download image", laedtHerunter: "Download starting …",
           schritte: "Next steps", s1: "Open Raspberry Pi Imager → choose device → operating system: at the bottom “Use custom” → the downloaded file → SD card → Next.",
@@ -927,7 +935,7 @@ const TEXTE = {
       pi_unbekannt: "Player not found", pi_befehl: "Unknown command", pi_offline: "The Pi is not reachable right now",
       pi_fernwartung_aus: "This Pi does not allow remote maintenance – switch it on on the SD card (when creating the image) or on its setup page",
       pi_fernwartung_alt: "The agent on this Pi cannot do remote maintenance yet – it updates itself at its next report, please try again shortly", pi_server: "Server address as http://IP:port",
-      pi_server_lokal: "The Pi cannot find the server with this address – enter the IP in your home network under Advanced (e.g. http://192.168.1.20:8890)", pi_port: "Port 1 to 65535",
+      pi_server_lokal: "The Pi cannot find the server with this address – enter the IP in your home network under Advanced (e.g. http://192.168.1.20:8890)", pi_offline_mb: "Offline copy: 0 (off) or 32 to 65536 MB", pi_port: "Port 1 to 65535",
       pi_kein_image: "No player image yet – first “Download player image”", pi_signatur: "Signature of the player image invalid – not used",
       pi_pruefsumme: "Checksum of the player image wrong – please download again", pi_platz: "Not enough disk space – about {mb} MB needed",
       pi_konfig_gross: "Too much data for the device file", pi_link_alt: "Download link expired – click “Download image” again",
@@ -1713,6 +1721,8 @@ async function playerSeite(inhalt, einrichten) {
           <p class="leise">${esc(T.pl.serverText)}</p>
           <div class="zeile"><label>${esc(T.pl.streamPort)}</label><input type="number" id="plStreamPort" min="1" max="65535" value="${P.stream_port || ""}" placeholder="${P.hls_port}"></div>
           <p class="leise">${esc(T.pl.streamPortText)}</p>
+          <div class="zeile"><label>${esc(T.pl.offlineMb)}</label><input type="number" id="plOfflineMb" min="0" max="65536" step="1" value="${Number(P.offline_mb) || 0}"></div>
+          <p class="leise">${esc(T.pl.offlineMbText)}</p>
           <div class="zeile"><button class="knopf" id="plServerOk">${esc(T.speichern)}</button></div>
           ${P.wlan.length ? `<h3>${esc(T.pl.gespeicherte)}</h3>${P.wlan.map((s) => `<div class="zeile"><span>${esc(s)}</span>
             <button class="knopf klein" data-vergessen="${esc(s)}">${esc(T.pl.vergessen)}</button></div>`).join("")}` : ""}</details></div>
@@ -1780,7 +1790,8 @@ async function playerSeite(inhalt, einrichten) {
       }, m === "browser" ? null : T.pl.laedtHerunter);
     };
     $("#plServerOk").onclick = (e) => aktion(e.target, async () => {
-      await senden("/api/player/einstellungen", { server: $("#plServer").value.trim(), stream_port: Number($("#plStreamPort").value) || 0 });
+      await senden("/api/player/einstellungen", { server: $("#plServer").value.trim(), stream_port: Number($("#plStreamPort").value) || 0,
+        offline_mb: Number($("#plOfflineMb").value) || 0 });
       P = await holenP();
     });
     inhalt.querySelectorAll("[data-vergessen]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
@@ -1888,6 +1899,17 @@ async function playerSeite(inhalt, einrichten) {
       }
     }
   };
+  // Offline-Kopie (seit 0.51): was der Player meldet – belegter Platz, Grenze (Einstellung oder Größe seiner Partition), Stand
+  const offlineText = (o) => {
+    if (!P.offline_mb) return T.pl.offlineAus;
+    if (!o.bereit) return o.grund === "kein_speicher" ? T.pl.offlineKeinSpeicher : T.pl.offlineFehler;
+    const max = Math.min(P.offline_mb, o.platz ? Math.floor(o.platz / 1048576) : P.offline_mb);
+    const teile = [T.pl.offlineStand(Math.round(o.bytes / 1048576).toLocaleString(ORT()), max.toLocaleString(ORT())),
+      o.fehlt ? T.pl.offlineFehlt(o.fehlt) : o.ausgelassen ? T.pl.offlineAusgelassen(o.ausgelassen) : o.dateien ? T.pl.offlineVoll : ""];
+    if (o.fehlt && o.ausgelassen) teile.push(T.pl.offlineAusgelassen(o.ausgelassen));
+    if (o.offline) teile.push("⚠ " + T.pl.offlineLaeuft);
+    return teile.filter(Boolean).join(" · ");
+  };
   const karte = (g) => {
     if (g.modell === "browser") return karteBrowser(g);
     const pc = g.modell === "pc";
@@ -1904,6 +1926,7 @@ async function playerSeite(inhalt, einrichten) {
       [T.pl.video, b.modus_ist === "direkt" ? T.pl.direktModus : v.codec ? `${v.codec} ${v.breite}×${v.hoehe}${v.hwdec && v.hwdec !== "no" ? " · " + v.hwdec : ""}` : (T.pl.zustand[b.zustand] || b.zustand || "–") + (b.zustand_text ? ` – ${b.zustand_text}` : "")],
       [T.pl.temp, b.temperatur ? b.temperatur + " °C" : "–"], [T.pl.version, b.version], [T.pl.netzwerke, (b.netze || []).join(", ") || "–"],
       [T.pl.update, b.letztes_update ? zeit(b.letztes_update.zeit) + (b.letztes_update.ok ? "" : " – " + T.pl.fehlgeschlagen) : "–"]] : [];
+    if (g.offline && g.zuletzt && b.modus_ist === "direkt") zeilen.push([T.pl.offlineZeile, offlineText(g.offline)]);   // seit 0.51
     if (g.fern) {                         // anderer Standort (seit 0.41)
       const f = b.fern || {};
       zeilen.push([T.fern.zeile, f.fehler ? "⚠ " + (T.fern.fehler[f.fehler] || f.fehler) : f.ip ? `${f.ip}${f.weg ? " · " + (f.weg === "direkt" ? T.fern.direkt : T.fern.relay(f.weg.replace(/^relay:/, ""))) : ""}`

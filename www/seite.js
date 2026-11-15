@@ -750,7 +750,17 @@ async function laden() {
     durchsage(d.durchsage);
     alarmZeigen(d.alarm);
     fernwartungZeigen(d.fernwartung);
+    offlineZeigen(d.player_offline);
   } catch (_) { /* nächster Versuch */ }
+}
+
+// Offline-Kopie (seit 0.51): Der Player erreicht den Server nicht und zeigt den letzten Stand – oben rechts steht solange
+// eine durchgestrichene Weltkugel. Das Feld setzt nur der lokale Dienst des Players, nie der Server.
+function offlineZeigen(an) {
+  let el = $("offline");
+  if (!an) { if (el) el.hidden = true; return; }
+  if (!el) { el = document.createElement("div"); el.id = "offline"; el.className = "mdi mdi-web-off"; document.body.appendChild(el); }
+  el.hidden = false;
 }
 
 // Fernwartung (seit 0.33): Nur im Direktmodus eines Pi setzt der Server das Feld – solange ein Terminal zu diesem Pi

@@ -191,6 +191,7 @@ DE = {
     "pi_server": "Server-Adresse als http://IP:Port",
     "pi_server_lokal": "Mit dieser Server-Adresse findet der Pi den Server nicht – unter Erweitert die IP im Heimnetz eintragen (z. B. http://192.168.1.20:8890)",
     "pi_port": "Port 1 bis 65535",
+    "pi_offline_mb": "Offline-Kopie: 0 (aus) oder 32 bis 65536 MB",
     "pi_kein_image": "Noch kein Player-Image vorhanden – erst „Player-Image laden“",
     "pi_signatur": "Signatur des Player-Images ungültig – nicht verwendet",
     "pi_pruefsumme": "Prüfsumme des Player-Images falsch – bitte erneut laden",
