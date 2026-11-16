@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.53.0 (2026-11-16)
+- **Templates for typical places**, in German and English: *Snack bar – menu board*, *Shopping centre – info*,
+  *Practice – info (opening hours)*, *Hospital – lobby*, *Hotel / guest house – lobby*, *Gym / sports club* and
+  *Canteen – weekly menu*. Pictures of all of them: [docs/TEMPLATES.md](docs/TEMPLATES.md). The existing templates now
+  have English names and texts too.
+- **New element “List”** (menu, opening hours, directory): text on the left, small extra line below, value on the right,
+  optional icon and highlight, up to 20 rows in 1–3 columns, dotted line to the value. The font fits itself to the
+  element and shrinks instead of cutting off a name. Rows can also come from a data source, e.g. a CSV file with the
+  columns `text`, `info`, `wert`.
+
 ## v0.52.0 (2026-11-16)
 - **Installation ISO for a computer of its own** (“bare metal”): `signagecast-server-vX.Y.Z.iso` in every release.
   It is the official Debian 13 netinst with preset answers – write it to a USB stick, choose German or English, set

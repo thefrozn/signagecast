@@ -348,6 +348,22 @@ Minimum size 3 × 3 cells.
 | `reihenfolge` | one of "eigene", "name", "neu", "zufall" | `"eigene"` |
 | `uebergang` | one of "blenden", "hart" | `"blenden"` |
 
+### `liste` – fixed list with text left, small info line and value right (menu with prices, opening hours, directory); with quelle the rows come from a data source (CSV: columns text, info, wert – or own placeholders in spalte_*)
+
+Minimum size 4 × 2 cells.
+
+| Option | Value | Default |
+|---|---|---|
+| `titel` | text (max 40 characters) | `""` |
+| `zeilen` | list of rows {"text": "Currywurst", "info": "small line below, e.g. allergens", "wert": "4,50 €", "icon": "mdi-…" or "", "hervor": true/false = highlight} (max 20) | `[]` |
+| `spalten` | integer 1–3 | `1` |
+| `punkte` | true or false | `true` |
+| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `"zeilen"` |
+| `spalte_text` | text (max 120 characters) | `"{text}"` |
+| `spalte_info` | text (max 120 characters) | `"{info}"` |
+| `spalte_wert` | text (max 120 characters) | `"{wert}"` |
+
 ## Rules for good layouts
 
 - Leave a margin of 1 cell at the screen edges (TVs often cut off the border).

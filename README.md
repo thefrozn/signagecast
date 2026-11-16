@@ -65,7 +65,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - Live window to the world: YouTube live cams that rotate and skip bad streams by themselves
 - Clock, weather, forecast, official severe weather warnings (DWD)
 - Backgrounds that follow the real sun at your location
-- Templates for living room, practice, company and night
+- Templates for living room, menu board, shopping centre, practice, hospital, hotel, gym, canteen, company and night
 
 </td>
 <td valign="top" width="50%">
@@ -119,7 +119,9 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - **Cameras, charts, calendars, web pages** – IP cameras (RTSP, HLS, MJPEG; e.g. the doorbell only when it rings),
   history charts, calendars from iCal addresses or uploaded .ics/.csv files, web pages live or as a regular screenshot.
 - **Templates** – Standard, Video large, Video only, Info without video, *Practice – calm*, *Company – corporate design*,
-  *Window to the world*, Night.
+  *Window to the world*, Night; since 0.53 also *Snack bar – menu board*, *Shopping centre*, *Practice – info*,
+  *Hospital – lobby*, *Hotel – lobby*, *Gym / sports club* and *Canteen – weekly menu* ([pictures](docs/TEMPLATES.md)).
+- **Lists** – menus with prices, opening hours, directories with floors: typed in the editor or from a CSV file.
 - **Backgrounds by time of day** – picture sets for sunrise, day, sunset and night, weather pictures, slideshow or your
   own pictures.
 - **Internet radio** – own streams or suggestions for your location; or the original sound of the cams.
@@ -153,6 +155,11 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   <img src="docs/praxis.jpg" width="49%" alt="Practice template">
   <img src="docs/firma.jpg" width="49%" alt="Company template">
 </p>
+<p align="center">
+  <img src="docs/vorlagen/imbiss-en.jpg" width="49%" alt="Menu board template">
+  <img src="docs/vorlagen/klinik-en.jpg" width="49%" alt="Hospital template">
+</p>
+<p align="center"><a href="docs/TEMPLATES.md">All templates with pictures</a></p>
 <p align="center">
   <img src="docs/editor.jpg" width="49%" alt="Layout editor in Cockpit">
   <img src="docs/tour/04-overview.jpg" width="49%" alt="Overview in the admin">

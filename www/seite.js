@@ -90,6 +90,8 @@ function bauen(layout) {
       if (e.optionen.laufband) { d.classList.add("laufband"); d.innerHTML = "<span></span>"; }
       else d.innerHTML = (e.optionen.titel ? `<div class="titel">${esc(e.optionen.titel)}</div>` : "") + `<div class="zeilen"></div>`;
     }
+    if (e.typ === "liste") d.innerHTML = (e.optionen.titel ? `<div class="titel">${esc(e.optionen.titel)}</div>` : "") +
+      `<div class="zeilen sp${e.optionen.spalten || 1}${e.optionen.punkte ? " punkte" : ""}"></div>`;
     if (e.typ === "apibild") { d.innerHTML = `<img alt="">`; d.classList.add(e.optionen.anpassung === "fuellen" ? "fuellen" : "einpassen"); }
     if (e.typ === "anzeige") d.innerHTML = e.optionen.darstellung === "ampel"
       ? `<span class="lampe"></span><div><div class="name">${esc(e.optionen.name)}</div><div class="wert"></div></div>`
@@ -318,6 +320,32 @@ function fuellen() {
           if (o.laufband) { d.querySelector("span").textContent = a.text; delete d.dataset.laeuft; }
           else d.textContent = a.text;
         }
+        break;
+      }
+      case "liste": {                     // seit 0.53: feste Zeilen oder Zeilen aus einer Datenquelle
+        const a = (daten.api || {})[e.id];
+        const zeilen = o.quelle ? ((a && a.zeilen) || []) : (o.zeilen || []);
+        if (o.quelle && a && a.da === false && !zeilen.length) sichtbar = false;
+        const neu = JSON.stringify(zeilen) + d.clientWidth + "x" + d.clientHeight;
+        if (neu !== b.apiText) {
+          b.apiText = neu;
+          const z = d.querySelector(".zeilen");
+          z.innerHTML = zeilen.map((r) => `<div class="zeile${r.hervor ? " hervor" : ""}${r.icon ? " mit-icon" : ""}"><div class="oben">` +
+            (r.icon ? `<span class="mdi ${esc(r.icon)}"></span>` : "") + `<span class="text">${esc(r.text || "")}</span>` +
+            (r.wert ? `<span class="leit"></span><span class="wert">${esc(r.wert)}</span>` : "") + "</div>" +
+            (r.info ? `<div class="info">${esc(r.info)}</div>` : "") + "</div>").join("");
+          // Schrift so groß, dass alle Zeilen passen: Zeilen je Spalte (Zusatzzeile zählt halb), dann verkleinern bis nichts überläuft
+          const sp = Math.max(1, o.spalten || 1);
+          const hoehe = zeilen.slice(0, Math.ceil(zeilen.length / sp)).reduce((n, r) => n + 1.35 + (r.info ? 0.75 : 0), 0) + (o.titel ? 1.6 : 0);
+          d.style.fontSize = Math.max(10, Math.min(d.clientHeight / Math.max(hoehe, 1), d.clientWidth / sp / 9, 56)) + "px";
+        }
+        // auch verkleinern, solange ein Text abgeschnitten wäre (… statt ganzer Name) – bei jedem Durchlauf, weil
+        // Schriften später fertig laden können und dann breiter sind
+        const z = d.querySelector(".zeilen");
+        const zuEng = () => d.scrollHeight > d.clientHeight + 1 || z.scrollWidth > z.clientWidth + 1 ||
+          [...z.querySelectorAll(".text")].some((t) => t.scrollWidth > t.clientWidth + 1);
+        for (let i = 0; i < 30 && sichtbar && zuEng(); i++)
+          d.style.fontSize = Math.max(8, parseFloat(d.style.fontSize) * 0.93) + "px";
         break;
       }
       case "apiwert": {

@@ -144,6 +144,22 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .typ-apiliste.laufband { display: block; white-space: nowrap; position: absolute; }
 .typ-apiliste.laufband span { display: inline-block; position: absolute; left: 0; top: 50%; will-change: transform;
   transform: translate(var(--start, 100vw), -50%); animation: laufband linear infinite; }
+/* Liste (seit 0.53): Speisekarte, Öffnungszeiten, Wegweiser – Text links, Zusatz darunter, Wert rechts */
+.typ-liste { justify-content: flex-start; padding-top: .4em; padding-bottom: .4em; }
+.typ-liste .titel { font-weight: 700; font-size: 1.15em; color: var(--akzent); margin-bottom: .3em; width: 100%; }
+.typ-liste .zeilen { width: 100%; column-gap: 1.6em; }
+.typ-liste .zeilen.sp2 { column-count: 2; } .typ-liste .zeilen.sp3 { column-count: 3; }
+.typ-liste .zeile { padding: .18em 0; min-width: 0; break-inside: avoid; }
+.typ-liste .oben { display: flex; align-items: baseline; gap: .45em; min-width: 0; }
+.typ-liste .oben .mdi { color: var(--akzent); font-size: 1.1em; width: 1.1em; flex: none; text-align: center; }
+.typ-liste .text { font-weight: 500; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.typ-liste .info { font-size: .62em; opacity: .75; line-height: 1.25; }
+.typ-liste .mit-icon .info { padding-left: 2.68em; }            /* (Symbol 1,21em + Abstand ,45em) / ,62 */
+.typ-liste .leit { flex: 1 1 1em; min-width: .8em; }
+.typ-liste .punkte .leit { border-bottom: .1em dotted currentColor; opacity: .45; }
+.typ-liste .wert { font-weight: 700; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
+.typ-liste .zeile.hervor .text, .typ-liste .zeile.hervor .wert { color: var(--akzent); }
+.typ-liste .zeile.hervor .text { font-weight: 700; }
 .typ-apibild { padding: 0 !important; align-items: center; justify-content: center; }
 .typ-apibild img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .typ-apibild.fuellen img { object-fit: cover; }

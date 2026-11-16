@@ -201,6 +201,13 @@ SignageCast converts every page into a picture once; the element shows them one 
 apart. Pages change by the clock, so several TVs turn pages together. *Fit* shows the whole page, *fill* crops it. A new
 upload replaces the file in this element only – save the layout afterwards.
 
+### Menu, opening hours, directory (list, since 0.53)
+Add the element **List (menu, times, directory)** – or start from one of the templates *Snack bar – menu board*,
+*Practice – info*, *Hospital – lobby*, *Canteen – weekly menu* ([all templates](TEMPLATES.md)). Each row has a text, a
+small extra line below (description, allergens, room), a value on the right (price, time, floor), an optional icon and
+*highlight* (accent colour); up to 20 rows in 1–3 columns. To maintain the rows in a file instead, choose a data source,
+e.g. an uploaded CSV with the columns `text`, `info`, `wert` – other column names via placeholders like `{Dish}`.
+
 ### Show a folder of pictures (gallery, since 0.45)
 **Content → Media library → Galleries:** create a folder (e.g. “Family”, “Notices”) and drag pictures (JPG, PNG, WebP, GIF) and PDFs into
 it – or choose files or a whole folder; from a phone use the file picker (iPhone photos arrive as JPG). Photos are
@@ -421,6 +428,9 @@ verbieten; Foto alle *n* Minuten, ohne Anmeldung, Cookie-Hinweise bleiben sichtb
 Beispiel für Home Assistant oben) und **Benachrichtigungen** über Telegram, E-Mail (SMTP) und Home Assistant bei
 Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assistant – je einmal, mit Entwarnung,
 Test-Knopf je Kanal.
+Seit 0.53: **Liste** (Speisekarte, Öffnungszeiten, Wegweiser) – Text, Zusatz, Wert rechts, Symbol, Hervorhebung, bis 20
+Zeilen in 1–3 Spalten, wahlweise aus einer CSV-Datenquelle (Spalten `text`, `info`, `wert`); dazu Vorlagen für Imbiss,
+Einkaufszentrum, Praxis, Krankenhaus, Hotel, Fitnessstudio und Kantine ([Bilder](TEMPLATES.md#deutsch)).
 Seit 0.45: **Galerie** – Inhalte → Mediathek → Galerien: Ordner anlegen, Bilder (JPG, PNG, WebP, GIF) und PDFs hineinziehen oder
 auswählen (auch ganze Ordner, vom Handy über die Dateiauswahl). Fotos werden beim Hochladen auf höchstens 4K
 verkleinert, nur diese Fassung bleibt; Reihenfolge per Ziehen, mehrere auswählen und löschen. Im Layout der Baustein

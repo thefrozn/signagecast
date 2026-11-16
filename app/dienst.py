@@ -3428,7 +3428,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             import zoneinfo
             return self.antwort(200, {"zeitzonen": sorted(zoneinfo.available_timezones()), "system": auto_zeitzone()})
         if pfad == "/api/vorlagen":
-            return self.antwort(200, {"vorlagen": L.vorlagen()})
+            return self.antwort(200, {"vorlagen": L.vorlagen(einst()["sprache"] or "de")})
         if pfad == "/api/vorschau/daten":
             return self.antwort(200, tv_daten((q.get("tv") or [None])[0]))
         if pfad == "/api/streams":

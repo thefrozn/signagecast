@@ -65,7 +65,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - Fenster zur Welt: YouTube-Live-Kameras, die wechseln und schlechte Streams selbst überspringen
 - Uhr, Wetter, Vorhersage, amtliche Unwetterwarnungen (DWD)
 - Hintergründe, die dem echten Sonnenstand an deinem Ort folgen
-- Vorlagen für Wohnzimmer, Praxis, Firma und Nacht
+- Vorlagen für Wohnzimmer, Menütafel, Einkaufszentrum, Praxis, Krankenhaus, Hotel, Fitnessstudio, Kantine, Firma und Nacht
 
 </td>
 <td valign="top" width="50%">
@@ -110,6 +110,11 @@ Alle Funktionen im Detail: [README (englisch)](README.md#what-it-does) und [Bild
   <img src="docs/praxis.jpg" width="49%" alt="Vorlage Praxis">
   <img src="docs/firma.jpg" width="49%" alt="Vorlage Firma">
 </p>
+<p align="center">
+  <img src="docs/vorlagen/imbiss-de.jpg" width="49%" alt="Vorlage Menütafel">
+  <img src="docs/vorlagen/klinik-de.jpg" width="49%" alt="Vorlage Krankenhaus">
+</p>
+<p align="center"><a href="docs/TEMPLATES.md#deutsch">Alle Vorlagen mit Bildern</a></p>
 <p align="center">
   <img src="docs/editor.jpg" width="49%" alt="Layout-Editor in Cockpit">
   <img src="docs/tour/de/04-overview.jpg" width="49%" alt="Übersicht in der Verwaltung">

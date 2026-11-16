@@ -3758,3 +3758,73 @@ class Hdmi052(unittest.TestCase):
         self.assertIn("SC_HDMI=1 sh installieren.sh", lies("iso", "ersteinrichtung.sh"))
         self.assertIn("VALIDSIG $CD_SCHLUESSEL", lies("iso", "bauen.sh"))
         self.assertIn("-boot_image any replay", lies("iso", "bauen.sh"))
+
+
+class Vorlagen053(unittest.TestCase):
+    """0.53: Baustein „Liste“ und Branchen-Vorlagen (Deutsch und Englisch)."""
+
+    def test_liste_prueft_zeilen(self):
+        roh = [{"text": "Pommes" * 20, "info": "x" * 300, "wert": "3,00 €" * 10, "icon": "mdi-leaf", "hervor": 1},
+               {"text": "", "info": "", "wert": ""}, "kein dict"] + [{"text": f"z{i}"} for i in range(30)]
+        l = L.pruefe_layout({"id": "tt", "elemente": [{"id": "a", "typ": "liste", "x": 0, "y": 0, "w": 10, "h": 6,
+                                                      "optionen": {"zeilen": roh, "spalten": 2}}]})
+        z = l["elemente"][0]["optionen"]["zeilen"]
+        self.assertEqual(len(z), 18)                       # von den ersten 20 fallen leere Zeile und kein dict weg
+        self.assertEqual((len(z[0]["text"]), len(z[0]["info"]), len(z[0]["wert"]), z[0]["hervor"], z[0]["icon"]), (60, 120, 24, True, "mdi-leaf"))
+        self.assertEqual(z[1]["icon"], "")
+        with self.assertRaises(M.Meldung):
+            L.pruefe_layout({"id": "tt", "elemente": [{"id": "a", "typ": "liste", "optionen": {"zeilen": [{"text": "a", "icon": "<script>"}]}}]})
+        with self.assertRaises(M.Meldung):
+            L.pruefe_layout({"id": "tt", "elemente": [{"id": "a", "typ": "liste", "optionen": {"spalten": 4}}]})
+
+    def test_liste_aus_csv(self):
+        daten = {"zeilen": [{"text": "Pommes", "wert": "3,00 €"}, {"Gericht": "ohne Text"}, {"text": "Salat", "wert": "3,50 €"}]}
+
+        class Qn:
+            stand, verlauf = {}, None
+            daten = staticmethod(lambda qid: daten if qid == "karte" else None)
+        el = {"id": "k", "typ": "liste", "optionen": {"quelle": "karte", "pfad": "zeilen", "spalte_text": "{text}",
+                                                       "spalte_info": "{info}", "spalte_wert": "{wert}"}}
+        api, _ = Q.baustein_werte({"elemente": [el]}, Qn, "de", [])
+        self.assertEqual(api["k"]["zeilen"], [{"text": "Pommes", "info": "", "wert": "3,00 €"}, {"text": "Salat", "info": "", "wert": "3,50 €"}])
+        self.assertTrue(api["k"]["da"])
+        el["optionen"]["spalte_info"] = "Preis: {wert}"
+        api, _ = Q.baustein_werte({"elemente": [el]}, Qn, "de", [])
+        self.assertEqual(api["k"]["zeilen"][0]["info"], "Preis: 3,00 €")
+        api, _ = Q.baustein_werte({"elemente": [dict(el, optionen=dict(el["optionen"], quelle="fehlt"))]}, Qn, "de", [])
+        self.assertEqual(api["k"], {"zeilen": [], "da": False})
+
+    def test_vorlagen_de_en(self):
+        de, en = L.vorlagen("de"), L.vorlagen("en")
+        self.assertEqual([v["id"] for v in de], [v["id"] for v in en])
+        self.assertEqual(len({v["id"] for v in de}), len(de))
+        neu = {"imbiss", "center", "praxisinfo", "klinik", "hotel", "fitness", "kantine"}
+        self.assertTrue(neu <= {v["id"] for v in de})
+        self.assertEqual(de[-1]["id"], "nacht")
+        for d, e in zip(de, en):
+            if d["id"] != "standard":
+                self.assertNotEqual(d["name"], e["name"], d["id"])
+            for v in (d, e):
+                for x in v["elemente"]:            # nichts wurde beim Prüfen zurechtgerückt: Vorlage passt ins Raster
+                    self.assertLessEqual(x["x"] + x["w"], L.SPALTEN, (v["id"], x["id"]))
+                    self.assertLessEqual(x["y"] + x["h"], L.ZEILEN, (v["id"], x["id"]))
+                    for z in x["optionen"].get("zeilen", []) if x["typ"] == "liste" else []:
+                        self.assertTrue(z["text"] or z["wert"])
+        texte = json.dumps([v for v in en if v["id"] in neu], ensure_ascii=False)
+        for deutsch in ("Uhr", "Montag", "Wegweiser", "OG", "Getränke", "bitte"):
+            self.assertNotIn(deutsch, texte.replace("Hotel-Gast", "").replace("bitte-aendern", ""), deutsch)
+        # alle Symbole der Vorlagen gibt es in der mitgelieferten Symbolschrift
+        css = lies("www", "mdi", "css", "materialdesignicons.min.css")
+        for v in de:
+            for x in v["elemente"]:
+                for z in x["optionen"].get("zeilen", []) if x["typ"] == "liste" else []:
+                    if z["icon"]:
+                        self.assertIn("." + z["icon"] + "::before", css, z["icon"])
+
+    def test_editor_und_tv_kennen_liste(self):
+        lj, sj, css = lies("cockpit", "signagecast", "layout.js"), lies("www", "seite.js"), lies("www", "stil.css")
+        self.assertEqual(lj.count('liste: "Liste ('), 1)
+        self.assertEqual(lj.count('liste: "List ('), 1)
+        self.assertIn("zlListe", lj)
+        self.assertIn('case "liste":', sj)
+        self.assertIn(".typ-liste", css)

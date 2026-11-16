@@ -820,7 +820,7 @@ class Quellen:
 
 
 # ---------- Werte der Bausteine für die TV-Seite ----------
-API_TYPEN = ("apiwert", "apiliste", "apibild", "anzeige", "countdown", "qrcode", "text", "webcam", "diagramm", "kalender")
+API_TYPEN = ("apiwert", "apiliste", "apibild", "anzeige", "countdown", "qrcode", "text", "webcam", "diagramm", "kalender", "liste")
 HLS_INTERN = f"http://127.0.0.1:{os.environ.get('SC_STREAM_PORT', '8888')}"          # MediaMTX im Container (Pfade cam_<id> nur von 127.0.0.1 lesbar)
 
 
@@ -853,6 +853,21 @@ def baustein_werte(layout, quellen, sprache, einst_quellen, ha_verlauf=None):
                 liste = list(liste.values())
             zeilen = [fuellen(o.get("zeile") or "{titel}", o.get("quelle"), dv, basis=x, **fmt)
                       for x in (liste if isinstance(liste, list) else [])[:o.get("anzahl", 5)]]
+            aus[e["id"]] = {"zeilen": zeilen, "da": isinstance(liste, list)}
+        elif typ == "liste" and o.get("quelle"):           # seit 0.53: Zeilen aus einer Datenquelle (CSV, JSON)
+            liste = wert_bei(dv(o["quelle"]), o.get("pfad", "")) if dv(o["quelle"]) is not None else None
+            if isinstance(liste, dict):
+                liste = list(liste.values())
+            zeilen = []
+            for x in (liste if isinstance(liste, list) else [])[:20]:
+                z = {}
+                for k, lim in (("text", 60), ("info", 120), ("wert", 24)):
+                    v = o.get("spalte_" + k, "")
+                    z[k] = fuellen(v, o["quelle"], dv, basis=x, sprache=sprache)[:lim]
+                    if z[k] == "–" and PLATZHALTER.fullmatch(v.strip()):      # Spalte fehlt (z. B. keine „info“) → leer
+                        z[k] = ""
+                if any(z.values()):
+                    zeilen.append(z)
             aus[e["id"]] = {"zeilen": zeilen, "da": isinstance(liste, list)}
         elif typ == "apibild":
             q = qmap.get(o.get("quelle"))
