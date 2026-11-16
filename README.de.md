@@ -41,6 +41,10 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
+oder auf einem eigenen Rechner (Mini-PC, altes Notebook, UEFI): `signagecast-server-vX.Y.Z.iso` aus dem
+[neuesten Release](https://github.com/thefrozn/signagecast/releases/latest) auf einen USB-Stick schreiben und davon
+starten – [Details](docs/INSTALL.md#own-computer-installation-iso).
+
 Weitere Wege (Debian, Windows, QNAP, Synology) und was danach zu öffnen ist: [Installation](#installation).
 
 SignageCast zeigt Uhr, Wetter und auf Wunsch Werte aus **Home Assistant** neben einem großen Fenster mit
