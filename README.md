@@ -163,6 +163,7 @@ or a Raspberry Pi or PC as player. Without usable graphics a Full HD software fa
 | Where | How | Guide |
 |---|---|---|
 | **Proxmox VE** | one command on the Proxmox host shell (below) | [Installation](docs/INSTALL.md#proxmox-ve) |
+| **Own computer** (mini PC, laptop) | installation ISO on a USB stick – Debian installer, optionally with picture via HDMI | [Installation](docs/INSTALL.md#own-computer-installation-iso) |
 | **Debian 13** (LXC, VM, PC) | `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh \| sh` | [Installation](docs/INSTALL.md#debian-13) |
 | **Docker / Podman** | `docker run …` or [`compose.yaml`](compose.yaml) | [Installation](docs/INSTALL.md#docker--podman) |
 | **Windows PC** | Docker Desktop + one PowerShell command (Full HD) – *not tested on real Windows yet* | [Windows guide](docs/install/WINDOWS.md) |

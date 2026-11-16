@@ -3,7 +3,8 @@
 #
 #   ./release.sh v0.14.0            prüfen, taggen, Paket bauen, signieren, hochladen, gegenprüfen
 #   ./release.sh v0.14.0 --trocken  alles prüfen und Paket bauen/signieren, aber nichts veröffentlichen
-#   ./release.sh v0.23.0 --player   nach der Action „Player-Image“: .json und SBOM von Pi- und PC-Image (seit 0.36) signieren
+#   ./release.sh v0.23.0 --player   nach der Action „Player-Image“: .json und SBOM von Pi- und PC-Image (seit 0.36) und die
+#                                   .json des Installations-ISO (seit 0.52) signieren
 #
 # Voraussetzungen: git, gh (angemeldet), minisign, python3 (+ python3-pyzipper für alle Tests), optional shellcheck.
 # Signaturschlüssel: $SIGNATUR_SCHLUESSEL oder ~/.config/signagecast-signatur/signagecast.key (nie im Repo).
@@ -44,6 +45,18 @@ if [ "$TROCKEN" = "--player" ]; then
     gh release upload "$TAG" "$P/$S.minisig" --clobber
     echo "   ok: $S signiert"
   done
+  # Installations-ISO für einen eigenen Rechner (seit 0.52): .json mit Prüfsumme signieren (keine SBOM – der Inhalt ist
+  # das unveränderte Debian-netinst plus dieser Stand von SignageCast)
+  M="signagecast-server-$TAG.json"
+  echo "== Warten auf das Installations-ISO ($M)"
+  for _ in $(seq 1 90); do gh release download "$TAG" -p "$M" -D "$P" --clobber >/dev/null 2>&1 && break; sleep 20; done
+  [ -s "$P/$M" ] || fehler "$M nicht im Release – läuft die Action „Player-Image“? (gh run list -w player.yml)"
+  python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["art"]=="signagecast-server-iso" and m["version"]==sys.argv[2]' "$P/$M" "$V" \
+    || fehler "$M passt nicht zu $TAG"
+  minisign -Sqm "$P/$M" -s "$SCHLUESSEL_DATEI" -t "SignageCast Installations-ISO $TAG"
+  minisign -Vqm "$P/$M" -P "$OEFFENTLICH" || fehler "Signatur passt nicht zum öffentlichen Schlüssel"
+  gh release upload "$TAG" "$P/$M.minisig" --clobber
+  echo "   ok: $M signiert"
   exit 0
 fi
 

@@ -1,0 +1,11 @@
+Template: signagecast/hdmi
+Type: boolean
+Default: true
+Description: Show the picture on this computer via HDMI too?
+ SignageCast can show a channel directly on a TV or monitor connected to this computer – no second device needed.
+ .
+ Choose "No" for a pure server (the TVs then get the stream or use their own player). You can change this at any time in the admin under "+ New device" and "Devices".
+Description-de.UTF-8: Bild auch an diesem Rechner per HDMI zeigen?
+ SignageCast kann einen Kanal direkt auf einem Fernseher oder Monitor zeigen, der an diesem Rechner hängt – ohne zweites Gerät.
+ .
+ „Nein“ für einen reinen Server (die Fernseher bekommen dann den Stream oder haben einen eigenen Player). Das lässt sich jederzeit in der Verwaltung unter „+ Neues Gerät“ und „Geräte“ ändern.

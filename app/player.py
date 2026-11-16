@@ -102,6 +102,8 @@ def speichern(d):
     with os.fdopen(fd, "w") as f:
         json.dump(d, f, ensure_ascii=False, indent=1)
     os.replace(tmp, DATEI)
+    if d is globals().get("daten"):
+        hdmi_schreiben()
 
 
 daten = laden()
@@ -185,6 +187,12 @@ def neu(d, tvs, schluessel=None):
          "hotspot_pw": "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz23456789") for _ in range(10))}
     if d.get("modell") == BROWSER:                     # seit 0.36: Gerät ohne Agent, nur Link
         g["modell"] = BROWSER
+    if d.get("hdmi"):                                  # seit 0.52: dieser Rechner zeigt den Kanal selbst per HDMI
+        if g["modell"] != BROWSER or not hdmi_moeglich():
+            raise Fehler("pi_hdmi_nicht")
+        if hdmi_geraet():
+            raise Fehler("pi_hdmi_doppelt")
+        g["hdmi"] = True
     elif d.get("modell") == "pc" and "anzeige_modus" not in d:
         g["anzeige_modus"] = "direkt"                  # PC: Direktmodus als Standard (genug Speicher, VAAPI)
     _felder(g, dict({"name": d.get("name", "")}, **d), tvs)
@@ -523,6 +531,57 @@ def signatur(g, zeit, inhalt):
 def anzeige_schluessel(g):
     """Schlüssel für den Direktmodus: aus dem Geräte-Schlüssel abgeleitet (der Pi rechnet ihn selbst aus)."""
     return hmac.new(bytes.fromhex(g["schluessel"]), b"anzeige", "sha256").hexdigest()[:32]
+
+
+# ---------- Dieser Rechner per HDMI (seit 0.52) ----------
+# Auf einem eigenen Rechner (Installations-ISO oder SC_HDMI=1 sh installieren.sh) kann der Server das Bild auch selbst
+# zeigen: ein Browser-Gerät mit „hdmi“, dessen Link render/hdmi.py in Chromium (Kiosk-Rahmen cage) öffnet. Es gibt
+# höchstens eins; Entfernen schaltet die Anzeige aus. Im Container nie (keine Marke).
+HDMI_MARKE = os.environ.get("SC_HDMI_MARKE", "/etc/signagecast/hdmi")      # legt installieren.sh mit SC_HDMI=1 an
+HDMI_DATEI = os.path.join(DATEN, "hdmi.json")                             # liest render/hdmi.py
+HDMI_START = os.path.join(DATEN, "hdmi-start")                            # ISO: beim Installieren „Ja“ gewählt
+
+
+def hdmi_moeglich():
+    return os.path.exists(HDMI_MARKE)
+
+
+def hdmi_geraet():
+    return next((g for g in daten["geraete"] if g.get("hdmi")), None)
+
+
+def hdmi_schreiben():
+    """Pfad der Seite für render/hdmi.py – leer, wenn kein HDMI-Gerät da ist (dann zeigt der Rechner die Konsole)."""
+    g = hdmi_geraet() if hdmi_moeglich() else None
+    inhalt = json.dumps({"pfad": "/anzeige/" + anzeige_schluessel(g)} if g else {})
+    try:
+        if open(HDMI_DATEI).read() == inhalt:
+            return
+    except OSError:
+        if not g:
+            return
+    try:
+        tmp = HDMI_DATEI + ".tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(inhalt)
+        os.replace(tmp, HDMI_DATEI)
+    except OSError:
+        pass
+
+
+def hdmi_erststart(tvs, name):
+    """Nach der Installation vom ISO mit „Bild per HDMI: Ja“: das Gerät einmal anlegen (erster Kanal)."""
+    if os.path.exists(HDMI_START) and hdmi_moeglich() and tvs and not hdmi_geraet():
+        try:
+            neu({"name": name, "tv": tvs[0], "modell": BROWSER, "hdmi": True}, set(tvs))
+        except Fehler:
+            pass
+    try:
+        os.unlink(HDMI_START)
+    except OSError:
+        pass
+    hdmi_schreiben()
 
 
 def geraet_fuer_anzeige(schluessel):

@@ -39,6 +39,32 @@ stream port: `curl -fsSL …/install.sh | SC_STREAM_PORT=8899 sh` (it is remembe
 
 **Manual:** download a release, unpack it and run `sh installieren.sh`.
 
+## Own computer (installation ISO)
+
+Since 0.52 for a computer of its own (mini PC, old laptop) without Proxmox: **`signagecast-server-vX.Y.Z.iso`** from the
+[latest release](https://github.com/thefrozn/signagecast/releases/latest). Write it to a USB stick (balenaEtcher,
+Raspberry Pi Imager, Rufus in DD mode, Ventoy) and start the computer from it – **UEFI only**, Secure Boot may stay on.
+
+1. Choose **SignageCast installieren (Deutsch)** or **Install SignageCast (English)**.
+2. Only if there is no cable: Wi-Fi name and key.
+3. A **password for the user `tvadmin`** – that is the admin login later.
+4. **Confirm that the disk is erased** – the whole disk is used.
+5. **Show the picture on this computer via HDMI too?** – “Yes” if a TV or monitor is connected to this computer.
+6. After the restart SignageCast installs itself (a few minutes, needs internet). The screen then shows the admin
+   address: **https://&lt;IP&gt;:9090**, user `tvadmin`.
+
+It is the official Debian 13 netinst (signature checked when the ISO is built) with preset answers – partitioning,
+boot loader, drivers and Secure Boot are done by the Debian installer. No SSH server; the admin's terminal (Cockpit)
+is the way in. Security updates install themselves.
+
+**Picture via HDMI:** the computer shows a channel itself (Chromium in the kiosk frame cage, like a player in direct
+mode). Until the setup assistant is finished, the screen shows the console with the admin address. Switch it on or
+off later under *Displays → + New device → This computer via HDMI* or by removing that device. On an existing
+Debian installation (not a container): `SC_HDMI=1 sh installieren.sh`.
+
+Tested in a virtual machine (UEFI, Secure Boot, German and English); **not yet tested on a real mini PC** –
+hardware video decoding and sound via HDMI are unconfirmed. Feedback welcome.
+
 ## Docker / Podman
 
 One line:
@@ -113,8 +139,11 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 
 ## Deutsch (kurz)
 
-Wege: **Proxmox** (Einzeiler oben in der Shell des Proxmox-Hosts), **Debian 13** (`install.sh` als root, erneut
-ausführen = Update), **Docker/Podman** (`docker run …` oder `compose.yaml`), **Windows** ([Anleitung](install/WINDOWS.md): Docker Desktop mit einem PowerShell-Befehl oder WSL, nur Full HD – noch nicht auf echtem Windows getestet), **QNAP** ([Anleitung](install/QNAP.md))
+Wege: **Proxmox** (Einzeiler oben in der Shell des Proxmox-Hosts), **eigener Rechner** (seit 0.52: Installations-ISO
+`signagecast-server-vX.Y.Z.iso` aus dem Release auf einen USB-Stick, nur UEFI; der Debian-Installer fragt Passwort für
+`tvadmin`, bestätigt das Löschen der Platte und fragt „Bild auch an diesem Rechner per HDMI zeigen?“ – änderbar unter
+*Displays → + Neues Gerät → Dieser Rechner per HDMI*; in einer VM getestet, noch nicht auf echtem Mini-PC), **Debian 13** (`install.sh` als root, erneut
+ausführen = Update; Bild per HDMI mit `SC_HDMI=1`), **Docker/Podman** (`docker run …` oder `compose.yaml`), **Windows** ([Anleitung](install/WINDOWS.md): Docker Desktop mit einem PowerShell-Befehl oder WSL, nur Full HD – noch nicht auf echtem Windows getestet), **QNAP** ([Anleitung](install/QNAP.md))
 und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der Container-App des NAS. Nötig ist ein
 x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
 kann ab 0.23 ein **Raspberry Pi als Player** stehen – Image aus der Verwaltung, siehe [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player)

@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.52.0 (2026-11-16)
+- **Installation ISO for a computer of its own** (“bare metal”): `signagecast-server-vX.Y.Z.iso` in every release.
+  It is the official Debian 13 netinst with preset answers – write it to a USB stick, choose German or English, set
+  the password for `tvadmin`, confirm erasing the disk; SignageCast installs itself on the first start. UEFI only,
+  Secure Boot works, no SSH server, security updates automatic.
+- **Picture via HDMI on the server itself:** the installer asks “Show the picture on this computer via HDMI too?”.
+  The computer then shows a channel like a player in direct mode (Chromium in cage). Switch it on or off later under
+  *Displays → + New device → This computer via HDMI*; on other Debian installations with `SC_HDMI=1 sh installieren.sh`.
+  Until the setup assistant is finished the screen shows the console with the admin address.
+  Tested in a virtual machine (UEFI, Secure Boot); **not yet tested on a real mini PC** (hardware decoding, HDMI sound).
+
 ## v0.51.0 (2026-11-15)
 - **Offline copy for players in direct mode** (Raspberry Pi and PC player): if the server or the network fails, the
   player keeps showing its last layout with the last values of all data sources – for as long as it takes, and also

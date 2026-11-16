@@ -3385,7 +3385,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "jetzt": int(time.time()), "geraete": PL.liste(player_hinweise), "basis": PL.basis_info("pi", VERSION), "basis_pc": PL.basis_info("pc", VERSION),
                                       "wlan": [n["ssid"] for n in PL.daten["wlan"]], "server": PL.daten["server"],
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
-                                      "offline_mb": OFF.grenze_mb(PL.daten.get("offline_mb")),
+                                      "offline_mb": OFF.grenze_mb(PL.daten.get("offline_mb")), "hdmi_moeglich": PL.hdmi_moeglich() and not CONTAINER,
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend(),
                                       "fern": {"art": FERN.k["art"], "server": FERN.k["server"]} if FERN.aktiv() else None})
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/aus", pfad)
@@ -4174,6 +4174,7 @@ def main():
     os.makedirs(DATEN, exist_ok=True)
     render_schreiben(einst())
     zeitzone_setzen()
+    PL.hdmi_erststart([t["id"] for t in einst()["fernseher"]], "Dieser Rechner (HDMI)" if einst().get("sprache") != "en" else "This computer (HDMI)")
     try:
         n = streams.einsortieren()                # seit 0.37: nach dem Update alte Funde gleich in ihre Kategorien
         if n:

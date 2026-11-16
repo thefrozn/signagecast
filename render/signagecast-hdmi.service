@@ -1,0 +1,19 @@
+[Unit]
+Description=SignageCast – Bild per HDMI auf diesem Rechner (Chromium im Kiosk-Rahmen cage)
+After=signagecast.service seatd.service systemd-user-sessions.service
+Wants=seatd.service
+
+[Service]
+User=signagecast
+# video: Bildschirm über seatd, render: Videodekodierung, audio: Ton über HDMI
+SupplementaryGroups=video render audio
+EnvironmentFile=-/etc/signagecast/umgebung
+RuntimeDirectory=signagecast-hdmi
+RuntimeDirectoryMode=0700
+Environment=XDG_RUNTIME_DIR=/run/signagecast-hdmi
+ExecStart=/usr/bin/python3 -I /opt/signagecast/render/hdmi.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

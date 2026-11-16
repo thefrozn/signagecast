@@ -120,6 +120,7 @@ abspielt – oder ein Raspberry Pi bzw. PC als Player. Ohne nutzbare Grafik läu
 | Wo | Wie | Anleitung |
 |---|---|---|
 | **Proxmox VE** | ein Befehl in der Shell des Proxmox-Hosts (unten) | [Installation](docs/INSTALL.md#proxmox-ve) |
+| **Eigener Rechner** (Mini-PC, Laptop) | Installations-ISO auf einen USB-Stick – Debian-Installer, auf Wunsch mit Bild per HDMI | [Installation](docs/INSTALL.md#own-computer-installation-iso) |
 | **Debian 13** (LXC, VM, PC) | `curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/install.sh \| sh` | [Installation](docs/INSTALL.md#debian-13) |
 | **Docker / Podman** | `docker run …` oder [`compose.yaml`](compose.yaml) | [Installation](docs/INSTALL.md#docker--podman) |
 | **Windows-PC** | Docker Desktop + ein PowerShell-Befehl (Full HD) – *noch nicht auf echtem Windows getestet* | [Windows-Anleitung](docs/install/WINDOWS.md#deutsch) |

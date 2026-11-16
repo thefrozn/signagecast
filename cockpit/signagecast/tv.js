@@ -174,6 +174,9 @@ const TEXTE = {
             s4: "Mit LAN-Kabel ist nichts weiter zu tun. Mit WLAN: Findet der PC kein Netz, öffnet er nach 2 Minuten einen Hotspot (wenn seine WLAN-Karte das kann) und zeigt einen QR-Code.",
             live: "Live-System: läuft schreibgeschützt (Stromausfälle schaden nicht). Systemupdates gibt es nicht – für neue Software „Image erneut herunterladen“ und den Stick neu beschreiben.",
             neustart: "PC neu starten", m: "PC (x86-64, UEFI) – experimentell" },
+          hd: { m: "Dieser Rechner per HDMI", titel: "Dieser Rechner per HDMI", name: "Dieser Rechner (HDMI)", erstellen: "Bild per HDMI einschalten",
+            text: "SignageCast läuft direkt auf diesem Rechner (Installations-ISO): Er kann den Kanal auch selbst zeigen – Fernseher oder Monitor per HDMI anschließen. Kein Image, kein zweites Gerät. Der Bildschirm zeigt bis zum Abschluss des Einrichtungsassistenten die Konsole mit der Adresse der Verwaltung.",
+            karte: "Zeigt diesen Kanal per HDMI an diesem Rechner. „Entfernen“ schaltet das Bild aus – die Konsole erscheint wieder." },
           br: { m: "Browser-Gerät (nur Link, ohne Image)", titel: "Browser-Gerät",
             text: "Für Geräte, die schon einen Browser haben: Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus Kiosk) oder einfach ein Browser im Vollbild (F11). Es gibt kein Image – du bekommst einen geheimen Link, der genau diesen Kanal zeigt. Ohne Bildschirmfoto, Rückfall auf den Stream und Fernwartung; „online“ heißt: die Seite holt ihre Daten (alle 15 s).",
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
@@ -652,6 +655,9 @@ const TEXTE = {
             s4: "With a LAN cable there is nothing else to do. With Wi-Fi: if the PC finds no network, after 2 minutes it opens a hotspot (if its Wi-Fi card can) and shows a QR code.",
             live: "Live system: runs write-protected (power cuts do no harm). There are no system updates – for new software use “Download image again” and rewrite the stick.",
             neustart: "Restart PC", m: "PC (x86-64, UEFI) – experimental" },
+          hd: { m: "This computer via HDMI", titel: "This computer via HDMI", name: "This computer (HDMI)", erstellen: "Turn on picture via HDMI",
+            text: "SignageCast runs directly on this computer (installation ISO): it can show the channel itself – connect a TV or monitor via HDMI. No image, no second device. Until the setup assistant is finished, the screen shows the console with the admin address.",
+            karte: "Shows this channel via HDMI on this computer. “Remove” turns the picture off – the console appears again." },
           br: { m: "Browser device (link only, no image)", titel: "Browser device",
             text: "For devices that already have a browser: smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk) or just a browser in full screen (F11). There is no image – you get a secret link that shows exactly this channel. No screenshot, no fallback to the stream, no remote maintenance; “online” means: the page fetches its data (every 15 s).",
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
@@ -943,6 +949,8 @@ const TEXTE = {
       pi_koppel_ungueltig: "Invalid pairing request", pi_koppel_voll: "Too many pairing requests – try again in an hour",
       pi_basis_alt: "The downloaded player image ({v}) cannot pair yet – click “Download again” above (0.25 or later)",
       pi_code: "No player shows this code – check the code on the TV (it is valid for 10 minutes)",
+      pi_hdmi_nicht: "Picture via HDMI only works when SignageCast is installed directly on a computer (installation ISO or SC_HDMI=1)",
+      pi_hdmi_doppelt: "This computer already shows a channel via HDMI – change or remove that device",
       pi_browser_befehl: "A browser device has no player – it only shows the page behind its link",
       csv_kodierung: "Unknown character set", csv_trenner: "Unknown delimiter", csv_anfuehrung: "Unknown quote character",
       csv_spalte: "Invalid column number", csv_feldname: "Field name missing or duplicate: {name}", csv_keine_felder: "Please choose at least one field",
@@ -1675,8 +1683,10 @@ async function playerSeite(inhalt, einrichten) {
       + (b.veraltet ? ` <span class="warn">⚠ ${esc(T.pl.basisAlt(b.server))}</span>` : "") : esc(pc ? T.pl.pc.basisFehlt : T.pl.basisFehlt));
   };
   // Modelle (seit 0.36 auch PC und Browser-Gerät); ein Browser-Gerät bleibt eines, andere werden keines
-  const MT = () => Object.assign({}, T.pl.m, { pc: T.pl.pc.m, browser: T.pl.br.m });
-  const bereitFuer = (m) => m === "browser" || !!(m === "pc" ? P.basis_pc : P.basis).vorhanden;
+  const MT = () => Object.assign({}, T.pl.m, { pc: T.pl.pc.m, browser: T.pl.br.m, hdmi: T.pl.hd.m });
+  const OHNE_IMAGE = (m) => m === "browser" || m === "hdmi";            // hdmi (seit 0.52): dieser Rechner selbst
+  const hdmiFrei = () => !!P.hdmi_moeglich && !P.geraete.some((g) => g.hdmi);
+  const bereitFuer = (m) => OHNE_IMAGE(m) || !!(m === "pc" ? P.basis_pc : P.basis).vorhanden;
   const laedt = () => P.basis.phase === "laedt" || P.basis_pc.phase === "laedt";
   const formWahl = (id) => `<div class="zeile" data-nur-pc><label>${esc(T.pl.pc.format)}</label><select id="${id}">${opt(["gz", "iso"], "gz", T.pl.pc.f)}</select></div>
     <p class="leise" data-nur-pc>${esc(T.pl.pc.formatText)}</p>`;
@@ -1704,11 +1714,12 @@ async function playerSeite(inhalt, einrichten) {
         <div class="zeile"><label>${esc(T.pl.pc.basis)}</label><span id="plBasisPc">${basisText(true)}</span>
           <button class="knopf${P.basis_pc.veraltet ? " haupt" : ""}" id="plBasisPcLaden" ${laedt() ? "disabled" : ""}>${esc(P.basis_pc.vorhanden ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
         <h3>${esc(T.pl.br.titel)}</h3><p class="leise">${esc(T.pl.br.text)}</p>
+        ${P.hdmi_moeglich ? `<h3>${esc(T.pl.hd.titel)}</h3><p class="leise">${esc(T.pl.hd.text)}</p>` : ""}
         ${P.container ? `<p class="leise">${esc(T.pl.port(P.webhook_port))}</p>` : ""}</div>
       <div class="karte" id="plNeu"><h2>${esc(T.pl.neu)}</h2>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" id="plName" maxlength="40" placeholder="${esc(T.pl.namePlatz)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select id="plTv">${tvOpt(E.fernseher[0] ? E.fernseher[0].id : "")}</select></div>
-        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3", "pc", "browser"], "pi45", MT())}</select></div>
+        <div class="zeile"><label>${esc(T.pl.modell)}</label><select id="plModell">${opt(["pi45", "pi3", "pc", "browser"].concat(hdmiFrei() ? ["hdmi"] : []), "pi45", MT())}</select></div>
         <div data-nur-image><p class="leise" data-nur-pi>${esc(T.pl.ram)}</p>
           ${plNetz("n", P.wlan, true)}
           ${fwBox("plFw")}
@@ -1761,10 +1772,10 @@ async function playerSeite(inhalt, einrichten) {
     const netzNeu = plNetzAnbinden($("#plNeu"), "n");
     const neuSicht = () => {
       const m = $("#plModell").value;
-      $("#plNeu").querySelector("[data-nur-image]").hidden = m === "browser";
+      $("#plNeu").querySelector("[data-nur-image]").hidden = OHNE_IMAGE(m);
       $("#plNeu").querySelectorAll("[data-nur-pc]").forEach((x) => { x.hidden = m !== "pc"; });
       $("#plNeu").querySelectorAll("[data-nur-pi]").forEach((x) => { x.hidden = m === "pc"; });
-      $("#plErstellen").textContent = m === "browser" ? T.pl.br.erstellen : T.pl.erstellen;
+      $("#plErstellen").textContent = m === "hdmi" ? T.pl.hd.erstellen : m === "browser" ? T.pl.br.erstellen : T.pl.erstellen;
       $("#plErstellen").disabled = !bereitFuer(m);
     };
     $("#plModell").onchange = neuSicht; neuSicht();
@@ -1775,8 +1786,9 @@ async function playerSeite(inhalt, einrichten) {
     $("#plErstellen").onclick = (e) => {
       const m = $("#plModell").value;
       aktion(e.target, async () => {
-        const r = await senden("/api/player/neu", { name: $("#plName").value, tv: $("#plTv").value, modell: m });
-        if (m !== "browser") {
+        const r = await senden("/api/player/neu", m === "hdmi" ? { name: $("#plName").value || T.pl.hd.name, tv: $("#plTv").value, modell: "browser", hdmi: true }
+          : { name: $("#plName").value, tv: $("#plTv").value, modell: m });
+        if (!OHNE_IMAGE(m)) {
           const wlan = netzNeu();
           let d;
           try { d = await senden(`/api/player/${r.geraet}/image`, { wlan, fernwartung: $("#plFw").checked, fern: !!($("#plFern") && $("#plFern").checked), form: $("#plForm").value, server: $("#plServer").value.trim() || P.server_auto || `http://${location.hostname}:${P.webhook_port}` }); }
@@ -1786,8 +1798,8 @@ async function playerSeite(inhalt, einrichten) {
         }
         $("#plName").value = "";
         P = await holenP();
-        if (m === "browser") zeigeSeite("player");            // Browser-Gerät: der Link steht in seiner Karte
-      }, m === "browser" ? null : T.pl.laedtHerunter);
+        if (OHNE_IMAGE(m)) zeigeSeite("player");              // Browser-Gerät: der Link steht in seiner Karte
+      }, OHNE_IMAGE(m) ? null : T.pl.laedtHerunter);
     };
     $("#plServerOk").onclick = (e) => aktion(e.target, async () => {
       await senden("/api/player/einstellungen", { server: $("#plServer").value.trim(), stream_port: Number($("#plStreamPort").value) || 0,
@@ -1806,11 +1818,11 @@ async function playerSeite(inhalt, einrichten) {
       : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
       : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
     return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
-      <p class="leise">${esc(T.pl.br.titel)}</p>
+      <p class="leise">${esc(g.hdmi ? T.pl.hd.titel : T.pl.br.titel)}</p>
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
-      <div class="zeile"><label>${esc(T.pl.br.link)}</label><input type="text" readonly data-link value="${esc(linkUrl(g))}">
+      ${g.hdmi ? `<p class="leise">${esc(T.pl.hd.karte)}</p>` : `<div class="zeile"><label>${esc(T.pl.br.link)}</label><input type="text" readonly data-link value="${esc(linkUrl(g))}">
         <button class="knopf" data-kopieren>${esc(T.pl.br.kopieren)}</button></div>
-      <p class="leise">${esc(T.pl.br.linkText)}</p>
+      <p class="leise">${esc(T.pl.br.linkText)}</p>`}
       <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
@@ -1819,7 +1831,7 @@ async function playerSeite(inhalt, einrichten) {
           <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
   };
   const browserAnbinden = (k, g) => {
-    k.querySelector("[data-kopieren]").onclick = async (e) => {
+    if (k.querySelector("[data-kopieren]")) k.querySelector("[data-kopieren]").onclick = async (e) => {
       const f = k.querySelector("[data-link]");
       f.select();
       try { await navigator.clipboard.writeText(f.value); } catch (_) { document.execCommand("copy"); }

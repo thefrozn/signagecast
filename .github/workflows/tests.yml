@@ -20,7 +20,7 @@ jobs:
       - name: Python übersetzbar
         run: python3 -m py_compile app/*.py
       - name: Shell-Skripte (shellcheck)
-        run: shellcheck -S warning install.sh installieren.sh werkzeug/aktualisieren.sh render/tv-render.sh docker/start.sh proxmox/ct.sh
+        run: shellcheck -S warning install.sh installieren.sh werkzeug/aktualisieren.sh render/tv-render.sh docker/start.sh proxmox/ct.sh iso/bauen.sh iso/spaet.sh iso/ersteinrichtung.sh
   image:
     runs-on: ubuntu-latest
     steps:

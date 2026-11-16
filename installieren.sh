@@ -128,11 +128,28 @@ install -m 644 /opt/signagecast/render/signagecast-aktualisieren.path /etc/syste
 # (Änderungen an tv-render.sh wirken beim nächsten Start der Kette, die Pfade schreibt der Datendienst)
 MTX_NEU=1; cmp -s /opt/signagecast/render/signagecast-mediamtx.service /etc/systemd/system/signagecast-mediamtx.service && MTX_NEU=""
 install -m 644 /opt/signagecast/render/signagecast-mediamtx.service /etc/systemd/system/signagecast-mediamtx.service
+# Bild per HDMI auf diesem Rechner (seit 0.52): nur auf einem echten Rechner, eingeschaltet mit SC_HDMI=1 (das
+# Installations-ISO setzt es) und danach gemerkt. Ob und welchen Kanal er zeigt, steuert die Verwaltung („Geräte“).
+HDMI=${SC_HDMI:-}
+[ -z "$HDMI" ] && [ -f /etc/signagecast/hdmi ] && HDMI=1
+if [ "$HDMI" = 1 ] && [ "$UMGEBUNG" = none ]; then
+  echo "== Bild per HDMI"
+  apt-get install -y -qq --no-install-recommends cage seatd fonts-noto-color-emoji >/dev/null
+  # seatd vergibt den Bildschirm an cage – an die Gruppe video, in der der Dienst läuft
+  mkdir -p /etc/systemd/system/seatd.service.d
+  printf '[Service]\nExecStart=\nExecStart=%s -g video\n' "$(command -v seatd)" > /etc/systemd/system/seatd.service.d/signagecast.conf
+  install -m 644 /opt/signagecast/render/signagecast-hdmi.service /etc/systemd/system/signagecast-hdmi.service
+  touch /etc/signagecast/hdmi
+fi
 systemctl daemon-reload
 systemctl enable signagecast signagecast-mediamtx >/dev/null 2>&1
 systemctl enable --now signagecast-aktualisieren.path >/dev/null 2>&1
 systemctl restart signagecast
 if [ -n "$MTX_NEU" ]; then systemctl restart signagecast-mediamtx; else systemctl is-active -q signagecast-mediamtx || systemctl start signagecast-mediamtx; fi
+if [ -f /etc/signagecast/hdmi ] && [ -f /etc/systemd/system/signagecast-hdmi.service ]; then
+  systemctl enable seatd signagecast-hdmi >/dev/null 2>&1
+  systemctl restart seatd signagecast-hdmi
+fi
 
 if [ -n "${SC_SICHERUNG:-}" ]; then
   # Sicherung einer anderen Instanz übernehmen (Passwort nur über die Umgebung, nie als Argument)

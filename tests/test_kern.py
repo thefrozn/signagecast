@@ -3667,3 +3667,94 @@ class Offline051(unittest.TestCase):
         self.assertIn("SCCACHE", lies("player", "pc", "bauen.sh"))
         self.assertIn('CACHE_MARKE = "SCCACHE"', lies("player", "agent.py"))
 
+
+
+BASIS_TEST = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def lies(*teile):
+    return open(os.path.join(BASIS_TEST, *teile), encoding="utf-8").read()
+
+
+class Hdmi052(unittest.TestCase):
+    """Installations-ISO und Bild per HDMI auf dem Server selbst (seit 0.52)."""
+    def setUp(self):
+        import player as PL
+        self.PL, d = PL, tempfile.mkdtemp()
+        self.alt = (PL.DATEI, PL.ORDNER, PL.HDMI_MARKE, PL.HDMI_DATEI, PL.HDMI_START)
+        PL.DATEI, PL.ORDNER = os.path.join(d, "player.json"), os.path.join(d, "p")
+        PL.HDMI_MARKE, PL.HDMI_DATEI, PL.HDMI_START = os.path.join(d, "hdmi"), os.path.join(d, "hdmi.json"), os.path.join(d, "hdmi-start")
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+
+    def tearDown(self):
+        PL = self.PL
+        PL.DATEI, PL.ORDNER, PL.HDMI_MARKE, PL.HDMI_DATEI, PL.HDMI_START = self.alt
+        PL.daten.clear()
+        PL.daten.update(PL._leer())
+
+    def test_nur_mit_marke_und_nur_eins(self):
+        PL = self.PL
+        with self.assertRaises(PL.Fehler):            # Container/ohne SC_HDMI: keine Marke
+            PL.neu({"name": "HDMI", "tv": "tv", "modell": "browser", "hdmi": True}, {"tv"})
+        open(PL.HDMI_MARKE, "w").close()
+        with self.assertRaises(PL.Fehler):            # nur als Browser-Gerät (kein Agent)
+            PL.neu({"name": "HDMI", "tv": "tv", "modell": "pc", "hdmi": True}, {"tv"})
+        g = PL.neu({"name": "HDMI", "tv": "tv", "modell": "browser", "hdmi": True}, {"tv"})
+        self.assertTrue(g["hdmi"])
+        self.assertEqual(json.load(open(PL.HDMI_DATEI)), {"pfad": "/anzeige/" + PL.anzeige_schluessel(g)})
+        with self.assertRaises(PL.Fehler):
+            PL.neu({"name": "Noch eins", "tv": "tv", "modell": "browser", "hdmi": True}, {"tv"})
+        PL.link_neu(g["id"])                          # neuer Link: der Kiosk bekommt ihn sofort
+        self.assertEqual(json.load(open(PL.HDMI_DATEI))["pfad"], "/anzeige/" + PL.anzeige_schluessel(PL.geraet(g["id"])))
+        PL.entfernen(g["id"])                         # Entfernen schaltet das Bild aus
+        self.assertEqual(json.load(open(PL.HDMI_DATEI)), {})
+
+    def test_erststart_nach_iso(self):
+        PL = self.PL
+        open(PL.HDMI_START, "w").close()
+        PL.hdmi_erststart(["tv", "b"], "Dieser Rechner (HDMI)")
+        self.assertFalse(os.path.exists(PL.HDMI_START))      # ohne Marke: nichts anlegen, Merker trotzdem weg
+        self.assertIsNone(PL.hdmi_geraet())
+        open(PL.HDMI_MARKE, "w").close()
+        open(PL.HDMI_START, "w").close()
+        PL.hdmi_erststart(["tv", "b"], "Dieser Rechner (HDMI)")
+        g = PL.hdmi_geraet()
+        self.assertEqual((g["name"], g["tv"], g["modell"]), ("Dieser Rechner (HDMI)", "tv", "browser"))
+        self.assertFalse(os.path.exists(PL.HDMI_START))
+        PL.hdmi_erststart(["tv"], "x")                       # zweiter Start: nichts Neues
+        self.assertEqual(len(PL.daten["geraete"]), 1)
+
+    def test_kiosk_skript(self):
+        sys.path.insert(0, os.path.join(BASIS_TEST, "render"))
+        import hdmi as H
+        d = tempfile.mkdtemp()
+        H.DATEN, H.EINST = d, os.path.join(d, "e.json")
+        self.assertEqual(H.soll(), (None, "de"))
+        json.dump({"pfad": "/anzeige/" + "a" * 32}, open(os.path.join(d, "hdmi.json"), "w"))
+        json.dump({"assistent_fertig": False, "sprache": "en"}, open(H.EINST, "w"))
+        self.assertEqual(H.soll(), (None, "en"))             # bis der Assistent fertig ist: Konsole mit Adresse
+        json.dump({"assistent_fertig": True, "sprache": "en"}, open(H.EINST, "w"))
+        url, sprache = H.soll()
+        self.assertEqual((url, sprache), (f"http://127.0.0.1:{H.PORT}/anzeige/" + "a" * 32, "en"))
+        b = H.befehl(url, sprache)
+        self.assertEqual(b[:3], ["cage", "-d", "--"])
+        self.assertIn("--kiosk", b)
+        self.assertEqual(b[-1], url)
+        json.dump({"pfad": "/etwas/anderes"}, open(os.path.join(d, "hdmi.json"), "w"))
+        self.assertEqual(H.soll()[0], None)
+
+    def test_iso_dateien(self):
+        p = lies("iso", "preseed.cfg")
+        self.assertNotIn("partman/confirm ", p)              # Löschen der Platte immer von Hand bestätigen
+        self.assertNotIn("user-password", p)                 # Passwort fragt der Installer
+        self.assertNotIn("install-recommends boolean false", p)   # sonst fehlt der Shim (Secure Boot)
+        self.assertIn("force-efi-extra-removable boolean true", p)
+        self.assertIn("apt-setup/non-free boolean true", p)
+        self.assertIn("preseed/late_command string sh /cdrom/signagecast/spaet.sh", p)
+        v = lies("iso", "vorlagen")
+        self.assertIn("Template: signagecast/hdmi", v)
+        self.assertIn("Description-de.UTF-8:", v)
+        self.assertIn("SC_HDMI=1 sh installieren.sh", lies("iso", "ersteinrichtung.sh"))
+        self.assertIn("VALIDSIG $CD_SCHLUESSEL", lies("iso", "bauen.sh"))
+        self.assertIn("-boot_image any replay", lies("iso", "bauen.sh"))

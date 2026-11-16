@@ -2,6 +2,7 @@
 # signagecast-player-v<version>.img.xz und .json (Prüfsumme, Versatz des Platzhalters). Die .json signiert danach
 # ./release.sh v<version> --player (Schlüssel nur beim Projekt). Von Hand gestartet: nur als Artefakt (7 Tage).
 # Seit 0.36 zusätzlich der PC-Player (x86-64, UEFI): signagecast-pc-v<version>.iso.xz, .json und .cdx.json.
+# Seit 0.52 das Installations-ISO für einen eigenen Rechner: signagecast-server-v<version>.iso und .json.
 name: Player-Image
 on:
   push:
@@ -11,13 +12,13 @@ on:
       ziel:
         description: "Welche Images (von Hand)"
         type: choice
-        options: [beide, pi, pc]
+        options: [beide, pi, pc, server]
         default: beide
 permissions:
   contents: write
 jobs:
   image:
-    if: github.event_name != 'workflow_dispatch' || inputs.ziel != 'pc'
+    if: github.event_name != 'workflow_dispatch' || inputs.ziel == 'beide' || inputs.ziel == 'pi'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
@@ -43,7 +44,7 @@ jobs:
           path: out/
           retention-days: 7
   pc:
-    if: github.event_name != 'workflow_dispatch' || inputs.ziel != 'pi'
+    if: github.event_name != 'workflow_dispatch' || inputs.ziel == 'beide' || inputs.ziel == 'pc'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -65,5 +66,30 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pc-image
+          path: out/
+          retention-days: 7
+  server:
+    if: github.event_name != 'workflow_dispatch' || inputs.ziel == 'beide' || inputs.ziel == 'server'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installations-ISO bauen (Container debian:trixie)
+        run: |
+          V=${GITHUB_REF_NAME#v}
+          case "$GITHUB_REF" in refs/tags/v*) ;; *) V="$(cat VERSION)-test";; esac
+          docker run --rm -v "$PWD:/w" -w /w debian:trixie sh iso/bauen.sh out "$V"
+          sudo chown -R "$(id -u)" out
+      - name: An das Release hängen
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 30); do gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && break; sleep 20; done
+          gh release upload "$GITHUB_REF_NAME" out/* --clobber
+      - if: "!startsWith(github.ref, 'refs/tags/v')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-iso
           path: out/
           retention-days: 7

@@ -1,0 +1,15 @@
+[Unit]
+Description=SignageCast – Installation beim ersten Start (Installations-ISO)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/signagecast-installation/installieren.sh
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/signagecast-installation/iso/ersteinrichtung.sh
+StandardOutput=journal+console
+StandardError=journal+console
+TimeoutStartSec=3600
+
+[Install]
+WantedBy=multi-user.target

@@ -203,6 +203,8 @@ DE = {
     "pi_koppel_voll": "Zu viele Kopplungsanfragen – in einer Stunde erneut versuchen",
     "pi_basis_alt": "Das geladene Player-Image ({v}) kann sich noch nicht koppeln – oben „Neu laden“ (ab 0.25)",
     "pi_code": "Kein Player zeigt diesen Code – Code am Fernseher prüfen (er gilt 10 Minuten)",
+    "pi_hdmi_nicht": "Bild per HDMI gibt es nur, wenn SignageCast direkt auf einem Rechner installiert ist (Installations-ISO oder SC_HDMI=1)",
+    "pi_hdmi_doppelt": "Dieser Rechner zeigt schon einen Kanal per HDMI – das Gerät dort ändern oder entfernen",
     "pi_browser_befehl": "Ein Browser-Gerät hat keinen Player – es zeigt nur die Seite hinter seinem Link",
     # seit 0.26: CSV-Import und hochgeladene Dateien für Datenquellen
     "csv_kodierung": "Unbekannter Zeichensatz",
