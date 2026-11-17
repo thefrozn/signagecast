@@ -2014,6 +2014,42 @@ class Wlan0421(unittest.TestCase):
         self.assertIn("WirelessEnabled=true", bau)
 
 
+class Hintergrund054(unittest.TestCase):
+    """0.54: Bildersets Essen/Sport/Architektur, Diashow in Sekunden, „Bilder langsam bewegen“, durchscheinende Karten."""
+
+    def test_alle_stile_haben_bilder(self):
+        www = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "www", "bilder", "stile")
+        quellen = open(os.path.join(www, "QUELLEN.md"), encoding="utf-8").read()
+        for stil in L.STILE:
+            if stil == "gemischt":
+                continue
+            for tz in L.TAGESZEITEN:
+                for ordner in (www, os.path.join(www, "klein")):
+                    self.assertTrue(os.path.isfile(os.path.join(ordner, f"{stil}-{tz}.jpg")), f"{ordner}/{stil}-{tz}.jpg fehlt")
+                self.assertIn(f"`{stil}-{tz}.jpg`", quellen)
+
+    def test_diashow_sekunden_und_bewegen(self):
+        alt = L.pruefe_layout({"id": "tt", "hintergrund": {"art": "stil", "wechsel": "diashow", "diashow_min": 3}})["hintergrund"]
+        self.assertEqual((alt["diashow_s"], alt["bewegen"]), (180, False))           # alte Layouts: Minuten gelten weiter
+        hg = L.pruefe_layout({"id": "tt", "hintergrund": {"art": "stil", "diashow_s": 2, "bewegen": 1}})["hintergrund"]
+        self.assertEqual((hg["diashow_s"], hg["bewegen"]), (10, True))
+        self.assertEqual(L.pruefe_layout({"id": "tt", "hintergrund": {"diashow_s": 99999}})["hintergrund"]["diashow_s"], 7200)
+
+    def test_karten(self):
+        self.assertEqual(L.pruefe_layout({"id": "tt"})["thema"]["karte"], "weiss")
+        self.assertEqual(L.pruefe_layout({"id": "tt", "thema": {"karte": "glas_dunkel"}})["thema"]["karte"], "glas_dunkel")
+        self.assertEqual(L.pruefe_layout({"id": "tt", "thema": {"karte": "<b>"}})["thema"]["karte"], "weiss")
+
+    def test_vorlagen_mit_bildern(self):
+        v = {x["id"]: x for x in L.vorlagen("de")}
+        for vid in ("imbiss", "center", "praxisinfo", "klinik", "hotel", "fitness", "kantine"):
+            self.assertEqual(v[vid]["hintergrund"]["art"], "stil", vid)
+            self.assertTrue(v[vid]["hintergrund"]["bewegen"], vid)
+            self.assertNotEqual(v[vid]["thema"]["karte"], "weiss", vid)
+        self.assertEqual((v["imbiss"]["hintergrund"]["stil"], v["imbiss"]["hintergrund"]["diashow_s"]), ("essen", 12))
+        self.assertEqual(v["standard"]["hintergrund"].get("bewegen"), False)          # bestehende Vorlagen unverändert
+
+
 if __name__ == "__main__":
     unittest.main()
 

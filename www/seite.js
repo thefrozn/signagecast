@@ -55,7 +55,8 @@ function bauen(layout) {
   bausteine = [];
   if (layout.schwarz) { f.className = ""; $("hg").style.background = "#000"; return; }
   const th = layout.thema || {};
-  f.className = (th.schema || "dunkel") + (layout.hintergrund.art === "wetter" && layout.hintergrund.abdunkeln ? " abdunkeln" : "");
+  f.className = (th.schema || "dunkel") + (layout.hintergrund.art === "wetter" && layout.hintergrund.abdunkeln ? " abdunkeln" : "") +
+                (th.karte && th.karte !== "weiss" ? " karte-" + th.karte : "");
   f.style.setProperty("--akzent", th.akzent || "#3d8cd0");
   // Schrift auf der Akzentfarbe: dunkel auf hellem Akzent, sonst weiß
   const ak = /^#([0-9a-f]{6})$/i.exec(th.akzent || "") ? parseInt(th.akzent.slice(1), 16) : 0x3d8cd0;
@@ -121,6 +122,7 @@ function bauen(layout) {
 // Hintergrund: Wetterbild, Bilderset nach Tageszeit (optional mit Wetter oder als Diashow), eigenes Bild (auch je
 // Tageszeit) oder Farbe. Tageszeit kommt vom Datendienst (Sonnenstand am Standort). Nachts optional gedimmt.
 const STILE = ["natur", "stadt", "himmel", "berge", "meer"];
+let hgTakt = null;
 const SCHLECHTWETTER = ["rainy", "pouring", "snowy", "snowy-rainy", "hail", "fog", "lightning", "lightning-rainy"];
 function hintergrund(layout) {
   const hg = layout.hintergrund, h = $("hg");
@@ -133,6 +135,8 @@ function hintergrund(layout) {
     return STILE[tag % STILE.length];
   };
   let url = null;
+  const dia = (hg.diashow_s || (hg.diashow_min || 10) * 60) * 1000;
+  clearTimeout(hgTakt);
   if (hg.art !== "galerie") delete h.dataset.galerie;
   if (hg.art === "galerie") {                 // seit 0.45: Diashow eines Galerie-Ordners (leer: Wetterbild)
     if (!hgGalerieSetzen(hg)) { delete h.dataset.galerie; url = wetterbild(); }
@@ -144,17 +148,39 @@ function hintergrund(layout) {
     if (hg.wechsel === "diashow") {
       const alle = hg.stil === "gemischt" ? STILE.flatMap((s) => ["morgen", "tag", "abend", "nacht"].map((z) => `${s}-${z}`))
                                           : ["morgen", "tag", "abend", "nacht"].map((z) => `${hg.stil}-${z}`);
-      url = `bilder/stile/${alle[Math.floor(Date.now() / (hg.diashow_min * 60000)) % alle.length]}.jpg`;
+      url = `bilder/stile/${alle[Math.floor(Date.now() / dia) % alle.length]}.jpg`;
+      // seit 0.54 auch in Sekunden: eigener Takt bis zum nächsten Bildwechsel (Datenabruf kommt nur alle 15 s)
+      hgTakt = setTimeout(() => { if (daten && !daten.layout.schwarz) hintergrund(daten.layout); }, dia - (Date.now() % dia) + 50);
     } else if (hg.wechsel === "tageszeit_wetter" && SCHLECHTWETTER.includes(wetter) && tz !== "nacht") {
       url = wetterbild();
     } else {
       url = `bilder/stile/${stil()}-${tz}.jpg`;
     }
   } else url = wetterbild();
-  if (url) { const css = `url("${url}")`; if (h.style.backgroundImage !== css) h.style.backgroundImage = css; }
+  if (!url) delete h.dataset.laedt;            // Farbe/Galerie: ein noch ladendes Bild darf nicht mehr gesetzt werden
+  if (url) {                                   // erst wechseln, wenn das neue Bild geladen ist (sonst blitzt es beim Überblenden)
+    const css = `url("${url}")`;
+    if (h.style.backgroundImage !== css && h.dataset.laedt !== url) {
+      h.dataset.laedt = url;
+      const neu = new Image();
+      neu.onload = neu.onerror = () => { if (h.dataset.laedt === url) { h.style.backgroundImage = css; delete h.dataset.laedt; } };
+      neu.src = url;
+    }
+  }
+  // seit 0.54: Bilder langsam bewegen – sanfter Zoom, je Bild einmal hinein bzw. heraus (nur Compositor, kein Neuzeichnen)
+  const bewegt = !!hg.bewegen && hg.art !== "farbe";
+  if (bewegt) {
+    const takt = hg.art === "stil" && hg.wechsel === "diashow" ? dia : hg.art === "galerie" ? (hg.galerie_s || 60) * 1000 : 40000;
+    if (!h.classList.contains("bewegt") || h.dataset.takt !== String(takt)) {
+      h.dataset.takt = takt;
+      h.style.animationDuration = takt / 1000 + "s";
+      h.style.animationDelay = -((Date.now() % (2 * takt)) / 1000) + "s";      // Richtungswechsel fällt auf den Bildwechsel
+      h.classList.remove("bewegt"); void h.offsetWidth; h.classList.add("bewegt");
+    }
+  } else if (h.classList.contains("bewegt")) { h.classList.remove("bewegt"); delete h.dataset.takt; }
   // Bereich (Raster), Füllart und Ausschnitt; außerhalb des Bereichs die Hintergrundfarbe
   const b = hg.bereich || { x: 0, y: 0, w: 48, h: 27 };
-  for (const el of [h, $("verlauf")]) Object.assign(el.style, { left: b.x * RASTER + "px", top: b.y * RASTER + "px", width: b.w * RASTER + "px", height: b.h * RASTER + "px" });
+  for (const el of [$("hgRahmen") || h, $("verlauf")]) Object.assign(el.style, { left: b.x * RASTER + "px", top: b.y * RASTER + "px", width: b.w * RASTER + "px", height: b.h * RASTER + "px" });
   h.style.backgroundSize = { fuellen: "cover", einpassen: "contain", strecken: "100% 100%" }[hg.anpassung] || "cover";
   h.style.backgroundPosition = { mitte: "center", oben: "center top", unten: "center bottom", links: "left center", rechts: "right center" }[hg.ausschnitt] || "center";
   if (hg.art !== "farbe") h.style.backgroundColor = "transparent";

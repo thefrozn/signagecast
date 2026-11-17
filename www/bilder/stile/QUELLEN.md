@@ -25,3 +25,23 @@ Auf 1920 × 1080 zugeschnitten. Stand 2026-10-28.
 | `meer-tag.jpg` | [File:Route 1 - Big Sur Coast Highway - Lovely Cove at Julia Pfeiffer Burns State Park - NARA - 7721423.jpg](https://commons.wikimedia.org/wiki/File%3ARoute_1_-_Big_Sur_Coast_Highway_-_Lovely_Cove_at_Julia_Pfeiffer_Burns_State_Park_-_NARA_-_7721423.jpg) | Public domain | Unknown authorUnknown author or not provided |
 | `meer-abend.jpg` | [File:Ocean Beach, San Diego at sunset Dec 2006.jpg](https://commons.wikimedia.org/wiki/File%3AOcean_Beach%2C_San_Diego_at_sunset_Dec_2006.jpg) | Public domain | Alton at English Wikipedia</ |
 | `meer-nacht.jpg` | [File:Luna-Reflection-Sea-Superluna-Night-Super-Water-1826849.jpg](https://commons.wikimedia.org/wiki/File%3ALuna-Reflection-Sea-Superluna-Night-Super-Water-1826849.jpg) | CC0 | CristianFerronato at Pixabay |
+
+## Seit 0.54: Essen, Sport, Architektur (für die Branchen-Vorlagen)
+
+Ebenfalls Wikimedia Commons, CC0 (geprüft über die Commons-API, Feld `LicenseShortName`), auf 1920 × 1080 zugeschnitten. Stand 2026-11-16.
+Die Tageszeit-Namen sind hier nur Plätze im Set – die Vorlagen zeigen die vier Bilder als Diashow.
+
+| Datei | Original | Lizenz | Urheber |
+|---|---|---|---|
+| `essen-morgen.jpg` | [File:Fried chicken burger .jpg](https://commons.wikimedia.org/wiki/File%3AFried_chicken_burger_.jpg) | CC0 | Kurt Kaiser |
+| `essen-tag.jpg` | [File:Assiette kebab à Lyon en mai 2023.jpg](https://commons.wikimedia.org/wiki/File%3AAssiette_kebab_%C3%A0_Lyon_en_mai_2023.jpg) | CC0 | Benoît Prieur |
+| `essen-abend.jpg` | [File:Grill Out (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3AGrill_Out_%28Unsplash%29.jpg) | CC0 | Declan Rex d3c1an |
+| `essen-nacht.jpg` | [File:Grilling Sausages (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3AGrilling_Sausages_%28Unsplash%29.jpg) | CC0 | The Digital Marketing Collaboration thedmcsa |
+| `sport-morgen.jpg` | [File:Man lifting a heavy barbell.jpg](https://commons.wikimedia.org/wiki/File%3AMan_lifting_a_heavy_barbell.jpg) | CC0 | Binyamin Mellish |
+| `sport-tag.jpg` | [File:Fitness Center Equipment.jpg](https://commons.wikimedia.org/wiki/File%3AFitness_Center_Equipment.jpg) | CC0 | Teddyhtsai |
+| `sport-abend.jpg` | [File:Colorful barbells on a shelf.jpg](https://commons.wikimedia.org/wiki/File%3AColorful_barbells_on_a_shelf.jpg) | CC0 | Ser Amantio di Nicolao |
+| `sport-nacht.jpg` | [File:Treadmills.webp](https://commons.wikimedia.org/wiki/File%3ATreadmills.webp) | CC0 | Wikideas1 |
+| `architektur-morgen.jpg` | [File:White ceiling architecture (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3AWhite_ceiling_architecture_%28Unsplash%29.jpg) | CC0 | Jeremy Yap jeremyyappy |
+| `architektur-tag.jpg` | [File:White architecture next to sky (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3AWhite_architecture_next_to_sky_%28Unsplash%29.jpg) | CC0 | Max Rentmeester maxr |
+| `architektur-abend.jpg` | [File:White exterior architecture (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3AWhite_exterior_architecture_%28Unsplash%29.jpg) | CC0 | Lance Anderson lanceanderson |
+| `architektur-nacht.jpg` | [File:White walkway (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3AWhite_walkway_%28Unsplash%29.jpg) | CC0 | Sebastien Gabriel sgabriel |

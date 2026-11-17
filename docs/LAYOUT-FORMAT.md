@@ -23,12 +23,15 @@ The wrapper (`art`, `version`, `layout`) is optional – a bare layout object wo
 | `name` | display name, max 40 characters |
 | `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture), `"galerie"` (slideshow of a gallery folder) |
 | `hintergrund.galerie`, `hintergrund.galerie_s` | for art `galerie`: folder id ("" – the user picks it) and seconds per picture (5–3600) |
-| `hintergrund.stil` | `natur`, `stadt`, `himmel`, `berge`, `meer`, `gemischt` – picture changes with the time of day |
+| `hintergrund.stil` | `natur`, `stadt`, `himmel`, `berge`, `meer`, `essen`, `sport`, `architektur`, `gemischt` – picture changes with the time of day |
+| `hintergrund.wechsel`, `hintergrund.diashow_s` | `"tageszeit"`, `"tageszeit_wetter"` or `"diashow"`; for the slideshow seconds per picture (10–7200) |
+| `hintergrund.bewegen` | true = pictures move slowly (gentle zoom, cross-fade on change) |
 | `hintergrund.farbe` | `"#rrggbb"` for art `farbe` |
 | `hintergrund.abdunkeln` | true = darken the picture a little so text stays readable |
 | `hintergrund.nachts_dunkler` | true = darker at night |
 | `thema.schema` | `"dunkel"` (light text on dark), `"hell"` (dark text on light), `"gedimmt"` (very dim, for night) |
 | `thema.akzent` | accent colour `"#rrggbb"` |
+| `thema.karte` | cards: `"weiss"` (solid white), `"glas_hell"` (see-through light), `"glas_dunkel"` (see-through dark) |
 | `thema.schrift` | font: `Roboto`, `Noto Sans`, `Noto Serif`, `Open Sans`, `Lato`, `Montserrat`, `Ubuntu`, `Cantarell`, `DejaVu Sans`, `DejaVu Serif`, `DejaVu Sans Mono`, `Fira Code`, `Comic Neue` |
 
 ## Element

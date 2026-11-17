@@ -6,7 +6,15 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 #flaeche { position: absolute; inset: 0; color: var(--text); }
 #flaeche.hell { --text: #1d1d1f; --schatten: none; }
 #flaeche.gedimmt { --text: #6a6a6a; --schatten: none; }
+/* seit 0.54: durchscheinende Karten – das (bewegte) Bild schimmert durch; bewusst ohne backdrop-filter (kostet je Bild CPU) */
+#flaeche.karte-glas_hell { --karte: rgba(255,255,255,.84); }
+#flaeche.karte-glas_dunkel { --karte: rgba(12,12,14,.66); --kartentext: #fff; --kartenleise: #c8c8c8; }
+#flaeche.karte-glas_dunkel .baustein.karte, #flaeche.karte-glas_hell .baustein.karte { box-shadow: 0 2px 10px rgba(0,0,0,.25); }
 #hg { position: absolute; inset: 0; background: #333 center / cover no-repeat; transition: background-image 3s, filter 60s; }
+#hgRahmen { position: absolute; inset: 0; overflow: hidden; }
+/* seit 0.54: „Bilder langsam bewegen“ – Dauer und Versatz setzt seite.js passend zum Bildwechsel */
+#hg.bewegt { animation: hg-zoom 40s ease-in-out infinite alternate; will-change: transform; }
+@keyframes hg-zoom { from { transform: scale(1.02); } to { transform: scale(1.12) translate(-1.5%, -1%); } }
 #verlauf { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; display: none;
   background: url("bilder/verlauf.png") 0 0 / 100% 100% no-repeat; }
 #flaeche.abdunkeln #verlauf { display: block; }

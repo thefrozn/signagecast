@@ -16,9 +16,11 @@ GEWICHTE = ["", "duenn", "normal", "fett"]
 AUSRICHTUNGEN = ["oben-links", "oben-mitte", "oben-rechts", "links", "mitte", "rechts", "unten-links", "unten-mitte", "unten-rechts"]
 OPERATOREN = ["=", "!=", ">", "<", "an", "aus"]
 # Hintergrund-Bildersets (www/bilder/stile/<stil>-<tageszeit>.jpg, CC0/gemeinfrei, Quellen in www/bilder/stile/QUELLEN.md)
-STILE = ["natur", "stadt", "himmel", "berge", "meer", "gemischt"]
+# seit 0.54: essen/sport/architektur für die Branchen-Vorlagen (nicht in „gemischt“, das bleibt bei der Landschaft)
+STILE = ["natur", "stadt", "himmel", "berge", "meer", "essen", "sport", "architektur", "gemischt"]
 TAGESZEITEN = ["morgen", "tag", "abend", "nacht"]
 WECHSEL = ["tageszeit", "tageszeit_wetter", "diashow"]
+KARTEN = ["weiss", "glas_hell", "glas_dunkel"]   # seit 0.54: Karten deckend weiß oder durchscheinend (ohne Weichzeichner)
 HG_ARTEN = ("wetter", "stil", "farbe", "bild", "galerie")    # galerie seit 0.45: Ordner als Diashow
 
 # Bausteine: Typ -> erlaubte Optionen mit Prüffunktion und Standardwert
@@ -246,6 +248,8 @@ def pruefe_layout(l):
     stil = hg.get("stil", "natur") if hg.get("stil", "natur") in STILE else "natur"
     wechsel = hg.get("wechsel", "tageszeit") if hg.get("wechsel", "tageszeit") in WECHSEL else "tageszeit"
     diashow_min = max(1, min(120, int(hg.get("diashow_min", 10) or 10)))
+    # seit 0.54 in Sekunden (ältere Layouts haben nur Minuten)
+    diashow_s = max(10, min(7200, int(hg.get("diashow_s") or diashow_min * 60)))
     galerie = _gid(hg.get("galerie"))
     galerie_s = max(5, min(3600, int(hg.get("galerie_s", 60) or 60)))
     b = hg.get("bereich") or {}
@@ -291,10 +295,12 @@ def pruefe_layout(l):
     return {"id": lid, "name": str(l.get("name", lid))[:40] or lid,
             "hintergrund": {"art": art, "farbe": _farbe(hg.get("farbe", "#202020")) or "#202020", "bild": bild,
                             "bilder_tageszeit": je_zeit, "stil": stil, "wechsel": wechsel, "diashow_min": diashow_min,
+                            "diashow_s": diashow_s, "bewegen": bool(hg.get("bewegen", False)),
                             "galerie": galerie, "galerie_s": galerie_s,
                             "nachts_dunkler": bool(hg.get("nachts_dunkler", True)), "abdunkeln": bool(hg.get("abdunkeln", True)),
                             "bereich": bereich, "anpassung": anpassung, "ausschnitt": ausschnitt},
-            "thema": {"schema": schema, "akzent": _farbe(th.get("akzent", "#3d8cd0")) or "#3d8cd0", "schrift": schrift},
+            "thema": {"schema": schema, "akzent": _farbe(th.get("akzent", "#3d8cd0")) or "#3d8cd0", "schrift": schrift,
+                      "karte": th.get("karte") if th.get("karte") in KARTEN else "weiss"},
             "elemente": elemente}
 
 
@@ -477,11 +483,14 @@ def format_beschreibung():
          '| `hintergrund.art` | `"wetter"` (picture matching the current weather), `"stil"` (picture set), `"farbe"` (plain colour), `"bild"` (uploaded picture), `"galerie"` (slideshow of a gallery folder) |',
          '| `hintergrund.galerie`, `hintergrund.galerie_s` | for art `galerie`: folder id ("" – the user picks it) and seconds per picture (5–3600) |',
          f"| `hintergrund.stil` | {', '.join(f'`{x}`' for x in STILE)} – picture changes with the time of day |",
+         '| `hintergrund.wechsel`, `hintergrund.diashow_s` | `"tageszeit"`, `"tageszeit_wetter"` or `"diashow"`; for the slideshow seconds per picture (10–7200) |',
+         '| `hintergrund.bewegen` | true = pictures move slowly (gentle zoom, cross-fade on change) |',
          '| `hintergrund.farbe` | `"#rrggbb"` for art `farbe` |',
          '| `hintergrund.abdunkeln` | true = darken the picture a little so text stays readable |',
          '| `hintergrund.nachts_dunkler` | true = darker at night |',
          '| `thema.schema` | `"dunkel"` (light text on dark), `"hell"` (dark text on light), `"gedimmt"` (very dim, for night) |',
          '| `thema.akzent` | accent colour `"#rrggbb"` |',
+         '| `thema.karte` | cards: `"weiss"` (solid white), `"glas_hell"` (see-through light), `"glas_dunkel"` (see-through dark) |',
          f"| `thema.schrift` | font: {', '.join(f'`{x}`' for x in SCHRIFTEN)} |",
          "", "## Element", "", "| Field | Meaning | Default |", "|---|---|---|",
          "| `id` | 1–16 characters a–z, 0–9, unique in the layout | – |",
@@ -673,43 +682,46 @@ def vorlagen(sprache="de"):
                                                   "Kantine: Gemüselasagne +++ Wir begrüßen unsere Gäste +++",
                                                   "+++ Today 2 pm: team meeting in room A +++ Canteen: vegetable lasagne +++ We welcome our guests +++")})]}),
         # ---------- seit 0.53: Vorlagen für Branchen (Baustein „Liste“) ----------
-        # Imbiss: dunkle Menütafel, drei Spalten mit Preisen, Tagesangebot, Laufband in der Akzentfarbe; ohne Video (spart CPU)
+        # Imbiss (seit 0.54 mit Bildern): links Essensfotos als Diashow, die sich langsam bewegen, darauf das Tagesangebot;
+        # rechts die Karte auf dunklen, durchscheinenden Karten; Laufband in der Akzentfarbe; ohne Video (spart CPU)
         pruefe_layout({"id": "imbiss", "name": t("Imbiss – Menütafel", "Snack bar – menu board"),
-                       "hintergrund": {"art": "farbe", "farbe": "#161616"},
-                       "thema": {"schema": "dunkel", "akzent": "#f5a623", "schrift": "Montserrat"},
+                       "hintergrund": {"art": "stil", "stil": "essen", "wechsel": "diashow", "diashow_s": 12, "bewegen": True,
+                                       "farbe": "#161616", "nachts_dunkler": False, "abdunkeln": False,
+                                       "bereich": {"x": 0, "y": 0, "w": 20, "h": 24}},
+                       "thema": {"schema": "dunkel", "akzent": "#f5a623", "schrift": "Montserrat", "karte": "glas_dunkel"},
                        "elemente": [_el("logo", "logo", 1, 1, 9, 4, ausrichtung="links"),
-                                    _el("titel", "text", 11, 1, 26, 4, ausrichtung="mitte", gewicht="fett", optionen={"text": t("Unsere Karte", "Our menu")}),
-                                    _el("uhr", "uhr", 39, 1, 8, 4, ausrichtung="rechts"),
-                                    *[_el(f"p{i}", "flaeche", x, 6, w, h, optionen={"farbe": "#242424", "deckkraft": 100})
-                                      for i, (x, w, h) in enumerate(((1, 16, 17), (18, 14, 10), (33, 14, 17)))],
-                                    liste("l1", 1, 6, 16, 17, t("Burger & Wurst", "Burgers & sausages"), [
+                                    _el("titel", "text", 21, 1, 17, 3, ausrichtung="links", gewicht="fett", textfarbe="#f5a623",
+                                        optionen={"text": t("Unsere Karte", "Our menu")}),
+                                    _el("uhr", "uhr", 39, 1, 8, 3, ausrichtung="rechts"),
+                                    liste("l1", 20, 4, 14, 20, t("Burger & Wurst", "Burgers & sausages"), [
                                         _z("Hamburger", eur("6,50 €", "€6.50"), t("100 % Rind, Salat, Tomate", "100 % beef, lettuce, tomato")),
                                         _z("Cheeseburger", eur("7,00 €", "€7.00"), t("mit Cheddar", "with cheddar")),
                                         _z(t("Veggie-Burger", "Veggie burger"), eur("7,50 €", "€7.50"), t("vegetarisch", "vegetarian"), "mdi-leaf"),
                                         _z("Currywurst", eur("4,50 €", "€4.50"), t("hausgemachte Soße", "homemade sauce")),
                                         _z("Bratwurst", eur("3,90 €", "€3.90")),
-                                        _z(t("Schnitzel im Brötchen", "Schnitzel roll"), eur("6,90 €", "€6.90"))], karte=False),
-                                    liste("l2", 18, 6, 14, 10, t("Beilagen", "Sides"), [
+                                        _z(t("Schnitzel im Brötchen", "Schnitzel roll"), eur("6,90 €", "€6.90"))]),
+                                    liste("l2", 34, 4, 14, 9, t("Beilagen", "Sides"), [
                                         _z(t("Pommes", "Fries"), eur("3,00 €", "€3.00")),
                                         _z(t("Süßkartoffel-Pommes", "Sweet potato fries"), eur("4,20 €", "€4.20")),
                                         _z(t("Zwiebelringe", "Onion rings"), eur("3,80 €", "€3.80")),
-                                        _z(t("Kleiner Salat", "Side salad"), eur("3,50 €", "€3.50"))], karte=False),
-                                    _el("angebotf", "flaeche", 18, 17, 14, 6, optionen={"farbe": "#f5a623", "deckkraft": 100}),
-                                    _el("angebot", "text", 18, 17, 14, 6, ausrichtung="mitte", gewicht="fett", textfarbe="#161616",
+                                        _z(t("Kleiner Salat", "Side salad"), eur("3,50 €", "€3.50"))]),
+                                    _el("angebotf", "flaeche", 1, 17, 18, 6, karte=True, optionen={"farbe": "#f5a623", "deckkraft": 94}),
+                                    _el("angebot", "text", 2, 17, 16, 6, ausrichtung="mitte", gewicht="fett", textfarbe="#161616",
                                         optionen={"text": t("Tagesangebot: Currywurst, Pommes und Getränk 8,90 €",
                                                             "Today's deal: currywurst, fries and a drink €8.90")}),
-                                    liste("l3", 33, 6, 14, 17, t("Getränke", "Drinks"), [
+                                    liste("l3", 34, 13, 14, 11, t("Getränke", "Drinks"), [
                                         _z("Cola", eur("2,80 €", "€2.80"), t("0,33 l", "330 ml")),
                                         _z(t("Wasser", "Water"), eur("2,20 €", "€2.20"), t("0,5 l", "500 ml")),
                                         _z(t("Apfelschorle", "Apple spritzer"), eur("2,80 €", "€2.80"), t("0,33 l", "330 ml")),
                                         _z(t("Bier", "Beer"), eur("3,90 €", "€3.90"), t("0,5 l", "500 ml")),
-                                        _z(t("Kaffee", "Coffee"), eur("2,20 €", "€2.20"))], karte=False),
+                                        _z(t("Kaffee", "Coffee"), eur("2,20 €", "€2.20"))]),
                                     *laufband(24, t("+++ Alle Preise inkl. MwSt. +++ Allergene auf Nachfrage +++ Kartenzahlung möglich +++",
                                                     "+++ All prices incl. VAT +++ Ask us about allergens +++ Cards welcome +++"), "#f5a623", "#161616")]}),
-        # Einkaufszentrum: hell, Wegweiser mit Ebene, Aktionen als Galerie, Öffnungszeiten, Wetter, Laufband
+        # Einkaufszentrum: Stadtbild nach Tageszeit (langsam bewegt), Wegweiser mit Ebene, Aktionen als Galerie,
+        # Öffnungszeiten, Wetter, Laufband – alles auf dunklen, durchscheinenden Karten
         pruefe_layout({"id": "center", "name": t("Einkaufszentrum – Info", "Shopping centre – info"),
-                       "hintergrund": {"art": "farbe", "farbe": "#f4f4f6"},
-                       "thema": {"schema": "hell", "akzent": "#c2185b", "schrift": "Open Sans"},
+                       "hintergrund": {"art": "stil", "stil": "stadt", "wechsel": "tageszeit", "bewegen": True, "abdunkeln": False},
+                       "thema": {"schema": "dunkel", "akzent": "#e0457b", "schrift": "Open Sans", "karte": "glas_dunkel"},
                        "elemente": [*kopf("#c2185b", t("Willkommen im Center", "Welcome to the centre")),
                                     liste("weg", 1, 4, 22, 19, t("Wegweiser", "Directory"), [
                                         _z(t("Supermarkt", "Supermarket"), eg, icon="mdi-cart"),
@@ -732,35 +744,44 @@ def vorlagen(sprache="de"):
                                     *laufband(24, t("+++ Diese Woche: Frühlingsaktion in allen Geschäften +++ 2 Stunden kostenlos parken +++ "
                                                     "Kostenloses WLAN: Center-Gast +++",
                                                     "+++ This week: spring sale in all shops +++ 2 hours free parking +++ Free Wi-Fi: Centre-Guest +++"), "#c2185b")]}),
-        # Praxis – Info: Sprechzeiten, Hinweise, QR-Code zur Online-Terminbuchung, Notdienst; hell und ruhig, ohne Video
+        # Praxis – Info: Sprechzeiten, Hinweise, QR-Code zur Online-Terminbuchung, Notdienst, Laufband (seit 0.54);
+        # Himmel nach Tageszeit, langsam bewegt, helle durchscheinende Karten; ohne Video
         pruefe_layout({"id": "praxisinfo", "name": t("Praxis – Info (Sprechzeiten)", "Practice – info (opening hours)"),
-                       "hintergrund": {"art": "farbe", "farbe": "#eef6f5"},
-                       "thema": {"schema": "hell", "akzent": "#2a9d8f", "schrift": "Lato"},
-                       "elemente": [_el("logo", "logo", 1, 1, 12, 4, ausrichtung="links"),
-                                    _el("uhr", "uhr", 38, 1, 9, 3, ausrichtung="rechts", gewicht="duenn"),
-                                    _el("datum", "datum", 28, 4, 19, 1, ausrichtung="rechts"),
-                                    liste("zeiten", 1, 6, 22, 12, t("Sprechzeiten", "Opening hours"), [
+                       "hintergrund": {"art": "stil", "stil": "himmel", "wechsel": "tageszeit", "bewegen": True,
+                                       "nachts_dunkler": False, "abdunkeln": False},
+                       "thema": {"schema": "hell", "akzent": "#2a9d8f", "schrift": "Lato", "karte": "glas_hell"},
+                       "elemente": [_el("kopfglas", "flaeche", 1, 1, 46, 4, karte=True, optionen={"farbe": "#ffffff", "deckkraft": 84}),
+                                    _el("logo", "logo", 2, 1, 12, 4, ausrichtung="links"),
+                                    _el("uhr", "uhr", 38, 1, 8, 3, ausrichtung="rechts", gewicht="duenn"),
+                                    _el("datum", "datum", 27, 4, 19, 1, ausrichtung="rechts"),
+                                    liste("zeiten", 1, 6, 22, 11, t("Sprechzeiten", "Opening hours"), [
                                         _z(t("Montag", "Monday"), t("8–12 · 14–18 Uhr", "8–12 · 2–6 pm")),
                                         _z(t("Dienstag", "Tuesday"), t("8–12 · 14–18 Uhr", "8–12 · 2–6 pm")),
                                         _z(t("Mittwoch", "Wednesday"), t("8–12 Uhr", "8 am–12 pm")),
                                         _z(t("Donnerstag", "Thursday"), t("8–12 · 14–19 Uhr", "8–12 · 2–7 pm")),
                                         _z(t("Freitag", "Friday"), t("8–13 Uhr", "8 am–1 pm"))]),
-                                    liste("hinweis", 24, 6, 23, 12, t("Bitte beachten", "Please note"), [
+                                    liste("hinweis", 24, 6, 23, 11, t("Bitte beachten", "Please note"), [
                                         _z(t("Versichertenkarte bitte am Empfang zeigen", "Please show your insurance card at reception"), icon="mdi-card-account-details"),
                                         _z(t("Handy bitte lautlos stellen", "Please switch your phone to silent"), icon="mdi-cellphone-off"),
                                         _z(t("Bei Infekt bitte Maske tragen", "Please wear a mask if you have an infection"), icon="mdi-face-mask"),
                                         _z(t("Wartezeiten können variieren – danke für Ihre Geduld", "Waiting times may vary – thank you for your patience"), icon="mdi-clock-outline")],
                                           punkte=False),
-                                    _el("qr", "qrcode", 1, 19, 7, 7, karte=True, optionen={"inhalt": "https://example.org/termin",
+                                    _el("qr", "qrcode", 1, 18, 6, 5, karte=True, optionen={"inhalt": "https://example.org/termin",
                                                                                           "beschriftung": t("Online-Termin", "Book online")}),
-                                    _el("notdienst", "text", 9, 19, 22, 7, karte=True, ausrichtung="mitte",
+                                    _el("notdienst", "text", 8, 18, 23, 5, karte=True, ausrichtung="mitte",
                                         optionen={"text": t("Außerhalb der Sprechzeiten: ärztlicher Bereitschaftsdienst 116 117 – im Notfall 112",
                                                             "Outside opening hours: please call the out-of-hours service – in an emergency 112")}),
-                                    _el("vh", "vorhersage", 32, 19, 15, 7, karte=True)]}),
-        # Krankenhaus – Foyer: Wegweiser zu den Stationen, Besuchszeiten, Meldung aus HA, Wetter, Laufband; ohne Video
+                                    _el("vh", "vorhersage", 32, 18, 15, 5, karte=True),
+                                    *laufband(24, t("+++ Vom 23.12. bis 2.1. geschlossen – Vertretung: Praxis Dr. Muster +++ "
+                                                    "Grippeimpfung ab sofort ohne Termin +++ Rezepte auch per Telefon bestellen +++",
+                                                    "+++ Closed 23 Dec – 2 Jan, cover: Dr Example's practice +++ Flu jabs now without "
+                                                    "appointment +++ Order prescriptions by phone too +++"), "#2a9d8f")]}),
+        # Krankenhaus – Foyer: Wegweiser zu den Stationen, Besuchszeiten, Meldung aus HA, Wetter, Laufband; ohne Video;
+        # seit 0.54 helle Architektur als langsame Diashow hinter durchscheinenden Karten
         pruefe_layout({"id": "klinik", "name": t("Krankenhaus – Foyer", "Hospital – lobby"),
-                       "hintergrund": {"art": "farbe", "farbe": "#f2f5f9"},
-                       "thema": {"schema": "hell", "akzent": "#0d47a1", "schrift": "Noto Sans"},
+                       "hintergrund": {"art": "stil", "stil": "architektur", "wechsel": "diashow", "diashow_s": 30, "bewegen": True,
+                                       "nachts_dunkler": False, "abdunkeln": False},
+                       "thema": {"schema": "hell", "akzent": "#0d47a1", "schrift": "Noto Sans", "karte": "glas_hell"},
                        "elemente": [*kopf("#0d47a1", t("Herzlich willkommen", "Welcome")),
                                     liste("weg", 1, 4, 30, 16, t("Wegweiser", "Directory"), [
                                         _z(t("Notaufnahme", "Emergency"), t("EG · Eingang B", "GF · Entrance B"), icon="mdi-ambulance", hervor=True),
@@ -787,8 +808,8 @@ def vorlagen(sprache="de"):
                                                     "Wi-Fi for patients and visitors: Hospital-Guest +++"), "#0d47a1")]}),
         # Hotel / Pension – Lobby: Bergbild, dunkle Tafel mit Uhr und Wetter, Infos, WLAN-QR-Code, Veranstaltungen, Video
         pruefe_layout({"id": "hotel", "name": t("Hotel / Pension – Lobby", "Hotel / guest house – lobby"),
-                       "hintergrund": {"art": "stil", "stil": "berge", "wechsel": "tageszeit", "abdunkeln": True},
-                       "thema": {"schema": "dunkel", "akzent": "#c9a227", "schrift": "Noto Serif"},
+                       "hintergrund": {"art": "stil", "stil": "berge", "wechsel": "tageszeit", "abdunkeln": True, "bewegen": True},
+                       "thema": {"schema": "dunkel", "akzent": "#c9a227", "schrift": "Noto Serif", "karte": "glas_dunkel"},
                        "elemente": [_el("glas", "flaeche", 1, 1, 16, 25, optionen={"farbe": "#000000", "deckkraft": 50}),
                                     _el("logo", "logo", 2, 2, 14, 4, ausrichtung="mitte"),
                                     _el("uhr", "uhr", 2, 7, 14, 4, ausrichtung="mitte", gewicht="duenn"),
@@ -809,11 +830,14 @@ def vorlagen(sprache="de"):
                                         _z(t("Kaffee & Kuchen", "Coffee & cake"), t("15:00", "3 pm"), t("Terrasse", "Terrace")),
                                         _z(t("Weinprobe", "Wine tasting"), t("19:00", "7 pm"), t("Kaminzimmer", "Fireplace room"), hervor=True)]),
                                     _el("video", "video", 32, 11, 15, 15, karte=True)]}),
-        # Fitnessstudio / Verein: Kursplan, Auslastung (Ampel aus einer Datenquelle), Countdown zum nächsten Event, Video
+        # Fitnessstudio / Verein: Kursplan, Auslastung (Ampel aus einer Datenquelle), Countdown zum nächsten Event, Video;
+        # seit 0.54 Sportbilder als langsame Diashow, leicht abgedunkelt, dunkle durchscheinende Karten
         pruefe_layout({"id": "fitness", "name": t("Fitnessstudio / Verein", "Gym / sports club"),
-                       "hintergrund": {"art": "farbe", "farbe": "#111111"},
-                       "thema": {"schema": "dunkel", "akzent": "#e53935", "schrift": "Montserrat"},
-                       "elemente": [_el("logo", "logo", 1, 1, 9, 4, ausrichtung="links"),
+                       "hintergrund": {"art": "stil", "stil": "sport", "wechsel": "diashow", "diashow_s": 15, "bewegen": True,
+                                       "farbe": "#111111", "nachts_dunkler": False, "abdunkeln": False},
+                       "thema": {"schema": "dunkel", "akzent": "#e53935", "schrift": "Montserrat", "karte": "glas_dunkel"},
+                       "elemente": [_el("dunkel", "flaeche", 0, 0, 48, 24, optionen={"farbe": "#000000", "deckkraft": 35}),
+                                    _el("logo", "logo", 1, 1, 9, 4, ausrichtung="links"),
                                     _el("titel", "text", 11, 1, 26, 4, ausrichtung="mitte", gewicht="fett", optionen={"text": t("Heute im Studio", "Today at the gym")}),
                                     _el("uhr", "uhr", 38, 1, 9, 4, ausrichtung="rechts", gewicht="fett"),
                                     liste("kurse", 1, 6, 20, 17, t("Kurse heute", "Classes today"), [
@@ -830,10 +854,12 @@ def vorlagen(sprache="de"):
                                                   "ende": t("Heute: Sommerfest!", "Today: summer party!")}),
                                     *laufband(24, t("+++ Handtuch bitte nicht vergessen +++ Getränke an der Theke +++ Neue Kurse ab Montag +++",
                                                     "+++ Please bring a towel +++ Drinks at the bar +++ New classes from Monday +++"), "#e53935")]}),
-        # Kantine – Speiseplan: Woche als Liste (am einfachsten per CSV-Datei als Datenquelle), Extras, Zeiten, Laufband
+        # Kantine – Speiseplan: Woche als Liste (am einfachsten per CSV-Datei als Datenquelle), Extras, Zeiten, Laufband;
+        # seit 0.54 Naturbild nach Tageszeit, langsam bewegt, helle durchscheinende Karten
         pruefe_layout({"id": "kantine", "name": t("Kantine – Speiseplan", "Canteen – weekly menu"),
-                       "hintergrund": {"art": "farbe", "farbe": "#f6f7f2"},
-                       "thema": {"schema": "hell", "akzent": "#2e7d32", "schrift": "Lato"},
+                       "hintergrund": {"art": "stil", "stil": "natur", "wechsel": "tageszeit", "bewegen": True,
+                                       "nachts_dunkler": False, "abdunkeln": False},
+                       "thema": {"schema": "hell", "akzent": "#2e7d32", "schrift": "Lato", "karte": "glas_hell"},
                        "elemente": [*kopf("#2e7d32", t("Speiseplan dieser Woche", "This week's menu")),
                                     liste("woche", 1, 4, 32, 19, t("Mittagessen", "Lunch"), [
                                         _z(t("Montag: Spaghetti Bolognese", "Monday: spaghetti bolognese"), eur("5,20 €", "€5.20"),

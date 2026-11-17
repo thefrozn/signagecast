@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.54.0 (2026-11-17)
+- **Templates with pictures:** the seven templates from 0.53 now have real backgrounds instead of plain colour.
+  *Snack bar* shows food photos (burger, kebab plate, grill) as a slow slideshow beside the menu; *Gym* shows sports
+  pictures, *Hospital* calm bright architecture; *Shopping centre*, *Practice – info*, *Hotel* and *Canteen* use the
+  city, sky, mountain and nature pictures by time of day. Contents stay the same.
+- **New option “Move pictures slowly”** (layout editor → background): a gentle zoom (Ken Burns effect), in a
+  slideshow once in per picture and once out, with a soft cross-fade on change. Works for picture sets, own pictures,
+  weather pictures and gallery backgrounds. Done with a CSS transform (no blur, no redraw of the page contents).
+  **Costs CPU:** pictures and motion are more expensive than a plain colour – see *Consumption* below. Templates with
+  pictures can be switched to a colour or a still picture in the layout editor at any time.
+- **New picture sets** *Food*, *Sport* and *Architecture* (4 pictures each, CC0 from Wikimedia Commons, sources in
+  `www/bilder/stile/QUELLEN.md`). *Mixed* still only rotates the landscapes.
+- **See-through cards** (layout editor → *Cards*: white, see-through light, see-through dark): the picture shimmers
+  through lists, weather and texts. Deliberately without blur, which would cost CPU on every frame.
+- Slideshow of a picture set now in **seconds** (10 s – 2 h) instead of minutes; older layouts keep their value.
+- *Practice – info* now has a ticker (holidays, flu jabs, prescriptions).
+- **Docs:** new [Templates](docs/TEMPLATES.md) page (German: [Vorlagen](docs/TEMPLATES.de.md)) with one page per
+  template, an animation recorded from the real TV stream and its elements explained; “Screenshot tour” is now “Tour”.
+  Docs pictures are no longer part of the release package (11.6 MB instead of 26.8 MB).
+- **Consumption** (test container, 4 cores, Full HD, 100 % = one core; measured in pairs on the same evening).
+  Stream = server chain (Chromium + ffmpeg, 25 fps, no lost frames); direct = browser on the player alone (software
+  rendering on x86, comparison only – a Pi uses its GPU; 60 fps, no frame over 50 ms):
+
+  | Template | Stream CPU · RAM | Direct CPU · RAM |
+  |---|---|---|
+  | Snack bar, plain colour (as in 0.53) | 60 % · 805 MB | 27 % · 502 MB |
+  | Snack bar, food photos | 95 % · 873 MB | 62 % · 567 MB |
+  | Snack bar, food photos moving | 96 % · 919 MB | 74 % · 575 MB |
+  | Hospital, pictures | 83 % · 901 MB | 47 % · 571 MB |
+  | Hospital, pictures moving (full screen) | 115 % · 928 MB | 91 % · 594 MB |
+
+  For comparison: a template with a live video costs about 129 % in the stream.
+
 ## v0.53.0 (2026-11-16)
 - **Templates for typical places**, in German and English: *Snack bar – menu board*, *Shopping centre – info*,
   *Practice – info (opening hours)*, *Hospital – lobby*, *Hotel / guest house – lobby*, *Gym / sports club* and

@@ -12,15 +12,16 @@ const LTEXTE = {
     layout: "Layout", neu: "Neues Layout", ausVorlage: "aus Vorlage", duplizieren: "Kopieren", loeschen: "Löschen",
     exportieren: "Exportieren", importieren: "Importieren", rueckgaengig: "Rückgängig", speichern: "Speichern",
     name: "Name", hintergrund: "Hintergrund", hgArt: { wetter: "Wetterbild (nach Wetter)", stil: "Bilderset (nach Tageszeit)", bild: "eigene Bilder", galerie: "Galerie-Ordner (Diashow)", farbe: "Farbe" },
-    stil: "Stil", stilArt: { natur: "Natur", stadt: "Stadt", himmel: "Himmel", berge: "Berge", meer: "Meer", gemischt: "gemischt (jeden Tag ein anderer)" },
+    stil: "Stil", stilArt: { natur: "Natur", stadt: "Stadt", himmel: "Himmel", berge: "Berge", meer: "Meer", essen: "Essen (Imbiss, Restaurant)", sport: "Sport (Fitness)", architektur: "Architektur (hell, ruhig)", gemischt: "gemischt (Landschaften, jeden Tag eine andere)" },
     wechsel: "Wechsel", wechselArt: { tageszeit: "nach Tageszeit", tageszeit_wetter: "nach Tageszeit, bei Regen/Schnee/Nebel Wetterbild", diashow: "Diashow" },
-    diashowMin: "Diashow: Minuten je Bild", nachtsDunkler: "abends/nachts dunkler", jeZeit: "Eigenes Bild je Tageszeit (leer = Hauptbild)",
+    diashowMin: "Diashow: Sekunden je Bild", bewegen: "Bilder langsam bewegen (sanfter Zoom)", nachtsDunkler: "abends/nachts dunkler", jeZeit: "Eigenes Bild je Tageszeit (leer = Hauptbild)",
     zeitName: { morgen: "Sonnenaufgang", tag: "Tag", abend: "Sonnenuntergang", nacht: "Nacht" },
     bereich: "Bildbereich (Felder ← ↓ ↔ ↕; ganze Fläche = 0 0 48 27)", anpassung: "Füllart", anpassungArt: { fuellen: "füllen (zuschneiden)", einpassen: "einpassen (ganz sichtbar)", strecken: "strecken" },
     ausschnitt: "Ausschnitt", ausschnittArt: { mitte: "Mitte", oben: "oben", unten: "unten", links: "links", rechts: "rechts" }, ganzeFlaeche: "ganze Fläche", hauptbild: "Hauptbild", entfernenKurz: "✕",
     tzHinweis: "Tageszeit nach dem Sonnenstand am Standort (Reiter Verbindung): Sonnenaufgang und -untergang je etwa eine Stunde um den Zeitpunkt, dazwischen Tag bzw. Nacht.",
     abdunkeln: "links abdunkeln", bildHochladen: "Bild hochladen (JPG/PNG)", schema: "Farbschema",
     schemaArt: { dunkel: "hell auf dunkel", hell: "dunkel auf hell", gedimmt: "gedimmt (Nacht)" }, akzent: "Akzentfarbe",
+    karten: "Karten", kartenArt: { weiss: "weiß", glas_hell: "durchscheinend hell", glas_dunkel: "durchscheinend dunkel" },
     schrift: "Schrift", bausteinNeu: "Baustein hinzufügen", hinzu: "Hinzufügen", keinerGewaehlt: "Baustein antippen, um ihn einzustellen.",
     sichtbar: "sichtbar", karte: "als Karte (weißer Kasten)", ausrichtung: "Ausrichtung",
     ausrichtungArt: { "oben-links": "oben links", "oben-mitte": "oben Mitte", "oben-rechts": "oben rechts", links: "links", mitte: "Mitte",
@@ -104,15 +105,16 @@ const LTEXTE = {
     layout: "Layout", neu: "New layout", ausVorlage: "from template", duplizieren: "Copy", loeschen: "Delete",
     exportieren: "Export", importieren: "Import", rueckgaengig: "Undo", speichern: "Save",
     name: "Name", hintergrund: "Background", hgArt: { wetter: "Weather picture (by weather)", stil: "Picture set (by time of day)", bild: "own pictures", galerie: "Gallery folder (slideshow)", farbe: "Colour" },
-    stil: "Style", stilArt: { natur: "Nature", stadt: "City", himmel: "Sky", berge: "Mountains", meer: "Sea", gemischt: "mixed (different every day)" },
+    stil: "Style", stilArt: { natur: "Nature", stadt: "City", himmel: "Sky", berge: "Mountains", meer: "Sea", essen: "Food (snack bar, restaurant)", sport: "Sport (gym)", architektur: "Architecture (bright, calm)", gemischt: "mixed (landscapes, different every day)" },
     wechsel: "Change", wechselArt: { tageszeit: "by time of day", tageszeit_wetter: "by time of day, weather picture when rain/snow/fog", diashow: "Slideshow" },
-    diashowMin: "Slideshow: minutes per picture", nachtsDunkler: "darker in the evening/at night", jeZeit: "Own picture per time of day (empty = main picture)",
+    diashowMin: "Slideshow: seconds per picture", bewegen: "Move pictures slowly (gentle zoom)", nachtsDunkler: "darker in the evening/at night", jeZeit: "Own picture per time of day (empty = main picture)",
     zeitName: { morgen: "Sunrise", tag: "Day", abend: "Sunset", nacht: "Night" },
     bereich: "Picture area (cells ← ↓ ↔ ↕; whole screen = 0 0 48 27)", anpassung: "Fit", anpassungArt: { fuellen: "fill (crop)", einpassen: "fit (whole picture)", strecken: "stretch" },
     ausschnitt: "Crop position", ausschnittArt: { mitte: "centre", oben: "top", unten: "bottom", links: "left", rechts: "right" }, ganzeFlaeche: "whole screen", hauptbild: "Main picture", entfernenKurz: "✕",
     tzHinweis: "Time of day from the sun position at your location (Connection tab): sunrise and sunset about one hour around the moment, otherwise day or night.",
     abdunkeln: "darken left side", bildHochladen: "Upload picture (JPG/PNG)", schema: "Colour scheme",
     schemaArt: { dunkel: "light on dark", hell: "dark on light", gedimmt: "dimmed (night)" }, akzent: "Accent colour",
+    karten: "Cards", kartenArt: { weiss: "white", glas_hell: "see-through light", glas_dunkel: "see-through dark" },
     schrift: "Font", bausteinNeu: "Add element", hinzu: "Add", keinerGewaehlt: "Tap an element to configure it.",
     sichtbar: "visible", karte: "as card (white box)", ausrichtung: "Alignment",
     ausrichtungArt: { "oben-links": "top left", "oben-mitte": "top centre", "oben-rechts": "top right", links: "left", mitte: "centre",
@@ -256,7 +258,7 @@ async function layoutSeite(inhalt) {
             <div class="zeile"><label>${esc(L.stil)}</label><select id="hgStilWahl">${Object.keys(L.stilArt).map((k) => `<option value="${k}" ${k === l.hintergrund.stil ? "selected" : ""}>${esc(L.stilArt[k])}</option>`).join("")}</select></div>
             <div class="stilbilder" id="stilBilder"></div>
             <div class="zeile"><label>${esc(L.wechsel)}</label><select id="hgWechsel">${Object.keys(L.wechselArt).map((k) => `<option value="${k}" ${k === l.hintergrund.wechsel ? "selected" : ""}>${esc(L.wechselArt[k])}</option>`).join("")}</select></div>
-            <div class="zeile" ${l.hintergrund.wechsel === "diashow" ? "" : "hidden"} id="hgDiaZeile"><label>${esc(L.diashowMin)}</label><input type="number" id="hgDia" min="1" max="120" value="${l.hintergrund.diashow_min}"></div>
+            <div class="zeile" ${l.hintergrund.wechsel === "diashow" ? "" : "hidden"} id="hgDiaZeile"><label>${esc(L.diashowMin)}</label><input type="number" id="hgDia" min="10" max="7200" value="${l.hintergrund.diashow_s || l.hintergrund.diashow_min * 60}"></div>
             <p class="leise">${esc(L.tzHinweis)}</p></div>
           <div class="eintrag" id="hgEigen" ${l.hintergrund.art === "bild" ? "" : "hidden"}>
             <div class="zeile"><label>${esc(L.hauptbild)}</label><input type="file" data-zeit="" accept="image/jpeg,image/png"><span class="leise">${esc(l.hintergrund.bild || "")}</span></div>
@@ -274,8 +276,10 @@ async function layoutSeite(inhalt) {
           <div class="zeile"><label>${esc(L.anpassung)}</label><select id="hgAnpassung">${Object.keys(L.anpassungArt).map((k) => `<option value="${k}" ${k === l.hintergrund.anpassung ? "selected" : ""}>${esc(L.anpassungArt[k])}</option>`).join("")}</select>
             <label>${esc(L.ausschnitt)}</label><select id="hgAusschnitt">${Object.keys(L.ausschnittArt).map((k) => `<option value="${k}" ${k === l.hintergrund.ausschnitt ? "selected" : ""}>${esc(L.ausschnittArt[k])}</option>`).join("")}</select></div>
           <div class="zeile"><label><input type="checkbox" id="hgNacht" ${l.hintergrund.nachts_dunkler ? "checked" : ""}> ${esc(L.nachtsDunkler)}</label>
-            <label><input type="checkbox" id="hgDunkel" ${l.hintergrund.abdunkeln ? "checked" : ""}> ${esc(L.abdunkeln)}</label></div>
+            <label><input type="checkbox" id="hgDunkel" ${l.hintergrund.abdunkeln ? "checked" : ""}> ${esc(L.abdunkeln)}</label>
+            <label ${l.hintergrund.art === "farbe" ? "hidden" : ""}><input type="checkbox" id="hgBewegen" ${l.hintergrund.bewegen ? "checked" : ""}> ${esc(L.bewegen)}</label></div>
           <div class="zeile"><label>${esc(L.schema)}</label><select id="thSchema">${Object.keys(L.schemaArt).map((k) => `<option value="${k}" ${k === l.thema.schema ? "selected" : ""}>${esc(L.schemaArt[k])}</option>`).join("")}</select>
+            <label>${esc(L.karten)}</label><select id="thKarte">${Object.keys(L.kartenArt).map((k) => `<option value="${k}" ${k === (l.thema.karte || "weiss") ? "selected" : ""}>${esc(L.kartenArt[k])}</option>`).join("")}</select>
             <label>${esc(L.akzent)}</label><input type="color" id="thAkzent" value="${esc(l.thema.akzent)}">
             <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option data-schrift="${esc(k)}" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
         </details>
@@ -301,7 +305,8 @@ async function layoutSeite(inhalt) {
     $("#hgArt").onchange = () => { merken(); lay().hintergrund.art = $("#hgArt").value; zeichnen(); offen(); };
     $("#hgStilWahl").onchange = () => { merken(); lay().hintergrund.stil = $("#hgStilWahl").value; zeichnen(); offen(); };
     $("#hgWechsel").onchange = () => { merken(); lay().hintergrund.wechsel = $("#hgWechsel").value; zeichnen(); offen(); };
-    $("#hgDia").onchange = kopf(() => { lay().hintergrund.diashow_min = Number($("#hgDia").value); });
+    $("#hgDia").onchange = kopf(() => { const sek = klemm(Number($("#hgDia").value) || 600, 10, 7200); lay().hintergrund.diashow_s = sek; lay().hintergrund.diashow_min = klemm(Math.round(sek / 60), 1, 120); });
+    $("#hgBewegen").onchange = kopf(() => { lay().hintergrund.bewegen = $("#hgBewegen").checked; });
     $("#hgGalOrdner").onchange = kopf(() => { lay().hintergrund.galerie = $("#hgGalOrdner").value; });
     $("#hgGalSek").onchange = kopf(() => { lay().hintergrund.galerie_s = Number($("#hgGalSek").value) || 60; });
     $("#hgNacht").onchange = kopf(() => { lay().hintergrund.nachts_dunkler = $("#hgNacht").checked; });
@@ -326,6 +331,7 @@ async function layoutSeite(inhalt) {
     $("#hgFarbe").oninput = kopf(() => { lay().hintergrund.farbe = $("#hgFarbe").value; });
     $("#hgDunkel").onchange = kopf(() => { lay().hintergrund.abdunkeln = $("#hgDunkel").checked; });
     $("#thSchema").onchange = kopf(() => { lay().thema.schema = $("#thSchema").value; });
+    $("#thKarte").onchange = kopf(() => { lay().thema.karte = $("#thKarte").value; });
     $("#thAkzent").oninput = kopf(() => { lay().thema.akzent = $("#thAkzent").value; });
     $("#thSchrift").onchange = kopf(() => { lay().thema.schrift = $("#thSchrift").value; });
     $("#bNeu").onclick = () => {
@@ -850,7 +856,7 @@ async function layoutSeite(inhalt) {
 async function stilBilderZeigen(stil) {
   const ziel = document.getElementById("stilBilder");
   if (!ziel) return;
-  const stile = stil === "gemischt" ? ["natur", "stadt", "himmel", "berge", "meer"] : [stil];
+  const stile = stil === "gemischt" ? ["natur", "stadt", "himmel", "berge", "meer"] : [stil];   // gemischt = nur Landschaften
   ziel.innerHTML = "";
   for (const s of stile) for (const z of ["morgen", "tag", "abend", "nacht"]) {
     const img = document.createElement("img");
