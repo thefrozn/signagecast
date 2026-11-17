@@ -70,10 +70,10 @@ main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .zeile > label:first-child { min-width: 180px; flex: 0 0 auto; max-width: 100%; }   /* lange Beschriftungen umbrechen (seit 0.55) */
 .zeile > label:only-child { flex: 1 1 auto; min-width: 0; }   /* Ankreuz-Zeilen mit langem Text umbrechen (seit 0.31.1) */
 label { cursor: pointer; }
-input[type=text], input[type=number], input[type=time], input[type=url], input[type=password], select, textarea {
+input[type=text], input[type=number], input[type=time], input[type=url], input[type=search], input[type=password], select, textarea {
   font: inherit; color: var(--text); background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px;
   padding: 8px 10px; min-height: 40px; max-width: 100%; }
-input[type=text], input[type=url], input[type=password], textarea, select.breit { width: 360px; }
+input[type=text], input[type=url], input[type=search], input[type=password], textarea, select.breit { width: 360px; }
 input[type=number] { width: 110px; }
 textarea { width: 100%; min-height: 120px; font-family: ui-monospace, monospace; font-size: 13px; }
 button.knopf, label.knopf, a.knopf { font: inherit; border: 1px solid var(--linie); background: var(--karte); color: var(--text); border-radius: 8px;
@@ -119,7 +119,7 @@ a { color: var(--akzent); }
 @media (max-width: 640px) {
   main { padding: 10px; }
   .zeile > label:first-child { min-width: 100%; }
-  input[type=text], input[type=url], input[type=password], textarea, select.breit { width: 100%; }
+  input[type=text], input[type=url], input[type=search], input[type=password], textarea, select.breit { width: 100%; }
   .stream { grid-template-columns: 1fr; }
   .schalterspalte { flex-direction: row; align-items: center; justify-content: flex-start; }
 }
@@ -272,3 +272,39 @@ button.link { font: inherit; border: 0; background: none; color: var(--akzent); 
 .soliste > p { padding: 10px; margin: 0; }
 .soverkn { border: 1px solid var(--linie); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
 .soverkn p { margin: 4px 0; }
+/* Live-Videos (seit 0.56): schlanke Listen, Details im Seitenfeld rechts, Kennzahlen */
+.lv-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lv-kopf h2 { margin-bottom: 4px; }
+.lliste { background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; margin: 12px 0; }
+.lzeile { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 14px; align-items: center; padding: 10px 14px;
+  border-top: 1px solid var(--linie); cursor: pointer; }
+.lzeile:first-child { border-top: 0; border-radius: 12px 12px 0 0; } .lzeile:last-child { border-radius: 0 0 12px 12px; }
+.lzeile:hover { background: rgba(0, 102, 204, .05); } .lzeile.gewaehlt { background: rgba(0, 102, 204, .12); }
+.lzeile:focus-visible { outline: 2px solid var(--akzent); outline-offset: -2px; }
+.lz-name { font-weight: 600; word-break: break-word; } .lz-info { font-size: 13px; color: var(--leise); }
+.lz-status { font-size: 13px; text-align: right; max-width: 260px; }
+.lz-aktion { display: flex; align-items: center; gap: 6px; }
+.lz-mehr .mehr-menue { left: auto; right: 0; min-width: 200px; }
+.gruppenkopf { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.kennzahlen { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+.kennzahl { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border: 1px solid var(--linie);
+  border-radius: 10px; background: var(--hg); color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.kennzahl b { font-size: 26px; line-height: 1.1; } .kennzahl span { color: var(--leise); font-size: 13px; }
+.kennzahl.warn { border-color: var(--warn); } .kennzahl:hover { border-color: var(--akzent); }
+.seitenfeld { position: fixed; top: 0; right: 0; bottom: 0; z-index: 60; width: min(460px, 100vw); display: flex; flex-direction: column;
+  background: var(--karte); border-left: 1px solid var(--linie); box-shadow: -10px 0 30px rgba(0, 0, 0, .18); }
+.sf-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--linie); }
+.sf-kopf h2 { margin: 0; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sf-inhalt { flex: 1; overflow-y: auto; padding: 8px 16px 24px; }
+.feld { margin: 12px 0; } .feld > label { display: block; font-weight: 600; margin-bottom: 4px; }
+.feld input[type=text], .feld input[type=url], .feld select, .feld textarea { width: 100%; box-sizing: border-box; }
+.gefahrzone { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--linie); }
+.ortsuche-erg { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ortsuche-treffer { text-align: left; white-space: normal; }
+table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-box; }
+.lv-kanal { width: 160px; display: inline-block; }
+@media (max-width: 700px) {
+  .lzeile { grid-template-columns: minmax(0, 1fr) auto; } .lz-status { grid-column: 1; grid-row: 2; text-align: left; }
+  .lz-aktion { grid-row: 1 / span 2; grid-column: 2; }
+}
+.zeile > label.schalter:first-child { min-width: 0; }   /* Schalter vor der Beschriftung (Seitenfeld) nicht strecken */

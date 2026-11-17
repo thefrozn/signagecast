@@ -15,7 +15,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", streams: "Streams", kategorien: "Kategorien", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
+    reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", live: "Übersicht", streams: "Sammlung", kategorien: "Themen", automatik: "Automatik", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
               video: "Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Mediathek", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher", speicherorte: "Speicherorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Kanäle – keine Einstellungen. Adresse:",
@@ -234,14 +234,14 @@ const TEXTE = {
             quellen: { verwaltung: "Verwaltung", pult: "Pult", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "nur Schwarz", steht: "Bild stand still" },
             layouts: { neu: "neue Layouts", geaendert: "Layouts geändert", geloescht: "Layouts gelöscht" },
             bereich: { fernseher: "Kanäle", layouts: "Layouts", video: "Video", medien: "Medien", quellen: "Datenquellen", radio: "Radio", einspieler: "Einspieler",
-                       kategorien: "Kategorien", standort: "Standort", anzeige: "Anzeige", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen",
+                       kategorien: "Themen", standort: "Standort", anzeige: "Anzeige", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen",
                        sicherung: "Sicherung", pult: "Durchsage-Pult", alarm: "Notfall-Vollbild", webhook: "Webhook", stream: "Stream", sprache: "Sprache", updates: "Updates" },
             aktion: { einstellungen: "Einstellungen gespeichert", webhook_neu: "neuer Webhook-Schlüssel", medien_neu: "Medium hochgeladen", medien_loeschen: "Medium gelöscht",
                       galerie_neu: "Bild in die Galerie geladen", galerie_ordner: "Galerie-Ordner geändert", galerie_loeschen: "Bilder aus der Galerie gelöscht",
                       galerie_ordnen: "Galerie neu sortiert", galerie_umbenennen: "Galerie-Bild umbenannt", speicherorte: "Speicherorte geändert", galerie_abgleichen: "Galerie-Abgleich gestartet",
                       schalten: "Fernseher geschaltet", nach_einschalten: "Quelle/Seite am Fernseher ausprobiert", update: "Update angefordert",
                       update_ergebnis: "Update", sicherung_erstellen: "Sicherung erstellt", sicherung_loeschen: "Sicherung gelöscht",
-                      sicherung_einspielen: "Sicherung eingespielt", quelle_datei: "Datei für Datenquelle hochgeladen", kategorie_loeschen: "Kategorie gelöscht",
+                      sicherung_einspielen: "Sicherung eingespielt", quelle_datei: "Datei für Datenquelle hochgeladen", kategorie_loeschen: "Thema gelöscht",
                       stream_neu: "Stream hinzugefügt", suche: "Suche gestartet", radio_neu: "Radiosender hinzugefügt", seite_neu_laden: "TV-Seite neu geladen",
                       kette_neu: "Wiedergabe neu gestartet", ton_neu: "Ton und Stream neu gestartet", layout_wiederherstellen: "Layout-Version wiederhergestellt",
                       stimme_laden: "Stimme geladen", probedurchsage: "Probedurchsage", einspieler_jetzt: "Einspieler jetzt gezeigt", stream_freigeben: "abgelehnten Stream freigegeben",
@@ -276,7 +276,7 @@ const TEXTE = {
             doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“`,
             speicher: (st, f) => st === "rot" ? `Speicher voll (${f} GB frei) – Uploads gesperrt, bitte aufräumen` : `Speicher wird knapp (${f} GB frei) – bitte aufräumen` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
-    bereiche: { uebersicht: "Übersicht", displays: "Displays", inhalte: "Inhalte", videoton: "Videos & Radio", einstellungen: "Einstellungen", system: "System" },
+    bereiche: { uebersicht: "Übersicht", displays: "Displays", inhalte: "Inhalte", videoton: "Live-Videos", einstellungen: "Einstellungen", system: "System" },
     fernseherText: "Ein Kanal ist das, was ein Fernseher zeigt: Layout, Zeitplan, Live-Videos und Ton. Jeder Kanal hat eine eigene Adresse – ein Gerät oder der Browser des Fernsehers öffnet sie.",
     adresse: "Adresse des Kanals", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
@@ -367,12 +367,12 @@ const TEXTE = {
     aenderungen: "Was ist neu?", projektseite: "Projektseite (GitHub)", fehlerMelden: "Fehler melden / Wunsch äußern",
     aufgaben: "Geplante Aufgaben", systemSeiten: "Dienste, Protokolle und Zeitpläne des Containers stehen im Cockpit-Menü " +
       "links unter „Dienste“ und „Protokolle“.",
-    hinzufuegen: "Stream hinzufügen", link: "YouTube-Link oder Video-ID", name: "Name (leer = Titel)", kategorie: "Kategorie",
-    breite: "Breite", laenge: "Länge", ortAuto: "leer = aus dem Titel erkennen", filter: "Suchen …", alle: "alle Kategorien",
+    hinzufuegen: "Stream hinzufügen", link: "YouTube-Link oder Video-ID", name: "Name (leer = Titel)", kategorie: "Thema",
+    breite: "Breite", laenge: "Länge", ortAuto: "leer = aus dem Titel erkennen", filter: "Suchen …", alle: "alle Themen",
     herkunftAlle: "fest und gefunden", nurFeste: "nur feste", nurGefundene: "nur gefundene", aktiv: "aktiv", geschuetzt: "geschützt",
     zustandAlle: "alle", zustand: { rotation: "in Rotation", bereit: "bereit", nacht: "Nacht", nicht_live: "nicht live",
       qualitaet: "Auflösung zu gering", pause: "Pause nach Strike", gesperrt: "gesperrt", strikes: "mit Strikes", ohne_ort: "Ort unbekannt",
-      ungeprueft: "noch nicht geprüft", inaktiv: "inaktiv", kategorie_aus: "Kategorie aus" },
+      ungeprueft: "noch nicht geprüft", inaktiv: "inaktiv", kategorie_aus: "Thema aus" },
     hellIn: (d) => `hell in ${d}`, laeuftAus: "läuft aus (gerade dunkel)", pauseBis: (z) => `bis ${z}`, angebot: (p) => `Angebot ${p}`,
     vorab: (z, n) => `Vorabprüfung ${z}: ${n} geprüft`,
     zeigen: "Jetzt zeigen", uebernehmen: "Übernehmen", bearbeiten: "Bearbeiten", entfernen: "Entfernen", ablehnen: "Ablehnen",
@@ -405,7 +405,7 @@ const TEXTE = {
       aktiv: "Derzeit aktiv", std: "Standard", standard: "Zurück auf Standard" },
     codec: "Codec", codecArt: { auto: "Automatisch (empfohlen)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatisch: 4K als H.265 (halbe Datenmenge, können fast alle 4K-Fernseher), Full HD als H.264 (läuft auf praktisch jedem Fernseher, Browser und Player). H.264 wählen, wenn ein Gerät ruckelt oder kein Bild zeigt – z. B. ältere Fernseher, Firefox; H.265 braucht bei gleicher Qualität etwa 30–40 % weniger Bitrate.",
-    kategorien: "Kategorien", kategorienAlle: "Kategorien (für alle Kanäle)", streamTechnik: "Videostream", abschaltenTitel: "Videostream ohne Zuschauer",
+    kategorien: "Themen", kategorienAlle: "Themen (für alle Kanäle)", streamTechnik: "Videostream", abschaltenTitel: "Videostream ohne Zuschauer",
     abschnitt: { anzeige: "Anzeige", video: "Live-Video", ton: "Ton" }, aufloesung: "Ausgabe", bitrate: "Bitrate (Mbit/s)",
     aufnahme: "Aufnahme (Browser)", aufnahmeArt: { 720: "720p – spart CPU", 1080: "1080p (empfohlen)", 1440: "1440p – schärfer, braucht mehr CPU" },
     aufnahmeText: "Größe, in der der Browser die TV-Seite zeichnet; die Grafikeinheit rechnet auf die Ausgabe um. Mehr als die Ausgabe bringt nichts. Live-Videos im Layout folgen der Aufnahme (720p holt von YouTube 720p). Eine Änderung startet den Stream kurz neu.",
@@ -478,25 +478,25 @@ const TEXTE = {
            stadt: "Städte & Plätze", strand: "Strände & Küsten", berge: "Berge & Ski", hafen: "Häfen & Schiffe",
            flug: "Flughäfen & Flugzeuge", bahn: "Züge & Bahn", weltraum: "Weltraum & Erde", natur: "Naturschauspiele" },
     katGruppe: { tiere: "Tiere", themen: "Weitere Themen" },
-    katText: "Hier legst du fest, was eine Kategorie ausmacht: eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen, und ob Tag/Nacht am Ort zählt. Gefundene Tier-Streams werden über die Wörter einsortiert (erste passende Kategorie, sonst „Neu gefunden“). Ein- und ausschalten geht für alle Kanäle oder je Kanal.",
-    katNeu: "Neue Kategorie", katEigene: "eigene", katGeaendert: "geändert", katNamePflicht: "Name (Pflicht)", katGruppeWahl: "Gruppe",
-    katNeuText: "Hier landen gefundene Tier-Streams, die zu keiner Kategorie passen. Sie hat keine eigene Suche.",
+    katText: "Hier legst du fest, was ein Thema ausmacht: eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen, und ob Tag/Nacht am Ort zählt. Gefundene Tier-Streams werden über die Wörter einsortiert (erstes passendes Thema, sonst „Neu gefunden“). Ein- und ausschalten geht für alle Kanäle oder je Kanal.",
+    katNeu: "Neues Thema", katEigene: "eigene", katGeaendert: "geändert", katNamePflicht: "Name (Pflicht)", katGruppeWahl: "Gruppe",
+    katNeuText: "Hier landen gefundene Tier-Streams, die zu keinem Thema passen. Es hat keine eigene Suche.",
     katWo: "Eingeschaltet", katAlle: "Für alle Kanäle", katStreams: (n) => `${n} Streams`, katEinStream: "1 Stream",
     katAusAlle: "aus", katAusBei: (l) => `aus bei ${l}`, katMitSuche: (n) => n === 1 ? "1 Suchbegriff" : `${n} Suchbegriffe`, katNameFeld: "Name",
     katBegriffe: (n) => `Suchbegriffe (je Zeile einer, höchstens ${n})`,
-    katBegriffeTiere: "Leer = nur die allgemeine Tiersuche (Seite Suche) füllt diese Kategorie. Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf.",
-    katBegriffeThemen: "Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf. Gesucht wird nur, solange die Kategorie für alle Kanäle eingeschaltet ist.",
+    katBegriffeTiere: "Leer = nur die gemeinsame Tiersuche („Suche für Tiere …“ über der Liste) füllt dieses Thema. Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf.",
+    katBegriffeThemen: "Jeder Begriff ist eine Anfrage bei YouTube pro Suchlauf. Gesucht wird nur, solange das Thema für alle Kanäle eingeschaltet ist.",
     katWoerter: "Wörter im Titel (je Zeile eines, reguläre Ausdrücke erlaubt)",
-    katWoerterTiere: "Ein Wort muss im Titel stehen. Sortiert auch Funde der allgemeinen Tiersuche hierher.",
+    katWoerterTiere: "Ein Wort muss im Titel stehen. Sortiert auch Funde der gemeinsamen Tiersuche hierher.",
     katWoerterThemen: "Ein Wort muss im Titel stehen. Leer = jeder Titel (außer Musik, Spiele u. Ä.).",
     katOhneTag: "Tag/Nacht am Ort egal", katOhneTagWoerter: "Tag/Nacht egal nur bei diesen Wörtern im Titel",
     katStreamsZeigen: "Streams zeigen", katStandard: "Auf Standard zurücksetzen",
     katVerschieben: (n) => n ? `${n} Streams verschieben nach` : "Löschen", katWirklich: "Endgültig löschen",
-    kategorienWoanders: "Kategorien ein- und ausschalten und bearbeiten:",
+    kategorienWoanders: "Themen ein- und ausschalten und bearbeiten:",
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", streams: "Streams", kategorien: "Categories", radio: "Radio", einspieler: "Clips", anzeige: "Display",
+    reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", live: "Overview", streams: "Collection", kategorien: "Topics", automatik: "Automation", radio: "Radio", einspieler: "Clips", anzeige: "Display",
               video: "Rules", suche: "Stream search", verbindung: "Connection", medien: "Media library", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage", speicherorte: "Storage locations" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen channels – no settings. Address:",
@@ -715,14 +715,14 @@ const TEXTE = {
             quellen: { verwaltung: "Admin", pult: "Panel", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "only black", steht: "picture frozen" },
             layouts: { neu: "new layouts", geaendert: "layouts changed", geloescht: "layouts deleted" },
             bereich: { fernseher: "Channels", layouts: "Layouts", video: "Video", medien: "Media", quellen: "Data sources", radio: "Radio", einspieler: "Clips",
-                       kategorien: "Categories", standort: "Location", anzeige: "Display", ha: "Home Assistant", benachrichtigung: "Notifications",
+                       kategorien: "Topics", standort: "Location", anzeige: "Display", ha: "Home Assistant", benachrichtigung: "Notifications",
                        sicherung: "Backup", pult: "Announcement panel", alarm: "Emergency screen", webhook: "Webhook", stream: "Stream", sprache: "Language", updates: "Updates" },
             aktion: { einstellungen: "Settings saved", webhook_neu: "new webhook key", medien_neu: "Medium uploaded", medien_loeschen: "Medium deleted",
                       galerie_neu: "Picture added to the gallery", galerie_ordner: "Gallery folder changed", galerie_loeschen: "Pictures deleted from the gallery",
                       galerie_ordnen: "Gallery reordered", galerie_umbenennen: "Gallery picture renamed", speicherorte: "Storage locations changed", galerie_abgleichen: "Gallery sync started",
                       schalten: "TV switched", nach_einschalten: "Source/page tried on the TV", update: "Update requested",
                       update_ergebnis: "Update", sicherung_erstellen: "Backup created", sicherung_loeschen: "Backup deleted",
-                      sicherung_einspielen: "Backup restored", quelle_datei: "File for data source uploaded", kategorie_loeschen: "Category deleted",
+                      sicherung_einspielen: "Backup restored", quelle_datei: "File for data source uploaded", kategorie_loeschen: "Topic deleted",
                       stream_neu: "Stream added", suche: "Search started", radio_neu: "Radio station added", seite_neu_laden: "TV page reloaded",
                       kette_neu: "Playback restarted", ton_neu: "Sound and stream restarted", layout_wiederherstellen: "Layout version restored",
                       stimme_laden: "Voice downloaded", probedurchsage: "Test announcement", einspieler_jetzt: "Clip shown now", stream_freigeben: "Rejected stream released",
@@ -757,7 +757,7 @@ const TEXTE = {
             doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test`,
             speicher: (st, f) => st === "rot" ? `Storage full (${f} GB free) – uploads blocked, please clean up` : `Storage getting low (${f} GB free) – please clean up` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
-    bereiche: { uebersicht: "Overview", displays: "Displays", inhalte: "Content", videoton: "Videos & radio", einstellungen: "Settings", system: "System" },
+    bereiche: { uebersicht: "Overview", displays: "Displays", inhalte: "Content", videoton: "Live videos", einstellungen: "Settings", system: "System" },
     fernseherText: "A channel is what a TV shows: layout, schedule, live videos and sound. Each channel has its own address – a device or the TV's browser opens it.",
     adresse: "Channel address", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
@@ -865,8 +865,8 @@ const TEXTE = {
       e_tv_doppelt: "duplicate channel identifier: {id}", e_ton: "sound only off, radio or animals", e_aufloesung: "resolution only 1080 or 2160", e_aufnahme: "capture only 720, 1080 or 1440",
       e_tv_fehlt: "at least one channel is required", e_zeitzone: "unknown time zone {zz}", e_stufe: "unknown level",
       e_suchmuster: "invalid search pattern: {x}", e_ortsmuster: "invalid place pattern: {m}",
-      e_kat_doppelt: "duplicate category identifier: {id}", e_kat_name: "Own category needs a name", e_kat_max: "At most {n} categories",
-      e_kat_begriffe: "{name}: at most {n} search terms", e_kat_unbekannt: "Unknown category", e_kat_eingebaut: "Built-in categories cannot be deleted",
+      e_kat_doppelt: "duplicate topic identifier: {id}", e_kat_name: "Own topic needs a name", e_kat_max: "At most {n} topics",
+      e_kat_begriffe: "{name}: at most {n} search terms", e_kat_unbekannt: "Unknown topic", e_kat_eingebaut: "Built-in topics cannot be deleted",
       e_ep_quelle: "Clip: unknown source", e_ep_adresse: "Clip: address missing", e_medium_art: "Media: type picture or video",
       e_pult_pw: "Panel password: at least 6 characters", e_bild_gross: "Picture too large (max. 8 MB)", e_bild_art: "Only JPG or PNG",
       e_einspielen: "Not a SignageCast backup or profile", e_streamliste: "stream list missing", e_stream_id: "invalid ID {id}",
@@ -980,12 +980,12 @@ const TEXTE = {
     epVorab: (mb, ges, st) => `preloaded: ${mb} MB${ges ? " of " + ges + " MB" : ""}${st ? " · edition " + st : ""}`,
     aenderungen: "What's new?", projektseite: "Project page (GitHub)", fehlerMelden: "Report a bug / request a feature",
     aufgaben: "Scheduled tasks", systemSeiten: "Services, logs and timers of the container are in the Cockpit menu on the left.",
-    hinzufuegen: "Add stream", link: "YouTube link or video ID", name: "Name (empty = title)", kategorie: "Category",
-    breite: "Latitude", laenge: "Longitude", ortAuto: "empty = detect from title", filter: "Search …", alle: "all categories",
+    hinzufuegen: "Add stream", link: "YouTube link or video ID", name: "Name (empty = title)", kategorie: "Topic",
+    breite: "Latitude", laenge: "Longitude", ortAuto: "empty = detect from title", filter: "Search …", alle: "all topics",
     herkunftAlle: "fixed and found", nurFeste: "fixed only", nurGefundene: "found only", aktiv: "active", geschuetzt: "protected",
     zustandAlle: "all", zustand: { rotation: "in rotation", bereit: "ready", nacht: "night", nicht_live: "not live",
       qualitaet: "resolution too low", pause: "paused after strike", gesperrt: "blocked", strikes: "with strikes", ohne_ort: "location unknown",
-      ungeprueft: "not checked yet", inaktiv: "inactive", kategorie_aus: "category off" },
+      ungeprueft: "not checked yet", inaktiv: "inactive", kategorie_aus: "topic off" },
     hellIn: (d) => `daylight in ${d}`, laeuftAus: "ending (just got dark)", pauseBis: (z) => `until ${z}`, angebot: (p) => `offers ${p}`,
     vorab: (z, n) => `Pre-check ${z}: ${n} checked`,
     zeigen: "Show now", uebernehmen: "Keep", bearbeiten: "Edit", entfernen: "Remove", ablehnen: "Reject",
@@ -1018,7 +1018,7 @@ const TEXTE = {
       aktiv: "Currently active", std: "default", standard: "Back to default" },
     codec: "Codec", codecArt: { auto: "Automatic (recommended)", h265: "H.265 / HEVC", h264: "H.264 / AVC" },
     codecText: "Automatic: 4K as H.265 (half the data, supported by almost all 4K TVs), Full HD as H.264 (plays on practically every TV, browser and player). Choose H.264 if a device stutters or shows no picture – e.g. older TVs, Firefox; H.265 needs about 30–40 % less bitrate for the same quality.",
-    kategorien: "Categories", kategorienAlle: "Categories (for all channels)", streamTechnik: "Video stream", abschaltenTitel: "Video stream without viewers",
+    kategorien: "Topics", kategorienAlle: "Topics (for all channels)", streamTechnik: "Video stream", abschaltenTitel: "Video stream without viewers",
     abschnitt: { anzeige: "Display", video: "Live video", ton: "Sound" }, aufloesung: "Output", bitrate: "Bitrate (Mbit/s)",
     aufnahme: "Capture (browser)", aufnahmeArt: { 720: "720p – saves CPU", 1080: "1080p (recommended)", 1440: "1440p – sharper, needs more CPU" },
     aufnahmeText: "Size in which the browser draws the TV page; the graphics unit converts it to the output. More than the output brings nothing. Live videos in the layout follow the capture (720p fetches 720p from YouTube). A change briefly restarts the stream.",
@@ -1091,21 +1091,21 @@ const TEXTE = {
            stadt: "Cities & squares", strand: "Beaches & coasts", berge: "Mountains & ski", hafen: "Harbours & ships",
            flug: "Airports & planes", bahn: "Trains & railways", weltraum: "Space & Earth", natur: "Natural wonders" },
     katGruppe: { tiere: "Animals", themen: "More topics" },
-    katText: "Define what a category is: its own YouTube search terms, words that must appear in the title and whether day/night at the location matters. Found animal streams are sorted by the words (first matching category, otherwise “Newly found”). Switch categories on and off for all channels or per channel.",
-    katNeu: "New category", katEigene: "own", katGeaendert: "changed", katNamePflicht: "Name (required)", katGruppeWahl: "Group",
-    katNeuText: "Found animal streams that match no category end up here. It has no search of its own.",
+    katText: "Define what a topic is: its own YouTube search terms, words that must appear in the title and whether day/night at the location matters. Found animal streams are sorted by the words (first matching topic, otherwise “Newly found”). Switch topics on and off for all channels or per channel.",
+    katNeu: "New topic", katEigene: "own", katGeaendert: "changed", katNamePflicht: "Name (required)", katGruppeWahl: "Group",
+    katNeuText: "Found animal streams that match no topic end up here. It has no search of its own.",
     katWo: "Switched on", katAlle: "For all channels", katStreams: (n) => `${n} streams`, katEinStream: "1 stream",
     katAusAlle: "off", katAusBei: (l) => `off on ${l}`, katMitSuche: (n) => n === 1 ? "1 search term" : `${n} search terms`, katNameFeld: "Name",
     katBegriffe: (n) => `Search terms (one per line, at most ${n})`,
-    katBegriffeTiere: "Empty = only the general animal search (Search page) fills this category. Each term is one YouTube request per search run.",
-    katBegriffeThemen: "Each term is one YouTube request per search run. The search only runs while the category is on for all channels.",
+    katBegriffeTiere: "Empty = only the shared animal search (“Search for animals …” above the list) fills this topic. Each term is one YouTube request per search run.",
+    katBegriffeThemen: "Each term is one YouTube request per search run. The search only runs while the topic is on for all channels.",
     katWoerter: "Words in the title (one per line, regular expressions allowed)",
-    katWoerterTiere: "One word must appear in the title. Also sorts finds of the general animal search into this category.",
+    katWoerterTiere: "One word must appear in the title. Also sorts finds of the shared animal search into this topic.",
     katWoerterThemen: "One word must appear in the title. Empty = any title (except music, games and the like).",
     katOhneTag: "Ignore day/night at the location", katOhneTagWoerter: "Ignore day/night only with these words in the title",
     katStreamsZeigen: "Show streams", katStandard: "Reset to default",
     katVerschieben: (n) => n ? `Move ${n} streams to` : "Delete", katWirklich: "Delete for good",
-    kategorienWoanders: "Switch categories on and off and edit them:",
+    kategorienWoanders: "Switch topics on and off and edit them:",
     aufgabe: { streamliste: "Check stream list", suche: "Search new streams", wache: "Measure quality" },
   },
 };
@@ -1203,23 +1203,24 @@ const mediathek = (art, f) => async (i) => {
 };
 const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite, medien: mediathek("medien", medienSeite), einspieler: einspielerSeite,
                  galerie: mediathek("galerie", galerieSeite),
-                 streams: streamsSeite, kategorien: kategorienSeite, video, suche: sucheSeite, radio: radioSeite,
+                 live: liveSeite, streams: streamsSeite, kategorien: kategorienSeite, automatik: automatikSeite, radio: radioSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: teile(pultSeite, webhookKarte), durchsage: durchsageSeite,
                  updates: updatesSeite, sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
                  protokoll: protokollSeite, ki: kiSeite, fern: fernSeite, speicherorte: speicherorteSeite };
 // Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
-// Seit 0.49 neu geordnet: Displays (Kanäle = was ein Fernseher zeigt, Geräte = Hardware), Inhalte, Videos & Radio,
+// Seit 0.49 neu geordnet: Displays (Kanäle = was ein Fernseher zeigt, Geräte = Hardware), Inhalte, Live-Videos (seit 0.56),
 // Einstellungen (Grundlagen, Verbindungen, Pult), System (Betrieb); Durchsage als Knopf im Kopf.
 // Die Kennungen der Seiten (#fernseher = Kanäle, #video = Regeln …) bleiben gleich, alte leitet ALT weiter.
 const BEREICHE = [["uebersicht", ["uebersicht"]], ["displays", ["fernseher", "player", "fern", "einrichten"]],
-                  ["inhalte", ["layout", "quellen", "medien", "einspieler"]],
-                  ["videoton", ["streams", "kategorien", "suche", "video", "radio"]],
+                  ["inhalte", ["layout", "quellen", "medien", "radio"]],
+                  // seit 0.56 „Live-Videos“: Übersicht, Sammlung (#streams), Themen (#kategorien), Automatik, Einspieler
+                  ["videoton", ["live", "streams", "kategorien", "automatik", "einspieler"]],
                   ["einstellungen", ["allgemein", "ha", "speicherorte", "ki", "benachrichtigung", "pult"].concat(CONTAINER ? ["zugang"] : [])],
                   ["system", ["zustand", "updates", "sicherung", "protokoll"]]];
 const NEBEN = ["durchsage"];                                           // Seiten ohne Reiter (Knopf im Kopf)
 const UNTER = { galerie: "medien" };                                   // Seiten als Reiter einer anderen (seit 0.50: Mediathek)
-const ALT = { anzeige: "allgemein", verbindung: "ha", leistung: "zustand", speicher: "zustand" };  // gemerkte Reiter bis 0.16 bzw. 0.48
+const ALT = { anzeige: "allgemein", verbindung: "ha", leistung: "zustand", speicher: "zustand", suche: "automatik", video: "automatik" };  // … bzw. 0.56  // gemerkte Reiter bis 0.16 bzw. 0.48
 let aktiv = "uebersicht", timer = null;
 const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(UNTER[k] || k)) || (NEBEN.includes(k) ? ["", []] : BEREICHE[0]);
 function reiterZeichnen() {
@@ -1234,7 +1235,9 @@ function reiterZeichnen() {
   const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
                   fernseher: "#show-something-different-at-night", pult: "#announcements-from-the-reception",
                   durchsage: "#announcements-from-the-reception", galerie: "#show-a-folder-of-pictures-gallery-since-045",
-                  speicherorte: "#pictures-and-files-from-a-nas-or-cloud-storage-locations-since-048" }[aktiv] || "";
+                  speicherorte: "#pictures-and-files-from-a-nas-or-cloud-storage-locations-since-048",
+                  live: "#live-videos-overview-collection-automation-since-056", streams: "#live-videos-overview-collection-automation-since-056",
+                  automatik: "#live-videos-overview-collection-automation-since-056", kategorien: "#edit-topics-or-create-your-own-since-037" }[aktiv] || "";
   const doku = aktiv === "player" || aktiv === "einrichten" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "")
     : aktiv === "fern" ? "REMOTE.md" : "MANUAL.md" + anker;
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener" href="https://github.com/thefrozn/signagecast/blob/main/docs/${doku}">?</a>`));
@@ -1259,6 +1262,7 @@ const merk = {};                                                       // zuletz
 function zeigeSeite(k) {
   k = ALT[k] || k;
   if (!SEITEN[k]) k = "uebersicht";
+  seitenfeldZu();                                                      // seit 0.56: Details rechts gehören zur Seite
   // Auch derselbe Reiter zeichnet neu (z. B. „Kanäle“ zurück zur Liste) – ungespeicherte Eingaben gingen dabei verloren
   if (ungespeichert() && !confirm(T.ungespeichertFrage)) { history.replaceState(null, "", "#" + aktiv); reiterZeichnen(); return; }
   if (k === "fernseher") kanalOffen = null;                            // seit 0.50: „Kanäle“ zeigt immer die Liste
@@ -2247,266 +2251,6 @@ async function vorschau() {
   } catch (_) { img.style.display = "none"; txt.textContent = T.keineVorschau; }
 }
 
-// ---------- Streams ----------
-// Filter der Streamliste (seit 0.31: Zustand und Herkunft); merkt sich der Browser
-let filter = { text: "", kat: "", herkunft: "", zustand: "" };
-try { filter = Object.assign(filter, JSON.parse(localStorage.getItem("signagecast-streamfilter") || "{}")); } catch (_) { /* egal */ }
-function filterMerken() { try { localStorage.setItem("signagecast-streamfilter", JSON.stringify(filter)); } catch (_) { /* egal */ } }
-const ZUSTAENDE = ["rotation", "bereit", "nacht", "nicht_live", "qualitaet", "pause", "gesperrt", "strikes", "ohne_ort", "ungeprueft", "inaktiv", "kategorie_aus"];
-function passtZustand(s, z) { return !z || (z === "rotation" ? s.in_rotation : z === "strikes" ? s.strikes > 0 : s.zustand === z); }
-function dauerText(s) { const m = Math.max(0, Math.round(s / 60)); return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h` : `${m} min`; }
-async function streamsSeite(inhalt) {
-  inhalt.innerHTML = `
-    <div class="karte"><h2>${esc(T.hinzufuegen)}</h2>
-      <div class="zeile"><input type="url" id="nLink" placeholder="https://www.youtube.com/watch?v=…" aria-label="${esc(T.link)}"></div>
-      <div class="zeile"><input type="text" id="nName" placeholder="${esc(T.name)}">
-        <select id="nKat">${katOptionen("neu")}</select></div>
-      <div class="zeile"><input type="number" step="0.01" id="nBreite" placeholder="${esc(T.breite)}">
-        <input type="number" step="0.01" id="nLaenge" placeholder="${esc(T.laenge)}"><span class="leise">${esc(T.ortAuto)}</span></div>
-      <div class="zeile"><button class="knopf haupt" id="nOk">${esc(T.hinzufuegen)}</button></div></div>
-    <div class="karte">
-      <div class="zeile"><input type="text" id="fText" placeholder="${esc(T.filter)}" value="${esc(filter.text)}">
-        <select id="fKat"><option value="">${esc(T.alle)}</option>${katOptionen(filter.kat)}</select>
-        <select id="fHerk">${[["", T.herkunftAlle], ["fest", T.nurFeste], ["entdeckt", T.nurGefundene]].map(([w, n]) =>
-          `<option value="${w}" ${filter.herkunft === w ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
-      <div class="marken" id="fZust" role="group" aria-label="${esc(T.zustandAlle)}"></div>
-      ${E.fernseher.length > 1 ? `<div class="zeile"><label>${esc(T.zeigenAuf)}</label><select id="zeigenTv"><option value="">${esc(T.alleTv)}</option>
-        ${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select></div>` : ""}
-      <div class="leise" id="zahl"></div></div>
-    <div id="liste"></div>
-    <div class="karte"><h3>${esc(T.abgelehnt)}</h3><div id="abgelehnt"></div></div>`;
-  $("#nKat").value = "neu";
-  $("#nOk").onclick = (e) => aktion(e.target, async () => {
-    const b = $("#nBreite").value, l = $("#nLaenge").value;
-    await senden("/api/streams", { link: $("#nLink").value, name: $("#nName").value, kategorie: $("#nKat").value,
-      breite: b === "" ? null : Number(b), laenge: l === "" ? null : Number(l) });
-    $("#nLink").value = ""; $("#nName").value = "";
-    await streamsLaden();
-  });
-  for (const [id, feld, art] of [["#fText", "text", "input"], ["#fKat", "kat", "change"], ["#fHerk", "herkunft", "change"]])
-    $(id).addEventListener(art, (e) => { filter[feld] = e.target.value; filterMerken(); listeZeichnen(); });
-  await streamsLaden();
-}
-let STREAMS = null;
-async function streamsLaden() { STREAMS = await holen("/api/streams"); listeZeichnen(); }
-function listeZeichnen() {
-  const liste = $("#liste"); if (!liste || !STREAMS) return;
-  const t = filter.text.toLowerCase();
-  const vorauswahl = STREAMS.streams.filter((s) => (!t || (s.name + " " + (s.titel || "") + " " + s.id).toLowerCase().includes(t))
-    && (!filter.kat || s.kategorie === filter.kat) && (!filter.herkunft || s.herkunft === filter.herkunft));
-  const gezeigt = vorauswahl.filter((s) => passtZustand(s, filter.zustand));
-  // Zähler je Zustand (über Text, Kategorie und Herkunft gefiltert) – anklicken filtert, nochmal klicken hebt auf
-  const fz = $("#fZust"); fz.innerHTML = "";
-  for (const z of [""].concat(ZUSTAENDE)) {
-    const n = z ? vorauswahl.filter((s) => passtZustand(s, z)).length : vorauswahl.length;
-    if (z && !n && filter.zustand !== z) continue;
-    const b = el(`<button type="button" class="knopf klein ${filter.zustand === z ? "haupt" : ""}" aria-pressed="${filter.zustand === z}">${esc(z ? T.zustand[z] : T.zustandAlle)} ${n}</button>`);
-    b.onclick = () => { filter.zustand = filter.zustand === z ? "" : z; filterMerken(); listeZeichnen(); };
-    fz.appendChild(b);
-  }
-  const vb = STREAMS.vorab;
-  $("#zahl").textContent = T.anzahl(STREAMS.streams.length, STREAMS.streams.filter((s) => s.in_rotation).length)
-    + (vb && vb.zeit && vb.geprueft != null ? " · " + T.vorab(vb.zeit, vb.geprueft) : "");
-  liste.innerHTML = "";
-  for (const s of gezeigt) liste.appendChild(streamKarte(s));
-  $("#abgelehnt").innerHTML = STREAMS.abgelehnt.length ? "" : "–";
-  for (const a of STREAMS.abgelehnt) {
-    const z = el(`<div class="zeile"><code>${esc(a)}</code><button class="knopf">${esc(T.freigeben)}</button></div>`);
-    z.querySelector("button").onclick = (e) => aktion(e.target, async () => { await senden(`/api/abgelehnt/${encodeURIComponent(a)}/freigeben`); await streamsLaden(); });
-    $("#abgelehnt").appendChild(z);
-  }
-}
-function zustandMarke(s) {
-  const z = s.zustand; if (!z) return "";
-  const stil = { bereit: "gut", ohne_ort: "warn", ungeprueft: "warn", qualitaet: "schlecht", pause: "warn", gesperrt: "schlecht", nicht_live: "" }[z] ?? "";
-  let text = T.zustand[z] || z;
-  if (z === "nacht" && s.nachlauf) text = T.laeuftAus;
-  else if (z === "nacht" && s.hell_ab) text += " · " + T.hellIn(dauerText(s.hell_ab - Date.now() / 1000));
-  if (z === "pause" && s.pause_bis) text += " " + T.pauseBis(new Date(s.pause_bis * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-  return `<span class="marke ${stil}">${esc(text)}</span>`;
-}
-function streamKarte(s) {
-  const q = s.qualitaet || {};
-  const anteil = q.anteil_720p_plus != null ? Math.round(q.anteil_720p_plus * 100) : null;
-  const marken = [
-    `<span class="marke">${esc(katName(s.kategorie))}</span>`,
-    `<span class="marke">${esc(s.herkunft === "entdeckt" ? T.gefunden : T.fest)}</span>`,
-    zustandMarke(s),
-    s.in_rotation ? `<span class="marke gut">${esc(T.inRotation)}</span>` : "",
-    s.angeboten_hoehe ? `<span class="marke ${s.zustand === "qualitaet" ? "schlecht" : ""}">${esc(T.angebot(s.angeboten_hoehe + "p"))}</span>` : "",
-    anteil != null ? `<span class="marke ${anteil >= 90 ? "gut" : anteil >= 50 ? "warn" : "schlecht"}">≥720p ${anteil} % · ${q.proben} ${esc(T.proben)}${q.codecs && q.codecs.length ? " · " + esc(q.codecs.map((c) => c.split(".")[0]).join("/")) : ""}</span>` : "",
-    s.strikes ? `<span class="marke schlecht" title="${esc((s.strike_gruende || []).join("\n"))}">${esc(T.strikes)}: ${s.strikes}</span>` : "",
-  ].join("");
-  const k = el(`<div class="karte stream">
-    <div><div class="titel">${esc(s.name)}</div><div class="leise">${esc(s.titel && s.titel !== s.name ? s.titel : "")}</div>
-      <div class="leise"><a href="https://www.youtube.com/watch?v=${encodeURIComponent(s.video_id || s.id)}" target="_blank" rel="noopener">${esc(s.id)}</a>
-        ${s.breite != null ? ` · ${Number(s.breite).toFixed(2)} / ${Number(s.laenge).toFixed(2)}` : ""}</div>
-      <div class="marken">${marken}</div></div>
-    <div class="schalterspalte"><label>${esc(T.aktiv)} ${schalter("aktiv", s.aktiv !== false)}</label>
-      <label>${esc(T.geschuetzt)} ${schalter("geschuetzt", s.geschuetzt)}</label></div>
-    <div class="aktionen">
-      <button class="knopf" data-a="zeigen">${esc(T.zeigen)}</button>
-      ${s.herkunft === "entdeckt" ? `<button class="knopf" data-a="uebernehmen">${esc(T.uebernehmen)}</button>` : ""}
-      <button class="knopf" data-a="bearbeiten">${esc(T.bearbeiten)}</button>
-      ${s.strikes ? `<button class="knopf" data-a="strikes">${esc(T.strikesWeg)}</button>` : ""}
-      <button class="knopf gefahr" data-a="entfernen">${esc(T.entfernen)}</button>
-      <button class="knopf gefahr" data-a="ablehnen">${esc(T.ablehnen)}</button></div></div>`);
-  const pfad = `/api/streams/${encodeURIComponent(s.id)}`;
-  k.querySelectorAll(".schalter input").forEach((i) => { i.onchange = () => aktion(null, () => senden(pfad, { [i.name]: i.checked })); });
-  k.querySelectorAll("[data-a]").forEach((b) => {
-    b.onclick = () => {
-      const a = b.dataset.a;
-      if (a === "zeigen") return aktion(b, () => senden(pfad + "/zeigen", { video_id: s.video_id, tv: ($("#zeigenTv") || {}).value || null }), T.zeigenOk);
-      if (a === "uebernehmen") return aktion(b, async () => { await senden(pfad, { herkunft: "fest" }); await streamsLaden(); });
-      if (a === "strikes") return aktion(b, async () => { await senden(pfad + "/strikes-zuruecksetzen", { video_id: s.video_id }); await streamsLaden(); });
-      if (a === "entfernen" && confirm(T.wirklichEntfernen)) return aktion(b, async () => { await senden(pfad + "/entfernen"); await streamsLaden(); });
-      if (a === "ablehnen" && confirm(T.wirklichAblehnen)) return aktion(b, async () => { await senden(pfad + "/entfernen", { ablehnen: true }); await streamsLaden(); });
-      if (a === "bearbeiten") {
-        if (k.querySelector(".bearbeiten")) return k.querySelector(".bearbeiten").remove();
-        const f = el(`<div class="bearbeiten">
-          <div class="zeile"><input type="text" name="name" value="${esc(s.name)}" aria-label="${esc(T.name)}">
-            <select name="kategorie">${katOptionen(s.kategorie)}</select></div>
-          <div class="zeile"><input type="number" step="0.01" name="breite" value="${s.breite ?? ""}" placeholder="${esc(T.breite)}">
-            <input type="number" step="0.01" name="laenge" value="${s.laenge ?? ""}" placeholder="${esc(T.laenge)}">
-            <button class="knopf haupt">${esc(T.speichern)}</button></div></div>`);
-        f.querySelector("button").onclick = (e) => aktion(e.target, async () => {
-          const d = { name: f.querySelector("[name=name]").value, kategorie: f.querySelector("[name=kategorie]").value };
-          if (f.querySelector("[name=breite]").value !== "") { d.breite = Number(f.querySelector("[name=breite]").value); d.laenge = Number(f.querySelector("[name=laenge]").value); }
-          await senden(pfad, d); await streamsLaden();
-        });
-        k.appendChild(f);
-      }
-    };
-  });
-  return k;
-}
-
-// ---------- Kategorien (seit 0.37) ----------
-// Jede Kategorie: Name, Gruppe, eigene Suchbegriffe, Titelwörter, Tag/Nacht. Dazu, wo sie eingeschaltet ist (für alle /
-// je Fernseher) und wie viele Streams drin sind. Eingebaute lassen sich zurücksetzen, eigene löschen (Streams wandern um).
-async function kategorienSeite(inhalt) {
-  const st = await holen("/api/streams");
-  const anzahl = {};
-  for (const x of st.streams) anzahl[x.kategorie] = (anzahl[x.kategorie] || 0) + 1;
-  let ks = JSON.parse(JSON.stringify(E.kategorien));
-  const offen = new Set();
-  const zeilenText = (l) => (l || []).join("\n");
-  const zeilen = (t) => t.value.split("\n").map((x) => x.trim()).filter(Boolean);
-  const zeichnen = () => {
-    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.reiter.kategorien)}</h2><p class="leise">${esc(T.katText)}</p>
-        <div class="zeile"><button class="knopf" id="katNeu" ${ks.length >= KAT_GRENZEN[0] ? "disabled" : ""}>${esc(T.katNeu)}</button></div></div>
-      <div id="katListe"></div>`;
-    const liste = $("#katListe");
-    for (const g of ["tiere", "themen"]) {
-      const inGruppe = ks.filter((k) => k.gruppe === g);
-      if (!inGruppe.length) continue;
-      liste.appendChild(el(`<h3>${esc(T.katGruppe[g])}</h3>`));
-      for (const k of inGruppe) liste.appendChild(karte(k));
-    }
-    // Knopf in der Liste: Änderungen markieren ihre Karte als „nicht gespeichert“ (aenderungMerken)
-    liste.appendChild(el(`<div class="zeile"><button class="knopf haupt" id="katOk">${esc(T.speichern)}</button></div>`));
-    $("#katNeu").onclick = () => {
-      lesen();
-      let id; do { id = "k" + Math.random().toString(36).slice(2, 7).replace(/[^a-z0-9]/g, "0"); } while (ks.some((x) => x.id === id));
-      ks.push({ id, eingebaut: false, name: "", gruppe: "themen", begriffe: [], woerter: [], ohne_tag: false, ohne_tag_woerter: [], neu: true });
-      offen.add(id); zeichnen();
-      const f = liste.querySelector(`[data-id="${id}"] [name=name]`); if (f) { f.focus(); f.closest(".karte").scrollIntoView({ block: "center" }); }
-    };
-    $("#katOk").onclick = (e) => { lesen(); speichern(e.target); };
-  };
-  const karte = (k) => {
-    const aus = E.video.kategorien_aus.includes(k.id);
-    const tvAus = E.fernseher.filter((t) => t.kategorien_aus.includes(k.id));
-    const n = anzahl[k.id] || 0;
-    const std = KAT_STANDARD.find((x) => x.id === k.id);
-    const istNeu = k.id === "neu";
-    const kurz = [n === 1 ? T.katEinStream : T.katStreams(n),
-      aus ? T.katAusAlle : tvAus.length ? T.katAusBei(tvAus.map((t) => t.name).join(", ")) : "",
-      k.begriffe.length ? T.katMitSuche(k.begriffe.length) : ""].filter(Boolean).join(" · ");
-    const d = el(`<details class="karte" data-id="${esc(k.id)}" ${offen.has(k.id) ? "open" : ""}>
-      <summary><b>${esc(k.name || T.kat[k.id] || k.id)}</b>${k.eingebaut ? (k.standard === false ? ` <span class="marke">${esc(T.katGeaendert)}</span>` : "")
-        : ` <span class="marke">${esc(T.katEigene)}</span>`}
-        <span class="leise"> – ${esc(kurz)}</span></summary>
-      <div class="zeile"><label>${esc(T.katNameFeld)}</label><input type="text" name="name" maxlength="40" value="${esc(k.name)}"
-        placeholder="${esc(k.eingebaut ? T.kat[k.id] || k.id : T.katNamePflicht)}"></div>
-      ${istNeu ? `<p class="leise">${esc(T.katNeuText)}</p>` : `
-      <div class="zeile"><label>${esc(T.katGruppeWahl)}</label><select name="gruppe">${["tiere", "themen"].map((g) =>
-        `<option value="${g}" ${g === k.gruppe ? "selected" : ""}>${esc(T.katGruppe[g])}</option>`).join("")}</select></div>`}
-      <h4>${esc(T.katWo)}</h4>
-      <div class="zeile"><label>${esc(T.katAlle)}</label>${schalter("alle", !aus)}</div>
-      ${E.fernseher.length > 1 ? E.fernseher.map((t, i) => `<div class="zeile"><label>${esc(t.name)}</label>${schalter("tv" + i, !t.kategorien_aus.includes(k.id))}</div>`).join("") : ""}
-      ${istNeu ? "" : `
-      <h4>${esc(T.katBegriffe(KAT_GRENZEN[1]))}</h4><p class="leise">${esc(k.gruppe === "tiere" ? T.katBegriffeTiere : T.katBegriffeThemen)}</p>
-      <textarea name="begriffe" rows="3" spellcheck="false">${esc(zeilenText(k.begriffe))}</textarea>
-      <h4>${esc(T.katWoerter)}</h4><p class="leise">${esc(k.gruppe === "tiere" ? T.katWoerterTiere : T.katWoerterThemen)}</p>
-      <textarea name="woerter" rows="3" spellcheck="false">${esc(zeilenText(k.woerter))}</textarea>
-      <div class="zeile"><label>${esc(T.katOhneTag)}</label>${schalter("ohne_tag", k.ohne_tag)}</div>
-      <details class="erweitert"><summary>${esc(T.katOhneTagWoerter)}</summary>
-        <textarea name="ohne_tag_woerter" rows="2" spellcheck="false">${esc(zeilenText(k.ohne_tag_woerter))}</textarea></details>`}
-      <div class="zeile">
-        ${n ? `<button class="knopf" data-a="streams">${esc(T.katStreamsZeigen)}</button>` : ""}
-        ${std && !istNeu ? `<button class="knopf" data-a="standard">${esc(T.katStandard)}</button>` : ""}
-        ${!k.eingebaut ? `<button class="knopf gefahr" data-a="loeschen">${esc(T.entfernen)}</button>` : ""}</div>
-      <div class="zeile" data-loeschen hidden><label>${esc(T.katVerschieben(n))}</label>
-        <select name="ziel">${ks.filter((x) => x.id !== k.id && !x.neu).map((x) => `<option value="${esc(x.id)}" ${x.id === "neu" ? "selected" : ""}>${esc(x.name || T.kat[x.id] || x.id)}</option>`).join("")}</select>
-        <button class="knopf gefahr" data-a="wirklich">${esc(T.katWirklich)}</button></div></details>`);
-    d.addEventListener("toggle", () => { if (d.open) offen.add(k.id); else offen.delete(k.id); });
-    d.querySelectorAll("[data-a]").forEach((b) => {
-      b.onclick = () => {
-        const a = b.dataset.a;
-        if (a === "streams") { filter = Object.assign(filter, { kat: k.id, text: "", zustand: "" }); filterMerken(); return zeigeSeite("streams"); }
-        if (a === "standard") {
-          d.querySelector("[name=name]").value = "";
-          d.querySelector("[name=gruppe]").value = std.gruppe;
-          d.querySelector("[name=begriffe]").value = zeilenText(std.begriffe);
-          d.querySelector("[name=woerter]").value = zeilenText(std.woerter);
-          d.querySelector("[name=ohne_tag]").checked = std.ohne_tag;
-          d.querySelector("[name=ohne_tag_woerter]").value = zeilenText(std.ohne_tag_woerter);
-          d.querySelector("[name=name]").dispatchEvent(new Event("input", { bubbles: true }));
-          return;
-        }
-        if (a === "loeschen") {
-          if (k.neu) { lesen(); ks = ks.filter((x) => x.id !== k.id); return zeichnen(); }   // noch nicht gespeichert
-          d.querySelector("[data-loeschen]").hidden = false; return;
-        }
-        if (a === "wirklich") return aktion(b, async () => {
-          const r = await senden("/api/kategorien/loeschen", { id: k.id, ziel: d.querySelector("[name=ziel]").value });
-          E = r.einstellungen;
-          await kategorienSeite(inhalt);
-        });
-      };
-    });
-    return d;
-  };
-  // Formular -> ks (Text bleibt beim Neuzeichnen erhalten)
-  const lesen = () => {
-    for (const d of inhalt.querySelectorAll("#katListe > details[data-id]")) {
-      const k = ks.find((x) => x.id === d.dataset.id); if (!k) continue;
-      const w = (n) => d.querySelector(`[name=${n}]`);
-      k.name = w("name").value.trim();
-      if (w("gruppe")) {
-        k.gruppe = w("gruppe").value; k.begriffe = zeilen(w("begriffe")); k.woerter = zeilen(w("woerter"));
-        k.ohne_tag = w("ohne_tag").checked; k.ohne_tag_woerter = zeilen(w("ohne_tag_woerter"));
-      }
-      k._alle = w("alle").checked;
-      k._tv = E.fernseher.map((_, i) => (w("tv" + i) ? w("tv" + i).checked : k._alle));
-    }
-  };
-  const speichern = (knopf) => {
-    const an = (k, i) => (i == null ? k._alle !== false : (k._tv ? k._tv[i] : true));
-    const teil = {
-      kategorien: ks.map(({ id, name, gruppe, begriffe, woerter, ohne_tag, ohne_tag_woerter }) => ({ id, name, gruppe, begriffe, woerter, ohne_tag, ohne_tag_woerter })),
-      video: { kategorien_aus: ks.filter((k) => !an(k)).map((k) => k.id) },
-      fernseher: E.fernseher.map((t, i) => ({ ...t, kategorien_aus: ks.filter((k) => !an(k, i)).map((k) => k.id) })),
-    };
-    return aktion(knopf, async () => {
-      E = (await senden("/api/einstellungen", teil)).einstellungen;
-      await kategorienSeite(inhalt);
-    });
-  };
-  zeichnen();
-}
-
 // ---------- Anzeige ----------
 async function anzeige(inhalt) {
   const ents = await entitaeten();
@@ -2526,58 +2270,6 @@ async function anzeige(inhalt) {
     await speichernE({ sprache: $("#sprache").value, anzeige: { wetter_quelle: $("#wetterQ").value, wetter: $("#wetter").value } }, e.target);
     T = TEXTE[E.sprache] || TEXTE.de; reiterZeichnen(); hinweiseZeichnen();
   };
-}
-
-// ---------- Video & Regeln ----------
-async function video(inhalt) {
-  const v = E.video;
-  const zahlFeld = (id, w, min, max, step) => `<input type="number" id="${id}" value="${w}" min="${min}" max="${max}" step="${step || 1}">`;
-  inhalt.innerHTML = `<div class="karte">
-      <div class="zeile"><label>${esc(T.takt)}</label>${zahlFeld("takt", v.takt_min, 1, 30)}</div>
-      <div class="zeile"><label>${esc(T.nurTag)}</label>${schalter("nurTag", v.nur_tag)}</div>
-      <div class="zeile"><label>${esc(T.sonne)}</label>${zahlFeld("sonne", v.min_sonnenhoehe, -18, 30, 0.5)}</div>
-      <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
-      <div class="zeile"><label>${esc(T.mindeststufe)}</label><select id="stufe">${STUFEN.map((x) => `<option value="${x}" ${x === v.mindeststufe ? "selected" : ""}>${esc(stufeText(x))}</option>`).join("")}</select></div>
-      <div class="zeile"><label>${esc(T.schlecht)}</label>${zahlFeld("schlecht", v.schlecht_s, 5, 170)}</div>
-      <div class="zeile"><label>${esc(T.grenze)}</label>${zahlFeld("grenze", v.strike_grenze, 1, 20)}</div>
-      <div class="zeile"><label>${esc(T.sperre)}</label>${zahlFeld("sperre", v.sperre_h, 0, 72, 0.5)}</div></details>
-      <p class="leise">${esc(T.kategorienWoanders)} <a href="#kategorien">${esc(T.reiter.kategorien)}</a></p></div>
-    <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
-  const n = (id) => Number($("#" + id).value);
-  $("#ok").onclick = (e) => speichernE({
-    video: { takt_min: n("takt"), nur_tag: $("[name=nurTag]").checked, min_sonnenhoehe: n("sonne"),
-             mindeststufe: $("#stufe").value, schlecht_s: n("schlecht"), strike_grenze: n("grenze"), sperre_h: n("sperre") },
-  }, e.target);
-}
-
-// ---------- Stream-Suche ----------
-async function sucheSeite(inhalt) {
-  const s = E.suche;
-  const st = await holen("/api/status");
-  const letzte = st.liste.suche;
-  inhalt.innerHTML = `<div class="karte">
-      <div class="zeile"><label>${esc(T.sucheAktiv)}</label>${schalter("aktiv", s.aktiv)}</div>
-      <div class="zeile"><label>${esc(T.uhrzeit)}</label><input type="time" id="uhrzeit" value="${esc(s.uhrzeit)}"></div>
-      <div class="zeile"><label>${esc(T.max)}</label><input type="number" id="max" value="${s.max}" min="0" max="200"></div>
-      <div class="zeile"><label>${esc(T.behalten)}</label><input type="number" id="behalten" value="${s.behalten_tage}" min="1" max="365"></div>
-      <div class="zeile"><button class="knopf" id="jetzt">${esc(T.jetztSuchen)}</button>
-        <span class="leise" id="ergebnis">${letzte ? esc(T.zuletzt + " " + (letzte.zeit || "")) + (letzte.neu ? " · " + esc(T.sucheErgebnis(letzte.neu.length, letzte.gefunden ?? "?")) : "") : ""}</span></div></div>
-    <div class="karte"><h3>${esc(T.begriffe)}</h3><textarea id="begriffe">${esc(s.begriffe.join("\n"))}</textarea>
-      <h3>${esc(T.tierwoerter)}</h3><textarea id="tier">${esc(s.tierwoerter.join("\n"))}</textarea>
-      <h3>${esc(T.ausschluss)}</h3><textarea id="nein">${esc(s.ausschluss.join("\n"))}</textarea>
-      <h3>${esc(T.orte)}</h3><textarea id="orte">${esc(s.orte.map((o) => `${o.muster} ; ${o.breite} ; ${o.laenge}`).join("\n"))}</textarea></div>
-    <div class="zeile"><button class="knopf haupt" id="ok">${esc(T.speichern)}</button></div>`;
-  const zeilen = (id) => $("#" + id).value.split("\n").map((x) => x.trim()).filter(Boolean);
-  $("#ok").onclick = (e) => speichernE({ suche: {
-    aktiv: $("[name=aktiv]").checked, uhrzeit: $("#uhrzeit").value, max: Number($("#max").value), behalten_tage: Number($("#behalten").value),
-    begriffe: zeilen("begriffe"), tierwoerter: zeilen("tier"), ausschluss: zeilen("nein"),
-    orte: zeilen("orte").map((z) => { const t = z.split(";").map((x) => x.trim()); return { muster: t[0], breite: Number(t[1]), laenge: Number(t[2]) }; }),
-  } }, e.target);
-  $("#jetzt").onclick = (e) => aktion(e.target, async () => {
-    $("#ergebnis").textContent = T.sucheLaeuft;
-    const r = await senden("/api/suche/starten");
-    $("#ergebnis").textContent = r.suche.pause ? T.pause : T.sucheErgebnis((r.suche.neu || []).length, r.suche.gefunden ?? "?");
-  }, null);
 }
 
 // ---------- Verbindung ----------

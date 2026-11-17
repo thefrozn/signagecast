@@ -18,9 +18,9 @@ that video, so the TV needs no app, no login and no updates.
 | Area | Pages | What you do there |
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every channel, viewers, CPU/RAM, time check, Home Assistant |
-| **Displays** | Channels · Devices · Remote sites · + New device | A **channel** is what a TV shows. The list shows every channel with layout, state, devices and address; *Edit* opens it with tabs *Display & schedule* (layout, schedule, carousel), *Live video* (on/off, video source, categories), *Sound*, *On/off (HA)* and *Video stream* (resolution, bitrate, encoding) – saved per channel. **Devices** are the players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); remote sites via Tailscale/Headscale ([REMOTE.md](REMOTE.md)); *+ New device* creates images and pairs players |
-| **Content** | Layouts · Data sources · Media library · Clips | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras; media library with two tabs: own pictures and videos for the video window, gallery folders (pictures/PDFs for slideshows); scheduled clips |
-| **Videos & radio** | Streams · Categories · Stream search · Rules · Radio | Live cams; categories (edit, create, switch on/off for all channels or per channel); nightly search; minutes per stream, daylight, minimum quality and strikes; radio stations |
+| **Displays** | Channels · Devices · Remote sites · + New device | A **channel** is what a TV shows. The list shows every channel with layout, state, devices and address; *Edit* opens it with tabs *Display & schedule* (layout, schedule, carousel), *Live video* (on/off, video source, topics), *Sound*, *On/off (HA)* and *Video stream* (resolution, bitrate, encoding) – saved per channel. **Devices** are the players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); remote sites via Tailscale/Headscale ([REMOTE.md](REMOTE.md)); *+ New device* creates images and pairs players |
+| **Content** | Layouts · Data sources · Media library · Radio | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras; media library with two tabs: own pictures and videos for the video window, gallery folders (pictures/PDFs for slideshows); radio stations |
+| **Live videos** (since 0.56) | Overview · Collection · Topics · Automation · Clips | What is playing, numbers and problems at a glance; all live streams as a list – click one for details in a panel on the right (name, topic, location, show now, technical data, remove); topics (edit, create, switch on/off for all channels or per channel, search terms); minutes per stream, daylight, nightly search, blocked words and location from the title; scheduled clips |
 | **Settings** | General · Home Assistant · Storage locations · AI assistants · Notifications · Announcement panel (· Access in Docker) | Language, weather, location, time source; HA address and guide; NAS/cloud folders for all file dialogs; Claude & co.; outgoing notifications via Telegram/e-mail/HA; voice, templates and accounts of the panel, emergency templates, messages via webhook; admin password |
 | **System** | Health · Updates · Backup · Log | Free space and what uses it, performance test, switching off the stream without viewers; signed updates, maintenance window; encrypted backups; change log |
 
@@ -34,31 +34,43 @@ location and (optionally) Home Assistant and shows the TV address.
 ## 3. Typical tasks
 
 ### More than animals: cities, beaches, space …
-Videos & radio → Categories → **More topics**: cities & squares, beaches & coasts,
+Live videos → Topics → **More topics**: cities & squares, beaches & coasts,
 mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders. Each topic has
-its own nightly search (only while it is switched on), sorts what it finds into its category and takes the location
-from the title (daylight rule as for animals; space and northern lights ignore it). On an update new categories start
-**switched off**, so your rotation does not change until you switch them on. Per TV you can switch categories off again
-under Displays → Channels → Live video → Categories.
+its own nightly search (only while it is switched on), sorts what it finds into its topic and takes the location
+from the title (daylight rule as for animals; space and northern lights ignore it). On an update new topics start
+**switched off**, so your rotation does not change until you switch them on. Per TV you can switch topics off again
+under Displays → Channels → Live video → Topics.
 
-### Edit categories or create your own (since 0.37)
-Videos & radio → **Categories** shows every category with the number of its streams and where it is switched off. Open
-one to change:
-- **Name** – empty keeps the built-in name (translated); own categories need one.
+### Live videos: overview, collection, automation (since 0.56)
+**Live videos → Overview** shows how many streams are in the rotation, ready or dark on site, what each channel is
+playing and which problems there are (*Show* opens the collection filtered). **Collection** lists all streams as rows:
+name, topic, state in plain words (“dark on site · light in 5:05 h”, “paused after failures”, “blocked – failed too
+often”) and a switch; the filter buttons narrow it down (*Playing*, *Ready*, *Dark on site*, *Problems*, *Off*, *Newly
+found*). Click a row: on the right you change name, topic and location (or *Search place …*), *Show now*, *Don't count
+failures* (formerly “protected”), keep a found stream permanently, see technical data and remove it – *Never suggest
+again* (formerly “reject”) keeps the search from taking it in again. **Automation** joins the former *Stream search*
+and *Rules* pages: playback (minutes per stream, daylight), search (time, how many, how long to keep) and under
+*Advanced* blocked words and the location table with a test field (“recognised: Kruger → −24.5 / 31”). Old addresses
+(`#suche`, `#video`) lead there.
+
+### Edit topics or create your own (since 0.37)
+Live videos → **Topics** (called *Categories* until 0.55) lists every topic with the number of its streams and where it is
+switched off; the switch in the row turns it on or off for all channels. Click a row to change in the panel on the right:
+- **Name** – empty keeps the built-in name (translated); own topics need one.
 - **Group** – *Animals* or *More topics* (only decides where it is listed and which filters apply).
 - **Switched on** – for all channels and, with several channels, per channel (the same switches as on the channel card).
 - **Search terms** – up to 6, one per line; each is one YouTube request per nightly search. The search only runs while
-  the category is switched on for all channels. Animal categories can stay empty – the general animal search (Stream search page)
-  fills them.
+  the topic is switched on for all channels. Animal topics can stay empty – the shared animal search (*Search for animals …*
+  above the list) fills them.
 - **Words in the title** – one must appear in the title of a found stream (regular expressions allowed). For animals
-  they also sort the finds of the general animal search: the first matching category wins, otherwise *Newly found*.
-  When you save, found streams in *Newly found* are sorted again; a category you set by hand on a stream stays.
+  they also sort the finds of the general animal search: the first matching topic wins, otherwise *Newly found*.
+  When you save, found streams in *Newly found* are sorted again; a topic you set by hand on a stream stays.
 - **Ignore day/night** – for things without daylight like space; optionally only for certain words in the title
   (northern lights).
 
-**New category** adds your own (e.g. lighthouses: search term `lighthouse live cam`, words `lighthouse`, `leuchtturm`).
-Built-in categories can be **reset to default** but not deleted; unchanged ones follow improvements in updates. When you
-delete your own category you choose where its streams go; it disappears from all TVs.
+**New topic** adds your own (e.g. lighthouses: search term `lighthouse live cam`, words `lighthouse`, `leuchtturm`).
+Built-in topics can be **reset to default** but not deleted; unchanged ones follow improvements in updates. When you
+delete your own topic you choose where its streams go; it disappears from all TVs.
 
 ### Switch the TV on and off via Home Assistant
 Displays → Channels → *Switch via HA*: the TV's entity (`media_player`, `switch` or `remote`). When “black” starts in the
@@ -393,8 +405,8 @@ It is never shown again. Create a new one and update the senders.
 
 ## Deutsch (kurz)
 
-Seit 0.49 ist die Verwaltung neu geordnet: Übersicht · **Displays** (Kanäle, Geräte, Fernstandorte, + Neues Gerät) · Inhalte
-(Layouts, Datenquellen, Mediathek mit Medien und Galerien, Einspieler) · **Videos & Radio** (Streams, Kategorien, Stream-Suche, Regeln, Radio) ·
+Seit 0.49 ist die Verwaltung neu geordnet (seit 0.56 mit Live-Videos): Übersicht · **Displays** (Kanäle, Geräte, Fernstandorte, + Neues Gerät) · Inhalte
+(Layouts, Datenquellen, Mediathek mit Medien und Galerien, Radio) · **Live-Videos** (Übersicht, Sammlung, Themen, Automatik, Einspieler) ·
 Einstellungen (Allgemein, Home Assistant, Speicherorte, KI-Assistenten, Benachrichtigungen, Durchsage-Pult) · System
 (Zustand, Updates, Sicherung, Protokoll); **📢 Durchsage** oben rechts sendet Durchsage, Laufschrift oder Notfall-Vollbild.
 Ein **Kanal** ist das, was ein Fernseher zeigt (früher hieß er selbst „Fernseher“). Seit 0.50 zeigt „Kanäle“ eine Liste;
@@ -408,9 +420,9 @@ Seit 0.41 auch **an anderen Standorten** über Tailscale oder Headscale (Display
 
 Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, ohne sie zu erledigen – Tipps dauerhaft, „Neue Version“ nur für diese Version, Probleme bis sie einmal behoben waren (tritt es wieder auf, erscheint es wieder). „Startpasswort ändern“ lässt sich nicht ausblenden; Benachrichtigungen kommen weiter.
 
-Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Videos & Radio → Kategorien → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
+Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Themen → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
 
-Seit 0.37: **Kategorien bearbeiten und eigene anlegen** unter Videos & Radio → **Kategorien**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
+Seit 0.37: **Themen (bis 0.55 „Kategorien“) bearbeiten und eigene anlegen** unter Live-Videos → **Themen**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
 
 Seit 0.38: **Internet weg** – das Videofenster zeigt eigene Medien im Kreis (ohne Medien ein ruhiges Bild zur
 Tageszeit) statt Schwarz oder Fehler, keine Strikes; Kachel *Internet* in der Übersicht, Ereignis „Internet nicht
@@ -427,6 +439,11 @@ Bewegung, Karten, Schriften, Werte) und ändert sich mit jeder Bearbeitung, scho
 Platzhalter. *Ansicht*: Live-Vorschau oder Skizze (wie bisher, auch am Handy), *Tageszeit*: Morgen/Tag/Abend/Nacht
 vorspielen. Beim Verschieben **Hilfslinien**, wo Kanten oder Mitten mit anderen Bausteinen oder der Bildmitte
 übereinstimmen; *Sicherer Rand* markiert den Bereich, den manche Fernseher abschneiden (Overscan).
+
+Seit 0.56: **Live-Videos** statt „Videos & Radio“ – Übersicht (Zahlen, läuft gerade, Probleme, Suche), **Sammlung**
+(statt Streams: Liste, Klick öffnet rechts die Details), **Themen** (statt Kategorien, Suchbegriffe nur noch dort;
+die gemeinsame Tiersuche über „Suche für Tiere …“), **Automatik** (Stream-Suche und Regeln zusammen, Ortserkennung als
+Tabelle mit Test) und Einspieler; Radio steht jetzt unter Inhalte.
 
 Seit 0.39: **MCP-Schnittstelle** für Claude & Co.: Layouts bauen, Vorschaubild, Zuweisung, Zeitplan, Laufschrift,
 Durchsage, Bilder, Streams, Datenquellen; nichts am System. Seit 0.40 per Klick: Einstellungen → **KI-Assistenten** →

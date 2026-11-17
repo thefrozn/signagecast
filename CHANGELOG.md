@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.56.0 (2026-11-17)
+- **“Live videos” instead of “Videos & radio”** – the live-stream pages are reorganised so they can be used without
+  studying them first:
+  - **Overview** (new): how many streams are in the rotation, ready or dark on site, what each channel plays, problems
+    with a *Show* button, the automatic search with *Search now*.
+  - **Collection** (was *Streams*): one slim row per stream with its state in plain words (“dark on site · light in
+    5:05 h”, “paused after failures”, “blocked – failed too often”), a switch and a ⋯ menu; filter buttons (*Playing*,
+    *Ready*, *Dark on site*, *Problems*, *Off*, *Newly found*). A click opens a **panel on the right** with name,
+    topic, location (with *Search place …*), *Show now*, keeping a found stream, technical data under *Technical* and
+    removing. “Strikes” are now *failures*, “protected” is *Don't count failures*, “reject” is *Never suggest again*.
+  - **Topics** (was *Categories*): a list with a switch per topic; a click opens its settings in the panel, with a
+    hint how many existing streams the title words match. The shared animal search terms moved here
+    (*Search for animals …*), so search terms are only in one place.
+  - **Automation** (was *Stream search* + *Rules*): playback and search on one page; blocked words and the location
+    table (one row per place, 📍 to search coordinates, a test field for a title) under *Advanced*.
+  - **Clips** moved here; **Radio** is now under *Content*. Old addresses (`#suche`, `#video`) lead to *Automation*.
+- “Category” is called “topic” everywhere in the admin page and messages.
+- Consumption unchanged (only the admin page changed): stream 98.0 % · 887 MB, direct 75.9 % · 585 MB (0.55: 97.0 % ·
+  893 MB, 74.4 % · 597 MB; test container, 4 cores, snack-bar template).
+
 ## v0.55.0 (2026-11-17)
 - **Live preview in the layout editor:** the canvas now shows the real TV page, scaled down – background pictures and
   motion, see-through cards, fonts, lists, weather and values – and updates with every change, before saving. Live

@@ -2724,6 +2724,31 @@ class Vorschau055(unittest.TestCase):
             srv.shutdown(); srv.server_close()
 
 
+class LiveVideos056(unittest.TestCase):
+    """Seit 0.56: Bereich „Live-Videos“ (live.js) – Seiten, Weiterleitungen, keine doppelten globalen Namen."""
+
+    def lesen(self, f):
+        with open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", f), encoding="utf-8") as d:
+            return d.read()
+
+    def test_seiten_und_weiterleitung(self):
+        idx, tv = self.lesen("index.html"), self.lesen("tv.js")
+        self.assertLess(idx.index("live.js"), idx.index("tv.js"))          # live.js vor tv.js (SEITEN braucht die Funktionen)
+        self.assertIn('["videoton", ["live", "streams", "kategorien", "automatik", "einspieler"]]', tv)
+        self.assertIn('["inhalte", ["layout", "quellen", "medien", "radio"]]', tv)
+        self.assertIn('suche: "automatik", video: "automatik"', tv)
+        for f in ("liveSeite", "streamsSeite", "kategorienSeite", "automatikSeite"):
+            self.assertIn(f"async function {f}(", self.lesen("live.js"))
+
+    def test_keine_doppelten_namen(self):
+        import re
+        namen = {}
+        for f in ("layout.js", "csvimport.js", "quellen.js", "speicherorte.js", "live.js", "tv.js"):
+            for m in re.finditer(r"^(?:async function|function|const|let|class)\s+([A-Za-z_$][\w$]*)", self.lesen(f), re.M):
+                self.assertNotIn(m.group(1), namen, f"{m.group(1)} in {f} und {namen.get(m.group(1))}")
+                namen[m.group(1)] = f
+
+
 class Fernnetz041(unittest.TestCase):
     """Seit 0.41: Player an anderem Standort über Tailscale/Headscale – Einmal-Schlüssel, Entfernen, Agent."""
 
