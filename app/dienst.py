@@ -1199,7 +1199,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         if (m and m.group(1) != t["id"]) or not PL.anzeige_pfad_ok(u.path):
             self.antwort(404, {"ok": False})
             return True
-        q = [(k, v) for k, v in urllib.parse.parse_qsl(u.query, keep_blank_values=True) if k != "tv"]
+        q = [(k, v) for k, v in urllib.parse.parse_qsl(u.query, keep_blank_values=True) if k not in ("tv", "entwurf")]
         if u.path in ("/", "/index.html", "/daten.json", "/durchsage.json") or "tv=" in u.query:
             q.append(("tv", t["id"]))             # immer der eigene Fernseher, egal was die Seite fragt
         ziel = u.path + ("?" + urllib.parse.urlencode(q) if q else "")
@@ -1928,7 +1928,7 @@ def schalten_schleife():
         schalten_neu.clear()
 
 
-def tv_daten(tv_id, vorschau_layout=None):
+def tv_daten(tv_id, vorschau_layout=None, entwurf=None):
     e = einst()
     t = fernseher(tv_id)
     if not t:
@@ -1936,7 +1936,8 @@ def tv_daten(tv_id, vorschau_layout=None):
     v = e["video"]
     # vorschau_layout (seit 0.39): ein bestimmtes Layout zeigen – nur für Vorschaubilder, ändert nichts
     layout = next((l for l in e["layouts"] if l["id"] == vorschau_layout), None) if vorschau_layout else None
-    layout = layout or layout_fuer(t, e["layouts"])
+    ew = ENTWUERFE.get(entwurf) if entwurf else None     # seit 0.55: ungespeicherter Entwurf aus dem Designer
+    layout = (ew and ew["layout"]) or layout or layout_fuer(t, e["layouts"])
     hat_video = any(x["typ"] == "video" and x["sichtbar"] for x in layout.get("elemente", []))
     vr = streams.vorrang if streams.vorrang and streams.vorrang["bis"] > time.time() \
         and streams.vorrang.get("tv") in (None, t["id"]) else None
@@ -1966,7 +1967,9 @@ def tv_daten(tv_id, vorschau_layout=None):
     zt = zustand.get("zeit") or {}
     st = e["standort"]
     tz = L.tageszeit(sonnenhoehe(st["breite"], st["laenge"]), sonnenhoehe(st["breite"], st["laenge"], time.time() + 600))
-    return dict(teil, ok=True, ha_ok=zustand["ha_fehler"] is None, zeit=int(time.time()), sprache=e["sprache"] or "en", tageszeit=tz,
+    if ew and ew["tageszeit"]:
+        tz = ew["tageszeit"]
+    return dict(teil, ok=True, ha_ok=zustand["ha_fehler"] is None, zeit=int(time.time()), sprache=(ew and ew["sprache"]) or e["sprache"] or "en", tageszeit=tz,
                 version=VERSION,                  # seit 0.28.1: TV-Seite lädt nach einem Update neu
                 einspieler=eins if hat_video else [],
                 zeit_abweichung_ms=round((zt.get("abweichung_s") or 0) * 1000) if zt.get("korrektur") else 0,
@@ -2330,6 +2333,30 @@ def vorschau(tv_id):
 
 
 vorschau_sperre = threading.Lock()
+# Live-Vorschau im Layout-Designer (seit 0.55): ungespeicherte Entwürfe, nur im Speicher, nach 30 min weg. Die TV-Seite
+# holt sie mit /daten.json?entwurf=<Kennung> – angelegt werden sie nur über die Verwaltung (/api/vorschau/entwurf).
+ENTWUERFE = {}
+TAGESZEITEN = ("morgen", "tag", "abend", "nacht")
+
+
+def entwurf_ablegen(d):
+    """Entwurf prüfen (fehlertolerant wie der Import) und ablegen; gibt die Kennung zurück."""
+    e = einst()
+    l, _ = L.import_pruefen(d.get("layout"), (), bild_da=lambda n: os.path.exists(os.path.join(BILDER, n)),
+                            quellen=[q["id"] for q in e["quellen"]], pdf_da=lambda n: bool(PDF.seiten(PDF_ORDNER, n)),
+                            ordner={o["id"] for o in e["galerie"]["ordner"]})
+    kennung = str(d.get("id") or "")
+    if not re.fullmatch(r"[0-9a-f]{16}", kennung):
+        kennung = os.urandom(8).hex()
+    jetzt = time.time()
+    with sperre:
+        for k in [k for k, v in ENTWUERFE.items() if jetzt - v["zeit"] > 1800]:
+            del ENTWUERFE[k]
+        while len(ENTWUERFE) >= 20 and kennung not in ENTWUERFE:
+            del ENTWUERFE[min(ENTWUERFE, key=lambda k: ENTWUERFE[k]["zeit"])]
+        ENTWUERFE[kennung] = {"zeit": jetzt, "layout": l, "tageszeit": d.get("tageszeit") if d.get("tageszeit") in TAGESZEITEN else None,
+                              "sprache": d.get("sprache") if d.get("sprache") in ("de", "en") else None}
+    return kennung
 
 
 def vorschau_bild(tv_id, layout_id=""):
@@ -3236,7 +3263,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, ds_warten((qs.get("tv") or [""])[0], (qs.get("stand") or [""])[0][:40]))
         if p.path == "/daten.json":
             qs = urllib.parse.parse_qs(p.query)
-            return self.antwort(200, tv_daten((qs.get("tv") or [None])[0], (qs.get("layout") or [None])[0]))
+            return self.antwort(200, tv_daten((qs.get("tv") or [None])[0], (qs.get("layout") or [None])[0], (qs.get("entwurf") or [None])[0]))
         m = re.fullmatch(r"/kamera/(camera\.[a-z0-9_]+)\.jpg", p.path)
         if m:                                     # für die TV-Seite (nur Kameras aus den Layouts)
             try:
@@ -3831,6 +3858,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 s["naechster"] = 0
                 qn.neu.set()
             return {}
+        if p == "/api/vorschau/entwurf":               # Live-Vorschau im Designer (seit 0.55): Entwurf ablegen
+            return {"id": entwurf_ablegen(d)}
         if p == "/api/layouts/pruefen":                # Import (seit 0.38): Datei oder eingefügter Text, fehlertolerant
             roh = L.json_aus_text(d["text"]) if isinstance(d.get("text"), str) else d.get("layout")
             e = einst()

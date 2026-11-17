@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.55.0 (2026-11-17)
+- **Live preview in the layout editor:** the canvas now shows the real TV page, scaled down – background pictures and
+  motion, see-through cards, fonts, lists, weather and values – and updates with every change, before saving. Live
+  videos show as placeholders. *View* switches between *Live preview* and *Sketch* (the previous boxes; phones keep the
+  list). *Time of day* previews morning, day, evening or night. The draft lives only in the server's memory (30 min)
+  and is never shown on a TV. Works in Cockpit (external channels) and in the Docker admin (`/tvseite/`, only after
+  login, read-only, without admin rights – the same data a TV sees).
+- **Guides while moving or resizing:** lines appear where edges or centres line up with other elements or the middle
+  of the screen.
+- **Safe area:** optional frame for the edge some TVs cut off (overscan).
+- Long labels in the element settings (e.g. the logo upload) wrap instead of widening the page.
+- **Consumption** (test container, 4 cores, snack-bar template with moving photos, 0.54.1 and 0.55 alternately, two runs
+  each): stream 95.7 → 97.0 % · 892 → 893 MB, direct 74.7 → 74.4 % · 604 → 597 MB – within the noise; 25 fps without
+  lost frames, 60 fps without stutter. The preview itself only costs the browser with the editor open (about as much
+  as direct mode for that layout); *Sketch* switches it off.
+
 ## v0.54.1 (2026-11-17)
 - **Fix: changing a password in Cockpit** (Accounts → Set password) reported
   `/var/cache/cracklib/cracklib_dict.pwd: No such file or directory … error loading dictionary` and called every

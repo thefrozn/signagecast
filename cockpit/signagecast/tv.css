@@ -67,7 +67,7 @@ main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .leise { color: var(--leise); font-size: 13px; }
 .gut { color: var(--gut); } .warn { color: var(--warn); } .schlecht { color: var(--schlecht); }
 .zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
-.zeile > label:first-child { min-width: 180px; flex: 0 0 auto; }
+.zeile > label:first-child { min-width: 180px; flex: 0 0 auto; max-width: 100%; }   /* lange Beschriftungen umbrechen (seit 0.55) */
 .zeile > label:only-child { flex: 1 1 auto; min-width: 0; }   /* Ankreuz-Zeilen mit langem Text umbrechen (seit 0.31.1) */
 label { cursor: pointer; }
 input[type=text], input[type=number], input[type=time], input[type=url], input[type=password], select, textarea {
@@ -170,6 +170,23 @@ details.mehr > summary::-webkit-details-marker { display: none; }
 .eintrag.gewaehlt { border-color: var(--akzent); }
 @media (max-width: 900px) { .layoutbereich { grid-template-columns: 1fr; } }
 .lw-baustein.lwtyp-video { background: rgba(0,0,0,.65) !important; color: #fff !important; text-shadow: none; border: 2px solid rgba(255,255,255,.7); }
+/* Live-Vorschau (seit 0.55): echte TV-Seite (1920×1080, per transform verkleinert) unter einer durchsichtigen Leinwand */
+.lw-huelle { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #2b3138; }
+.lw-huelle .leinwand { position: absolute; inset: 0; border-radius: 0; }
+iframe.lw-vorschau { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0;
+  pointer-events: none; background: #2b3138; }
+.leinwand.mit-vorschau { background-image: none; }
+.leinwand.mit-vorschau .lw-baustein, .leinwand.mit-vorschau .lw-baustein.karte, .leinwand.mit-vorschau .lw-baustein.lwtyp-video {
+  background: transparent !important; color: transparent !important; text-shadow: none; border: 1px dashed rgba(255,255,255,.45);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.leinwand.mit-vorschau .lw-baustein:hover { border: 1px solid rgba(255,255,255,.9); background: rgba(255,255,255,.08) !important; }
+.leinwand.mit-vorschau .lw-baustein.aus { opacity: 1; border-color: rgba(255,255,255,.25); }
+/* Hilfslinien und sicherer Rand (seit 0.55) */
+.lw-linie { position: absolute; z-index: 998; pointer-events: none; background: #ff2d95; }
+.lw-linie.senkrecht { width: 1px; margin-left: -.5px; } .lw-linie.waagrecht { height: 1px; margin-top: -.5px; }
+.lw-linie.mitte { background: #00c2ff; }
+.lw-rand { position: absolute; z-index: 997; pointer-events: none; left: calc(100% / 48); right: calc(100% / 48); top: calc(100% / 27);
+  bottom: calc(100% / 27); outline: 1px dashed #ffd400; box-shadow: 0 0 0 999px rgba(255, 212, 0, .12); }
 .zeile.pos label { min-width: 0 !important; display: inline-flex; align-items: center; gap: 4px; }
 .zeile.pos input { width: 64px; }
 /* 3x3-Feld für die Position der Schrift */

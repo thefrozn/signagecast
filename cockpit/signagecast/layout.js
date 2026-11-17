@@ -23,6 +23,9 @@ const LTEXTE = {
     schemaArt: { dunkel: "hell auf dunkel", hell: "dunkel auf hell", gedimmt: "gedimmt (Nacht)" }, akzent: "Akzentfarbe",
     karten: "Karten", kartenArt: { weiss: "weiß", glas_hell: "durchscheinend hell", glas_dunkel: "durchscheinend dunkel" },
     schrift: "Schrift", bausteinNeu: "Baustein hinzufügen", hinzu: "Hinzufügen", keinerGewaehlt: "Baustein antippen, um ihn einzustellen.",
+    ansicht: "Ansicht", ansichtArt: { vorschau: "Live-Vorschau", skizze: "Skizze" }, tzVorschau: "Tageszeit der Vorschau",
+    rand: "Sicherer Rand", randHilfe: "Zeigt den Rand, den manche Fernseher abschneiden (Overscan). Wichtiges besser innerhalb lassen.",
+    tzAuto: "Tageszeit: jetzt", vorschauHinweis: "Live-Vorschau: So sieht es am Fernseher aus – auch ungespeichert. Live-Videos erscheinen als Platzhalter.",
     sichtbar: "sichtbar", karte: "als Karte (weißer Kasten)", ausrichtung: "Ausrichtung",
     ausrichtungArt: { "oben-links": "oben links", "oben-mitte": "oben Mitte", "oben-rechts": "oben rechts", links: "links", mitte: "Mitte",
                       rechts: "rechts", "unten-links": "unten links", "unten-mitte": "unten Mitte", "unten-rechts": "unten rechts" },
@@ -116,6 +119,9 @@ const LTEXTE = {
     schemaArt: { dunkel: "light on dark", hell: "dark on light", gedimmt: "dimmed (night)" }, akzent: "Accent colour",
     karten: "Cards", kartenArt: { weiss: "white", glas_hell: "see-through light", glas_dunkel: "see-through dark" },
     schrift: "Font", bausteinNeu: "Add element", hinzu: "Add", keinerGewaehlt: "Tap an element to configure it.",
+    ansicht: "View", ansichtArt: { vorschau: "Live preview", skizze: "Sketch" }, tzVorschau: "Time of day in the preview",
+    rand: "Safe area", randHilfe: "Shows the edge some TVs cut off (overscan). Better keep important things inside.",
+    tzAuto: "Time of day: now", vorschauHinweis: "Live preview: this is how it looks on the TV – even unsaved. Live videos show as placeholders.",
     sichtbar: "visible", karte: "as card (white box)", ausrichtung: "Alignment",
     ausrichtungArt: { "oben-links": "top left", "oben-mitte": "top centre", "oben-rechts": "top right", links: "left", mitte: "centre",
                       rechts: "right", "unten-links": "bottom left", "unten-mitte": "bottom centre", "unten-rechts": "bottom right" },
@@ -229,6 +235,78 @@ let letzterKlick = null;  // Stelle des letzten Klicks auf die Leinwand (Durchsc
 let VERLAUF = [];         // Rückgängig
 let GEAENDERT = false;
 let VORSCHAU = null;      // Werte für die Vorschau
+
+// ---------- Live-Vorschau (seit 0.55) ----------
+// Die echte TV-Seite läuft verkleinert unter der Leinwand (www/vorschau.html in einem eingebetteten Fenster). Der Entwurf
+// geht ungespeichert an den Dienst (/api/vorschau/entwurf, nur im Speicher), die Seite holt ihn mit ?entwurf=<Kennung>.
+// Adressen: in Cockpit externe Kanäle (gleicher Ursprung, kein Kopf X-SignageCast), im Docker-Betrieb /tvseite/.
+window.SC_VORSCHAU = {
+  param: "",
+  adr: (p) => (CONTAINER ? "/tvseite" + p : "/cockpit/channel/" + cockpit.transport.csrf_token + "?" + window.btoa(JSON.stringify(
+    { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: p, headers: {}, binary: "raw", external: {} }))),
+};
+const VS = { an: true, id: "", tageszeit: "", takt: null, fenster: null, rand: false };
+try { VS.an = localStorage.getItem("signagecast-vorschau") !== "skizze"; VS.rand = localStorage.getItem("signagecast-rand") === "1"; } catch (_) { /* egal */ }
+// Hilfslinien (seit 0.55): beim Verschieben/Größe ändern Linien, wo Kanten oder Mitten mit anderen Bausteinen oder der
+// Bildmitte übereinstimmen. Das Raster (48 × 27 Felder) bleibt die Einheit – es wird nichts verschoben, nur gezeigt.
+function hilfslinien(lw, e, alle) {
+  lw.querySelectorAll(".lw-linie").forEach((x) => x.remove());
+  if (!e) return;
+  const andere = alle.filter((o) => o.id !== e.id && o.sichtbar);
+  const achsen = [["x", "w", 48, 24], ["y", "h", 27, 13.5]];
+  for (const [p, g, max, mitte] of achsen) {
+    const eig = [e[p], e[p] + e[g] / 2, e[p] + e[g]];
+    const ziele = new Map([[mitte, [0, p === "x" ? 27 : 48]]]);
+    for (const o of andere) {
+      for (const v of [o[p], o[p] + o[g] / 2, o[p] + o[g]]) {
+        const q = p === "x" ? "y" : "x", h = p === "x" ? "h" : "w";
+        const [a, b] = ziele.get(v) || [Infinity, -Infinity];
+        ziele.set(v, [Math.min(a, o[q], e[q]), Math.max(b, o[q] + o[h], e[q] + e[h])]);
+      }
+    }
+    for (const v of new Set(eig)) {
+      if (!ziele.has(v) || v <= 0 || v >= max) continue;
+      const [a, b] = ziele.get(v), li = document.createElement("div");
+      li.className = "lw-linie " + (p === "x" ? "senkrecht" : "waagrecht") + (v === mitte ? " mitte" : "");
+      const quer = p === "x" ? 27 : 48;
+      Object.assign(li.style, p === "x" ? { left: v / 48 * 100 + "%", top: a / quer * 100 + "%", height: (b - a) / quer * 100 + "%" }
+                                         : { top: v / 27 * 100 + "%", left: a / quer * 100 + "%", width: (b - a) / quer * 100 + "%" });
+      lw.appendChild(li);
+    }
+  }
+}
+function vorschauFenster(huelle) {
+  if (!huelle) return;
+  let f = huelle.querySelector("iframe.lw-vorschau");
+  if (!VS.an || !VS.id) { if (f) f.remove(); VS.fenster = null; return; }
+  if (!f) {
+    window.SC_VORSCHAU.param = `tv=${encodeURIComponent(E.fernseher[0].id)}&vorschau=1&entwurf=${VS.id}`;
+    f = document.createElement("iframe");
+    f.className = "lw-vorschau"; f.title = "Vorschau"; f.tabIndex = -1;
+    f.setAttribute("aria-hidden", "true");
+    f.src = window.SC_VORSCHAU.adr("/vorschau.html");
+    huelle.prepend(f);
+  }
+  VS.fenster = f;
+  const lw = huelle.querySelector(".leinwand");
+  const passen = () => { if (lw) f.style.transform = `scale(${lw.clientWidth / 1920})`; };
+  passen();
+  if (!huelle.dataset.beobachtet && window.ResizeObserver) { huelle.dataset.beobachtet = "1"; new ResizeObserver(passen).observe(huelle); }
+}
+function vorschauSenden(layout) {
+  if (!VS.an) return;
+  clearTimeout(VS.takt);
+  VS.takt = setTimeout(async () => {
+    try {
+      const r = await senden("/api/vorschau/entwurf", { id: VS.id, layout, tageszeit: VS.tageszeit });
+      const neu = r.id !== VS.id;
+      VS.id = r.id;
+      const f = VS.fenster, w = f && f.isConnected && f.contentWindow;
+      if (!neu && w && typeof w.laden === "function") w.laden();
+      else vorschauFenster(document.querySelector(".lw-huelle"));
+    } catch (_) { /* Vorschau ist Komfort – Fehler nicht melden */ }
+  }, 250);
+}
 let ANSICHT = "liste";    // seit 0.17.2: „liste“ (Kacheln aller Layouts) oder „editor“ (ein Layout)
 
 async function layoutSeite(inhalt) {
@@ -284,8 +362,11 @@ async function layoutSeite(inhalt) {
             <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option data-schrift="${esc(k)}" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
         </details>
         <div class="zeile"><select id="bTyp">${Object.keys(L.typ).map((k) => `<option value="${k}">${esc(L.typ[k])}</option>`).join("")}</select>
-          <button class="knopf" id="bNeu">${esc(L.bausteinNeu)}</button></div>
-        <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}</p>
+          <button class="knopf" id="bNeu">${esc(L.bausteinNeu)}</button>
+          ${handy() ? "" : `<span class="leer"></span><label for="lAnsicht">${esc(L.ansicht)}</label><select id="lAnsicht">${Object.keys(L.ansichtArt).map((k) => `<option value="${k}" ${(k === "vorschau") === VS.an ? "selected" : ""}>${esc(L.ansichtArt[k])}</option>`).join("")}</select>
+          <label title="${esc(L.randHilfe)}"><input type="checkbox" id="lRand" ${VS.rand ? "checked" : ""}> ${esc(L.rand)}</label>
+          <select id="lTz" aria-label="${esc(L.tzVorschau)}" ${VS.an ? "" : "hidden"}><option value="">${esc(L.tzAuto)}</option>${["morgen", "tag", "abend", "nacht"].map((z) => `<option value="${z}" ${z === VS.tageszeit ? "selected" : ""}>${esc(L.zeitName[z])}</option>`).join("")}</select>`}</div>
+        <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}${!handy() && VS.an ? " " + esc(L.vorschauHinweis) : ""}</p>
       </div>
       <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="lw-seite">${handy() ? "" : `<div class="karte" id="ebenen"></div>`}<div class="karte" id="eigenschaften"></div></div></div>`;
     schriftVorschau(inhalt);
@@ -334,6 +415,17 @@ async function layoutSeite(inhalt) {
     $("#thKarte").onchange = kopf(() => { lay().thema.karte = $("#thKarte").value; });
     $("#thAkzent").oninput = kopf(() => { lay().thema.akzent = $("#thAkzent").value; });
     $("#thSchrift").onchange = kopf(() => { lay().thema.schrift = $("#thSchrift").value; });
+    if ($("#lAnsicht")) $("#lAnsicht").onchange = () => {
+      VS.an = $("#lAnsicht").value === "vorschau";
+      try { localStorage.setItem("signagecast-vorschau", VS.an ? "vorschau" : "skizze"); } catch (_) { /* egal */ }
+      zeichnen();
+    };
+    if ($("#lRand")) $("#lRand").onchange = () => {
+      VS.rand = $("#lRand").checked;
+      try { localStorage.setItem("signagecast-rand", VS.rand ? "1" : "0"); } catch (_) { /* egal */ }
+      leinwandZeichnen();
+    };
+    if ($("#lTz")) $("#lTz").onchange = () => { VS.tageszeit = $("#lTz").value; vorschauSenden(lay()); };
     $("#bNeu").onclick = () => {
       merken();
       const typ = $("#bTyp").value, [w, h] = STD_GROESSE[typ] || [6, 2];
@@ -521,10 +613,17 @@ async function layoutSeite(inhalt) {
   // ---------- Leinwand (PC/Tablet) ----------
   const leinwandZeichnen = () => {
     const l = lay(), rahmen = $("#leinwandRahmen");
-    rahmen.innerHTML = `<div class="leinwand" id="leinwand" tabindex="0"></div>`;
-    const lw = $("#leinwand");
+    let lw = $("#leinwand");
+    if (lw) lw.replaceChildren();               // seit 0.55: die Hülle mit der Live-Vorschau bleibt, nur die Bausteine neu
+    else {
+      rahmen.innerHTML = `<div class="lw-huelle"><div class="leinwand" id="leinwand" tabindex="0"></div></div>`;
+      lw = $("#leinwand");
+    }
     const massstab = () => lw.clientWidth / 1920;
-    lw.style.background = l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
+    lw.classList.toggle("mit-vorschau", VS.an && !handy());
+    lw.style.background = VS.an && !handy() ? "transparent"
+      : l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
+    if (VS.an && !handy()) { vorschauFenster(rahmen.querySelector(".lw-huelle")); vorschauSenden(l); }
     l.elemente.forEach((e, idx) => {
       const b = document.createElement("div");
       b.className = "lw-baustein" + (e.id === GEWAEHLT ? " gewaehlt" : "") + (e.sichtbar ? "" : " aus") + (e.karte ? " karte" : "") +
@@ -554,6 +653,11 @@ async function layoutSeite(inhalt) {
       rahmen.querySelector(".lw-schieber").onpointerdown = (ev) => ziehen(ev, gew, b, false);
       lw.appendChild(rahmen);
     }
+    if (VS.rand) {                                 // sicherer Rand (Overscan): außen je 1 Feld ≈ 2–4 %
+      const rd = document.createElement("div");
+      rd.className = "lw-rand";
+      lw.appendChild(rd);
+    }
     ebenenZeichnen();
     lw.onkeydown = (ev) => {
       const e = lay().elemente.find((x) => x.id === GEWAEHLT);
@@ -572,6 +676,8 @@ async function layoutSeite(inhalt) {
       if (ev.shiftKey) { e.w = klemm(e.w + d[0], 1, 48 - e.x); e.h = klemm(e.h + d[1], 1, 27 - e.y); }
       else { e.x = klemm(e.x + d[0], 0, 48 - e.w); e.y = klemm(e.y + d[1], 0, 27 - e.h); }
       leinwandZeichnen(); eigenschaftenZeichnen(); $("#leinwand").focus();
+      hilfslinien($("#leinwand"), e, lay().elemente);
+      clearTimeout(VS.linienWeg); VS.linienWeg = setTimeout(() => { const w = $("#leinwand"); if (w) hilfslinien(w, null); }, 1200);
     };
     function setzen(b, e) {
       const m = 100 / 48, n = 100 / 27;
@@ -600,8 +706,9 @@ async function layoutSeite(inhalt) {
         if (groesse) { e.w = klemm(start.w + dx, 1, 48 - e.x); e.h = klemm(start.h + dy, 1, 27 - e.y); }
         else { e.x = klemm(start.x + dx, 0, 48 - e.w); e.y = klemm(start.y + dy, 0, 27 - e.h); }
         setzen(b, e); if (rahmen) setzen(rahmen, e);
+        if (bewegt) hilfslinien(lw, e, lay().elemente);
       };
-      fang.onpointerup = () => { fang.onpointermove = null; fang.onpointerup = null; if (bewegt) { $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen(); } $("#leinwand").focus(); };
+      fang.onpointerup = () => { fang.onpointermove = null; fang.onpointerup = null; hilfslinien(lw, null); if (bewegt) { $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen(); vorschauSenden(lay()); } $("#leinwand").focus(); };
     }
   };
 

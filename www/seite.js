@@ -37,12 +37,19 @@ const zahl = (w, nachkomma) => {
 };
 const stellen = (einheit, wert) => (!einheit || einheit === "W" || einheit === "%" ? 0 : Math.abs(Number(wert)) >= 100 ? 0 : 1);
 
-const TV = new URLSearchParams(location.search).get("tv") || "tv";
+// Live-Vorschau im Layout-Designer (seit 0.55): Die Seite läuft dann in einem Fenster der Verwaltung (www/vorschau.html)
+// und holt alles über deren Weg zum Dienst (Cockpit-Kanal bzw. /tvseite/ im Docker-Betrieb) – SC_VORSCHAU.adr baut die
+// Adresse, SC_VORSCHAU.param ersetzt die Adresszeile. Normal (eigenes Fenster, Pi, Stream) ist A() wirkungslos.
+const SCV = (() => { try { return window.parent !== window && window.parent.SC_VORSCHAU || null; } catch (_) { return null; } })();
+const PARAM = new URLSearchParams(SCV ? SCV.param : location.search);
+const A = (u) => (SCV && u && !/^(https?:|data:|blob:)/.test(u) ? SCV.adr(u.startsWith("/") ? u : "/" + u) : u);
+const TV = PARAM.get("tv") || "tv";
 // Vorschau eines bestimmten Layouts (seit 0.39, z. B. für die MCP-Schnittstelle): ?layout=<kennung> – nur Anzeige
-const VORSCHAU_LAYOUT = new URLSearchParams(location.search).get("layout") || "";
+const VORSCHAU_LAYOUT = PARAM.get("layout") || "";
 // Vorschaubild (seit 0.39, ?vorschau=1): kein YouTube und keine Daueranfrage – ein Headless-Browser soll schnell fertig werden
-const VORSCHAU = new URLSearchParams(location.search).get("vorschau") === "1";
+const VORSCHAU = PARAM.get("vorschau") === "1";
 if (VORSCHAU) document.documentElement.classList.add("vorschau");
+const ENTWURF = PARAM.get("entwurf") || "";
 let daten = null, layoutJson = "", bausteine = [], player = null, seitenVersion = "";
 const meldungen = {};                         // entity -> {wert, seit}
 
@@ -107,7 +114,7 @@ function bauen(layout) {
       if (e.optionen.rand === "unscharf") d.classList.add("unscharf");
       if (e.optionen.uebergang === "hart") d.classList.add("hart");
     }
-    if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="bild/${esc(e.optionen.bild)}" alt="">` : `<div class="platzhalter">Logo</div>`;
+    if (e.typ === "logo") d.innerHTML = e.optionen.bild ? `<img src="${esc(A("bild/" + e.optionen.bild))}" alt="">` : `<div class="platzhalter">Logo</div>`;
     if (e.typ === "video") {
       if (!e.optionen.leiste) d.classList.add("ohneleiste");
       if (VORSCHAU) d.innerHTML = `<div class="platzhalter">▶ Live</div>`;
@@ -159,6 +166,7 @@ function hintergrund(layout) {
   } else url = wetterbild();
   if (!url) delete h.dataset.laedt;            // Farbe/Galerie: ein noch ladendes Bild darf nicht mehr gesetzt werden
   if (url) {                                   // erst wechseln, wenn das neue Bild geladen ist (sonst blitzt es beim Überblenden)
+    url = A(url);
     const css = `url("${url}")`;
     if (h.style.backgroundImage !== css && h.dataset.laedt !== url) {
       h.dataset.laedt = url;
@@ -334,7 +342,7 @@ function fuellen() {
         if (sichtbar) {
           if (!b.bild) { b.bild = document.createElement("img"); d.appendChild(b.bild); }
           if (!b.letztes || Date.now() - b.letztes > o.intervall * 1000) {
-            b.letztes = Date.now(); b.bild.src = `/kamera/${o.entity}.jpg?t=${Date.now()}`;
+            b.letztes = Date.now(); b.bild.src = A(`/kamera/${o.entity}.jpg?t=${Date.now()}`);
           }
         }
         break;
@@ -403,7 +411,7 @@ function fuellen() {
       case "apibild": {
         const a = (daten.api || {})[e.id];
         const img = d.querySelector("img");
-        if (a && a.bild && img.dataset.src !== a.bild) { img.dataset.src = a.bild; img.src = a.bild; }
+        if (a && a.bild && img.dataset.src !== a.bild) { img.dataset.src = a.bild; img.src = A(a.bild); }
         sichtbar = sichtbar && !!(a && a.bild);
         break;
       }
@@ -512,7 +520,7 @@ let hlsLaden = null;
 function hlsBereit() {
   if (window.Hls) return Promise.resolve();
   if (!hlsLaden) hlsLaden = new Promise((ok, fehler) => {            // nur laden, wenn eine Kamera im Layout ist
-    const sc = document.createElement("script"); sc.src = "hls/hls.light.min.js"; sc.onload = ok; sc.onerror = fehler;
+    const sc = document.createElement("script"); sc.src = A("hls/hls.light.min.js"); sc.onload = ok; sc.onerror = fehler;
     document.head.appendChild(sc);
   });
   return hlsLaden;
@@ -531,7 +539,7 @@ function kameraStarten(b, a) {
   if (a.art === "mjpeg") {
     const img = document.createElement("img");
     img.onerror = neu;
-    img.src = a.url + "?t=" + Date.now();
+    img.src = A(a.url + "?t=" + Date.now());
     b.d.appendChild(img); b.medien = img;
     return;
   }
@@ -575,7 +583,7 @@ function webseite(b, foto) {
   if (foto) {                               // Foto in der Größe des iframes, gleicher Ausschnitt und Zoom
     if (!b.foto) { if (b.stopp) b.stopp(); b.foto = document.createElement("img"); b.foto.alt = ""; d.appendChild(b.foto);
       b.stopp = () => { if (b.foto) { b.foto.remove(); b.foto = null; } }; }
-    if (b.foto.dataset.src !== foto) { b.foto.dataset.src = foto; b.foto.src = foto; }
+    if (b.foto.dataset.src !== foto) { b.foto.dataset.src = foto; b.foto.src = A(foto); }
     Object.assign(b.foto.style, { left: -o.versatz_x * skala + "px", top: -o.versatz_y * skala + "px", transform: `scale(${skala})` });
     return;
   }
@@ -610,7 +618,7 @@ function pdfSeite(b) {
   const o = b.e.optionen, p = b.pdf;
   if (!p || !p.seiten) return;
   const nr = Math.floor(jetztMs() / 1000 / Math.max(3, o.sekunden)) % p.seiten + 1;
-  const url = `pdf/${p.datei}/${nr}.jpg`;
+  const url = A(`pdf/${p.datei}/${nr}.jpg`);
   if (b.pdfUrl === url) return;
   b.pdfUrl = url;
   const neu = new Image();
@@ -628,7 +636,7 @@ function galerieHolen(oid) {
   const st = ((daten && daten.galerie) || {})[oid];
   if (st && st !== g.stand && !g.laedt) {
     g.laedt = true;
-    fetch(`galerie/ordner/${encodeURIComponent(oid)}.json`, { cache: "no-store" })
+    fetch(A(`galerie/ordner/${encodeURIComponent(oid)}.json`), { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (!j || !j.ok) return;
@@ -674,7 +682,7 @@ function galerieUrl(oid, reihenfolge, sekunden, breite, hoehe) {
 }
 function galerieFolie(b) {
   const o = b.e.optionen;
-  const url = galerieUrl(o.ordner, o.reihenfolge, o.sekunden, b.d.clientWidth, b.d.clientHeight);
+  const url = A(galerieUrl(o.ordner, o.reihenfolge, o.sekunden, b.d.clientWidth, b.d.clientHeight));
   if (!url || b.galUrl === url) return;
   b.galUrl = url;
   const neu = new Image();
@@ -692,7 +700,7 @@ function galerieFolie(b) {
 }
 function hgGalerieSetzen(hg) {                // Hintergrund als Diashow: erst zeigen, wenn das Bild geladen ist
   if (!hg.galerie || !galerieHolen(hg.galerie).folien.length) return false;
-  const h = $("hg"), u = galerieUrl(hg.galerie, "eigene", hg.galerie_s || 60, h.clientWidth || 1920, h.clientHeight || 1080);
+  const h = $("hg"), u = A(galerieUrl(hg.galerie, "eigene", hg.galerie_s || 60, h.clientWidth || 1920, h.clientHeight || 1080));
   if (u && h.dataset.galerie !== u) {
     h.dataset.galerie = u;
     const neu = new Image();
@@ -782,7 +790,8 @@ setInterval(() => {
 // ---------- Laden ----------
 async function laden() {
   try {
-    const r = await fetch("/daten.json?tv=" + encodeURIComponent(TV) + (VORSCHAU_LAYOUT ? "&layout=" + encodeURIComponent(VORSCHAU_LAYOUT) : ""), { cache: "no-store" });
+    const r = await fetch(A("/daten.json?tv=" + encodeURIComponent(TV) + (VORSCHAU_LAYOUT ? "&layout=" + encodeURIComponent(VORSCHAU_LAYOUT) : "")
+                            + (ENTWURF ? "&entwurf=" + encodeURIComponent(ENTWURF) : "")), { cache: "no-store" });
     const d = await r.json();
     if (!d || !d.ok) return;
     // seit 0.28.1: nach einem Update (andere Version im Dienst) sofort mit dem neuen Code neu laden

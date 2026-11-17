@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de" translate="no">
+<head>
+<meta charset="utf-8">
+<title>Vorschau</title>
+</head>
+<body>
+<script>
+// Live-Vorschau im Layout-Designer (seit 0.55). Diese Seite lädt der Designer in ein eingebettetes Fenster – in Cockpit
+// über einen externen Kanal, im Docker-Betrieb über /tvseite/. Weil dort relative Adressen nicht zum Dienst führen, baut
+// sie die TV-Seite selbst auf: index.html holen, Stile (mit umgeschriebenen url(…)) und Inhalt übernehmen, dann die
+// Skripte der Reihe nach laden. Alle Adressen baut parent.SC_VORSCHAU.adr; ohne den Designer passiert nichts.
+"use strict";
+(async () => {
+  let V = null;
+  try { V = window.parent !== window ? window.parent.SC_VORSCHAU : null; } catch (_) { V = null; }
+  if (!V) return;
+  const A = V.adr, pfad = (u, basis) => new URL(u, "http://x" + (basis || "/")).pathname;
+  const doc = new DOMParser().parseFromString(await (await fetch(A("/index.html"))).text(), "text/html");
+  document.documentElement.lang = doc.documentElement.lang;
+  for (const l of doc.querySelectorAll("link[rel=stylesheet]")) {
+    const p = pfad(l.getAttribute("href")), basis = p.replace(/[^/]*$/, "");
+    const css = (await (await fetch(A(p))).text())
+      .replace(/url\((['"]?)([^'")]+)\1\)/g, (m, q, u) => (/^(data:|https?:|#)/.test(u) ? m : `url("${A(pfad(u, basis))}")`));
+    const s = document.createElement("style");
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+  for (const k of [...doc.body.childNodes]) if (k.nodeName !== "SCRIPT") document.body.appendChild(document.importNode(k, true));
+  for (const sc of doc.querySelectorAll("script[src]")) {
+    await new Promise((fertig) => {
+      const s = document.createElement("script");
+      s.src = A(pfad(sc.getAttribute("src")));
+      s.onload = s.onerror = fertig;
+      document.body.appendChild(s);
+    });
+  }
+})();
+</script>
+</body>
+</html>

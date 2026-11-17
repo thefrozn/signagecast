@@ -33,6 +33,11 @@ sperre = threading.Lock()
 CSP = ("default-src 'self'; img-src 'self' blob: data:; style-src 'self'; font-src 'self' data:; "
        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
 
+# Live-Vorschau im Layout-Designer (seit 0.55): die TV-Seite in einem eingebetteten Fenster der Verwaltung. /tvseite/…
+# reicht nur GET an den Datendienst weiter, OHNE den Kopf X-SignageCast – also nur, was auch ein Fernseher sieht.
+CSP_TV = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+          "font-src 'self' data:; media-src 'self' blob:; frame-src https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'")
+
 ERSATZ = """// Ersatz für die zwei Cockpit-Funktionen, die die Verwaltung nutzt (Docker/Podman-Betrieb)
 "use strict";
 window.cockpit = {
@@ -130,17 +135,17 @@ class Bearbeiter(BaseHTTPRequestHandler):
                         return v
         return None
 
-    def senden(self, code, inhalt=b"", art="text/plain; charset=utf-8", kopf=None):
+    def senden(self, code, inhalt=b"", art="text/plain; charset=utf-8", kopf=None, tv=False):
         if isinstance(inhalt, str):
             inhalt = inhalt.encode()
         self.send_response(code)
         self.send_header("Content-Type", art)
         self.send_header("Content-Length", str(len(inhalt)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Frame-Options", "SAMEORIGIN" if tv else "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
-        self.send_header("Content-Security-Policy", CSP)
+        self.send_header("Content-Security-Policy", CSP_TV if tv else CSP)
         for k, v in (kopf or {}).items():
             self.send_header(k, v)
         self.end_headers()
@@ -181,6 +186,18 @@ class Bearbeiter(BaseHTTPRequestHandler):
         except Exception as e:
             self.senden(502, f"Datendienst nicht erreichbar: {e}")
 
+    def tvseite(self):
+        """TV-Seite für die Live-Vorschau (seit 0.55): nur angemeldet, nur GET, ohne Verwaltungs-Kopf."""
+        if not self.sitzung():
+            return self.senden(401, "abgemeldet")
+        try:
+            with urllib.request.urlopen(urllib.request.Request(DIENST + self.path[len("/tvseite"):]), timeout=60) as r:
+                self.senden(r.status, r.read(), r.headers.get("Content-Type") or "application/octet-stream", tv=True)
+        except urllib.error.HTTPError as e:
+            self.senden(e.code, e.read(), e.headers.get("Content-Type") or "text/plain; charset=utf-8", tv=True)
+        except Exception as e:
+            self.senden(502, f"Datendienst nicht erreichbar: {e}")
+
     def strom(self, ziel):
         """Großen Download (Player-Image, seit 0.23) direkt durchreichen, ohne ihn im Speicher zu sammeln."""
         if not self.sitzung():
@@ -212,6 +229,8 @@ class Bearbeiter(BaseHTTPRequestHandler):
             return self.strom(LADEN[pfad] + "?" + urllib.parse.urlparse(self.path).query)
         if pfad.startswith("/dienst/"):
             return self.weiterreichen()
+        if pfad.startswith("/tvseite/"):
+            return self.tvseite()
         if pfad == "/base1/cockpit.js":
             return self.senden(200, ERSATZ, "application/javascript; charset=utf-8")
         if pfad == "/verwaltung/info":

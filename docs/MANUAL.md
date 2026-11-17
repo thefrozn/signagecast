@@ -108,6 +108,15 @@ Content → Layouts → ⋯ on the layout → *Versions*: the last 10 versions w
 current one becomes a version), *Download* saves one as file. Below the layouts, *Deleted layouts* brings back
 deleted ones.
 
+### Live preview, guides and safe area in the layout editor (since 0.55)
+Content → Layouts → *Edit*: the canvas shows the **real TV page**, scaled down – background pictures and their motion,
+see-through cards, fonts, lists, weather and values – and updates with every change, **before saving**. Live videos
+appear as placeholders (so the preview costs the browser little). *View* switches between *Live preview* and *Sketch*
+(the old boxes, also used on phones); *Time of day* shows the layout as in the morning, day, evening or night.
+While moving or resizing an element, **guides** appear where its edges or centre line up with other elements or the
+middle of the screen. *Safe area* marks the edge some TVs cut off (overscan) – keep important things inside.
+The draft only lives in the server's memory for 30 minutes and is never shown on a TV until you save.
+
 ### Let an AI build a layout (since 0.38)
 Content → Layouts → *Create with AI …* → *Copy instructions*. Paste them into an AI (ChatGPT, Claude, Gemini …), describe your wish
 at the marked place (“MY WISH: …”), copy the answer, then Content → Layouts → *Paste text …* → *Apply*. SignageCast repairs what
@@ -412,6 +421,12 @@ starten und melden. **Änderungsprotokoll** (System → Protokoll: wer, wann, wa
 Anleitung kopieren, Antwort mit „Text einfügen …“ übernehmen; der Import repariert und nennt jede Änderung; Format in
 [LAYOUT-FORMAT.md](LAYOUT-FORMAT.md)). **Pult-Rechte** je Zugang: Laufschrift-Meldung, Layout vorübergehend
 umschalten, Fernseher über HA ein/aus.
+
+Seit 0.55: **Live-Vorschau im Layout-Editor** – die Leinwand zeigt die echte TV-Seite verkleinert (Hintergrund,
+Bewegung, Karten, Schriften, Werte) und ändert sich mit jeder Bearbeitung, schon vor dem Speichern; Live-Videos als
+Platzhalter. *Ansicht*: Live-Vorschau oder Skizze (wie bisher, auch am Handy), *Tageszeit*: Morgen/Tag/Abend/Nacht
+vorspielen. Beim Verschieben **Hilfslinien**, wo Kanten oder Mitten mit anderen Bausteinen oder der Bildmitte
+übereinstimmen; *Sicherer Rand* markiert den Bereich, den manche Fernseher abschneiden (Overscan).
 
 Seit 0.39: **MCP-Schnittstelle** für Claude & Co.: Layouts bauen, Vorschaubild, Zuweisung, Zeitplan, Laufschrift,
 Durchsage, Bilder, Streams, Datenquellen; nichts am System. Seit 0.40 per Klick: Einstellungen → **KI-Assistenten** →

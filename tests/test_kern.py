@@ -2672,6 +2672,58 @@ class Download0401(unittest.TestCase):
             self.assertNotIn(".download =", js.replace("a.download = datei", ""))   # keine blob:-Downloads mehr
 
 
+class Vorschau055(unittest.TestCase):
+    """Seit 0.55: Live-Vorschau im Layout-Designer – Entwürfe nur über die Verwaltung, TV-Seite holt sie per ?entwurf=."""
+    setUp, tearDown, holen = Download0401.setUp, Download0401.tearDown, Download0401.holen
+
+    def test_entwurf(self):
+        import layouts as L
+        D = self.D
+        D.ENTWUERFE.clear()
+        tv = D.einst()["fernseher"][0]["id"]
+        lay = dict(next(v for v in L.vorlagen("de") if v["id"] == "imbiss"), name="Entwurf-Test")
+        self.assertEqual(self.holen("/api/vorschau/entwurf", {"layout": lay}, kopf=False)[0], 403)   # nur die Verwaltung
+        st, _, roh = self.holen("/api/vorschau/entwurf", {"layout": lay, "tageszeit": "nacht"})
+        eid = json.loads(roh)["id"]
+        self.assertRegex(eid, r"^[0-9a-f]{16}$")
+        st, _, roh = self.holen(f"/daten.json?tv={tv}&entwurf={eid}", kopf=False)
+        d = json.loads(roh)
+        self.assertEqual((st, d["layout"]["name"], d["tageszeit"]), (200, "Entwurf-Test", "nacht"))
+        lay["name"] = "Entwurf-2"                                         # gleiche Kennung = ersetzen
+        self.assertEqual(json.loads(self.holen("/api/vorschau/entwurf", {"id": eid, "layout": lay})[2])["id"], eid)
+        self.assertEqual(json.loads(self.holen(f"/daten.json?tv={tv}&entwurf={eid}", kopf=False)[2])["layout"]["name"], "Entwurf-2")
+        normal = json.loads(self.holen(f"/daten.json?tv={tv}&entwurf=0123456789abcdef", kopf=False)[2])
+        self.assertNotEqual(normal["layout"]["name"], "Entwurf-2")         # unbekannt = normales Layout
+        self.assertNotIn(normal["tageszeit"], ("",))
+        for _ in range(25):                                               # höchstens 20 im Speicher
+            self.holen("/api/vorschau/entwurf", {"layout": lay})
+        self.assertLessEqual(len(D.ENTWUERFE), 20)
+        D.ENTWUERFE.clear()
+
+    def test_seite_und_docker(self):
+        import threading, urllib.request, urllib.error, verwaltung as V
+        basis = os.path.join(os.path.dirname(__file__), "..")
+        lesen = lambda f: open(os.path.join(basis, f), encoding="utf-8").read()
+        seite = lesen("www/seite.js")
+        self.assertIn('fetch(A("/daten.json', seite)                        # alle Abrufe über den Adress-Helfer
+        self.assertNotIn('fetch("/daten.json', seite)
+        self.assertIn("SC_VORSCHAU", lesen("www/vorschau.html"))
+        self.assertIn("/api/vorschau/entwurf", lesen("cockpit/signagecast/layout.js"))
+        self.assertIn("frame-ancestors 'self'", V.CSP_TV)
+        self.assertIn("frame-ancestors 'none'", V.CSP)
+        srv = V.Server(("127.0.0.1", 0), V.Bearbeiter)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{srv.server_address[1]}/tvseite/daten.json", timeout=5)
+                code = 200
+            except urllib.error.HTTPError as f:
+                code = f.code
+            self.assertEqual(code, 401)                                   # nur angemeldet
+        finally:
+            srv.shutdown(); srv.server_close()
+
+
 class Fernnetz041(unittest.TestCase):
     """Seit 0.41: Player an anderem Standort über Tailscale/Headscale – Einmal-Schlüssel, Entfernen, Agent."""
 
