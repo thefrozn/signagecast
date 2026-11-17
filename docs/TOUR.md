@@ -1,4 +1,4 @@
-# SignageCast – screenshot tour
+# SignageCast – tour
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version

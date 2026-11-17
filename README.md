@@ -15,7 +15,8 @@
 
 <p align="center">
   <a href="#installation"><b>Install</b></a> ·
-  <a href="docs/TOUR.md"><b>Screenshot tour</b></a> ·
+  <a href="docs/TOUR.md"><b>Tour</b></a> ·
+  <a href="docs/TEMPLATES.md"><b>Templates</b></a> ·
   <a href="docs/PLAYER.md">Players</a> ·
   <a href="docs/MANUAL.md">Manual &amp; FAQ</a> ·
   <a href="docs/MCP.md">AI assistants (MCP)</a> ·
@@ -159,7 +160,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   <img src="docs/vorlagen/imbiss-en.jpg" width="49%" alt="Menu board template">
   <img src="docs/vorlagen/klinik-en.jpg" width="49%" alt="Hospital template">
 </p>
-<p align="center"><a href="docs/TEMPLATES.md">All templates with pictures</a></p>
+<p align="center"><a href="docs/TEMPLATES.md">All templates – each with a moving picture and the elements used</a></p>
 <p align="center">
   <img src="docs/editor.jpg" width="49%" alt="Layout editor in Cockpit">
   <img src="docs/tour/04-overview.jpg" width="49%" alt="Overview in the admin">

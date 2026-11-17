@@ -1,4 +1,4 @@
-# SignageCast – Bildschirm-Tour
+# SignageCast – Tour
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant

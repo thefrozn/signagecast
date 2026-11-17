@@ -1,6 +1,6 @@
 # SignageCast – manual and FAQ
 
-[← README](../README.md) · [installation](INSTALL.md) · [hardware](HARDWARE.md) · [how it works](HOW-IT-WORKS.md) · [screenshot tour](TOUR.md)
+[← README](../README.md) · [installation](INSTALL.md) · [hardware](HARDWARE.md) · [how it works](HOW-IT-WORKS.md) · [tour](TOUR.md) · [templates](TEMPLATES.md)
 
 This manual explains the daily use of SignageCast. Installation is described in [installation](INSTALL.md).
 
@@ -430,7 +430,7 @@ Ausfall eines Fernsehers, Update- oder Sicherungsfehler und getrenntem Home Assi
 Test-Knopf je Kanal.
 Seit 0.53: **Liste** (Speisekarte, Öffnungszeiten, Wegweiser) – Text, Zusatz, Wert rechts, Symbol, Hervorhebung, bis 20
 Zeilen in 1–3 Spalten, wahlweise aus einer CSV-Datenquelle (Spalten `text`, `info`, `wert`); dazu Vorlagen für Imbiss,
-Einkaufszentrum, Praxis, Krankenhaus, Hotel, Fitnessstudio und Kantine ([Bilder](TEMPLATES.md#deutsch)).
+Einkaufszentrum, Praxis, Krankenhaus, Hotel, Fitnessstudio und Kantine ([alle Vorlagen](TEMPLATES.de.md)).
 Seit 0.45: **Galerie** – Inhalte → Mediathek → Galerien: Ordner anlegen, Bilder (JPG, PNG, WebP, GIF) und PDFs hineinziehen oder
 auswählen (auch ganze Ordner, vom Handy über die Dateiauswahl). Fotos werden beim Hochladen auf höchstens 4K
 verkleinert, nur diese Fassung bleibt; Reihenfolge per Ziehen, mehrere auswählen und löschen. Im Layout der Baustein

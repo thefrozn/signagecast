@@ -15,7 +15,8 @@
 
 <p align="center">
   <a href="#installation"><b>Installieren</b></a> ·
-  <a href="docs/TOUR.de.md"><b>Bildschirm-Tour</b></a> ·
+  <a href="docs/TOUR.de.md"><b>Tour</b></a> ·
+  <a href="docs/TEMPLATES.de.md"><b>Vorlagen</b></a> ·
   <a href="docs/PLAYER.md#deutsch-raspberry-pi-als-player">Player</a> ·
   <a href="docs/MANUAL.md#deutsch-kurz">Handbuch</a> ·
   <a href="docs/HOW-IT-WORKS.md#deutsch-kurz">Technik</a> ·
@@ -104,7 +105,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 </tr>
 </table>
 
-Alle Funktionen im Detail: [README (englisch)](README.md#what-it-does) und [Bildschirm-Tour](docs/TOUR.de.md).
+Alle Funktionen im Detail: [README (englisch)](README.md#what-it-does) und [Tour](docs/TOUR.de.md).
 
 <p align="center">
   <img src="docs/praxis.jpg" width="49%" alt="Vorlage Praxis">
@@ -114,7 +115,7 @@ Alle Funktionen im Detail: [README (englisch)](README.md#what-it-does) und [Bild
   <img src="docs/vorlagen/imbiss-de.jpg" width="49%" alt="Vorlage Menütafel">
   <img src="docs/vorlagen/klinik-de.jpg" width="49%" alt="Vorlage Krankenhaus">
 </p>
-<p align="center"><a href="docs/TEMPLATES.md#deutsch">Alle Vorlagen mit Bildern</a></p>
+<p align="center"><a href="docs/TEMPLATES.de.md">Alle Vorlagen – jede mit bewegtem Bild und den verwendeten Elementen</a></p>
 <p align="center">
   <img src="docs/editor.jpg" width="49%" alt="Layout-Editor in Cockpit">
   <img src="docs/tour/de/04-overview.jpg" width="49%" alt="Übersicht in der Verwaltung">
