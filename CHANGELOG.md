@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.54.1 (2026-11-17)
+- **Fix: changing a password in Cockpit** (Accounts → Set password) reported
+  `/var/cache/cracklib/cracklib_dict.pwd: No such file or directory … error loading dictionary` and called every
+  password weak. The dictionary package `cracklib-runtime` is only “recommended” by Debian and was skipped by the
+  installer; it is now installed (also on update). Workaround on older versions: “Set weak password” is safe if the
+  password is actually long, or `apt install cracklib-runtime`.
+
 ## v0.54.0 (2026-11-17)
 - **Templates with pictures:** the seven templates from 0.53 now have real backgrounds instead of plain colour.
   *Snack bar* shows food photos (burger, kebab plate, grill) as a slow slideshow beside the menu; *Gym* shows sports

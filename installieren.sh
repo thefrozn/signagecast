@@ -40,10 +40,12 @@ if [ -f /etc/apt/sources.list.d/debian.sources ] && ! grep -q "non-free" /etc/ap
   sed -i "s/^Components:.*/Components: main contrib non-free non-free-firmware/" /etc/apt/sources.list.d/debian.sources
 fi
 apt-get update -qq
+# cracklib-runtime (seit 0.54.1): Wörterbuch für die Passwortprüfung in Cockpit – ohne es meldet „Passwort setzen“
+# „error loading dictionary“ und hält jedes Passwort für schwach (ist nur „empfohlen“, fehlt mit --no-install-recommends)
 apt-get install -y -qq --no-install-recommends xvfb chromium ffmpeg vainfo intel-media-va-driver-non-free libmfx-gen1.2 mesa-va-drivers \
   pulseaudio pulseaudio-utils fonts-roboto-unhinted fonts-dejavu-core fonts-open-sans fonts-lato fonts-montserrat \
   fonts-ubuntu fonts-cantarell fonts-comic-neue fonts-firacode fonts-noto-core fonts-noto-color-emoji python3 python3-pyzipper python3-smbc curl ca-certificates openssl procps minisign poppler-utils \
-  cockpit-ws cockpit-system cockpit-bridge >/dev/null
+  cockpit-ws cockpit-system cockpit-bridge cracklib-runtime >/dev/null
 
 echo "== MediaMTX $MTX_VERSION"
 if ! /opt/mediamtx/mediamtx --version 2>/dev/null | grep -q "$MTX_VERSION"; then
