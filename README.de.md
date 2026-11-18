@@ -28,13 +28,15 @@
 
 <p align="center"><sub>Aufgenommen auf einer Demo-Instanz, gekürzt: Live-Kamera und Werte wechseln von selbst. Animation läuft nicht? <a href="docs/tour/de/01-tv-wohnzimmer.jpg">Standbild</a>.</sub></p>
 
-**Schnellstart** – in der Shell eines Proxmox-VE-Hosts:
+### Schnellstart
+
+**Proxmox VE** – ein Befehl in der Shell des Proxmox-Hosts:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
-oder mit Docker / Podman (`SC_HOST_IP` = die IP deines Docker-Hosts):
+**Docker / Podman** – `SC_HOST_IP` ist die IP deines Docker-Hosts:
 
 ```bash
 docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
@@ -42,9 +44,10 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
-oder auf einem eigenen Rechner (Mini-PC, altes Notebook, UEFI): `signagecast-server-vX.Y.Z.iso` aus dem
+**Eigener Rechner (ISO)** – Mini-PC oder altes Notebook mit UEFI: `signagecast-server-vX.Y.Z.iso` aus dem
 [neuesten Release](https://github.com/thefrozn/signagecast/releases/latest) auf einen USB-Stick schreiben und davon
-starten – [Details](docs/INSTALL.md#own-computer-installation-iso).
+starten. Der Rechner kann die TV-Seite auch selbst per HDMI zeigen – ohne zweites Gerät
+([Details](docs/INSTALL.md#own-computer-installation-iso)).
 
 Weitere Wege (Debian, Windows, QNAP, Synology) und was danach zu öffnen ist: [Installation](#installation).
 
@@ -66,15 +69,17 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - Fenster zur Welt: YouTube-Live-Kameras, die wechseln und schlechte Streams selbst überspringen
 - Uhr, Wetter, Vorhersage, amtliche Unwetterwarnungen (DWD)
 - Hintergründe, die dem echten Sonnenstand an deinem Ort folgen
-- Vorlagen für Wohnzimmer, Menütafel, Einkaufszentrum, Praxis, Krankenhaus, Hotel, Fitnessstudio, Kantine, Firma und Nacht
+- [Vorlagen für viele Orte](docs/TEMPLATES.de.md): Wohnzimmer, Wartezimmer, Empfang, Menütafel, Einkaufszentrum,
+  Krankenhaus, Hotel, Fitnessstudio, Kantine, Bilderrahmen und Nacht
 
 </td>
 <td valign="top" width="50%">
 
 **Inhalte**
-- Layout-Editor im Raster 48 × 27 mit Bedingungen, Schriften und Farben – oder Layout von einer KI bauen lassen
+- Layout-Editor mit Live-Vorschau: Bausteine aus einer Leiste ziehen, mehrere wählen, ausrichten, zoomen; Hinweise
+  bei zu kleiner Schrift oder zu wenig Kontrast – oder das Layout von einer KI bauen lassen
 - Inhalte direkt von Claude & Co. verwalten lassen – Computer per Klick verbinden und wieder entfernen ([MCP-Schnittstelle](docs/MCP.md#deutsch-kurz))
-- Werte aus Home Assistant, eigene JSON-/RSS-Quellen, Diagramme, Kalender
+- Werte aus Home Assistant, eigene JSON-/RSS-Quellen (Assistent: Werte anklicken), Diagramme, Kalender
 - IP-Kameras, Webseiten, PDFs, Internetradio, Einspieler zu festen Zeiten
 - Meldungen, Durchsagen und ein rotes Notfall-Vollbild auf allen Fernsehern
 
@@ -95,6 +100,8 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 <td valign="top">
 
 **Betrieb**
+- **Läuft offline:** keine Cloud, kein Konto; ohne Internet zeigt der Bildschirm eigene Medien oder ein ruhiges Bild
+- **Installations-ISO** für einen eigenen Rechner, auf Wunsch mit Bild per HDMI
 - Verwaltung in Cockpit, Deutsch und Englisch, mit Liste „Zu erledigen“
 - Signierte Updates, die sich bei Problemen selbst zurückrollen
 - Sicherung und Wiederherstellung, Benachrichtigung per Telegram, E-Mail oder Home Assistant
@@ -105,21 +112,103 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 </tr>
 </table>
 
-Alle Funktionen im Detail: [README (englisch)](README.md#what-it-does) und [Tour](docs/TOUR.de.md).
+<details>
+<summary><b>Alle Funktionen im Detail</b></summary>
 
-<p align="center">
-  <img src="docs/praxis.jpg" width="49%" alt="Vorlage Praxis">
-  <img src="docs/firma.jpg" width="49%" alt="Vorlage Firma">
-</p>
-<p align="center">
-  <img src="docs/vorlagen/imbiss-de.jpg" width="49%" alt="Vorlage Menütafel">
-  <img src="docs/vorlagen/klinik-de.jpg" width="49%" alt="Vorlage Krankenhaus">
-</p>
-<p align="center"><a href="docs/TEMPLATES.de.md">Alle Vorlagen – jede mit bewegtem Bild und den verwendeten Elementen</a></p>
-<p align="center">
-  <img src="docs/editor.jpg" width="49%" alt="Layout-Editor in Cockpit">
-  <img src="docs/tour/de/04-overview.jpg" width="49%" alt="Übersicht in der Verwaltung">
-</p>
+- **Fenster zur Welt** – feste und automatisch gefundene YouTube-Livestreams (Safari, Meer, Vögel, Bären; auch Städte,
+  Strände, Berge, Häfen, Flughäfen, Züge, Weltraum und Naturwunder – einschalten, was dir gefällt), wechseln alle paar
+  Minuten, nur wo gerade Tag ist. Schlechte Streams (startet nicht, puffert, steht, niedrige Auflösung) werden
+  übersprungen; Favoriten lassen sich schützen, unerwünschte ablehnen.
+- **Live-Videos** – ein eigener Bereich für die Sammlung (Liste mit Seitenfeld), Themen mit Suchbegriffen,
+  automatische Stream-Suche mit Regeln, Einspieler.
+- **Layout-Editor** – Uhr, Datum, Wetter, Vorhersage, Räume, Kacheln mit beliebigen Home-Assistant-Werten, Live-Video,
+  Radio, freier Text und Laufband, Logo, Kamera, Kalender/Müllabfuhr, Meldungen aus Home Assistant. Bedingungen („nur
+  zeigen, wenn …“), Schriften, Farben, 9 Textpositionen. Die Leinwand zeigt die **echte TV-Seite als Live-Vorschau**
+  schon vor dem Speichern; Bausteine kommen aus einer Leiste (anklicken oder ziehen), mehrere lassen sich zusammen
+  verschieben, ausrichten und verteilen, mit Rückgängig/Wiederholen und Tastenkürzeln. Die Einstellungen eines
+  Bausteins sind in *Inhalt*, *Aussehen* und *Wann* geteilt, mit kurzer Hilfe je Feld; Zoom bis 200 %. **Hinweise (⚠)**
+  markieren Schrift, die aus 3 m zu klein ist, wenig Kontrast oder Inhalt, der nicht passt.
+- **Eigene Datenquellen** – beliebige JSON-API, RSS-/Atom-Feed oder Bildadresse, abgeholt in deinem Takt (`curl`-Befehl
+  einfügen, Werte in der Antwort anklicken). Bausteine: Wert, Liste/Feed (auch als Laufband), Bild, Anzeige, Countdown,
+  QR-Code, Platzhalter wie `{quelle:pfad}` in jedem Text.
+- **Kameras, Diagramme, Kalender, Webseiten** – IP-Kameras (RTSP, HLS, MJPEG; z. B. die Türklingel nur, wenn es
+  klingelt), Verlaufsdiagramme, Kalender aus iCal-Adressen oder hochgeladenen .ics/.csv-Dateien, Webseiten live oder
+  als regelmäßiges Bildschirmfoto.
+- **Vorlagen für viele Orte** – 16 fertige Layouts: Standard, Video groß, Nur Video, Info ohne Video, *Fenster zur
+  Welt*, *Galerie Vollbild*, Nacht, *Praxis – ruhig*, *Praxis – Info*, *Firma – Corporate Design*, *Imbiss –
+  Menütafel*, *Einkaufszentrum – Info*, *Krankenhaus – Foyer*, *Hotel / Pension – Lobby*, *Fitnessstudio / Verein* und
+  *Kantine – Speiseplan*; jede ein Startpunkt, den du im Editor anpasst ([Bilder](docs/TEMPLATES.de.md)).
+- **Listen** – Speisekarten mit Preisen, Öffnungszeiten, Wegweiser mit Etagen: im Editor getippt oder aus einer CSV-Datei.
+- **Hintergründe nach Tageszeit** – Bildersets für Sonnenaufgang, Tag, Sonnenuntergang und Nacht, Wetterbilder,
+  Diashow oder eigene Bilder.
+- **Internetradio** – eigene Streams oder Vorschläge für deinen Ort; oder der Originalton der Kameras.
+- **Einspieler zu festen Zeiten** – z. B. *tagesschau in 100 Sekunden* zur vollen Stunde.
+- **Mehrere Fernseher** – jeder mit eigener Adresse, eigenem Layout, Zeitplan, Ton und eigenen Themen.
+- **Raspberry Pi als Player** (experimentell) – ein fertiges SD-Karten-Image je Bildschirm (mit WLAN, Hotspot mit
+  QR-Code als Rückfall) oder ein Image für viele Pis mit Kopplungscode; Zustand, Bildschirmfoto, Fernseher ein/aus per
+  HDMI-CEC, Drehung, Updates; auf Wunsch ein Terminal im Browser. [PLAYER.md](docs/PLAYER.md)
+- **PC als Player** (experimentell) – ein PC oder Thin Client (x86-64, UEFI, Secure Boot darf an bleiben) startet vom
+  USB-Stick und zeigt die Seite selbst. [PLAYER.md](docs/PLAYER.md#pc-as-player-since-036-experimental)
+- **Offline-Betrieb** – keine Cloud und kein Konto; alles läuft auf deinem eigenen Server. Ohne Internet zeigt das
+  Videofenster eigene Medien oder ein ruhiges Bild zur Tageszeit (keine Fehlermeldung am Fernseher), Werte behalten
+  ihren letzten Stand. **Offline-Kopie** (seit 0.51): Player im Direktmodus zeigen ihr letztes Layout weiter, wenn
+  Server oder Netz ausfallen – auch nach einem Neustart – und markieren das mit einer kleinen durchgestrichenen
+  Weltkugel ([Details](docs/PLAYER.md#offline-kopie-seit-051)).
+- **Installations-ISO** (seit 0.52) – für einen Mini-PC oder ein altes Notebook ohne Proxmox: der offizielle
+  Debian-13-Installer mit vorbereiteten Antworten auf einem USB-Stick (UEFI, Secure Boot darf an bleiben); auf Wunsch
+  zeigt der Rechner einen Kanal selbst per HDMI ([Details](docs/INSTALL.md#own-computer-installation-iso)). Noch nicht
+  auf vielen echten Rechnern getestet.
+- **Meldungen und Benachrichtigungen** – DWD-Warnungen als Baustein; Banner aus anderen Systemen per Webhook;
+  Benachrichtigungen, wenn ein Fernseher ausfällt, ein Update oder eine Sicherung scheitert oder Home Assistant getrennt ist.
+- **Bausteine mit Zeitraum** – z. B. „Vom 23.12. bis 2.1. geschlossen“ erscheint und verschwindet von selbst.
+- **Notfall-Vollbild und Durchsage-Pult** – eine rote Vollbild-Meldung auf allen Fernsehern; eine eigene Empfangsseite,
+  die Aufrufe wie „Frau Becker bitte in Raum 2“ schickt, offline vorgelesen (Piper) – und, wenn erlaubt,
+  Laufband-Meldungen, ein Layout für eine Weile und Fernseher ein/aus.
+- **Strom sparen** – Zeitpläne schalten einen Fernseher in den Nachtmodus oder auf Schwarz, über Home Assistant auch
+  wirklich aus und an.
+- **Läuft unbeaufsichtigt** – eine Bildprüfung bemerkt einen schwarzen oder stehenden Fernseher und repariert ihn
+  (neu laden, neu starten, melden).
+- **Änderungsprotokoll und Layout-Versionen** – wer wann was geändert hat (Verwaltung, Pult, Webhook, System – nie
+  Werte); die letzten 10 Fassungen jedes Layouts, auch gelöschter.
+- **KI-Assistenten per MCP** – Claude, Cursor, VS Code und andere Assistenten verwalten Layouts, Fernseher, Laufbänder,
+  Bilder und Streams und schauen sich Vorschaubilder an; Computer per Klick in der Verwaltung verbinden (Claude
+  Desktop: eine Datei zum Doppelklicken) und jederzeit wieder entfernen; jede Änderung landet im Protokoll
+  ([MCP.md](docs/MCP.md#deutsch-kurz)).
+- **Layouts von einer KI** – die Anleitung mit dem vollständigen [Layout-Format](docs/LAYOUT-FORMAT.md) in ChatGPT,
+  Claude oder Gemini kopieren und die Antwort einfügen; der Import repariert, was geht, und sagt was.
+
+</details>
+
+Rundgang mit Bildern aller Bereiche: [Tour](docs/TOUR.de.md).
+
+### Vorlagen für viele Orte
+
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/templates/praxis.de.md"><img src="docs/vorlagen/praxis-de.jpg" alt="Vorlage Praxis"></a><br><sub>Wartezimmer</sub></td>
+<td width="33%" align="center"><a href="docs/templates/firma.de.md"><img src="docs/vorlagen/firma-de.jpg" alt="Vorlage Firma"></a><br><sub>Empfang</sub></td>
+<td width="33%" align="center"><a href="docs/templates/imbiss.de.md"><img src="docs/vorlagen/imbiss-de.jpg" alt="Vorlage Menütafel"></a><br><sub>Menütafel</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="docs/templates/klinik.de.md"><img src="docs/vorlagen/klinik-de.jpg" alt="Vorlage Krankenhaus"></a><br><sub>Krankenhaus</sub></td>
+<td align="center"><a href="docs/templates/hotel.de.md"><img src="docs/vorlagen/hotel-de.jpg" alt="Vorlage Hotel"></a><br><sub>Hotel-Lobby</sub></td>
+<td align="center"><a href="docs/templates/kantine.de.md"><img src="docs/vorlagen/kantine-de.jpg" alt="Vorlage Kantine"></a><br><sub>Kantine</sub></td>
+</tr>
+</table>
+<p align="center"><a href="docs/TEMPLATES.de.md">Alle 16 Vorlagen – jede mit bewegtem Bild und den verwendeten Bausteinen</a></p>
+
+### Verwaltung, Offline und Installation
+
+<table>
+<tr>
+<td width="50%" align="center"><img src="docs/tour/de/06d-editor-multi.jpg" alt="Layout-Editor mit Live-Vorschau, Bausteine-Leiste und drei gewählten Bausteinen"><br><sub>Layout-Editor mit Live-Vorschau</sub></td>
+<td width="50%" align="center"><img src="docs/tour/de/04-overview.jpg" alt="Übersicht in der Verwaltung"><br><sub>Übersicht aller Bildschirme</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/tour/de/01c-tv-offline.jpg" alt="TV-Seite am Player ohne Server: letztes Layout, ruhiges Bild statt Live-Kamera, durchgestrichene Weltkugel oben rechts"><br><sub>Offline: der Player zeigt sein letztes Layout weiter</sub></td>
+<td align="center"><img src="docs/tour/de/05g-server-hdmi.jpg" alt="Dialog Neues Gerät mit der Wahl Dieser Rechner per HDMI"><br><sub>Mit der ISO installiert: Bild per HDMI</sub></td>
+</tr>
+</table>
 
 ## Installation
 
@@ -161,7 +250,8 @@ Browser verwalten. SignageCast enthält keinen Code daraus, der Ansatz (Zeichnen
 
 ## Hilfe
 
-Fragen, Fehler und Ideen: [GitHub-Issues](https://github.com/thefrozn/signagecast/issues).
+Fragen, Ideen und deinen Bildschirm zeigen: [GitHub Discussions](https://github.com/thefrozn/signagecast/discussions).
+Fehler: [GitHub-Issues](https://github.com/thefrozn/signagecast/issues).
 
 ## Lizenz
 

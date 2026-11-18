@@ -29,13 +29,15 @@
 
 <p align="center"><sub>Recorded on a demo instance, shortened: the live cam and the values change by themselves. Animation not playing? <a href="docs/tour/01-tv-living-room.jpg">Still picture</a>.</sub></p>
 
-**Quick start** – on the shell of a Proxmox VE host:
+### Quick start
+
+**Proxmox VE** – one command on the shell of the Proxmox host:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
-or with Docker / Podman (`SC_HOST_IP` = the IP of your Docker host):
+**Docker / Podman** – `SC_HOST_IP` is the IP of your Docker host:
 
 ```bash
 docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
@@ -43,9 +45,10 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
-or on a computer of its own (mini PC, old laptop, UEFI): write `signagecast-server-vX.Y.Z.iso` from the
-[latest release](https://github.com/thefrozn/signagecast/releases/latest) to a USB stick and boot from it –
-[details](docs/INSTALL.md#own-computer-installation-iso).
+**Own computer (ISO)** – mini PC or old laptop with UEFI: write `signagecast-server-vX.Y.Z.iso` from the
+[latest release](https://github.com/thefrozn/signagecast/releases/latest) to a USB stick and boot from it. The
+computer can also show the TV page itself via HDMI – no second device needed
+([details](docs/INSTALL.md#own-computer-installation-iso)).
 
 Other ways (Debian, Windows, QNAP, Synology) and what to open afterwards: [Installation](#installation).
 
@@ -66,14 +69,16 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - Live window to the world: YouTube live cams that rotate and skip bad streams by themselves
 - Clock, weather, forecast, official severe weather warnings (DWD)
 - Backgrounds that follow the real sun at your location
-- Templates for living room, menu board, shopping centre, practice, hospital, hotel, gym, canteen, company and night
+- [Templates for many places](docs/TEMPLATES.md): living room, waiting room, reception, menu board, shopping centre,
+  hospital, hotel, gym, canteen, picture frame and night
 
 </td>
 <td valign="top" width="50%">
 
 **Content**
-- Layout editor on a 48 × 27 grid with conditions, fonts and colours – or let an AI build a layout
-- Home Assistant values, own JSON/RSS sources, charts, calendars
+- Layout editor with live preview: drag elements from a bar, select several, align, zoom; notes on text that is too
+  small or has too little contrast – or let an AI build a layout
+- Home Assistant values, own JSON/RSS sources (assistant: pick values by clicking), charts, calendars
 - IP cameras, web pages, PDFs, internet radio, clips at fixed times
 - Messages, announcements and a red emergency screen on all TVs
 
@@ -94,6 +99,8 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 <td valign="top">
 
 **Operation**
+- **Works offline:** no cloud, no account; without internet the screen shows your own media or a calm picture
+- **Installation ISO** for a computer of its own, optionally with the picture via HDMI
 - Admin in Cockpit, German and English, with a to-do list
 - Signed updates that roll back by themselves
 - Backup and restore, notifications via Telegram, e-mail or Home Assistant
@@ -113,21 +120,27 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   are skipped; favourites can be protected, unwanted ones rejected.
 - **Layout editor** – clock, date, weather, forecast, rooms, tiles with any Home Assistant value, live video, radio,
   free text and ticker, logo, camera, calendar / waste collection, messages from Home Assistant. Conditions (“only show
-  when …”), fonts, colours, 9 text positions.
+  when …”), fonts, colours, 9 text positions. The canvas shows the **real TV page as live preview** before saving;
+  elements come from a bar (click or drag), several can be moved, aligned and distributed together, undo/redo and
+  shortcuts. Each element's settings are split into *Content*, *Look* and *When* with a short help per field; zoom up to
+  200 %. **Notes (⚠)** mark text that is too small to read from 3 m, low contrast or content that does not fit.
 - **Your own data sources** – any JSON API, RSS/Atom feed or picture address, fetched at your interval (paste a `curl`
   command, pick values by clicking in the response). Elements: value, list / feed (also as ticker), picture, gauge,
   countdown, QR code, placeholders like `{source:path}` in any text.
 - **Cameras, charts, calendars, web pages** – IP cameras (RTSP, HLS, MJPEG; e.g. the doorbell only when it rings),
   history charts, calendars from iCal addresses or uploaded .ics/.csv files, web pages live or as a regular screenshot.
-- **Templates** – Standard, Video large, Video only, Info without video, *Practice – calm*, *Company – corporate design*,
-  *Window to the world*, Night; since 0.53 also *Snack bar – menu board*, *Shopping centre*, *Practice – info*,
-  *Hospital – lobby*, *Hotel – lobby*, *Gym / sports club* and *Canteen – weekly menu* ([pictures](docs/TEMPLATES.md)).
+- **Templates for many places** – 16 ready layouts: Standard, Large video, Video only, Info without video, *Window to
+  the world*, *Gallery full screen*, Night, *Practice – calm*, *Practice – info*, *Company – corporate design*, *Snack
+  bar – menu board*, *Shopping centre – info*, *Hospital – lobby*, *Hotel / guest house – lobby*, *Gym / sports club* and *Canteen – weekly
+  menu*; each one a starting point you change in the editor ([pictures](docs/TEMPLATES.md)).
 - **Lists** – menus with prices, opening hours, directories with floors: typed in the editor or from a CSV file.
 - **Backgrounds by time of day** – picture sets for sunrise, day, sunset and night, weather pictures, slideshow or your
   own pictures.
 - **Internet radio** – own streams or suggestions for your location; or the original sound of the cams.
 - **Clips at fixed times** – e.g. *tagesschau in 100 Sekunden* on the hour.
-- **Several TVs** – each with its own address, layout, schedule, sound and categories.
+- **Several TVs** – each with its own address, layout, schedule, sound and topics.
+- **Live videos** – one area for the collection (list with panel), topics with search words, automatic stream search
+  and rules, clips.
 - **Raspberry Pi as player** (experimental) – a ready SD card image per screen (Wi-Fi included, hotspot with QR code
   as fallback) or one image for many Pis with a pairing code; status, screenshot, TV on/off via HDMI-CEC, rotation,
   updates; optional terminal in the browser. [PLAYER.md](docs/PLAYER.md)
@@ -140,6 +153,13 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   sends calls like “Mrs Baker, please go to room 2”, read aloud offline (Piper) – and, if allowed, ticker messages,
   a layout for a while and switching TVs on/off.
 - **Energy saving** – schedules switch a TV to night mode or black, and really off and on via Home Assistant.
+- **Offline mode** – no cloud and no account; everything runs on your own server. Without internet the video window
+  shows your own media or a calm picture by time of day (no error on the TV), values keep their last state. **Offline
+  copy** (since 0.51): players in direct mode keep showing their last layout when the server or the network fails –
+  also after a restart – and mark it with a small crossed-out globe ([details](docs/PLAYER.md#offline-copy-since-051)).
+- **Installation ISO** (since 0.52) – for a mini PC or old laptop without Proxmox: the official Debian 13 installer with
+  preset answers on a USB stick (UEFI, Secure Boot may stay on); optionally the computer shows a channel itself via
+  HDMI ([details](docs/INSTALL.md#own-computer-installation-iso)). Not tested on many real computers yet.
 - **Built to run unattended** – when the internet is gone the video window shows your own media or a calm picture
   instead of an error; a picture check notices a black or frozen TV and repairs it (reload, restart, notify).
 - **Change log and layout versions** – who changed what and when (admin, panel, webhook, system – never values); the
@@ -152,19 +172,34 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 
 </details>
 
-<p align="center">
-  <img src="docs/praxis.jpg" width="49%" alt="Practice template">
-  <img src="docs/firma.jpg" width="49%" alt="Company template">
-</p>
-<p align="center">
-  <img src="docs/vorlagen/imbiss-en.jpg" width="49%" alt="Menu board template">
-  <img src="docs/vorlagen/klinik-en.jpg" width="49%" alt="Hospital template">
-</p>
-<p align="center"><a href="docs/TEMPLATES.md">All templates – each with a moving picture and the elements used</a></p>
-<p align="center">
-  <img src="docs/editor.jpg" width="49%" alt="Layout editor in Cockpit">
-  <img src="docs/tour/04-overview.jpg" width="49%" alt="Overview in the admin">
-</p>
+### Templates for many places
+
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/templates/praxis.md"><img src="docs/vorlagen/praxis-en.jpg" alt="Practice template"></a><br><sub>Waiting room</sub></td>
+<td width="33%" align="center"><a href="docs/templates/firma.md"><img src="docs/vorlagen/firma-en.jpg" alt="Company template"></a><br><sub>Reception</sub></td>
+<td width="33%" align="center"><a href="docs/templates/imbiss.md"><img src="docs/vorlagen/imbiss-en.jpg" alt="Menu board template"></a><br><sub>Menu board</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="docs/templates/klinik.md"><img src="docs/vorlagen/klinik-en.jpg" alt="Hospital template"></a><br><sub>Hospital lobby</sub></td>
+<td align="center"><a href="docs/templates/hotel.md"><img src="docs/vorlagen/hotel-en.jpg" alt="Hotel template"></a><br><sub>Hotel lobby</sub></td>
+<td align="center"><a href="docs/templates/kantine.md"><img src="docs/vorlagen/kantine-en.jpg" alt="Canteen template"></a><br><sub>Canteen</sub></td>
+</tr>
+</table>
+<p align="center"><a href="docs/TEMPLATES.md">All 16 templates – each with a moving picture and the elements used</a></p>
+
+### Admin, offline and installation
+
+<table>
+<tr>
+<td width="50%" align="center"><img src="docs/tour/06d-editor-multi.jpg" alt="Layout editor with live preview, elements bar and three elements selected"><br><sub>Layout editor with live preview</sub></td>
+<td width="50%" align="center"><img src="docs/tour/04-overview.jpg" alt="Overview in the admin"><br><sub>Overview of all screens</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/tour/01c-tv-offline.jpg" alt="TV page on a player without server: last layout, calm picture instead of the live cam, crossed-out globe at the top right"><br><sub>Offline: the player keeps its last layout</sub></td>
+<td align="center"><img src="docs/tour/05g-server-hdmi.jpg" alt="New device dialog with the option This computer via HDMI"><br><sub>Installed from the ISO: picture via HDMI</sub></td>
+</tr>
+</table>
 
 ## Installation
 
@@ -205,7 +240,8 @@ SignageCast contains no code from it; the approach (server-side rendering and st
 
 ## Support
 
-Questions, bugs and ideas: [GitHub issues](https://github.com/thefrozn/signagecast/issues).
+Questions, ideas and showing your screen: [GitHub Discussions](https://github.com/thefrozn/signagecast/discussions).
+Bugs: [GitHub issues](https://github.com/thefrozn/signagecast/issues).
 
 ## License
 
