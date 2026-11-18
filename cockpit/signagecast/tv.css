@@ -308,3 +308,18 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
   .lz-aktion { grid-row: 1 / span 2; grid-column: 2; }
 }
 .zeile > label.schalter:first-child { min-width: 0; }   /* Schalter vor der Beschriftung (Seitenfeld) nicht strecken */
+/* Datenquellen (seit 0.57): Assistent mit Schritten und Kacheln, letzter Wert in der Liste */
+.schritte { display: flex; gap: 6px; list-style: none; padding: 0; margin: 6px 0 12px; counter-reset: schritt; }
+.schritte li { flex: 1; counter-increment: schritt; font-size: 13px; color: var(--leise); padding: 4px 0 6px; border-bottom: 3px solid var(--linie); }
+.schritte li::before { content: counter(schritt) ". "; }
+.schritte li.an { color: inherit; font-weight: 600; border-color: var(--akzent); } .schritte li.fertig { border-color: var(--gut); }
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.kachel { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 12px; cursor: pointer;
+  border: 1px solid var(--linie); border-radius: 10px; background: var(--eingabe); color: inherit; font: inherit; }
+.kachel:hover, .kachel:focus-visible { border-color: var(--akzent); outline: none; } .kachel .leise { font-size: 12px; }
+.kachel-symbol { font-size: 22px; line-height: 1; }
+.qwert { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.feld .zeile select, .feld .zeile input { width: auto; }
+.seitenfeld .baum { max-height: none; }
+.qkopf input[type=text], .qkopf input[type=password] { min-width: 0; flex: 1; }
+.bsp-liste { display: flex; flex-wrap: wrap; gap: 6px; } .bsp-liste .knopf { white-space: normal; text-align: left; }

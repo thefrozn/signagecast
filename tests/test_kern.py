@@ -2749,6 +2749,43 @@ class LiveVideos056(unittest.TestCase):
                 namen[m.group(1)] = f
 
 
+class Datenquellen057(unittest.TestCase):
+    """Seit 0.57: Datenquellen als Liste mit letztem Wert, Seitenfeld und Assistent."""
+
+    def test_kurzwert(self):
+        self.assertIsNone(Q.kurzwert(None))
+        self.assertEqual(Q.kurzwert({"bitcoin": {"eur": 81234}}), {"pfad": "bitcoin.eur", "text": "81234"})
+        self.assertEqual(Q.kurzwert({"titel": "t", "eintraege": [{"titel": "A"}, {"titel": "B"}]}), {"n": 2, "liste": "eintraege", "text": "A"})
+        self.assertEqual(Q.kurzwert({"termine": [{"titel": "Neujahr", "start": "2027-01-01"}]})["text"], "2027-01-01 Neujahr")
+        self.assertEqual(Q.kurzwert({"zeilen": [{"a": "", "b": "Pommes"}]})["text"], "Pommes")
+        self.assertEqual(Q.kurzwert({"zeilen": []}), {"n": 0, "liste": "zeilen", "text": ""})
+        self.assertEqual(Q.kurzwert("\n  erste Zeile\nzweite"), {"text": "erste Zeile"})
+        self.assertEqual(Q.kurzwert({"bild": b"x" * 4096, "typ": "image/png", "groesse": 4096}), {"text": "image/png, 4 KB"})
+        self.assertEqual(Q.kurzwert({"a": "x" * 200})["text"], "x" * 80)
+        self.assertEqual(Q.kurzwert({"timestamp": "2026-11-18T06:45", "value": 151, "ok": True}), {"pfad": "value", "text": "151"})   # Zahl vor Text
+        self.assertEqual(Q.kurzwert({"ok": True, "name": "x"}), {"pfad": "name", "text": "x"})
+        tief = cur = {}
+        for _ in range(20):
+            cur["k"] = {}; cur = cur["k"]
+        self.assertEqual(Q.kurzwert(tief), {"text": ""})          # zu tief: kein Absturz
+
+    def test_status_mit_kurzwert(self):
+        qn = Q.Quellen(lambda: {"quellen": [{"id": "a", "art": "json"}, {"id": "b", "art": "rss"}]})
+        qn.stand["a"] = {"daten": {"wert": 5}, "abruf": 1}
+        st = qn.status()
+        self.assertEqual(st["a"]["kurz"], {"pfad": "wert", "text": "5"})
+        self.assertIsNone(st["b"]["kurz"])
+
+    def test_oberflaeche(self):
+        js = open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", "quellen.js"), encoding="utf-8").read()
+        for f in ("quelleBenutzt", "quelleAssistent", "quelleDetails", "quelleFormular"):
+            self.assertIn(f"function {f}(", js)
+        for a in Q.ARTEN:                                         # jede Art hat eine Kachel im Assistenten
+            self.assertRegex(js, rf"\n\s+{a}: \[\"")
+        for f in ("pfadWaehlen", "baumZeigen"):                  # vom Layout-Editor benutzt
+            self.assertIn(f"function {f}(", js)
+
+
 class Fernnetz041(unittest.TestCase):
     """Seit 0.41: Player an anderem Standort über Tailscale/Headscale – Einmal-Schlüssel, Entfernen, Agent."""
 

@@ -1,6 +1,8 @@
-// SignageCast – Reiter „Datenquellen“: eigene API-Abfragen (JSON/Text), RSS-/Atom-Feeds und Bilder. Der Datendienst
-// holt sie im eingestellten Abstand; die Bausteine im Layout zeigen Werte daraus (Pfad aus dem Antwort-Baum wählen).
-// Nutzt die Hilfsfunktionen aus tv.js (holen, senden, aktion, esc, el, $, schalter, melden, E).
+// SignageCast – Reiter „Datenquellen“: eigene API-Abfragen (JSON/Text), RSS-/Atom-Feeds, Kalender, Tabellen, Bilder, Kameras.
+// Der Datendienst holt sie im eingestellten Abstand; die Bausteine im Layout zeigen Werte daraus (Pfad aus dem Antwort-Baum).
+// Seit 0.57: Liste mit Ampel, letztem Wert und „benutzt in“, Details im Seitenfeld, Assistent Was? → Woher? → Werte;
+// Technik (Kennung, Methode, Kopfzeilen) unter „Erweitert“. Seitenfeld und ⋯-Menü kommen aus live.js.
+// Nutzt die Hilfsfunktionen aus tv.js (holen, senden, aktion, esc, el, $, schalter, melden, E) und live.js (seitenfeld, mehrMenue).
 "use strict";
 
 const QTEXTE = {
@@ -27,6 +29,30 @@ const QTEXTE = {
     hochgeladen: "hochgeladen", felderLesen: "Spalten lesen", csvFelder: "Spalten der CSV",
     termine: "Als Termine (für den Baustein „Kalender / Müllabfuhr“)", termineHinweis: "Datumsspalte wählen – dann zeigt der Kalender-Baustein die Zeilen als Termine. Vergangene fallen weg.",
     tDatum: "Datum", tZeit: "Uhrzeit (leer = ganztägig oder aus der Datumsspalte)", tTitel: "Titel", tOrt: "Ort", ohne: "– keine –",
+    // seit 0.57
+    titel: "Datenquellen", neuKnopf: "+ Datenquelle hinzufügen", mehrCurl: "Aus curl-Befehl übernehmen …",
+    leerText: "Noch keine Datenquelle. Lege eine an – zum Beispiel Nachrichten als Laufschrift oder einen Pegelstand als Zahl.",
+    benutztIn: (l) => `in ${l}`, unbenutzt: "in keinem Layout", benutztLang: "Benutzt in", keinLayout: "Noch in keinem Layout – im Layout-Editor einen Baustein wie „API-Wert“ hinzufügen und diese Quelle wählen.",
+    zustand: { ok: "aktuell", fehler: "Fehler", warten: "wartet auf den ersten Abruf", aus: "ausgeschaltet", kamera: "wird geholt, wenn ein Kanal sie zeigt" },
+    vor: (t) => `vor ${t}`, wert: "Wert", anzahlName: { eintraege: "Einträge", termine: "Termine", zeilen: "Zeilen" },
+    werteAnsehen: "Werte ansehen", werteText: "Auf einen Wert tippen: dann siehst du, wie du ihn im Layout benutzt.",
+    loeschenBenutzt: (l) => `Datenquelle löschen? Sie wird benutzt in: ${l}. Diese Bausteine bleiben dann leer.`,
+    schritt: ["Was?", "Woher?", "Werte"], zurueck: "← Zurück", wasTitel: "Was möchtest du anzeigen?",
+    oder: "Oder", bspTitel: "Mit einem Beispiel ausprobieren",
+    kachel: {
+      rss: ["Nachrichten / Feed", "RSS- oder Atom-Adresse einer Webseite – für Laufschrift oder Liste"],
+      json: ["Wert aus dem Netz", "Zahl oder Text von einer Web-API (JSON), z. B. Pegel, Kurs, Zähler"],
+      ical: ["Kalender", "Termine aus einer iCal-Adresse oder .ics-Datei, z. B. Feiertage, Müllabfuhr"],
+      csv: ["Tabelle", "CSV-Datei oder -Adresse, z. B. Speisekarte, Preise, Abfuhrkalender"],
+      bild: ["Bild", "Ein Bild, das sich ändert, z. B. Wetterkarte oder Diagramm"],
+      video: ["Kamera", "Live-Bild einer Kamera (RTSP, HLS oder MJPEG)"],
+      text: ["Text", "Reiner Text von einer Adresse"],
+    },
+    urlHinweis: { rss: "Meist zu finden über das RSS-Symbol oder als …/feed, …/rss.xml.", json: "Die Adresse steht in der Anleitung der API. Braucht sie einen Schlüssel: unter „Erweitert“ als Kopfzeile eintragen.",
+                  ical: "Bei Google-Kalender: Einstellungen → „Öffentliche Adresse im iCal-Format“.", bild: "Direkte Adresse eines Bildes (.jpg, .png …).", text: "", csv: "", video: "" },
+    abstand: "Neu holen alle", weiterTesten: "Testen", testOk: (ms) => `Hat geklappt (${ms} ms).`,
+    gespeichert: "Datenquelle gespeichert", zuLayout: "Zum Layout-Editor",
+    sofort: "Jetzt abrufen", abgerufen: "Wird gleich neu geholt",
   },
   en: {
     text: "Your own data for the elements: the container queries the address at the interval you set (API keys stay in the container). " +
@@ -51,6 +77,29 @@ const QTEXTE = {
     hochgeladen: "uploaded", felderLesen: "Read columns", csvFelder: "CSV columns",
     termine: "As events (for the “Calendar / waste collection” element)", termineHinweis: "Choose the date column – the calendar element then shows the rows as events. Past ones are dropped.",
     tDatum: "Date", tZeit: "Time (empty = all day or from the date column)", tTitel: "Title", tOrt: "Location", ohne: "– none –",
+    titel: "Data sources", neuKnopf: "+ Add data source", mehrCurl: "Import from a curl command …",
+    leerText: "No data source yet. Add one – for example news as a ticker or a water level as a number.",
+    benutztIn: (l) => `in ${l}`, unbenutzt: "in no layout", benutztLang: "Used in", keinLayout: "Not in any layout yet – in the layout editor add an element such as “API value” and pick this source.",
+    zustand: { ok: "up to date", fehler: "Error", warten: "waiting for the first fetch", aus: "switched off", kamera: "fetched while a channel shows it" },
+    vor: (t) => `${t} ago`, wert: "Value", anzahlName: { eintraege: "entries", termine: "events", zeilen: "rows" },
+    werteAnsehen: "View values", werteText: "Tap a value to see how to use it in a layout.",
+    loeschenBenutzt: (l) => `Delete data source? It is used in: ${l}. Those elements stay empty then.`,
+    schritt: ["What?", "Where from?", "Values"], zurueck: "← Back", wasTitel: "What do you want to show?",
+    oder: "Or", bspTitel: "Try an example",
+    kachel: {
+      rss: ["News / feed", "RSS or Atom address of a website – for a ticker or a list"],
+      json: ["Value from the web", "Number or text from a web API (JSON), e.g. water level, price, counter"],
+      ical: ["Calendar", "Events from an iCal address or .ics file, e.g. holidays, waste collection"],
+      csv: ["Table", "CSV file or address, e.g. menu, prices, collection calendar"],
+      bild: ["Picture", "A picture that changes, e.g. weather map or chart"],
+      video: ["Camera", "Live picture of a camera (RTSP, HLS or MJPEG)"],
+      text: ["Text", "Plain text from an address"],
+    },
+    urlHinweis: { rss: "Usually found via the RSS icon or as …/feed, …/rss.xml.", json: "The address is in the API's guide. If it needs a key: add it as a header under “Advanced”.",
+                  ical: "Google Calendar: settings → “Public address in iCal format”.", bild: "Direct address of a picture (.jpg, .png …).", text: "", csv: "", video: "" },
+    abstand: "Fetch again every", weiterTesten: "Test", testOk: (ms) => `It worked (${ms} ms).`,
+    gespeichert: "Data source saved", zuLayout: "To the layout editor",
+    sofort: "Fetch now", abgerufen: "Will be fetched again shortly",
   },
 };
 const QBEISPIELE = {
@@ -96,119 +145,235 @@ function zeitText(ts) {
   return ts ? new Date(ts * 1000).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : QT().nie;
 }
 
+// ---------- seit 0.57: Liste, Seitenfeld, Assistent ----------
+const QSYMBOL = { rss: "📰", json: "🔢", ical: "📅", csv: "📋", bild: "🖼", video: "📹", text: "📝" };
+let QSTATUS = {};
+
+// Layouts, die eine Quelle benutzen: Baustein-Quelle, Bedingung oder Platzhalter {id:pfad} in einem Text
+function quelleBenutzt(id) {
+  const platzhalter = new RegExp(`\\{\\s*${id}:`);
+  return (E.layouts || []).filter((l) => (l.elemente || []).some((e) => {
+    const o = e.optionen || {};
+    return o.quelle === id || (e.bedingung && e.bedingung.quelle === id) || platzhalter.test(JSON.stringify(o));
+  })).map((l) => l.name || l.id);
+}
+function vorZeit(ts) {
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  const t = s < 90 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} d`;
+  return QT().vor(t);
+}
+function quelleZustand(q) {
+  const Q = QT(), s = QSTATUS[q.id] || {};
+  if (!q.aktiv) return ["aus", Q.zustand.aus, ""];
+  if (q.art === "video") return ["kamera", Q.zustand.kamera, "gut"];
+  if (s.fehler) return ["fehler", `${Q.zustand.fehler}: ${meldungText(s.fehler_m, s.fehler)}`, "schlecht"];
+  if (!s.abruf) return ["warten", Q.zustand.warten, "warn"];
+  return ["ok", `${Q.zustand.ok} · ${vorZeit(s.abruf)}`, "gut"];
+}
+function kurzText(s) {
+  const Q = QT(), k = s && s.kurz;
+  if (!k) return "";
+  if (k.n != null) return `${k.n} ${Q.anzahlName[k.liste] || Q.eintraege}${k.text ? " · " + k.text : ""}`;
+  return k.text ? (k.pfad ? `${k.pfad} = ${k.text}` : k.text) : "";
+}
+function herkunftKurz(q) {
+  if (q.herkunft === "datei") return "📄 " + (q.datei ? q.datei.name : "");
+  if (q.herkunft === "speicherort" && q.speicherort) return "📁 " + soName(q.speicherort.ort) + ": " + q.speicherort.pfad;
+  try { return new URL(q.url).host || q.url; } catch (_) { return q.url || ""; }
+}
+const intervallText = (s) => (s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60} min` : `${s} s`);
+
 async function quellenSeite(inhalt) {
   const Q = QT();
-  let bearbeitet = null;            // Kopie der Quelle im Editor (null = keiner offen)
-  let altId = null;
-  inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(Q.text)}</p>
-      <div class="zeile"><button class="knopf haupt" id="qNeu">${esc(Q.neu)}</button><button class="knopf" id="qCurl">${esc(Q.ausCurl)}</button>
-        <select id="qBsp"><option value="">${esc(Q.beispiel)}</option>${Object.keys(QBEISPIELE).map((k) => `<option value="${k}">${esc(Q.beispiele[k])}</option>`).join("")}</select></div>
-      <div id="qCurlBox" hidden><p class="leise">${esc(Q.curlText)}</p><textarea id="qCurlText" rows="5" class="voll" spellcheck="false"></textarea>
-        <div class="zeile"><button class="knopf haupt" id="qCurlOk">${esc(Q.uebernehmen)}</button></div></div></div>
-    <div id="qEditor"></div><div id="qListe"></div>`;
+  inhalt.innerHTML = `<div class="karte"><div class="lv-kopf"><div><h2>${esc(Q.titel)}</h2><p class="leise">${esc(Q.text)}</p></div>
+      <div class="zeile" id="qKopfKnoepfe"><button type="button" class="knopf haupt" id="qNeu">${esc(Q.neuKnopf)}</button></div></div></div>
+    <div class="lliste" id="qListe"></div>`;
+  $("#qKopfKnoepfe").appendChild(mehrMenue([[Q.mehrCurl, () => quelleAssistent("curl")]]));
+  $("#qNeu").onclick = () => quelleAssistent();
+  try { await soLaden(); } catch (_) { /* Namen der Speicherorte fehlen dann */ }
+  await quellenLaden();
+  timer = setInterval(() => { if (!document.querySelector(".seitenfeld")) quellenLaden().catch(() => {}); }, 15000);
+}
+async function quellenLaden() {
+  QSTATUS = (await holen("/api/quellen/status")).status || {};
+  const ziel = $("#qListe"), Q = QT();
+  if (!ziel) return;
+  ziel.innerHTML = "";
+  if (!E.quellen.length) {
+    const leer = el(`<div class="karte"><p>${esc(Q.leerText)}</p><div class="zeile"><button type="button" class="knopf haupt">${esc(Q.neuKnopf)}</button></div></div>`);
+    leer.querySelector("button").onclick = () => quelleAssistent();
+    ziel.appendChild(leer);
+    return;
+  }
+  const gewaehlt = document.querySelector(".seitenfeld") && document.querySelector(".lzeile.gewaehlt");
+  for (const q of E.quellen) {
+    const z = quelleZeile(q);
+    if (gewaehlt && gewaehlt.dataset.id === q.id) z.classList.add("gewaehlt");
+    ziel.appendChild(z);
+  }
+}
+function quelleZeile(q) {
+  const Q = QT(), [, zt, stil] = quelleZustand(q), b = quelleBenutzt(q.id), wert = kurzText(QSTATUS[q.id]);
+  const z = el(`<div class="lzeile" tabindex="0" role="button" data-id="${esc(q.id)}">
+    <div class="lz-haupt"><div class="lz-name">${QSYMBOL[q.art] || ""} ${esc(q.name || q.id)}</div>
+      <div class="lz-info">${esc(Q.artName[q.art])} · ${esc(herkunftKurz(q))}${q.art === "video" ? "" : " · " + esc(intervallText(q.intervall_s))}
+        · ${b.length ? esc(Q.benutztIn(b.join(", "))) : `<span class="warn">${esc(Q.unbenutzt)}</span>`}</div>
+      ${wert ? `<div class="lz-info qwert">${esc(wert)}</div>` : ""}</div>
+    <div class="lz-status ${stil}">${stil ? "● " : ""}${esc(zt)}</div>
+    <div class="lz-aktion">${schalter("aktiv", q.aktiv)}</div></div>`);
+  const sw = z.querySelector(".schalter");
+  sw.title = Q.aktiv;
+  sw.addEventListener("click", (e) => e.stopPropagation());
+  sw.querySelector("input").onchange = (e) => aktion(null, async () => {
+    await quellenSpeichern(E.quellen.map((x) => (x.id === q.id ? Object.assign({}, x, { aktiv: e.target.checked }) : x)));
+  });
+  const knoepfe = [];
+  if (q.art !== "video") knoepfe.push([Q.sofort, (k) => aktion(k, async () => { await senden("/api/quellen/jetzt", { id: q.id }); setTimeout(() => quellenLaden().catch(() => {}), 3000); }, Q.abgerufen)]);
+  knoepfe.push([Q.loeschen, (k) => quelleLoeschen(q, k), true]);
+  z.querySelector(".lz-aktion").appendChild(mehrMenue(knoepfe));
+  const oeffnen = () => { quelleDetails(q); z.classList.add("gewaehlt"); };
+  z.onclick = oeffnen;
+  z.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); oeffnen(); } };
+  return z;
+}
+async function quellenSpeichern(neu) {
+  const d = await senden("/api/einstellungen", { quellen: neu });
+  E = d.einstellungen;
+  await quellenLaden();
+}
+function quelleLoeschen(q, knopf) {
+  const Q = QT(), b = quelleBenutzt(q.id);
+  if (!confirm(b.length ? Q.loeschenBenutzt(b.join(", ")) : Q.wirklichLoeschen)) return;
+  aktion(knopf, async () => { seitenfeldZu(); await quellenSpeichern(E.quellen.filter((x) => x.id !== q.id)); });
+}
+function pfadHinweis(ziel, id, p) {
+  if (navigator.clipboard) navigator.clipboard.writeText(p).catch(() => {});      // geht nur im Fokus / über HTTPS
+  ziel.querySelectorAll(".pfadHinweis").forEach((x) => x.remove());
+  ziel.prepend(el(`<p class="gut pfadHinweis">${esc(QT().platzhalterHilfe(id, p))}</p>`));
+  melden(QT().kopiert);
+}
 
-  const liste = async () => {
-    const st = (await holen("/api/quellen/status")).status || {};
-    try { await soLaden(); } catch (_) { /* Namen der Speicherorte fehlen dann */ }
-    const ziel = $("#qListe");
-    if (!E.quellen.length) { ziel.innerHTML = `<p class="leise">${esc(Q.keine)}</p>`; return; }
-    ziel.innerHTML = E.quellen.map((q) => {
-      const s = st[q.id] || {};
-      const iv = q.intervall_s % 3600 === 0 ? `${q.intervall_s / 3600} h` : q.intervall_s % 60 === 0 ? `${q.intervall_s / 60} min` : `${q.intervall_s} s`;
-      return `<div class="karte" data-id="${esc(q.id)}"><h2>${esc(q.name)} <span class="leise">· ${esc(q.id)} · ${esc(Q.artName[q.art])}${q.art === "video" ? "" : " · " + iv}${q.aktiv ? "" : " · –"}</span></h2>
-        <div class="leise umbruch">${q.herkunft === "datei" ? "📄 " + esc(q.datei ? q.datei.name : "")
-          : q.herkunft === "speicherort" && q.speicherort ? "📁 " + esc(soName(q.speicherort.ort)) + ": " + esc(q.speicherort.pfad)
-          : (q.art === "video" ? "" : esc(q.methode) + " ") + esc(q.url)}</div>
-        <div class="leise">${esc(Q.letzter)}: ${esc(zeitText(s.abruf))}${s.dauer_ms != null ? ` (${s.dauer_ms} ${Q.ms})` : ""} · ${esc(Q.naechster)}: ${esc(zeitText(s.naechster))}
-          ${s.fehler ? `<br><span class="schlecht">${esc(Q.fehler)}: ${esc(meldungText(s.fehler_m, s.fehler))}${s.versuche ? ` (${s.versuche} ${esc(Q.versuche)})` : ""}</span>` : ""}</div>
-        <div class="zeile"><button class="knopf" data-a="bearbeiten">${esc(Q.bearbeiten)}</button><button class="knopf" data-a="daten">${esc(Q.daten)}</button>
-          <button class="knopf" data-a="jetzt">${esc(Q.jetzt)}</button><button class="knopf gefahr" data-a="loeschen">${esc(Q.loeschen)}</button></div>
-        <div class="qDaten"></div></div>`;
-    }).join("");
-    ziel.querySelectorAll("[data-a]").forEach((k) => {
-      const karte = k.closest(".karte"), id = karte.dataset.id, q = E.quellen.find((x) => x.id === id);
-      k.onclick = (ev) => {
-        const a = k.dataset.a;
-        if (a === "bearbeiten") { oeffnen(JSON.parse(JSON.stringify(q)), id); return; }
-        if (a === "daten") return aktion(ev.target, () => pfadWaehlen(karte.querySelector(".qDaten"), id, (p) => pfadGewaehlt(id, p, karte.querySelector(".qDaten"))), null);
-        if (a === "jetzt") return aktion(ev.target, async () => { await senden("/api/quellen/jetzt", { id }); setTimeout(() => liste().catch(() => {}), 3000); }, null);
-        if (a === "loeschen") {
-          if (!confirm(Q.wirklichLoeschen)) return;
-          return aktion(ev.target, async () => { await speichernListe(E.quellen.filter((x) => x.id !== id)); });
-        }
-      };
+// Details einer vorhandenen Quelle: Zustand, Werte, Benutzt in – darunter das Formular
+function quelleDetails(q) {
+  const Q = QT(), s = QSTATUS[q.id] || {}, [, zt, stil] = quelleZustand(q), b = quelleBenutzt(q.id);
+  const k = el(`<div>
+    <p><span class="marke ${stil}">${esc(zt)}</span></p>
+    ${q.art !== "video" ? `<p class="leise">${esc(Q.letzter)}: ${esc(zeitText(s.abruf))}${s.dauer_ms != null ? ` (${s.dauer_ms} ${Q.ms})` : ""} · ${esc(Q.naechster)}: ${esc(zeitText(s.naechster))}${s.versuche ? ` · ${s.versuche} ${esc(Q.versuche)}` : ""}</p>` : ""}
+    ${kurzText(s) ? `<p>${esc(Q.wert)}: <b>${esc(kurzText(s))}</b></p>` : ""}
+    <div class="feld"><label>${esc(Q.benutztLang)}</label>${b.length ? `<p>${esc(b.join(", "))}</p>` : `<p class="leise">${esc(Q.keinLayout)}</p>`}</div>
+    ${q.art !== "video" && s.hat_daten ? `<details class="feld" id="qWerte"><summary>${esc(Q.werteAnsehen)}</summary><p class="leise">${esc(Q.werteText)}</p><div class="qDaten"></div></details>` : ""}
+    <div id="qForm"></div></div>`);
+  const w = k.querySelector("#qWerte");
+  if (w) w.addEventListener("toggle", () => {
+    if (w.open) aktion(null, () => pfadWaehlen(w.querySelector(".qDaten"), q.id, (p) => { pfadHinweis(w, q.id, p); }), null);
+  });
+  seitenfeld(q.name || q.id, k);
+  quelleFormular(JSON.parse(JSON.stringify(q)), q.id, $("#qForm"), {});
+}
+
+// Neue Quelle: 1 Was? (Kacheln, Beispiel, curl) → 2 Woher? (Formular, Testen) → 3 Werte (Antwort-Baum)
+function quelleAssistent(start) {
+  const Q = QT();
+  const k = el(`<div><ol class="schritte">${Q.schritt.map((t, i) => `<li data-schritt="${i + 1}">${esc(t)}</li>`).join("")}</ol><div id="qSchritt"></div></div>`);
+  const schritt = (n) => k.querySelectorAll(".schritte li").forEach((li) => {
+    li.classList.toggle("an", Number(li.dataset.schritt) === n); li.classList.toggle("fertig", Number(li.dataset.schritt) < n);
+  });
+  const was = () => {
+    schritt(1);
+    const z = k.querySelector("#qSchritt");
+    z.innerHTML = `<h3>${esc(Q.wasTitel)}</h3><div class="kacheln">${Object.keys(Q.kachel).map((a) =>
+      `<button type="button" class="kachel" data-art="${a}"><span class="kachel-symbol">${QSYMBOL[a]}</span><b>${esc(Q.kachel[a][0])}</b><span class="leise">${esc(Q.kachel[a][1])}</span></button>`).join("")}</div>
+      <h3>${esc(Q.bspTitel)}</h3><div class="bsp-liste">${Object.keys(QBEISPIELE).map((b) => `<button type="button" class="knopf klein" data-bsp="${b}">${esc(Q.beispiele[b])}</button>`).join("")}</div>
+      <details class="erweitert" id="qCurlBox"><summary>${esc(Q.ausCurl)}</summary><p class="leise">${esc(Q.curlText)}</p>
+        <textarea id="qCurlText" rows="5" class="voll" spellcheck="false"></textarea>
+        <div class="zeile"><button type="button" class="knopf haupt" id="qCurlOk">${esc(Q.uebernehmen)}</button></div></details>`;
+    z.querySelectorAll("[data-art]").forEach((b) => { b.onclick = () => woher({ art: b.dataset.art, intervall_s: b.dataset.art === "ical" ? 3600 : 300 }); });
+    z.querySelectorAll("[data-bsp]").forEach((b) => { b.onclick = () => woher(JSON.parse(JSON.stringify(QBEISPIELE[b.dataset.bsp]))); });
+    z.querySelector("#qCurlOk").onclick = (ev) => aktion(ev.target, async () => {
+      const r = await senden("/api/quellen/curl", { befehl: $("#qCurlText").value }).catch((e) => ({ ok: false, fehler: e.message }));
+      if (!r.ok) throw new Error(r.fehler);
+      woher(r.quelle, r.hinweise);
+    }, null);
+    if (start === "curl") { z.querySelector("#qCurlBox").open = true; z.querySelector("#qCurlText").focus(); start = null; }
+  };
+  const woher = (q, hinweise) => {
+    schritt(2);
+    const z = k.querySelector("#qSchritt");
+    z.innerHTML = `<div class="zeile"><button type="button" class="knopf klein" id="qZurueck">${esc(Q.zurueck)}</button>
+      <b>${QSYMBOL[q.art] || ""} ${esc((Q.kachel[q.art] || [Q.artName[q.art]])[0])}</b></div><div id="qForm"></div>`;
+    z.querySelector("#qZurueck").onclick = was;
+    quelleFormular(q, null, z.querySelector("#qForm"), {
+      hinweise, beimTest: (ok) => schritt(ok ? 3 : 2),
+      gespeichert: (neu) => { seitenfeldZu(); melden(Q.gespeichert); const r = document.querySelector(`.lzeile[data-id="${CSS.escape(neu.id)}"]`); if (r) r.scrollIntoView({ block: "nearest" }); },
     });
   };
-  const pfadGewaehlt = (id, p, ziel) => {
-    if (navigator.clipboard) navigator.clipboard.writeText(p).catch(() => {});      // geht nur im Fokus / über HTTPS
-    const hinweis = el(`<p class="gut">${esc(Q.platzhalterHilfe(id, p))}</p>`);
-    ziel.prepend(hinweis);
-    melden(Q.kopiert);
-  };
-  const speichernListe = async (neu) => {
-    const d = await senden("/api/einstellungen", { quellen: neu });
-    E = d.einstellungen;
-    await liste();
-  };
+  seitenfeld(Q.neuKnopf.replace(/^\+\s*/, ""), k);
+  was();
+}
 
-  // ---------- Editor ----------
-  const oeffnen = (q, id) => {
-    bearbeitet = Object.assign({ id: "", name: "", art: "json", url: "https://", methode: "GET", kopf: [], inhalt: "", intervall_s: 300, aktiv: true, format: "auto", herkunft: "url", datei: null, speicherort: null, csv: null }, q);
-    altId = id;
-    zeichnen();
-    $("#qEditor").scrollIntoView({ behavior: "smooth" });
-  };
+// ---------- Formular (Seitenfeld): Wichtiges oben, Technik unter „Erweitert“ ----------
+function quelleFormular(q0, altId, z, opt) {
+  const Q = QT();
+  const q = Object.assign({ id: "", name: "", art: "json", url: "https://", methode: "GET", kopf: [], inhalt: "", intervall_s: 300, aktiv: true, format: "auto",
+                            herkunft: "url", datei: null, speicherort: null, csv: null }, q0);
+  let csvImp = null;
   const einheitVon = (s) => (s % 3600 === 0 ? 3600 : s % 60 === 0 ? 60 : 1);
   const zeichnen = () => {
-    const q = bearbeitet, z = $("#qEditor");
-    let csvImp = null;
-    if (!q) { z.innerHTML = ""; return; }
     const ein = einheitVon(q.intervall_s);
-    z.innerHTML = `<div class="karte"><h2>${esc(altId ? q.name : Q.neu)}</h2>
-      <div class="zeile"><label>${esc(Q.name)}</label><input type="text" id="qName" value="${esc(q.name)}"></div>
-      <div class="zeile"><label>${esc(Q.kennung)}</label><input type="text" id="qId" value="${esc(q.id)}" class="b160" pattern="[a-z0-9_]{2,16}"></div>
-      <div class="zeile"><label>${esc(Q.art)}</label><select id="qArt">${Object.keys(Q.artName).map((k) => `<option value="${k}" ${k === q.art ? "selected" : ""}>${esc(Q.artName[k])}</option>`).join("")}</select>
-        <label>${esc(Q.methode)}</label><select id="qMethode">${["GET", "POST"].map((m) => `<option ${m === q.methode ? "selected" : ""}>${m}</option>`).join("")}</select></div>
-      <div class="zeile" data-nicht="video"><label>${esc(Q.herkunft)}</label><select id="qHerkunft">${Object.keys(Q.herkunftName).map((k) =>
+    const technikOffen = q.kopf.length || q.methode === "POST" || (opt.hinweise && opt.hinweise.length);
+    z.innerHTML = `<div class="feld"><label for="qName">${esc(Q.name)}</label><input type="text" id="qName" value="${esc(q.name)}"></div>
+      <div class="feld" data-nicht="video"><label for="qHerkunft">${esc(Q.herkunft)}</label><select id="qHerkunft">${Object.keys(Q.herkunftName).map((k) =>
         `<option value="${k}" ${k === q.herkunft ? "selected" : ""}>${esc(Q.herkunftName[k])}</option>`).join("")}</select></div>
-      <div data-nur="datei"><div class="zeile"><label>${esc(Q.datei)}</label><input type="file" id="qDatei" accept=".ics,.csv,.tsv,.txt,.json,.xml,text/calendar,text/csv">
-        <span class="leise" id="qDateiStand">${q.datei ? "✓ " + esc(q.datei.name) : ""}</span></div><p class="leise">${esc(Q.dateiHinweis)}</p></div>
-      <div data-nur="so"><div class="zeile"><label>${esc(Q.datei.replace(/ \(.*\)$/, ""))}</label><button class="knopf" id="qSoWahl">📁 ${esc(SOT().qWahl)}</button>
+      <div class="feld" data-nur="datei"><label for="qDatei">${esc(Q.datei)}</label><input type="file" id="qDatei" accept=".ics,.csv,.tsv,.txt,.json,.xml,text/calendar,text/csv">
+        <span class="leise" id="qDateiStand">${q.datei ? "✓ " + esc(q.datei.name) : ""}</span><p class="leise">${esc(Q.dateiHinweis)}</p></div>
+      <div class="feld" data-nur="so"><label>${esc(Q.datei.replace(/ \(.*\)$/, ""))}</label><div class="zeile"><button type="button" class="knopf" id="qSoWahl">📁 ${esc(SOT().qWahl)}</button>
         <span class="leise" id="qSoStand">${q.speicherort ? "✓ " + esc(soName(q.speicherort.ort)) + ": " + esc(q.speicherort.pfad) : ""}</span></div><p class="leise">${esc(SOT().qHinweis)}</p></div>
-      <div class="zeile" data-nicht="keinurl"><label>${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" class="voll640" spellcheck="false"></div>
-      <div class="zeile" data-nur="video"><label>${esc(Q.format)}</label><select id="qFormat">${Object.keys(Q.formatName).map((k) => `<option value="${k}" ${k === q.format ? "selected" : ""}>${esc(Q.formatName[k])}</option>`).join("")}</select></div>
-      <p class="leise" data-nur="video">${esc(Q.videoHinweis)}</p>
-      <div class="zeile" data-nicht="video"><label>${esc(Q.intervall)}</label><input type="number" id="qIv" min="1" value="${q.intervall_s / ein}">
-        <select id="qIvE">${[1, 60, 3600].map((e) => `<option value="${e}" ${e === ein ? "selected" : ""}>${esc(Q.einheit[e])}</option>`).join("")}</select>
-        <label>${esc(Q.aktiv)}</label>${schalter("qAktiv", q.aktiv)}</div>
-      <div data-nur="csv"><h3>${esc(Q.csvFelder)}</h3><div class="zeile" data-nicht="keinurl"><button class="knopf" id="qCsvLesen">${esc(Q.felderLesen)}</button></div>
+      <div class="feld" data-nicht="keinurl"><label for="qUrl">${esc(Q.url)}</label><input type="text" id="qUrl" value="${esc(q.url)}" spellcheck="false">
+        ${Q.urlHinweis[q.art] ? `<p class="leise">${esc(Q.urlHinweis[q.art])}</p>` : ""}</div>
+      <div class="feld" data-nur="video"><label for="qFormat">${esc(Q.format)}</label><select id="qFormat">${Object.keys(Q.formatName).map((k) => `<option value="${k}" ${k === q.format ? "selected" : ""}>${esc(Q.formatName[k])}</option>`).join("")}</select>
+        <p class="leise">${esc(Q.videoHinweis)}</p></div>
+      <div class="feld" data-nicht="video"><label for="qIv">${esc(Q.abstand)}</label><div class="zeile"><input type="number" id="qIv" min="1" class="b120" value="${q.intervall_s / ein}">
+        <select id="qIvE" aria-label="${esc(Q.abstand)}">${[1, 60, 3600].map((e) => `<option value="${e}" ${e === ein ? "selected" : ""}>${esc(Q.einheit[e])}</option>`).join("")}</select></div></div>
+      <div class="zeile">${schalter("qAktiv", q.aktiv)}<span>${esc(Q.aktiv)}</span></div>
+      <div data-nur="csv"><h3>${esc(Q.csvFelder)}</h3><div class="zeile" data-nicht="keinurl"><button type="button" class="knopf" id="qCsvLesen">${esc(Q.felderLesen)}</button></div>
         <div id="qCsv"></div><h3>${esc(Q.termine)}</h3><p class="leise">${esc(Q.termineHinweis)}</p><div id="qCsvKal"></div></div>
-      <div data-nicht="keinurl"><h3>${esc(Q.kopf)}</h3><div id="qKopf">${q.kopf.map((k) => `<div class="zeile kopfzeile"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" class="b180">
-          <input type="${k.geheim ? "password" : "text"}" name="kw" value="${esc(k.wert)}" placeholder="Wert" autocomplete="off" class="b280">
-          <label><input type="checkbox" name="kg" ${k.geheim ? "checked" : ""}> ${esc(Q.geheim)}</label><button class="knopf gefahr" name="kx">✕</button></div>`).join("")}</div>
-      <div class="zeile"><button class="knopf" id="qKopfNeu">${esc(Q.kopfNeu)}</button></div><p class="leise">${esc(Q.geheimHinweis)}</p></div>
-      <div id="qInhaltZeile" ${q.methode === "POST" ? "" : "hidden"}><label>${esc(Q.inhalt)}</label><textarea id="qInhalt" rows="4" class="voll" spellcheck="false">${esc(q.inhalt)}</textarea></div>
-      <div class="zeile"><button class="knopf" id="qTest">${esc(Q.testen)}</button><button class="knopf haupt" id="qOk">${esc(Q.speichern)}</button>
-        <button class="knopf" id="qWeg">${esc(Q.abbrechen)}</button></div>
-      <div id="qTestErg"></div></div>`;
-    const lesen = () => {
-      q.name = $("#qName").value.trim(); q.id = $("#qId").value.trim().toLowerCase();
-      q.art = $("#qArt").value; q.methode = $("#qMethode").value; q.url = $("#qUrl").value.trim();
-      q.intervall_s = Math.max(30, Math.round(Number($("#qIv").value) * Number($("#qIvE").value)));
-      q.format = $("#qFormat").value;
-      q.aktiv = z.querySelector("[name=qAktiv]").checked;
-      q.kopf = [...z.querySelectorAll(".kopfzeile")].map((r) => ({ name: r.querySelector("[name=kn]").value.trim(), wert: r.querySelector("[name=kw]").value,
-                                                                  geheim: r.querySelector("[name=kg]").checked })).filter((k) => k.name);
-      q.inhalt = $("#qInhalt").value;
-      q.herkunft = q.art === "video" || q.art === "bild" ? "url" : $("#qHerkunft").value;
-      if (q.art === "csv" && csvImp) {
-        const k = {};
-        z.querySelectorAll("#qCsvKal select").forEach((s) => { k[s.name] = s.value; });
-        q.csv = Object.assign(csvImp.optionen(), { kalender: k });
-      }
-      if (!q.id) q.id = (q.name || "quelle").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 16) || "quelle";
-      return q;
-    };
+      <details class="erweitert" ${technikOffen ? "open" : ""}><summary>${esc(LT().erweitert)}</summary>
+        <div class="feld"><label for="qId">${esc(Q.kennung)}</label><input type="text" id="qId" value="${esc(q.id)}" class="b160" pattern="[a-z0-9_]{2,16}"></div>
+        <div class="feld"><label for="qArt">${esc(Q.art)}</label><select id="qArt">${Object.keys(Q.artName).map((k) => `<option value="${k}" ${k === q.art ? "selected" : ""}>${esc(Q.artName[k])}</option>`).join("")}</select></div>
+        <div class="feld" data-nicht="keinurl"><label for="qMethode">${esc(Q.methode)}</label><select id="qMethode">${["GET", "POST"].map((m) => `<option ${m === q.methode ? "selected" : ""}>${m}</option>`).join("")}</select></div>
+        <div class="feld" data-nicht="keinurl"><label>${esc(Q.kopf)}</label><div id="qKopf">${q.kopf.map((k) => `<div class="zeile qkopf"><input type="text" name="kn" value="${esc(k.name)}" placeholder="Name" aria-label="Name" class="b120">
+            <input type="${k.geheim ? "password" : "text"}" name="kw" value="${esc(k.wert)}" placeholder="Wert" aria-label="Wert" autocomplete="off" class="b160">
+            <label><input type="checkbox" name="kg" ${k.geheim ? "checked" : ""}> ${esc(Q.geheim)}</label><button type="button" class="knopf gefahr klein" name="kx" aria-label="${esc(Q.loeschen)}">✕</button></div>`).join("")}</div>
+          <div class="zeile"><button type="button" class="knopf klein" id="qKopfNeu">${esc(Q.kopfNeu)}</button></div><p class="leise">${esc(Q.geheimHinweis)}</p></div>
+        <div class="feld" id="qInhaltZeile" ${q.methode === "POST" ? "" : "hidden"}><label for="qInhalt">${esc(Q.inhalt)}</label><textarea id="qInhalt" rows="4" class="voll" spellcheck="false">${esc(q.inhalt)}</textarea></div>
+      </details>
+      ${opt.hinweise && opt.hinweise.length ? `<p class="warn">${esc(Q.hinweise)}: ${esc(opt.hinweise.join(" · "))}</p>` : ""}
+      <div class="zeile"><button type="button" class="knopf" id="qTest">${esc(Q.weiterTesten)}</button><button type="button" class="knopf haupt" id="qOk">${esc(Q.speichern)}</button>
+        ${altId ? `<button type="button" class="knopf gefahr" id="qLoeschen">${esc(Q.loeschen)}</button>` : ""}</div>
+      <div id="qTestErg"></div>`;
+    verdrahten();
+  };
+  const lesen = () => {
+    q.name = $("#qName").value.trim(); q.id = $("#qId").value.trim().toLowerCase();
+    q.art = $("#qArt").value; q.methode = $("#qMethode").value; q.url = $("#qUrl").value.trim();
+    q.intervall_s = Math.max(30, Math.round(Number($("#qIv").value) * Number($("#qIvE").value)));
+    q.format = $("#qFormat").value;
+    q.aktiv = z.querySelector("[name=qAktiv]").checked;
+    q.kopf = [...z.querySelectorAll(".qkopf")].map((r) => ({ name: r.querySelector("[name=kn]").value.trim(), wert: r.querySelector("[name=kw]").value,
+                                                            geheim: r.querySelector("[name=kg]").checked })).filter((k) => k.name);
+    q.inhalt = $("#qInhalt").value;
+    q.herkunft = q.art === "video" || q.art === "bild" ? "url" : $("#qHerkunft").value;
+    if (q.art === "csv" && csvImp) {
+      const k = {};
+      z.querySelectorAll("#qCsvKal select").forEach((s) => { k[s.name] = s.value; });
+      q.csv = Object.assign(csvImp.optionen(), { kalender: k });
+    }
+    if (!q.id) q.id = (q.name || "quelle").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 16) || "quelle";
+    if (q.id.length < 2) q.id = (q.id + "_q").slice(0, 16);
+    return q;
+  };
+  const lesenOhneCsv = () => { const alt = csvImp; csvImp = null; const r = lesen(); csvImp = alt; return JSON.parse(JSON.stringify(r)); };
+  const verdrahten = () => {
     $("#qMethode").onchange = () => { $("#qInhaltZeile").hidden = $("#qMethode").value !== "POST"; };
     const artZeigen = () => {                    // Video: kein Intervall/keine Methode, dafür Format; Datei: keine Adresse/Kopfzeilen
       const art = $("#qArt").value, v = art === "video", nurUrl = v || art === "bild";
@@ -220,28 +385,10 @@ async function quellenSeite(inhalt) {
       z.querySelectorAll("[data-nicht]").forEach((x) => { x.hidden = zeigen[x.dataset.nicht]; });
       $("#qMethode").disabled = v || datei || so;
     };
-    $("#qArt").onchange = () => { artZeigen(); if ($("#qArt").value === "csv" && !csvImp && ["datei", "speicherort"].includes($("#qHerkunft").value)) csvStarten(); };
-    soLaden().then((d) => { const o = $("#qHerkunft").querySelector('[value="speicherort"]'); if (o && !d.orte.length && q.herkunft !== "speicherort") o.remove(); }).catch(() => {});
+    $("#qArt").onchange = () => { lesen(); zeichnen(); if (q.art === "csv" && ["datei", "speicherort"].includes(q.herkunft)) csvStarten(); };
+    soLaden().then((d) => { const o = $("#qHerkunft") && $("#qHerkunft").querySelector('[value="speicherort"]'); if (o && !d.orte.length && q.herkunft !== "speicherort") o.remove(); }).catch(() => {});
     $("#qHerkunft").onchange = () => { artZeigen(); csvImp = null; $("#qCsv").innerHTML = ""; if ($("#qArt").value === "csv") csvStarten(); };
     artZeigen();
-    // CSV (seit 0.26): Spalten über den allgemeinen Import wählen (csvimport.js), danach die Spalten für Termine
-    const kalZeichnen = (felder) => {
-      const k = (q.csv && q.csv.kalender) || {};
-      const sel = (name, label) => `<div class="zeile"><label>${esc(label)}</label><select name="${name}"><option value="">${esc(Q.ohne)}</option>
-        ${felder.map((f) => `<option value="${esc(f)}" ${f === k[name] ? "selected" : ""}>${esc(f)}</option>`).join("")}</select></div>`;
-      $("#qCsvKal").innerHTML = sel("datum", Q.tDatum) + sel("zeit", Q.tZeit) + sel("titel", Q.tTitel) + sel("ort", Q.tOrt);
-      $("#qCsvKal").querySelectorAll("select").forEach((s) => { s.onchange = () => { lesen(); }; });
-    };
-    const csvStarten = async () => {
-      const h = $("#qHerkunft").value;
-      const herkunft = h === "datei" ? (q.datei ? { datei: q.datei.hash } : null) : h === "speicherort" ? (q.speicherort ? { speicherort: q.speicherort } : null)
-        : { quelle: Object.assign({}, lesenOhneCsv(), { art: "text" }) };
-      if (!herkunft) return;
-      try {
-        csvImp = await csvImport($("#qCsv"), herkunft, q.csv || {}, (o) => { q.csv = Object.assign(o, { kalender: (q.csv && q.csv.kalender) || {} }); kalZeichnen(o.felder.map((f) => f.name)); });
-      } catch (e) { csvImp = null; }
-    };
-    const lesenOhneCsv = () => { const alt = csvImp; csvImp = null; const r = lesen(); csvImp = alt; return JSON.parse(JSON.stringify(r)); };
     $("#qCsvLesen").onclick = (ev) => aktion(ev.target, csvStarten, null);
     $("#qDatei").onchange = (ev) => aktion(null, async () => {
       const f = ev.target.files[0]; if (!f) return;
@@ -250,7 +397,7 @@ async function quellenSeite(inhalt) {
       if (!["json", "text", "rss", "ical", "csv"].includes(q.art) || q.art !== r.art) q.art = r.art;
       if (!q.name) q.name = f.name.replace(/\.[^.]+$/, "").slice(0, 40);
       if (q.art === "csv") q.csv = { kalender: (q.csv && q.csv.kalender) || {} };     // neue Datei: Trennzeichen und Spalten neu erkennen
-      csvImp = null; zeichnen();
+      csvImp = null; zeichnen(); if (q.art === "csv") csvStarten();
     }, null);
     $("#qSoWahl").onclick = async () => {        // seit 0.48: Datei in einem Speicherort, bei jedem Abruf neu gelesen
       const w = await soWaehlen({ filter: /\.(ics|csv|tsv|txt|json|xml|rss|atom)$/i });
@@ -260,44 +407,51 @@ async function quellenSeite(inhalt) {
       if (art) q.art = art;
       if (!q.name) q.name = w[0].name.replace(/\.[^.]+$/, "").slice(0, 40);
       if (q.art === "csv") q.csv = { kalender: (q.csv && q.csv.kalender) || {} };
-      csvImp = null; zeichnen();
+      csvImp = null; zeichnen(); if (q.art === "csv") csvStarten();
     };
-    if (q.art === "csv" && (q.herkunft === "datei" ? q.datei : q.herkunft === "speicherort" ? q.speicherort : q.csv && q.csv.felder && q.csv.felder.length)) csvStarten();
-    $("#qName").onchange = () => { if (!$("#qId").value) $("#qId").value = $("#qName").value.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 16); };
-    z.querySelectorAll("[name=kg]").forEach((c) => { c.onchange = () => { c.closest(".kopfzeile").querySelector("[name=kw]").type = c.checked ? "password" : "text"; }; });
-    z.querySelectorAll("[name=kx]").forEach((b) => { b.onclick = () => { lesen(); b.closest(".kopfzeile").remove(); lesen(); zeichnen(); }; });
-    $("#qKopfNeu").onclick = () => { lesen(); q.kopf.push({ name: "", wert: "", geheim: false }); zeichnen(); };
-    $("#qWeg").onclick = () => { bearbeitet = null; zeichnen(); };
+    $("#qName").onchange = () => { if (!altId && !$("#qId").value) $("#qId").value = $("#qName").value.toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 16); };
+    z.querySelectorAll("[name=kg]").forEach((c) => { c.onchange = () => { c.closest(".qkopf").querySelector("[name=kw]").type = c.checked ? "password" : "text"; }; });
+    z.querySelectorAll("[name=kx]").forEach((b) => { b.onclick = () => { b.closest(".qkopf").remove(); lesen(); zeichnen(); }; });
+    $("#qKopfNeu").onclick = () => { lesen(); q.kopf.push({ name: "", wert: "", geheim: false }); zeichnen(); z.querySelector(".erweitert").open = true; };
     $("#qTest").onclick = (ev) => aktion(ev.target, async () => {
       const r = await senden("/api/quellen/test", { quelle: lesen() }).catch((e) => ({ ok: false, fehler: e.message }));
       const ziel = $("#qTestErg");
+      if (opt.beimTest) opt.beimTest(!!r.ok);
       if (!r.ok) { ziel.innerHTML = `<p class="schlecht">${esc(r.fehler)}</p>`; return; }
-      ziel.innerHTML = `<p class="gut">OK · ${r.dauer_ms} ${esc(Q.ms)}</p>${r.bild ? `<img src="${esc(r.bild)}" alt="" class="testbild">` : ""}
+      ziel.innerHTML = `<p class="gut">✓ ${esc(Q.testOk(r.dauer_ms))}</p>${r.bild ? `<img src="${esc(r.bild)}" alt="" class="testbild">` : ""}
         <h3>${esc(Q.antwort)}</h3><div id="qBaum"></div>`;
-      baumZeigen($("#qBaum"), r.daten, (p) => pfadGewaehlt(q.id, p, $("#qTestErg")));
+      baumZeigen($("#qBaum"), r.daten, (p) => pfadHinweis(ziel, q.id, p));
+      ziel.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, null);
     $("#qOk").onclick = (ev) => aktion(ev.target, async () => {
       lesen();
       const rest = E.quellen.filter((x) => x.id !== altId);
       if (rest.some((x) => x.id === q.id)) throw new Error(`${q.id}: ${Q.kennung}`);
-      await speichernListe([...rest, q]);
-      bearbeitet = null; zeichnen();
+      const liste = altId ? E.quellen.map((x) => (x.id === altId ? q : x)) : [...rest, q];
+      await quellenSpeichern(liste);
+      if (opt.gespeichert) opt.gespeichert(q);
+      else seitenfeldZu();
     });
+    const weg = $("#qLoeschen");
+    if (weg) weg.onclick = (ev) => quelleLoeschen(E.quellen.find((x) => x.id === altId) || q, ev.target);
   };
-
-  $("#qNeu").onclick = () => oeffnen({}, null);
-  $("#qCurl").onclick = () => { $("#qCurlBox").hidden = !$("#qCurlBox").hidden; };
-  $("#qCurlOk").onclick = (ev) => aktion(ev.target, async () => {
-    const r = await senden("/api/quellen/curl", { befehl: $("#qCurlText").value }).catch((e) => ({ ok: false, fehler: e.message }));
-    if (!r.ok) throw new Error(r.fehler);
-    $("#qCurlBox").hidden = true; $("#qCurlText").value = "";
-    oeffnen(r.quelle, null);
-    if (r.hinweise && r.hinweise.length) $("#qTestErg").innerHTML = `<p class="warn">${esc(Q.hinweise)}: ${esc(r.hinweise.join(" · "))}</p>`;
-  }, null);
-  $("#qBsp").onchange = () => {
-    const b = QBEISPIELE[$("#qBsp").value]; $("#qBsp").value = "";
-    if (b) oeffnen(JSON.parse(JSON.stringify(b)), null);
+  // CSV (seit 0.26): Spalten über den allgemeinen Import wählen (csvimport.js), danach die Spalten für Termine
+  const kalZeichnen = (felder) => {
+    const k = (q.csv && q.csv.kalender) || {};
+    const sel = (name, label) => `<div class="feld"><label>${esc(label)}</label><select name="${name}"><option value="">${esc(Q.ohne)}</option>
+      ${felder.map((f) => `<option value="${esc(f)}" ${f === k[name] ? "selected" : ""}>${esc(f)}</option>`).join("")}</select></div>`;
+    $("#qCsvKal").innerHTML = sel("datum", Q.tDatum) + sel("zeit", Q.tZeit) + sel("titel", Q.tTitel) + sel("ort", Q.tOrt);
+    $("#qCsvKal").querySelectorAll("select").forEach((s) => { s.onchange = () => { lesen(); }; });
   };
-  await liste();
-  timer = setInterval(() => { if (!bearbeitet) liste().catch(() => {}); }, 15000);
+  const csvStarten = async () => {
+    const h = $("#qHerkunft").value;
+    const herkunft = h === "datei" ? (q.datei ? { datei: q.datei.hash } : null) : h === "speicherort" ? (q.speicherort ? { speicherort: q.speicherort } : null)
+      : { quelle: Object.assign({}, lesenOhneCsv(), { art: "text" }) };
+    if (!herkunft) return;
+    try {
+      csvImp = await csvImport($("#qCsv"), herkunft, q.csv || {}, (o) => { q.csv = Object.assign(o, { kalender: (q.csv && q.csv.kalender) || {} }); kalZeichnen(o.felder.map((f) => f.name)); });
+    } catch (e) { csvImp = null; }
+  };
+  zeichnen();
+  if (q.art === "csv" && (q.herkunft === "datei" ? q.datei : q.herkunft === "speicherort" ? q.speicherort : q.csv && q.csv.felder && q.csv.felder.length)) csvStarten();
 }

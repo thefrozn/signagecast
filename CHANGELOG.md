@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.57.0 (2026-11-18)
+- **Data sources reorganised** – the second part of the admin-page restructuring (after “Live videos” in 0.56):
+  - **List** with one row per source: type, where it comes from, interval, **used in** which layouts (or *in no
+    layout*), the **last value** (`value = 151`, “50 entries · first headline”, “12 events · 2026-12-24 …”) and a
+    light – *up to date · 3 min ago*, *waiting for the first fetch* or the error in plain words. Switch to pause
+    fetching, ⋯ for *Fetch now* and *Delete* (names the layouts that would lose their values).
+  - **Panel on the right** with state, last/next fetch, *Used in*, *View values* (tap a value: path for an element,
+    `{id:path}` for free text) and the settings.
+  - **Assistant** for new sources: *What?* (tiles: news/feed, value from the web, calendar, table, picture, camera,
+    text – or an example) → *Where from?* (address, file or storage location, interval) → *Values* (test, tap a value).
+    Identifier, type, method, headers and POST body are under *Advanced*; *Import from a curl command* is in the ⋯ menu.
+- `/api/quellen/status` also returns a short form of the last value (`kurz`): first number, otherwise first text;
+  count and first entry for feeds, events and table rows.
+- Consumption unchanged (only the admin page changed): stream 100.5 % · 871 MB, 25 fps without losses; direct
+  72.6 % · 578 MB, 60 fps without stutter (0.56: 98.0 % · 887 MB, 75.9 % · 585 MB; test container, 4 cores, snack-bar
+  template).
+
 ## v0.56.0 (2026-11-17)
 - **“Live videos” instead of “Videos & radio”** – the live-stream pages are reorganised so they can be used without
   studying them first:

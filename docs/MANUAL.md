@@ -19,7 +19,7 @@ that video, so the TV needs no app, no login and no updates.
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every channel, viewers, CPU/RAM, time check, Home Assistant |
 | **Displays** | Channels · Devices · Remote sites · + New device | A **channel** is what a TV shows. The list shows every channel with layout, state, devices and address; *Edit* opens it with tabs *Display & schedule* (layout, schedule, carousel), *Live video* (on/off, video source, topics), *Sound*, *On/off (HA)* and *Video stream* (resolution, bitrate, encoding) – saved per channel. **Devices** are the players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); remote sites via Tailscale/Headscale ([REMOTE.md](REMOTE.md)); *+ New device* creates images and pairs players |
-| **Content** | Layouts · Data sources · Media library · Radio | Layout editor and templates, JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras; media library with two tabs: own pictures and videos for the video window, gallery folders (pictures/PDFs for slideshows); radio stations |
+| **Content** | Layouts · Data sources · Media library · Radio | Layout editor and templates; data sources as a list with state and last value, an assistant for JSON APIs/feeds/iCal/CSV (also as uploaded file)/cameras; media library with two tabs: own pictures and videos for the video window, gallery folders (pictures/PDFs for slideshows); radio stations |
 | **Live videos** (since 0.56) | Overview · Collection · Topics · Automation · Clips | What is playing, numbers and problems at a glance; all live streams as a list – click one for details in a panel on the right (name, topic, location, show now, technical data, remove); topics (edit, create, switch on/off for all channels or per channel, search terms); minutes per stream, daylight, nightly search, blocked words and location from the title; scheduled clips |
 | **Settings** | General · Home Assistant · Storage locations · AI assistants · Notifications · Announcement panel (· Access in Docker) | Language, weather, location, time source; HA address and guide; NAS/cloud folders for all file dialogs; Claude & co.; outgoing notifications via Telegram/e-mail/HA; voice, templates and accounts of the panel, emergency templates, messages via webhook; admin password |
 | **System** | Health · Updates · Backup · Log | Free space and what uses it, performance test, switching off the stream without viewers; signed updates, maintenance window; encrypted backups; change log |
@@ -52,6 +52,19 @@ again* (formerly “reject”) keeps the search from taking it in again. **Autom
 and *Rules* pages: playback (minutes per stream, daylight), search (time, how many, how long to keep) and under
 *Advanced* blocked words and the location table with a test field (“recognised: Kruger → −24.5 / 31”). Old addresses
 (`#suche`, `#video`) lead there.
+
+### Data sources: list, assistant, values (since 0.57)
+**Content → Data sources** lists every source as a row: name, type, where it comes from, how often it is fetched, in
+which layouts it is used (or *in no layout*), the **last value** (e.g. `value = 151`, “50 entries · first headline”)
+and a light: green *up to date · 3 min ago*, amber *waiting for the first fetch*, red *Error: …* in plain words. The
+switch turns fetching on or off; ⋯ has *Fetch now* and *Delete* (it names the layouts that would lose their values).
+Click a row: on the right you see state, last and next fetch, *Used in*, *View values* (tap a value to see its path for
+an element and the placeholder `{id:path}` for free text) and the settings.
+**+ Add data source** opens an assistant in three steps: **What?** – tiles for news/feed, value from the web (JSON),
+calendar, table (CSV), picture, camera and text, or *Try an example*; **Where from?** – name, address, uploaded file
+or storage location, how often; **Values** – *Test* fetches once and shows the answer, tap the value you need. The
+identifier, type, method, headers (API keys, marked *secret*) and POST body are under *Advanced*; it opens by itself
+when a curl command brought headers (⋯ → *Import from a curl command …*).
 
 ### Edit topics or create your own (since 0.37)
 Live videos → **Topics** (called *Categories* until 0.55) lists every topic with the number of its streams and where it is
@@ -444,6 +457,12 @@ Seit 0.56: **Live-Videos** statt „Videos & Radio“ – Übersicht (Zahlen, l�
 (statt Streams: Liste, Klick öffnet rechts die Details), **Themen** (statt Kategorien, Suchbegriffe nur noch dort;
 die gemeinsame Tiersuche über „Suche für Tiere …“), **Automatik** (Stream-Suche und Regeln zusammen, Ortserkennung als
 Tabelle mit Test) und Einspieler; Radio steht jetzt unter Inhalte.
+
+Seit 0.57: **Datenquellen** als Liste mit Ampel (aktuell / wartet / Fehler in Klartext), letztem Wert und „in Layout …“
+bzw. „in keinem Layout“; Klick öffnet rechts Details, Werte ansehen (Wert antippen → Pfad und Platzhalter) und
+Einstellungen. **+ Datenquelle hinzufügen** führt in drei Schritten: **Was?** (Kacheln Nachrichten, Wert aus dem Netz,
+Kalender, Tabelle, Bild, Kamera, Text oder Beispiel) → **Woher?** (Adresse, Datei, Speicherort, Abstand) → **Werte**
+(Testen, Wert antippen). Kennung, Art, Methode und Kopfzeilen stehen unter „Erweitert“; curl über ⋯.
 
 Seit 0.39: **MCP-Schnittstelle** für Claude & Co.: Layouts bauen, Vorschaubild, Zuweisung, Zeitplan, Laufschrift,
 Durchsage, Bilder, Streams, Datenquellen; nichts am System. Seit 0.40 per Klick: Einstellungen → **KI-Assistenten** →

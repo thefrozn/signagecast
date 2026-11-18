@@ -650,6 +650,40 @@ def fuellen(vorlage, standard_quelle, daten_von, nachkomma=-1, faktor=1.0, sprac
     return PLATZHALTER.sub(ersetzen, vorlage or "")
 
 
+def kurzwert(daten):
+    """Seit 0.57: letzter Wert in einer Zeile für die Liste der Datenquellen – Anzahl und erster Eintrag oder erster Einzelwert."""
+    if daten is None:
+        return None
+    if isinstance(daten, dict) and isinstance(daten.get("bild"), bytes):
+        return {"text": f"{daten.get('typ', '')}, {daten.get('groesse', 0) // 1024} KB"}
+    if isinstance(daten, dict):
+        for k, feld in (("termine", "titel"), ("eintraege", "titel"), ("zeilen", None)):
+            if isinstance(daten.get(k), list):
+                l, text = daten[k], ""
+                if l and isinstance(l[0], dict):
+                    e = l[0]
+                    text = e.get(feld) if feld else next((v for v in e.values() if isinstance(v, (str, int, float)) and str(v).strip()), "")
+                    if k == "termine" and e.get("start"):
+                        text = f"{str(e['start'])[:10]} {text}"
+                return {"n": len(l), "liste": k, "text": str(text or "")[:80]}
+    if isinstance(daten, str):
+        return {"text": next((z.strip() for z in daten.splitlines() if z.strip()), "")[:80]}
+    stapel, erster, n = [("", daten, 0)], None, 0
+    while stapel and n < 400:                 # erste Zahl, sonst erster Einzelwert (Tiefensuche, höchstens 8 Ebenen)
+        pfad, w, t = stapel.pop(0)
+        n += 1
+        if isinstance(w, dict) and t < 8:
+            stapel[0:0] = [(f"{pfad}.{k}" if pfad else str(k), v, t + 1) for k, v in w.items()]
+        elif isinstance(w, list) and t < 8:
+            stapel[0:0] = [(f"{pfad}[{i}]", v, t + 1) for i, v in enumerate(w[:20])]
+        elif isinstance(w, (int, float)) and not isinstance(w, bool):
+            return {"pfad": pfad, "text": str(w)[:80]}
+        elif w is not None and not isinstance(w, (dict, list)) and str(w).strip():
+            if erster is None or (isinstance(erster[1], bool) and not isinstance(w, bool)):
+                erster = (pfad, w)                 # Text vor Ja/Nein
+    return {"pfad": erster[0], "text": str(erster[1])[:80]} if erster else {"text": ""}
+
+
 def gekuerzt(w, tiefe=0):
     """Antwort für die Testansicht der Verwaltung verkleinern (Listen bis 20 Einträge, Texte bis 500 Zeichen)."""
     if tiefe > 8:
@@ -794,7 +828,8 @@ class Quellen:
         for q in self.einst().get("quellen", []):
             s = self.stand.get(q["id"], {})
             aus[q["id"]] = {"abruf": s.get("abruf"), "fehler": s.get("fehler"), "fehler_m": s.get("fehler_m"), "dauer_ms": s.get("dauer_ms"),
-                            "naechster": s.get("naechster"), "versuche": s.get("versuche", 0), "hat_daten": s.get("daten") is not None}
+                            "naechster": s.get("naechster"), "versuche": s.get("versuche", 0), "hat_daten": s.get("daten") is not None,
+                            "kurz": kurzwert(s.get("daten"))}
         return aus
 
     def bild_aus_url(self, q, url):
