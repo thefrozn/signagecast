@@ -74,6 +74,7 @@ function bauen(layout) {
     // Ausrichtung "oben-links" usw.; alte Werte "links"/"mitte"/"rechts" = senkrecht mittig
     const [v, h] = (e.ausrichtung || "links").includes("-") ? e.ausrichtung.split("-") : ["mitte", e.ausrichtung || "links"];
     d.className = `baustein typ-${e.typ} v-${v} h-${h}${e.karte ? " karte" : ""}${e.gewicht ? " " + e.gewicht : ""}`;
+    d.dataset.id = e.id;                    // seit 0.58: für die Warnungen im Designer
     if (e.schrift) d.style.fontFamily = `"${e.schrift}", var(--schrift), sans-serif`;
     if (e.textfarbe) { d.style.color = e.textfarbe; d.style.textShadow = "none"; }
     Object.assign(d.style, { left: e.x * RASTER + "px", top: e.y * RASTER + "px", width: e.w * RASTER - (e.karte && e.typ !== "video" ? 10 : 0) + "px",
@@ -281,13 +282,18 @@ function fuellen() {
       }
       case "vorhersage": {
         const tage = (daten.vorhersage || []).slice(0, o.tage);
-        const gr = Math.min(d.clientHeight * 0.075, d.clientWidth / Math.max(1, tage.length) * 0.16);
-        d.innerHTML = tage.map((v) => {
-          const t = new Date(v.tag + "T12:00:00");
-          return `<div class="tag" style="font-size:${gr}px">${t.toLocaleDateString(T.locale, { weekday: "short" }).replace(".", "")}` +
-                 `<span class="mdi mdi-${SYMBOL[v.zustand] || "weather-cloudy"}" style="font-size:${gr * 2.3}px"></span>` +
-                 `<div class="max" style="font-size:${gr * 1.2}px">${zahl(v.max, 1)}°</div><div class="min">${zahl(v.min, 1)}°</div></div>`;
-        }).join("");
+        // seit 0.58 größer: Höhe und Breite besser genutzt; passt es nicht, wird die Schrift schrittweise kleiner
+        let gr = Math.min(d.clientHeight * 0.11, d.clientWidth / Math.max(1, tage.length) * 0.22);
+        const zeichnenV = () => {
+          d.innerHTML = tage.map((v) => {
+            const t = new Date(v.tag + "T12:00:00");
+            return `<div class="tag" style="font-size:${gr}px">${t.toLocaleDateString(T.locale, { weekday: "short" }).replace(".", "")}` +
+                   `<span class="mdi mdi-${SYMBOL[v.zustand] || "weather-cloudy"}" style="font-size:${gr * 2.3}px"></span>` +
+                   `<div class="max" style="font-size:${gr * 1.2}px">${zahl(v.max, 1)}°</div><div class="min">${zahl(v.min, 1)}°</div></div>`;
+          }).join("");
+        };
+        zeichnenV();
+        for (let i = 0; i < 12 && (d.scrollHeight > d.clientHeight + 1 || d.scrollWidth > d.clientWidth + 1); i++) { gr *= 0.92; zeichnenV(); }
         break;
       }
       case "sender":

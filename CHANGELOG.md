@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.58.0 (2026-11-18)
+- **Layout editor easier to use:**
+  - **Elements bar** instead of the drop-down list: all elements with symbols, grouped (*Time & weather*, *Text &
+    picture*, *Video & media*, *Data*, *Home Assistant*). Click = placed on a free spot (no longer always top left),
+    or drag it onto the canvas.
+  - **Several elements at once:** Shift+click or drag a frame on an empty part of the canvas (also Shift+click in
+    *Layers*); move them together with the mouse or arrow keys, *Align* (left, centre, right, top, middle, bottom),
+    *Distribute evenly*, *Duplicate*, *Remove*.
+  - **Redo** (button and Ctrl+Y / Ctrl+Shift+Z) next to undo; shortcuts Ctrl+D duplicate, Ctrl+C / Ctrl+V copy and
+    paste (also between layouts), Ctrl+A, Del, Esc – not while typing in a field.
+  - **Notes (⚠)** on the element and in a list: text too small to read from about 3 m, low contrast, content does
+    not fit, completely covered, more than one live video. Measured in the live preview (real font sizes and colours of
+    the TV page); they never block saving.
+- The TV page marks each element with its id (`data-id`), so the preview can assign the notes.
+- **Larger weather forecast:** the element now uses its height and width better (e.g. maximum 25 px instead of 17 px
+  in a 5-field-high card) and shrinks the text step by step only if it would not fit – in the templates *Standard*,
+  *Info without video* and *Practice – info* it was hard to read from a distance.
+- Consumption unchanged (admin page and one attribute on the TV page): stream 98.2 % · 900 MB, 25 fps without losses;
+  direct 72.1 % · 609 MB, 60 fps without stutter (0.57: 100.5 % · 871 MB, 72.6 % · 578 MB; test container, 4 cores,
+  snack-bar template).
+
 ## v0.57.0 (2026-11-18)
 - **Data sources reorganised** – the second part of the admin-page restructuring (after “Live videos” in 0.56):
   - **List** with one row per source: type, where it comes from, interval, **used in** which layouts (or *in no

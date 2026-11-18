@@ -202,6 +202,119 @@ const STD_GROESSE = { logo: [8, 4], uhr: [8, 3], datum: [9, 1], temperatur: [8, 
   kalender: [10, 5], meldung: [24, 3], flaeche: [12, 4], apiwert: [8, 3], apiliste: [14, 6], apibild: [10, 8], anzeige: [8, 3],
   countdown: [10, 2], qrcode: [5, 6], webcam: [16, 9], diagramm: [12, 6], webseite: [16, 12], unwetter: [20, 3],
   pdf: [16, 20], galerie: [24, 14], liste: [16, 12] };
+// ---------- Bedienung (seit 0.58): Bausteine-Leiste, Mehrfachauswahl, Kurzbefehle, Wiederholen, Warnungen ----------
+const LBED = {
+  de: {
+    baustein: "+ Baustein", leisteTitel: "Bausteine – anklicken oder auf die Leinwand ziehen",
+    gruppen: { zeit: "Zeit & Wetter", text: "Text & Bild", medien: "Video & Medien", daten: "Daten", ha: "Home Assistant" },
+    wiederholen: "Wiederholen", kurz: "Strg+Z / Strg+Y",
+    mehr: (n) => `${n} Bausteine gewählt`, mehrText: "Zusammen verschieben (ziehen oder Pfeiltasten), ausrichten oder verteilen. Klick auf einen einzelnen Baustein zeigt seine Einstellungen.",
+    ausrichten: "Ausrichten", verteilen: "Gleich verteilen",
+    ri: { links: "links", hmitte: "Mitte (waagrecht)", rechts: "rechts", oben: "oben", vmitte: "Mitte (senkrecht)", unten: "unten" },
+    vt: { x: "waagrecht", y: "senkrecht" }, duplizieren: "Duplizieren", entfernen: "Entfernen",
+    tasten: "Umschalt+Klick oder Rahmen aufziehen: mehrere wählen · Strg+D duplizieren · Strg+C/V kopieren/einfügen · Entf entfernen · Strg+Z/Y rückgängig/wiederholen",
+    w: { klein: (px) => `Schrift klein (${px} px) – aus 3 m schwer lesbar`, kontrast: (r) => `wenig Kontrast (${r}:1) zwischen Schrift und Hintergrund`,
+         ueberlauf: "Inhalt passt nicht ganz hinein", verdeckt: "ganz verdeckt von einem anderen Baustein",
+         videos: (n) => `${n} Live-Videos im Layout – jedes kostet Rechenzeit (Server bzw. Player)` },
+    hinweise: (n) => (n === 1 ? "1 Hinweis" : `${n} Hinweise`),
+  },
+  en: {
+    baustein: "+ Element", leisteTitel: "Elements – click or drag onto the canvas",
+    gruppen: { zeit: "Time & weather", text: "Text & picture", medien: "Video & media", daten: "Data", ha: "Home Assistant" },
+    wiederholen: "Redo", kurz: "Ctrl+Z / Ctrl+Y",
+    mehr: (n) => `${n} elements selected`, mehrText: "Move them together (drag or arrow keys), align or distribute. Click a single element to see its settings.",
+    ausrichten: "Align", verteilen: "Distribute evenly",
+    ri: { links: "left", hmitte: "centre (horizontal)", rechts: "right", oben: "top", vmitte: "middle (vertical)", unten: "bottom" },
+    vt: { x: "horizontally", y: "vertically" }, duplizieren: "Duplicate", entfernen: "Remove",
+    tasten: "Shift+click or drag a frame: select several · Ctrl+D duplicate · Ctrl+C/V copy/paste · Del remove · Ctrl+Z/Y undo/redo",
+    w: { klein: (px) => `small text (${px} px) – hard to read from 3 m`, kontrast: (r) => `low contrast (${r}:1) between text and background`,
+         ueberlauf: "content does not fit completely", verdeckt: "completely covered by another element",
+         videos: (n) => `${n} live videos in the layout – each one costs computing time (server or player)` },
+    hinweise: (n) => (n === 1 ? "1 note" : `${n} notes`),
+  },
+};
+const LB = () => LBED[E && E.sprache === "en" ? "en" : "de"];
+const PALETTE = {
+  zeit: ["uhr", "datum", "countdown", "temperatur", "wetterlage", "feuchte", "wind", "vorhersage", "unwetter"],
+  text: ["text", "liste", "logo", "flaeche", "qrcode"],
+  medien: ["video", "galerie", "pdf", "webseite", "webcam", "sender"],
+  daten: ["apiwert", "apiliste", "apibild", "anzeige", "diagramm", "kalender"],
+  ha: ["kachel", "raeume", "kamera", "meldung"],
+};
+const TYP_SYMBOL = { uhr: "clock-outline", datum: "calendar-today", countdown: "timer-sand", temperatur: "thermometer", wetterlage: "weather-partly-cloudy",
+  feuchte: "water-percent", wind: "weather-windy", vorhersage: "calendar-week", unwetter: "alert", text: "format-text", liste: "format-list-bulleted",
+  logo: "image", flaeche: "square", qrcode: "qrcode", video: "video", galerie: "image-multiple", pdf: "file-pdf-box", webseite: "web", webcam: "cctv",
+  sender: "radio", apiwert: "numeric", apiliste: "rss", apibild: "image-area", anzeige: "gauge", diagramm: "chart-line", kalender: "calendar",
+  kachel: "home-thermometer-outline", raeume: "floor-plan", kamera: "camera", meldung: "message-alert" };
+let AUSWAHL = new Set();    // Mehrfachauswahl (GEWAEHLT = der Baustein, dessen Einstellungen rechts stehen)
+let VORWAERTS = [];         // Wiederholen
+let WARN = {};              // Warnungen je Baustein: { id: [Text, …] }
+let LTASTEN = null;         // Kurzbefehle (document-weit, nur im Editor)
+const SCHRIFT_MIN = 18;     // px bei 1920 × 1080: größte Schrift im Baustein darunter = „Schrift klein“
+const SCHRIFT_NEBEN = 12;   // Nebentexte (z. B. Tiefstwert der Vorhersage) dürfen kleiner sein, aber nicht darunter
+const KONTRAST_MIN = 3;     // WCAG für große Schrift
+
+// Freie Stelle für einen neuen Baustein (zeilenweise, innerhalb des sicheren Rands), sonst leicht versetzt oben links
+function freieStelle(els, w, h) {
+  const frei = (x, y) => els.every((o) => !o.sichtbar || x + w <= o.x || o.x + o.w <= x || y + h <= o.y || o.y + o.h <= y);
+  for (let y = 1; y + h <= 26; y++) for (let x = 1; x + w <= 47; x++) if (frei(x, y)) return [x, y];
+  const n = els.length % 10;
+  return [klemm(1 + n, 0, 48 - w), klemm(1 + n, 0, 27 - h)];
+}
+// Kontrast nach WCAG aus zwei CSS-Farben (rgb/rgba)
+function kontrast(a, b) {
+  const lum = (c) => {
+    const [r, g, bl] = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => { v = Number(v) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [h, d] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (h + 0.05) / (d + 0.05);
+}
+const alpha = (c) => { const m = (c || "").match(/rgba?\(([^)]+)\)/); if (!m) return 0; const t = m[1].split(","); return t.length > 3 ? Number(t[3]) : 1; };
+// Warnungen aus dem Layout selbst (auch ohne Vorschau): verdeckt, mehrere Live-Videos
+function warnGeometrie(l) {
+  const B = LB(), w = {}, els = l.elemente, dazu = (id, t) => { (w[id] = w[id] || []).push(t); };
+  els.forEach((e, i) => {
+    if (!e.sichtbar) return;
+    const drueber = els.slice(i + 1).find((o) => o.sichtbar && (o.typ === "video" || o.typ === "flaeche" && (o.optionen.deckkraft ?? 100) >= 90 || o.karte) &&
+      o.x <= e.x && o.y <= e.y && o.x + o.w >= e.x + e.w && o.y + o.h >= e.y + e.h);
+    if (drueber) dazu(e.id, B.w.verdeckt);
+  });
+  const videos = els.filter((e) => e.sichtbar && e.typ === "video");
+  if (videos.length > 1) videos.forEach((e) => dazu(e.id, B.w.videos(videos.length)));
+  return w;
+}
+// Warnungen aus der Live-Vorschau (echte Schriftgrößen und Farben der TV-Seite)
+function warnVorschau(f) {
+  const B = LB(), w = {};
+  let doc = null;
+  try { doc = f && f.contentDocument; } catch (_) { return w; }
+  if (!doc) return w;
+  const win = doc.defaultView;
+  for (const b of doc.querySelectorAll(".baustein[data-id]")) {
+    if (!b.offsetWidth || win.getComputedStyle(b).display === "none") continue;
+    const id = b.dataset.id, liste = [];
+    let klein = Infinity, gross = 0, schwach = Infinity;
+    const gehe = doc.createTreeWalker(b, 4);         // Textknoten
+    for (let t = gehe.nextNode(); t; t = gehe.nextNode()) {
+      const p = t.parentElement;
+      if (!t.nodeValue.trim() || !p || p.closest(".mdi") || !p.getClientRects().length) continue;
+      const st = win.getComputedStyle(p);
+      if (st.visibility === "hidden" || Number(st.opacity) === 0) continue;
+      klein = Math.min(klein, parseFloat(st.fontSize)); gross = Math.max(gross, parseFloat(st.fontSize));
+      for (let a = p; a && a !== b.parentElement; a = a.parentElement) {     // Hintergrund: erster deckender Vorfahr im Baustein
+        const bg = win.getComputedStyle(a).backgroundColor;
+        if (alpha(bg) >= 0.6) { schwach = Math.min(schwach, kontrast(st.color, bg)); break; }
+      }
+    }
+    if (gross && gross < SCHRIFT_MIN) liste.push(B.w.klein(Math.round(gross)));
+    else if (klein < SCHRIFT_NEBEN) liste.push(B.w.klein(Math.round(klein)));
+    if (schwach < KONTRAST_MIN) liste.push(B.w.kontrast(Math.round(schwach * 10) / 10));
+    if (!b.classList.contains("laufband") && !b.querySelector(".laufband") && (b.scrollHeight > b.clientHeight + 4 || b.scrollWidth > b.clientWidth + 4)) liste.push(B.w.ueberlauf);
+    if (liste.length) w[id] = liste;
+  }
+  return w;
+}
 // welche Arten von Datenquellen ein Baustein anbietet
 // Kalender als Symbole (seit 0.28): Vorschläge und Müll-Vorlage
 const SYM_VORSCHLAG = ["mdi-trash-can", "mdi-trash-can-outline", "mdi-delete-variant", "mdi-leaf", "mdi-flower", "mdi-newspaper-variant",
@@ -245,7 +358,7 @@ window.SC_VORSCHAU = {
   adr: (p) => (CONTAINER ? "/tvseite" + p : "/cockpit/channel/" + cockpit.transport.csrf_token + "?" + window.btoa(JSON.stringify(
     { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: p, headers: {}, binary: "raw", external: {} }))),
 };
-const VS = { an: true, id: "", tageszeit: "", takt: null, fenster: null, rand: false };
+const VS = { an: true, id: "", tageszeit: "", takt: null, fenster: null, rand: false, warnTakt: null, nachLaden: null };
 try { VS.an = localStorage.getItem("signagecast-vorschau") !== "skizze"; VS.rand = localStorage.getItem("signagecast-rand") === "1"; } catch (_) { /* egal */ }
 // Hilfslinien (seit 0.55): beim Verschieben/Größe ändern Linien, wo Kanten oder Mitten mit anderen Bausteinen oder der
 // Bildmitte übereinstimmen. Das Raster (48 × 27 Felder) bleibt die Einheit – es wird nichts verschoben, nur gezeigt.
@@ -304,6 +417,8 @@ function vorschauSenden(layout) {
       const f = VS.fenster, w = f && f.isConnected && f.contentWindow;
       if (!neu && w && typeof w.laden === "function") w.laden();
       else vorschauFenster(document.querySelector(".lw-huelle"));
+      clearTimeout(VS.warnTakt);                 // seit 0.58: Warnungen aus der fertig gezeichneten Vorschau
+      VS.warnTakt = setTimeout(() => { if (VS.nachLaden) VS.nachLaden(); }, neu ? 4000 : 1800);
     } catch (_) { /* Vorschau ist Komfort – Fehler nicht melden */ }
   }, 250);
 }
@@ -316,7 +431,12 @@ async function layoutSeite(inhalt) {
   VORSCHAU = vd && vd.ok ? vd : null;
   const handy = () => window.innerWidth < 700;
   const lay = () => LS[LI];
-  const merken = () => { VERLAUF.push(JSON.stringify(LS)); if (VERLAUF.length > 40) VERLAUF.shift(); GEAENDERT = true; };
+  const merken = () => { VERLAUF.push(JSON.stringify(LS)); if (VERLAUF.length > 40) VERLAUF.shift(); VORWAERTS = []; GEAENDERT = true; };
+  const B = LB();
+  const zurueck = () => { if (!VERLAUF.length) return; VORWAERTS.push(JSON.stringify(LS)); LS = JSON.parse(VERLAUF.pop()); LI = Math.min(LI, LS.length - 1); GEAENDERT = true; zeichnen(); };
+  const vor = () => { if (!VORWAERTS.length) return; VERLAUF.push(JSON.stringify(LS)); LS = JSON.parse(VORWAERTS.pop()); LI = Math.min(LI, LS.length - 1); GEAENDERT = true; zeichnen(); };
+  const gewaehlte = () => lay().elemente.filter((x) => AUSWAHL.has(x.id));
+  const neuZeichnen = () => { if (handy()) listeZeichnen(); else leinwandZeichnen(); eigenschaftenZeichnen(); const s = $("#lSpeichern"); if (s && GEAENDERT) s.textContent = L.speichern + " *"; };
   const nutzer = (id) => E.fernseher.filter((t) => t.layout === id || (t.zeitplan || []).some((z) => z.layout === id)).map((t) => t.name);
 
   const offen = () => { const d = inhalt.querySelector("details"); if (d) d.open = true; };
@@ -327,7 +447,8 @@ async function layoutSeite(inhalt) {
         <div class="zeile layoutkopf"><button class="knopf" id="lListe">← ${esc(L.alleLayouts)}</button>
           <input type="text" id="lName" class="layoutname" value="${esc(l.name)}" aria-label="${esc(L.name)}">
           <span class="leer"></span>
-          <button class="knopf" id="lZurueck" ${VERLAUF.length ? "" : "disabled"}>${esc(L.rueckgaengig)}</button>
+          <button class="knopf" id="lZurueck" title="Strg+Z" ${VERLAUF.length ? "" : "disabled"}><i class="mdi mdi-undo"></i> ${esc(L.rueckgaengig)}</button>
+          <button class="knopf" id="lVor" title="Strg+Y" ${VORWAERTS.length ? "" : "disabled"}><i class="mdi mdi-redo"></i> ${esc(B.wiederholen)}</button>
           <button class="knopf haupt" id="lSpeichern">${esc(L.speichern)}${GEAENDERT ? " *" : ""}</button></div>
         ${nutzer(l.id).length ? `<p class="laeuft">● ${esc(L.laeuftAuf(nutzer(l.id).join(", ")))} – ${esc(L.laeuftHinweis)}</p>` : `<p class="leise">${esc(L.nichtVerwendet)}</p>`}
         <details><summary>${esc(L.hgFarben)}</summary>
@@ -361,12 +482,18 @@ async function layoutSeite(inhalt) {
             <label>${esc(L.akzent)}</label><input type="color" id="thAkzent" value="${esc(l.thema.akzent)}">
             <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option data-schrift="${esc(k)}" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
         </details>
-        <div class="zeile"><select id="bTyp">${Object.keys(L.typ).map((k) => `<option value="${k}">${esc(L.typ[k])}</option>`).join("")}</select>
-          <button class="knopf" id="bNeu">${esc(L.bausteinNeu)}</button>
+        <div class="zeile"><button class="knopf haupt" id="bPalette" aria-expanded="false" aria-controls="palette">${esc(B.baustein)}</button>
           ${handy() ? "" : `<span class="leer"></span><label for="lAnsicht">${esc(L.ansicht)}</label><select id="lAnsicht">${Object.keys(L.ansichtArt).map((k) => `<option value="${k}" ${(k === "vorschau") === VS.an ? "selected" : ""}>${esc(L.ansichtArt[k])}</option>`).join("")}</select>
           <label title="${esc(L.randHilfe)}"><input type="checkbox" id="lRand" ${VS.rand ? "checked" : ""}> ${esc(L.rand)}</label>
           <select id="lTz" aria-label="${esc(L.tzVorschau)}" ${VS.an ? "" : "hidden"}><option value="">${esc(L.tzAuto)}</option>${["morgen", "tag", "abend", "nacht"].map((z) => `<option value="${z}" ${z === VS.tageszeit ? "selected" : ""}>${esc(L.zeitName[z])}</option>`).join("")}</select>`}</div>
+        <div class="palette" id="palette" hidden><p class="leise">${esc(B.leisteTitel)}</p>
+          ${Object.keys(PALETTE).map((g) => `<div class="pal-gruppe"><h4>${esc(B.gruppen[g])}</h4><div class="pal-kacheln">${PALETTE[g].filter((t) => L.typ[t]).map((t) =>
+            `<button type="button" class="pal-kachel" draggable="${!handy()}" data-typ="${t}" title="${esc(L.typ[t])}"><i class="mdi mdi-${TYP_SYMBOL[t] || "plus"}"></i><span>${esc(L.typ[t])}</span></button>`).join("")}</div></div>`).join("")}
+          ${Object.keys(L.typ).filter((t) => !Object.values(PALETTE).flat().includes(t)).map((t) =>
+            `<button type="button" class="pal-kachel" data-typ="${t}"><i class="mdi mdi-plus"></i><span>${esc(L.typ[t])}</span></button>`).join("")}</div>
         <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}${!handy() && VS.an ? " " + esc(L.vorschauHinweis) : ""}</p>
+        ${handy() ? "" : `<p class="leise">${esc(B.tasten)}</p>`}
+        <div id="lWarn"></div>
       </div>
       <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="lw-seite">${handy() ? "" : `<div class="karte" id="ebenen"></div>`}<div class="karte" id="eigenschaften"></div></div></div>`;
     schriftVorschau(inhalt);
@@ -375,12 +502,13 @@ async function layoutSeite(inhalt) {
     // Kopf
     $("#lListe").onclick = () => {
       if (GEAENDERT && !confirm(L.verwerfen)) return;
-      LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; GEWAEHLT = null; ANSICHT = "liste"; listeAlle();
+      LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; VORWAERTS = []; GEWAEHLT = null; AUSWAHL.clear(); ANSICHT = "liste"; listeAlle();
     };
     $("#lSpeichern").onclick = (e) => aktion(e.target, async () => {
-      await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; zeichnen();
+      await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; VORWAERTS = []; zeichnen();
     }, L.gespeichert);
-    $("#lZurueck").onclick = () => { if (VERLAUF.length) { LS = JSON.parse(VERLAUF.pop()); LI = Math.min(LI, LS.length - 1); GEAENDERT = true; zeichnen(); } };
+    $("#lZurueck").onclick = zurueck;
+    $("#lVor").onclick = vor;
     const kopf = (f) => () => { merken(); f(); GEAENDERT = true; $("#lSpeichern").textContent = L.speichern + " *"; if (!handy()) leinwandZeichnen(); };
     $("#lName").oninput = kopf(() => { lay().name = $("#lName").value; });
     $("#hgArt").onchange = () => { merken(); lay().hintergrund.art = $("#hgArt").value; zeichnen(); offen(); };
@@ -426,14 +554,85 @@ async function layoutSeite(inhalt) {
       leinwandZeichnen();
     };
     if ($("#lTz")) $("#lTz").onchange = () => { VS.tageszeit = $("#lTz").value; vorschauSenden(lay()); };
-    $("#bNeu").onclick = () => {
-      merken();
-      const typ = $("#bTyp").value, [w, h] = STD_GROESSE[typ] || [6, 2];
-      const e = { id: neueId().slice(0, 8), typ, x: 1, y: 1, w, h, sichtbar: true, karte: ["kachel", "vorhersage", "kalender"].includes(typ),
-                  ausrichtung: typ === "liste" ? "oben-links" : "links", optionen: JSON.parse(JSON.stringify(BAUSTEINE[typ] || {})), bedingung: null };
-      lay().elemente.push(e); GEWAEHLT = e.id; zeichnen();
-    };
+    const pal = $("#palette");
+    let palOffen = false;
+    try { palOffen = localStorage.getItem("signagecast-palette") === "1"; } catch (_) { /* egal */ }
+    const palZeigen = (an) => { pal.hidden = !an; $("#bPalette").setAttribute("aria-expanded", String(an)); try { localStorage.setItem("signagecast-palette", an ? "1" : "0"); } catch (_) { /* egal */ } };
+    palZeigen(palOffen);
+    $("#bPalette").onclick = () => palZeigen(pal.hidden);
+    pal.querySelectorAll(".pal-kachel").forEach((k) => {
+      k.onclick = () => { palZeigen(false); neuerBaustein(k.dataset.typ); };   // zu, damit der neue Baustein zu sehen ist
+      k.ondragstart = (ev) => { ev.dataTransfer.setData("text/plain", "sc-baustein:" + k.dataset.typ); ev.dataTransfer.effectAllowed = "copy"; };
+    });
   };
+  // Neuer Baustein an einer freien Stelle oder dort, wo er hingezogen wurde (x, y = Mitte in Feldern)
+  const neuerBaustein = (typ, mx, my) => {
+    merken();
+    const [w, h] = STD_GROESSE[typ] || [6, 2];
+    const [x, y] = mx == null ? freieStelle(lay().elemente, w, h) : [klemm(Math.round(mx - w / 2), 0, 48 - w), klemm(Math.round(my - h / 2), 0, 27 - h)];
+    const e = { id: neueId().slice(0, 8), typ, x, y, w, h, sichtbar: true, karte: ["kachel", "vorhersage", "kalender"].includes(typ),
+                ausrichtung: typ === "liste" ? "oben-links" : "links", optionen: JSON.parse(JSON.stringify(BAUSTEINE[typ] || {})), bedingung: null };
+    lay().elemente.push(e); GEWAEHLT = e.id; AUSWAHL = new Set([e.id]); zeichnen();
+  };
+  // Mehrfachauswahl: duplizieren, kopieren/einfügen, entfernen, ausrichten, verteilen
+  const kopien = (els, versatz) => els.map((x) => Object.assign(JSON.parse(JSON.stringify(x)), { id: neueId().slice(0, 8),
+    x: klemm(x.x + versatz, 0, 48 - x.w), y: klemm(x.y + versatz, 0, 27 - x.h) }));
+  const einfuegen = (neu) => {
+    if (!neu.length) return;
+    merken(); lay().elemente.push(...neu);
+    AUSWAHL = new Set(neu.map((x) => x.id)); GEWAEHLT = neu[neu.length - 1].id; zeichnen();
+  };
+  const duplizieren = () => einfuegen(kopien(gewaehlte(), 1));
+  const kopieren = () => { const g = gewaehlte(); if (!g.length) return false; try { localStorage.setItem("signagecast-ablage", JSON.stringify(g)); } catch (_) { /* egal */ } return true; };
+  const ablageEinfuegen = () => {
+    let g = null;
+    try { g = JSON.parse(localStorage.getItem("signagecast-ablage") || "null"); } catch (_) { g = null; }
+    if (Array.isArray(g)) einfuegen(kopien(g.filter((x) => x && L.typ[x.typ]), 1));
+  };
+  const entfernen = () => {
+    if (!AUSWAHL.size) return;
+    merken(); lay().elemente = lay().elemente.filter((x) => !AUSWAHL.has(x.id)); AUSWAHL.clear(); GEWAEHLT = null; zeichnen();
+  };
+  const ausrichten = (art) => {
+    const g = gewaehlte(); if (g.length < 2) return;
+    merken();
+    const x0 = Math.min(...g.map((e) => e.x)), x1 = Math.max(...g.map((e) => e.x + e.w)), y0 = Math.min(...g.map((e) => e.y)), y1 = Math.max(...g.map((e) => e.y + e.h));
+    for (const e of g) {
+      if (art === "links") e.x = x0; else if (art === "rechts") e.x = x1 - e.w; else if (art === "hmitte") e.x = klemm(Math.round((x0 + x1 - e.w) / 2), 0, 48 - e.w);
+      else if (art === "oben") e.y = y0; else if (art === "unten") e.y = y1 - e.h; else if (art === "vmitte") e.y = klemm(Math.round((y0 + y1 - e.h) / 2), 0, 27 - e.h);
+    }
+    neuZeichnen(); vorschauSenden(lay());
+  };
+  const verteilen = (p) => {
+    const g = gewaehlte(), q = p === "x" ? "w" : "h"; if (g.length < 3) return;
+    merken();
+    g.sort((a, b) => a[p] - b[p]);
+    const anfang = g[0][p], ende = Math.max(...g.map((e) => e[p] + e[q])), luecke = (ende - anfang - g.reduce((s, e) => s + e[q], 0)) / (g.length - 1);
+    let pos = anfang;
+    for (const e of g) { e[p] = Math.round(pos); pos += e[q] + luecke; }
+    neuZeichnen(); vorschauSenden(lay());
+  };
+  // Warnungen zeigen: Zeichen am Baustein, Liste unter der Werkzeugzeile, Hinweise in den Einstellungen
+  const warnZeigen = () => {
+    const l = lay(); if (!l) return;
+    const g = warnGeometrie(l), v = VS.an && !handy() ? warnVorschau(VS.fenster) : {};
+    WARN = {};
+    for (const q of [g, v]) for (const [id, t] of Object.entries(q)) WARN[id] = [...(WARN[id] || []), ...t];
+    const lw = $("#leinwand");
+    if (lw) lw.querySelectorAll(".lw-baustein").forEach((b) => {
+      b.querySelectorAll(".lw-warn").forEach((x) => x.remove());
+      const w = WARN[b.dataset.id];
+      if (w) b.appendChild(el(`<span class="lw-warn" title="${esc(w.join(" · "))}">⚠</span>`));
+    });
+    const ziel = $("#lWarn"); if (!ziel) return;
+    const ids = l.elemente.filter((e) => WARN[e.id]).map((e) => e.id);
+    ziel.innerHTML = ids.length ? `<details class="warnliste"><summary class="warn">⚠ ${esc(B.hinweise(ids.reduce((s, id) => s + WARN[id].length, 0)))}</summary>
+      ${ids.map((id) => { const e = l.elemente.find((x) => x.id === id); return `<button type="button" class="knopf klein warnzeile" data-id="${esc(id)}"><b>${esc(L.typ[e.typ] || e.typ)}</b> ${esc(WARN[id].join(" · "))}</button>`; }).join("")}</details>` : "";
+    ziel.querySelectorAll("[data-id]").forEach((k) => { k.onclick = () => { GEWAEHLT = k.dataset.id; AUSWAHL = new Set([GEWAEHLT]); neuZeichnen(); }; });
+    const hier = $("#eigenschaften [data-warn]");
+    if (hier) hier.innerHTML = GEWAEHLT && WARN[GEWAEHLT] ? WARN[GEWAEHLT].map((t) => `<p class="warn">⚠ ${esc(t)}</p>`).join("") : "";
+  };
+  VS.nachLaden = warnZeigen;
 
   // ---------- Übersicht aller Layouts (seit 0.17.2) – Aktionen hier speichern sofort ----------
   const sofortSpeichern = async () => { await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; };
@@ -620,13 +819,19 @@ async function layoutSeite(inhalt) {
       lw = $("#leinwand");
     }
     const massstab = () => lw.clientWidth / 1920;
+    // Auswahl abgleichen (seit 0.58): GEWAEHLT gehört immer zur Auswahl, gelöschte Bausteine fallen heraus
+    const ids = new Set(l.elemente.map((x) => x.id));
+    AUSWAHL = new Set([...AUSWAHL].filter((id) => ids.has(id)));
+    if (GEWAEHLT && !ids.has(GEWAEHLT)) GEWAEHLT = null;
+    if (GEWAEHLT && !AUSWAHL.has(GEWAEHLT)) AUSWAHL = new Set([GEWAEHLT]);
+    if (!GEWAEHLT) AUSWAHL.clear();
     lw.classList.toggle("mit-vorschau", VS.an && !handy());
     lw.style.background = VS.an && !handy() ? "transparent"
       : l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
     if (VS.an && !handy()) { vorschauFenster(rahmen.querySelector(".lw-huelle")); vorschauSenden(l); }
     l.elemente.forEach((e, idx) => {
       const b = document.createElement("div");
-      b.className = "lw-baustein" + (e.id === GEWAEHLT ? " gewaehlt" : "") + (e.sichtbar ? "" : " aus") + (e.karte ? " karte" : "") +
+      b.className = "lw-baustein" + (AUSWAHL.has(e.id) ? " gewaehlt" : "") + (e.sichtbar ? "" : " aus") + (e.karte ? " karte" : "") +
                     (l.thema.schema === "hell" ? " hell" : "") + " lwtyp-" + e.typ;
       b.style.zIndex = idx + 1;
       if (e.typ === "flaeche") b.style.background = e.optionen.farbe || "#f0f0f0";
@@ -653,12 +858,53 @@ async function layoutSeite(inhalt) {
       rahmen.querySelector(".lw-schieber").onpointerdown = (ev) => ziehen(ev, gew, b, false);
       lw.appendChild(rahmen);
     }
+    for (const x of l.elemente.filter((y) => AUSWAHL.has(y.id) && y.id !== GEWAEHLT)) {   // weitere gewählte Bausteine
+      const m = document.createElement("div");
+      m.className = "lw-mit"; m.dataset.mit = x.id;
+      setzen(m, x);
+      lw.appendChild(m);
+    }
+    // Rahmen aufziehen auf freier Fläche: Bausteine darin wählen (mit Umschalt dazu); einfacher Klick hebt die Auswahl auf
+    lw.onpointerdown = (ev) => {
+      if (ev.target !== lw || ev.button !== 0) return;
+      ev.preventDefault();
+      const r = lw.getBoundingClientRect(), feld = r.width / 48, sx = ev.clientX, sy = ev.clientY, dazu = ev.shiftKey || ev.ctrlKey || ev.metaKey;
+      const vorher = dazu ? new Set(AUSWAHL) : new Set();
+      let lasso = null;
+      lw.setPointerCapture(ev.pointerId);
+      const grenzen = (mv) => [Math.min(sx, mv.clientX), Math.min(sy, mv.clientY), Math.max(sx, mv.clientX), Math.max(sy, mv.clientY)];
+      lw.onpointermove = (mv) => {
+        if (!lasso && Math.abs(mv.clientX - sx) + Math.abs(mv.clientY - sy) < 6) return;
+        if (!lasso) { lasso = document.createElement("div"); lasso.className = "lw-lasso"; lw.appendChild(lasso); }
+        const [a, b, c, d] = grenzen(mv);
+        Object.assign(lasso.style, { left: a - r.left + "px", top: b - r.top + "px", width: c - a + "px", height: d - b + "px" });
+      };
+      lw.onpointerup = (mv) => {
+        lw.onpointermove = null; lw.onpointerup = null;
+        if (!lasso) { if (!dazu) { GEWAEHLT = null; AUSWAHL.clear(); leinwandZeichnen(); eigenschaftenZeichnen(); } lw.focus(); return; }
+        const [a, b, c, d] = grenzen(mv).map((v, i) => (v - (i % 2 ? r.top : r.left)) / feld);
+        const drin = l.elemente.filter((e) => e.x < c && e.x + e.w > a && e.y < d && e.y + e.h > b).map((e) => e.id);
+        AUSWAHL = new Set([...vorher, ...drin]);
+        GEWAEHLT = drin.length ? drin[drin.length - 1] : GEWAEHLT && AUSWAHL.has(GEWAEHLT) ? GEWAEHLT : null;
+        leinwandZeichnen(); eigenschaftenZeichnen(); lw.focus();
+      };
+    };
+    // Bausteine aus der Leiste hineinziehen
+    lw.ondragover = (ev) => { if ([...ev.dataTransfer.types].includes("text/plain")) { ev.preventDefault(); ev.dataTransfer.dropEffect = "copy"; } };
+    lw.ondrop = (ev) => {
+      const d = ev.dataTransfer.getData("text/plain");
+      if (!d.startsWith("sc-baustein:")) return;
+      ev.preventDefault();
+      const r = lw.getBoundingClientRect(), feld = r.width / 48;
+      neuerBaustein(d.slice(12), (ev.clientX - r.left) / feld, (ev.clientY - r.top) / feld);
+    };
     if (VS.rand) {                                 // sicherer Rand (Overscan): außen je 1 Feld ≈ 2–4 %
       const rd = document.createElement("div");
       rd.className = "lw-rand";
       lw.appendChild(rd);
     }
     ebenenZeichnen();
+    warnZeigen();
     lw.onkeydown = (ev) => {
       const e = lay().elemente.find((x) => x.id === GEWAEHLT);
       const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
@@ -673,9 +919,14 @@ async function layoutSeite(inhalt) {
       }
       if (!e || !d) return;
       ev.preventDefault(); merken();
-      if (ev.shiftKey) { e.w = klemm(e.w + d[0], 1, 48 - e.x); e.h = klemm(e.h + d[1], 1, 27 - e.y); }
-      else { e.x = klemm(e.x + d[0], 0, 48 - e.w); e.y = klemm(e.y + d[1], 0, 27 - e.h); }
-      leinwandZeichnen(); eigenschaftenZeichnen(); $("#leinwand").focus();
+      const g = gewaehlte();
+      if (ev.shiftKey) for (const x of g) { x.w = klemm(x.w + d[0], 1, 48 - x.x); x.h = klemm(x.h + d[1], 1, 27 - x.y); }
+      else {                                        // die Gruppe bleibt als Ganzes auf der Fläche
+        const dx = klemm(d[0], -Math.min(...g.map((x) => x.x)), 48 - Math.max(...g.map((x) => x.x + x.w)));
+        const dy = klemm(d[1], -Math.min(...g.map((x) => x.y)), 27 - Math.max(...g.map((x) => x.y + x.h)));
+        for (const x of g) { x.x += dx; x.y += dy; }
+      }
+      leinwandZeichnen(); eigenschaftenZeichnen(); $("#leinwand").focus(); vorschauSenden(lay());
       hilfslinien($("#leinwand"), e, lay().elemente);
       clearTimeout(VS.linienWeg); VS.linienWeg = setTimeout(() => { const w = $("#leinwand"); if (w) hilfslinien(w, null); }, 1200);
     };
@@ -685,6 +936,14 @@ async function layoutSeite(inhalt) {
     }
     // Klick auf die Leinwand: oberster Baustein an der Stelle; erneuter Klick auf dieselbe Stelle wählt den darunter
     function klicken(ev, b) {
+      if (ev.shiftKey || ev.ctrlKey || ev.metaKey) {             // seit 0.58: Baustein zur Auswahl dazu / heraus
+        ev.preventDefault();
+        const id = b.dataset.id;
+        if (AUSWAHL.has(id)) { AUSWAHL.delete(id); if (GEWAEHLT === id) GEWAEHLT = [...AUSWAHL].pop() || null; }
+        else { AUSWAHL.add(id); GEWAEHLT = id; }
+        leinwandZeichnen(); eigenschaftenZeichnen(); $("#leinwand").focus();
+        return;
+      }
       const stapel = document.elementsFromPoint(ev.clientX, ev.clientY).filter((x) => x.classList.contains("lw-baustein"));
       const nah = letzterKlick && Math.abs(letzterKlick[0] - ev.clientX) < 5 && Math.abs(letzterKlick[1] - ev.clientY) < 5;
       const vorher = stapel.findIndex((x) => x.dataset.id === GEWAEHLT);
@@ -694,9 +953,15 @@ async function layoutSeite(inhalt) {
     }
     function ziehen(ev, e, b, groesse) {
       ev.preventDefault();
-      if (GEWAEHLT !== e.id) { GEWAEHLT = e.id; leinwandZeichnen(); eigenschaftenZeichnen(); b = $("#leinwand").querySelector(`[data-id="${e.id}"]`); }
+      const warSchonGewaehlt = AUSWAHL.has(e.id);
+      if (!warSchonGewaehlt) AUSWAHL = new Set([e.id]);
+      if (GEWAEHLT !== e.id || !warSchonGewaehlt) { GEWAEHLT = e.id; leinwandZeichnen(); eigenschaftenZeichnen(); b = $("#leinwand").querySelector(`[data-id="${e.id}"]`); }
       const rahmen = $("#lwAuswahl");
       const feld = 40 * massstab(), sx = ev.clientX, sy = ev.clientY, start = { ...e };
+      const gruppe = groesse ? [] : gewaehlte().filter((x) => x.id !== e.id).map((x) => [x, { ...x }, $("#leinwand").querySelector(`[data-id="${x.id}"]`), $("#leinwand").querySelector(`[data-mit="${x.id}"]`)]);
+      const alle = [start, ...gruppe.map((g) => g[1])];
+      const grenze = { x0: -Math.min(...alle.map((x) => x.x)), x1: 48 - Math.max(...alle.map((x) => x.x + x.w)),
+                       y0: -Math.min(...alle.map((x) => x.y)), y1: 27 - Math.max(...alle.map((x) => x.y + x.h)) };
       let bewegt = false;
       const fang = ev.target.isConnected ? ev.target : rahmen;
       fang.setPointerCapture(ev.pointerId);
@@ -704,11 +969,20 @@ async function layoutSeite(inhalt) {
         const dx = Math.round((mv.clientX - sx) / feld), dy = Math.round((mv.clientY - sy) / feld);
         if (!bewegt && (dx || dy)) { merken(); bewegt = true; }
         if (groesse) { e.w = klemm(start.w + dx, 1, 48 - e.x); e.h = klemm(start.h + dy, 1, 27 - e.y); }
-        else { e.x = klemm(start.x + dx, 0, 48 - e.w); e.y = klemm(start.y + dy, 0, 27 - e.h); }
+        else {
+          const gx = klemm(dx, grenze.x0, grenze.x1), gy = klemm(dy, grenze.y0, grenze.y1);
+          e.x = start.x + gx; e.y = start.y + gy;
+          for (const [x, s0, xb, xm] of gruppe) { x.x = s0.x + gx; x.y = s0.y + gy; if (xb) setzen(xb, x); if (xm) setzen(xm, x); }
+        }
         setzen(b, e); if (rahmen) setzen(rahmen, e);
         if (bewegt) hilfslinien(lw, e, lay().elemente);
       };
-      fang.onpointerup = () => { fang.onpointermove = null; fang.onpointerup = null; hilfslinien(lw, null); if (bewegt) { $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen(); vorschauSenden(lay()); } $("#leinwand").focus(); };
+      fang.onpointerup = () => {
+        fang.onpointermove = null; fang.onpointerup = null; hilfslinien(lw, null);
+        if (bewegt) { $("#lSpeichern").textContent = L.speichern + " *"; eigenschaftenZeichnen(); vorschauSenden(lay()); warnZeigen(); }
+        else if (warSchonGewaehlt && AUSWAHL.size > 1 && !groesse) { AUSWAHL = new Set([e.id]); leinwandZeichnen(); eigenschaftenZeichnen(); }   // Klick ohne Ziehen: nur dieser
+        $("#leinwand").focus();
+      };
     }
   };
 
@@ -721,7 +995,7 @@ async function layoutSeite(inhalt) {
     const liste = ziel.querySelector(".ebenen");
     [...els].reverse().forEach((e) => {
       const i = els.indexOf(e);
-      const z = el(`<div class="ebene ${e.id === GEWAEHLT ? "gewaehlt" : ""} ${e.sichtbar ? "" : "aus"}">
+      const z = el(`<div class="ebene ${AUSWAHL.has(e.id) ? "gewaehlt" : ""} ${e.sichtbar ? "" : "aus"}">
         <span class="ebene-name"><b>${esc(L.typ[e.typ] || e.typ)}</b> <span class="leise">${esc(vorschauText(e, L)).slice(0, 28)}</span></span>
         <button class="knopf klein" data-a="s" title="${esc(L.einAus)}"><i class="mdi ${e.sichtbar ? "mdi-eye" : "mdi-eye-off"}"></i></button>
         <button class="knopf klein" data-a="v" title="${esc(L.nachVorne)}" ${i === els.length - 1 ? "disabled" : ""}><i class="mdi mdi-arrow-up"></i></button>
@@ -733,7 +1007,9 @@ async function layoutSeite(inhalt) {
           if (a === "s") e.sichtbar = !e.sichtbar;
           else { const j = a === "v" ? i + 1 : i - 1; [els[i], els[j]] = [els[j], els[i]]; }
         }
-        GEWAEHLT = e.id;
+        if (ev.shiftKey || ev.ctrlKey || ev.metaKey) { if (AUSWAHL.has(e.id) && AUSWAHL.size > 1) { AUSWAHL.delete(e.id); if (GEWAEHLT === e.id) GEWAEHLT = [...AUSWAHL].pop(); } else { AUSWAHL.add(e.id); GEWAEHLT = e.id; } }
+        else if (!a) { GEWAEHLT = e.id; AUSWAHL = new Set([e.id]); }
+        else GEWAEHLT = e.id;
         leinwandZeichnen(); eigenschaftenZeichnen();
       };
       liste.appendChild(z);
@@ -767,6 +1043,22 @@ async function layoutSeite(inhalt) {
   const eigenschaftenZeichnen = () => {
     const ziel = $("#eigenschaften");
     const e = lay().elemente.find((x) => x.id === GEWAEHLT);
+    if (AUSWAHL.size > 1) {                           // seit 0.58: mehrere gewählt – ausrichten, verteilen, duplizieren, entfernen
+      const n = AUSWAHL.size, sym = { links: "align-horizontal-left", hmitte: "align-horizontal-center", rechts: "align-horizontal-right",
+                                      oben: "align-vertical-top", vmitte: "align-vertical-center", unten: "align-vertical-bottom" };
+      ziel.innerHTML = `<h3>${esc(B.mehr(n))}</h3><p class="leise">${esc(B.mehrText)}</p>
+        <div class="feld"><label>${esc(B.ausrichten)}</label><div class="zeile">${Object.keys(sym).map((k) =>
+          `<button type="button" class="knopf klein" data-ri="${k}" title="${esc(B.ri[k])}" aria-label="${esc(B.ri[k])}"><i class="mdi mdi-${sym[k]}"></i></button>`).join("")}</div></div>
+        <div class="feld"><label>${esc(B.verteilen)}</label><div class="zeile">${["x", "y"].map((k) =>
+          `<button type="button" class="knopf klein" data-vt="${k}" ${n < 3 ? "disabled" : ""}><i class="mdi mdi-distribute-${k === "x" ? "horizontal" : "vertical"}-center"></i> ${esc(B.vt[k])}</button>`).join("")}</div></div>
+        <div class="zeile"><button type="button" class="knopf" data-m="dup" title="Strg+D"><i class="mdi mdi-content-duplicate"></i> ${esc(B.duplizieren)}</button>
+          <button type="button" class="knopf gefahr" data-m="weg" title="Entf"><i class="mdi mdi-delete"></i> ${esc(B.entfernen)}</button></div>`;
+      ziel.querySelectorAll("[data-ri]").forEach((k) => { k.onclick = () => ausrichten(k.dataset.ri); });
+      ziel.querySelectorAll("[data-vt]").forEach((k) => { k.onclick = () => verteilen(k.dataset.vt); });
+      ziel.querySelector("[data-m=dup]").onclick = duplizieren;
+      ziel.querySelector("[data-m=weg]").onclick = entfernen;
+      return;
+    }
     if (!e) { ziel.innerHTML = `<p class="leise">${esc(L.keinerGewaehlt)}</p>`; return; }
     const o = e.optionen, b = e.bedingung || {};
     const feld = (k) => {
@@ -821,7 +1113,7 @@ async function layoutSeite(inhalt) {
       const liste = k === "entity" ? ' list="ents"' : "";
       return `<div class="zeile"><label>${lab}</label><input type="text" name="o_${k}" value="${esc(w ?? "")}"${liste}>${k === "icon" || k === "ohne_symbol" ? `<span class="icon mdi ${esc(w || "")}"></span>` : ""}</div>`;
     };
-    ziel.innerHTML = `<h2>${esc(L.typ[e.typ] || e.typ)}</h2>${L.optHilfe[e.typ] ? `<p class="leise">${esc(L.optHilfe[e.typ])}</p>` : ""}
+    ziel.innerHTML = `<div data-warn></div><h2>${esc(L.typ[e.typ] || e.typ)}</h2>${L.optHilfe[e.typ] ? `<p class="leise">${esc(L.optHilfe[e.typ])}</p>` : ""}
       ${Object.keys(o).map(feld).join("")}
       <div class="zeile"><label>${esc(L.sichtbar)}</label>${schalter("sichtbar", e.sichtbar)}</div>
       <div class="zeile"><label>${esc(L.karte)}</label>${schalter("karte", e.karte)}</div>
@@ -847,6 +1139,7 @@ async function layoutSeite(inhalt) {
         <div class="zeile"><select name="b_op">${Object.keys(L.op).map((k) => `<option value="${esc(k)}" ${k === (b.op || "=") ? "selected" : ""}>${esc(L.op[k])}</option>`).join("")}</select>
           <input type="text" name="b_wert" value="${esc(b.wert || "")}" class="b140"></div></details>
       <div class="zeile"><button class="knopf" name="vorne">${esc(L.vorne)}</button><button class="knopf" name="hinten">${esc(L.hinten)}</button>
+        <button class="knopf" name="dup" title="Strg+D"><i class="mdi mdi-content-duplicate"></i> ${esc(B.duplizieren)}</button>
         <button class="knopf gefahr" name="weg">${esc(L.entfernen)}</button></div>`;
     schriftVorschau(ziel);
     const aendern = () => {
@@ -955,7 +1248,27 @@ async function layoutSeite(inhalt) {
     ziel.querySelector("[name=vorne]").onclick = () => { merken(); els.splice(i, 1); els.push(e); zeichnen(); };
     ziel.querySelector("[name=hinten]").onclick = () => { merken(); els.splice(i, 1); els.unshift(e); zeichnen(); };
     ziel.querySelector("[name=weg]").onclick = () => { merken(); els.splice(i, 1); GEWAEHLT = null; zeichnen(); };
+    ziel.querySelector("[name=dup]").onclick = duplizieren;
+    if (WARN[e.id]) ziel.querySelector("[data-warn]").innerHTML = WARN[e.id].map((t) => `<p class="warn">⚠ ${esc(t)}</p>`).join("");
   };
+
+  // ---------- Kurzbefehle (seit 0.58), nur im Editor und nicht beim Tippen in Feldern ----------
+  if (LTASTEN) document.removeEventListener("keydown", LTASTEN);
+  LTASTEN = (ev) => {
+    if (ANSICHT !== "editor" || !$("#lSpeichern") || !document.body.contains(inhalt) || document.querySelector(".seitenfeld, dialog[open]")) return;
+    const t = ev.target, tippen = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    if (tippen) return;
+    const strg = ev.ctrlKey || ev.metaKey, k = ev.key.toLowerCase();
+    if (strg && k === "z" && !ev.shiftKey) { ev.preventDefault(); zurueck(); }
+    else if (strg && (k === "y" || k === "z" && ev.shiftKey)) { ev.preventDefault(); vor(); }
+    else if (strg && k === "d") { ev.preventDefault(); duplizieren(); }
+    else if (strg && k === "c" && !String(window.getSelection() || "")) { if (kopieren()) ev.preventDefault(); }
+    else if (strg && k === "v") { ev.preventDefault(); ablageEinfuegen(); }
+    else if (strg && k === "a" && !handy()) { ev.preventDefault(); AUSWAHL = new Set(lay().elemente.map((x) => x.id)); GEWAEHLT = lay().elemente.length ? lay().elemente[lay().elemente.length - 1].id : null; neuZeichnen(); }
+    else if ((ev.key === "Delete" || ev.key === "Backspace") && AUSWAHL.size) { ev.preventDefault(); entfernen(); }
+    else if (ev.key === "Escape" && AUSWAHL.size) { GEWAEHLT = null; AUSWAHL.clear(); neuZeichnen(); }
+  };
+  document.addEventListener("keydown", LTASTEN);
 
   if (ANSICHT === "editor" && LS[LI]) zeichnen(); else { ANSICHT = "liste"; listeAlle(); }
 }

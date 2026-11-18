@@ -1238,7 +1238,8 @@ function reiterZeichnen() {
                   speicherorte: "#pictures-and-files-from-a-nas-or-cloud-storage-locations-since-048",
                   live: "#live-videos-overview-collection-automation-since-056", streams: "#live-videos-overview-collection-automation-since-056",
                   automatik: "#live-videos-overview-collection-automation-since-056", kategorien: "#edit-topics-or-create-your-own-since-037",
-                  quellen: "#data-sources-list-assistant-values-since-057" }[aktiv] || "";
+                  quellen: "#data-sources-list-assistant-values-since-057",
+                  layout: "#elements-bar-several-elements-at-once-shortcuts-and-notes-in-the-layout-editor-since-058" }[aktiv] || "";
   const doku = aktiv === "player" || aktiv === "einrichten" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "")
     : aktiv === "fern" ? "REMOTE.md" : "MANUAL.md" + anker;
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener" href="https://github.com/thefrozn/signagecast/blob/main/docs/${doku}">?</a>`));

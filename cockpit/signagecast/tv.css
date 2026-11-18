@@ -323,3 +323,15 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 .seitenfeld .baum { max-height: none; }
 .qkopf input[type=text], .qkopf input[type=password] { min-width: 0; flex: 1; }
 .bsp-liste { display: flex; flex-wrap: wrap; gap: 6px; } .bsp-liste .knopf { white-space: normal; text-align: left; }
+/* Designer-Bedienung (seit 0.58): Bausteine-Leiste, Mehrfachauswahl, Rahmen aufziehen, Warnungen */
+.palette { border: 1px solid var(--linie); border-radius: 10px; padding: 8px 12px; margin: 8px 0; background: var(--eingabe); }
+.pal-gruppe h4 { margin: 8px 0 4px; font-size: 13px; color: var(--leise); font-weight: 600; }
+.pal-kacheln { display: flex; flex-wrap: wrap; gap: 6px; }
+.pal-kachel { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--linie); border-radius: 8px;
+  background: var(--karte); color: inherit; font: inherit; font-size: 13px; cursor: grab; }
+.pal-kachel:hover, .pal-kachel:focus-visible { border-color: var(--akzent); outline: none; } .pal-kachel .mdi { font-size: 18px; color: var(--akzent); }
+.lw-mit { position: absolute; box-sizing: border-box; border: 2px dashed var(--akzent); pointer-events: none; z-index: 900; }
+.lw-lasso { position: absolute; border: 1px solid var(--akzent); background: rgba(0, 102, 204, .12); pointer-events: none; z-index: 950; }
+.lw-warn { position: absolute; top: 2px; right: 4px; font-size: 14px; line-height: 1; color: #ffb300; text-shadow: 0 0 3px #000; pointer-events: auto; cursor: help; }
+.warnliste { margin-top: 6px; } .warnliste summary { cursor: pointer; }
+.warnzeile { display: block; width: 100%; text-align: left; white-space: normal; margin-top: 4px; }

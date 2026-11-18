@@ -142,6 +142,21 @@ While moving or resizing an element, **guides** appear where its edges or centre
 middle of the screen. *Safe area* marks the edge some TVs cut off (overscan) – keep important things inside.
 The draft only lives in the server's memory for 30 minutes and is never shown on a TV until you save.
 
+### Elements bar, several elements at once, shortcuts and notes in the layout editor (since 0.58)
+**+ Element** opens a bar with all elements grouped by *Time & weather*, *Text & picture*, *Video & media*, *Data* and
+*Home Assistant*. Click one and it lands on a free spot, or drag it onto the canvas where you want it.
+**Select several:** Shift+click elements (on the canvas or in *Layers*) or drag a frame on an empty part of the canvas.
+Drag or use the arrow keys to move them together; the panel on the right offers *Align* (left, centre, right, top,
+middle, bottom), *Distribute evenly* (from three elements), *Duplicate* and *Remove*. A click on one of them without
+moving selects only that one again.
+**Shortcuts** (not while typing in a field): Ctrl+Z undo, Ctrl+Y or Ctrl+Shift+Z **redo** (also a button next to
+*Undo*), Ctrl+D duplicate, Ctrl+C / Ctrl+V copy and paste (also into another layout), Ctrl+A select all, Del remove,
+Esc deselect.
+**Notes (⚠)** appear on an element and in a list under the toolbar when its text is small for reading from about 3 m
+(main text under 18 px at 1080p), when text and an opaque background have little contrast (below 3:1), when content
+does not fit, when an element is completely covered by another one, and when a layout has more than one live video.
+They are measured in the live preview; in *Sketch* view only covering and videos are checked. Notes never block saving.
+
 ### Let an AI build a layout (since 0.38)
 Content → Layouts → *Create with AI …* → *Copy instructions*. Paste them into an AI (ChatGPT, Claude, Gemini …), describe your wish
 at the marked place (“MY WISH: …”), copy the answer, then Content → Layouts → *Paste text …* → *Apply*. SignageCast repairs what
@@ -463,6 +478,12 @@ bzw. „in keinem Layout“; Klick öffnet rechts Details, Werte ansehen (Wert a
 Einstellungen. **+ Datenquelle hinzufügen** führt in drei Schritten: **Was?** (Kacheln Nachrichten, Wert aus dem Netz,
 Kalender, Tabelle, Bild, Kamera, Text oder Beispiel) → **Woher?** (Adresse, Datei, Speicherort, Abstand) → **Werte**
 (Testen, Wert antippen). Kennung, Art, Methode und Kopfzeilen stehen unter „Erweitert“; curl über ⋯.
+
+Seit 0.58 im **Layout-Editor**: **+ Baustein** öffnet eine Leiste mit allen Bausteinen nach Gruppen (anklicken = freie
+Stelle, oder auf die Leinwand ziehen). **Mehrere wählen** mit Umschalt+Klick oder einem aufgezogenen Rahmen, dann
+zusammen verschieben, ausrichten, gleich verteilen, duplizieren oder entfernen. **Kurzbefehle:** Strg+Z/Strg+Y
+(rückgängig/**wiederholen**), Strg+D, Strg+C/V, Strg+A, Entf, Esc. **Hinweise (⚠)** am Baustein: Schrift aus 3 m zu
+klein, wenig Kontrast, Inhalt passt nicht, ganz verdeckt, mehrere Live-Videos – nur Hinweise, Speichern geht immer.
 
 Seit 0.39: **MCP-Schnittstelle** für Claude & Co.: Layouts bauen, Vorschaubild, Zuweisung, Zeitplan, Laufschrift,
 Durchsage, Bilder, Streams, Datenquellen; nichts am System. Seit 0.40 per Klick: Einstellungen → **KI-Assistenten** →

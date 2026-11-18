@@ -2786,6 +2786,34 @@ class Datenquellen057(unittest.TestCase):
             self.assertIn(f"function {f}(", js)
 
 
+class Designer058(unittest.TestCase):
+    """Seit 0.58: Designer-Bedienung – Bausteine-Leiste, Mehrfachauswahl, Kurzbefehle, Wiederholen, Warnungen."""
+
+    def lesen(self, f):
+        with open(os.path.join(os.path.dirname(__file__), "..", f), encoding="utf-8") as d:
+            return d.read()
+
+    def test_leiste_hat_alle_bausteine(self):
+        import re
+        js = self.lesen("cockpit/signagecast/layout.js")
+        typen = set(re.findall(r"(\w+): \"", js[js.index("    typ: { uhr:"):js.index("    opt: {")]))
+        pal = js[js.index("const PALETTE = {"):js.index("const TYP_SYMBOL")]
+        in_leiste = set(re.findall(r'"(\w+)"', pal))
+        self.assertEqual(typen, in_leiste)                    # jeder Baustein steht genau in einer Gruppe
+        sym = js[js.index("const TYP_SYMBOL"):js.index("let AUSWAHL")]
+        mdi = self.lesen("cockpit/signagecast/mdi/css/materialdesignicons.min.css")
+        for t, name in re.findall(r'(\w+): "([a-z-]+)"', sym):
+            self.assertIn(t, typen)
+            self.assertIn(f".mdi-{name}::before", mdi)            # Symbol ist in der mitgelieferten Schrift
+
+    def test_kurzbefehle_und_warnungen(self):
+        js = self.lesen("cockpit/signagecast/layout.js")
+        for k in ('k === "z"', 'k === "y"', 'k === "d"', 'k === "c"', 'k === "v"', '"Delete"', '"Escape"'):
+            self.assertIn(k, js)
+        self.assertIn("document.removeEventListener(\"keydown\", LTASTEN)", js)   # nur ein Kurzbefehl-Hörer
+        self.assertIn("d.dataset.id = e.id;", self.lesen("www/seite.js"))            # Vorschau ordnet Warnungen zu
+
+
 class Fernnetz041(unittest.TestCase):
     """Seit 0.41: Player an anderem Standort über Tailscale/Headscale – Einmal-Schlüssel, Entfernen, Agent."""
 
