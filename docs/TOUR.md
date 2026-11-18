@@ -2,7 +2,7 @@
 
 A walk through SignageCast: what the TV shows and how you set it up in the browser. All pictures are from a demo
 installation (location Berlin, public example data, no Home Assistant connected). The admin pictures show version
-0.50 with the six areas Overview, Displays, Content, Videos & radio, Settings and System and the **📢 Announcement**
+0.58 with the six areas Overview, Displays, Content, Live videos, Settings and System and the **📢 Announcement**
 button at the top right.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
@@ -74,7 +74,7 @@ address.
 ![Channels as a list](tour/05-tvs.jpg)
 
 *Edit* opens one channel with five tabs: **Display & schedule** (layout, optional schedule with another layout or black
-at certain times, layout carousel), **Live video** (on/off, what the video window shows, categories), **Sound** (radio
+at certain times, layout carousel), **Live video** (on/off, what the video window shows, topics), **Sound** (radio
 or the original sound of the cams, volume), **On/off (HA)** (switching via Home Assistant, state according to HA, after
 switching on select a source and open the TV page – LG webOS, Android TV / Fire TV or an own HA service) and **Video
 stream** (output Full HD or 4K, capture size – 720p saves CPU, 1440p is sharper –, bitrate and codec). Each channel is
@@ -141,6 +141,14 @@ that forbid embedding make layouts like the service desk above.
 
 ![Layout editor: text with a period](tour/06b-editor-period.jpg)
 
+Since 0.58 **+ Element** opens a bar with all elements in groups – click one and it lands on a free spot, or drag it
+onto the canvas. **Shift+click** or a frame dragged on an empty part of the canvas selects several elements: move them
+together, align or distribute them evenly, duplicate (Ctrl+D) or remove them; Ctrl+Z / Ctrl+Y undo and redo. A **⚠**
+marks what the live preview finds hard to read: small text from 3 m, low contrast, content that does not fit, covered
+elements or more than one live video.
+
+![Layout editor: elements bar and three elements selected](tour/06d-editor-multi.jpg)
+
 Since 0.38 **“Create with AI …”** copies instructions with the complete layout format: paste them into ChatGPT, Claude
 or Gemini, describe your wish, and apply the answer with **“Paste text …”** – SignageCast repairs what it can and lists
 it. In the “⋯” menu, **Versions** keeps the last 10 versions of every layout (restore or download), and *Deleted
@@ -149,12 +157,20 @@ layouts* below the tiles brings back deleted ones.
 ![Layouts with the AI instructions](tour/06c-layout-ai.jpg)
 
 ### 11. Data sources
-Your own JSON APIs, RSS/Atom feeds, pictures, iCal calendars and cameras, fetched by the container at the interval you
-choose. “View data” shows the response as a tree; a click copies the path for use in elements and placeholders.
-Instead of an address, a source can also be an uploaded file (up to 1 MB) – e.g. the waste collection calendar of your
-town as `.ics` or `.csv` when it offers no subscription address.
+Your own JSON APIs, RSS/Atom feeds, pictures, iCal calendars, tables (CSV) and cameras, fetched by the container at the
+interval you choose. Since 0.57 the page is a **list**: per source its type, origin, interval, **in which layouts it is
+used**, its **last value** and a light – up to date, waiting for the first fetch or the error in plain words. A click
+opens the details on the right: state, *Used in*, *View values* – tap a value to get its path for elements and the
+placeholder for free text – and the settings.
 
-![Data sources with response tree](tour/07-data-sources.jpg)
+![Data sources: list and a source with its values](tour/07-data-sources.jpg)
+
+**+ Add data source** leads in three steps: **What?** (tiles for news, value from the web, calendar, table, picture,
+camera, text – or an example), **Where from?** (address, uploaded file up to 1 MB or a file in a storage location, how
+often) and **Values** (*Test*, then tap the value you need). Technical fields – identifier, method, headers – are under
+*Advanced*.
+
+![Assistant for a new data source](tour/07b-data-assistant.jpg)
 
 For CSV you choose delimiter, quote character, header row and character set (all detected automatically), which columns
 to import under which name, optional row filters and optionally a date column: the rows then appear as events in the
@@ -164,43 +180,51 @@ bulky and hazardous waste dates of another district.
 ![CSV import with row filter and calendar columns](tour/07a-csv-import.jpg)
 
 ### 12. Import from curl
-Paste a `curl` command from an API guide – address, method and headers are filled in, `Authorization` is marked as a
-secret automatically (shown as •••• after saving, kept out of backups unless you choose otherwise). The command is only
-parsed, never executed.
+⋯ → *Import from a curl command …*: paste a `curl` command from an API guide – address, method and headers are filled
+in, `Authorization` is marked as a secret automatically (shown as •••• after saving, kept out of backups unless you
+choose otherwise). The command is only parsed, never executed.
 
 ![Data source created from a curl command](tour/08-curl-import.jpg)
 
-### 13. Videos & radio – streams
-The built-in list of wildlife and nature live streams, plus streams found by the nightly search. Every stream has a
-**state** – ready, night (with “daylight in …”), not live, resolution too low, paused after a strike, location
-unknown – and the chips above the list filter by it (with counts), next to text, category and origin (fixed / found).
-Quality is measured while playing, and the next stream is checked on YouTube before it is announced. Protect
-favourites, reject unwanted ones.
+### 13. Live videos – overview and collection
+Live cams from YouTube for the video window, found automatically and shown only where it is daytime. The **overview**
+(since 0.56) shows how many streams are in the rotation, ready or dark on site, what each channel plays, problems with a
+*Show* button, and the automatic search.
 
-![Stream list with states and filters](tour/09-streams.jpg)
+![Live videos overview](tour/09b-live-overview.jpg)
 
-### 14. Videos & radio – categories and rules
-**Categories** (since 0.37 an own page) are grouped into **Animals** and **More topics** (cities & squares, beaches &
-coasts, mountains & ski, harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders). Each
-one can be edited: name, group, up to 6 own YouTube search terms, words that must appear in the title, “ignore
-day/night”, on/off for all channels or per channel – with the number of its streams. Found animal streams are sorted into the
-first category whose words match. **New category** adds your own (e.g. lighthouses) with its own nightly search;
-built-in ones can be reset to default.
+The **collection** lists every stream as a row with its state in plain words (“dark on site · light in 5:05 h”,
+“paused after failures”), filter buttons and a switch. A click opens the panel on the right: name, topic, location
+(with place search), *Show now*, *Don't count failures*, technical data and removing – *Never suggest again* keeps the
+search from taking it in again.
 
-![Categories](tour/09a-categories.jpg)
+![Stream collection with a stream's details](tour/09-streams.jpg)
 
-*Rules*: minutes per stream, only streams where it is daytime, minimum sun elevation; under *Advanced*
-the minimum quality (360p … 1080p) and the strike rules.
+### 14. Live videos – topics and automation
+**Topics** are grouped into **Animals** and **More topics** (cities & squares, beaches & coasts, mountains & ski,
+harbours & ships, airports & planes, trains & railways, space & Earth, natural wonders). A click opens a topic: name,
+group, up to 6 own YouTube search terms, words that must appear in the title (with how many existing streams they
+match), “ignore day/night”, on/off for all channels or per channel. **+ New topic** adds your own with its own nightly
+search.
+
+![Topics with a topic's settings](tour/09a-categories.jpg)
+
+**Automation** joins playback and search: minutes per stream, only streams where it is daytime, minimum sun elevation,
+search time and limits; under *Advanced* blocked words and the location table that recognises places in titles, with a
+test field.
+
+![Automation: playback, search and location table](tour/09c-automation.jpg)
 
 ### 15. Radio
-Videos & radio → Radio: your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info,
+Content → Radio: your own stations (MP3/AAC, also .m3u/.pls), suggestions for your location from radio-browser.info,
 a buffer that bridges short dropouts.
 
 ![Radio stations](tour/10-radio.jpg)
 
 ### 16. Clips
-At fixed minutes a clip interrupts the rotation – e.g. the German news “tagesschau in 100 Sekunden”. Buffer: the
-container preloads each new edition (complete or only the first MB), so the clip plays without stalling.
+Live videos → Clips: at fixed minutes a clip interrupts the rotation – e.g. the German news “tagesschau in 100
+Sekunden”. Buffer: the container preloads each new edition (complete or only the first MB), so the clip plays without
+stalling.
 
 ![Clip settings with buffer](tour/11-clips.jpg)
 

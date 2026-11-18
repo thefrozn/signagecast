@@ -2,7 +2,7 @@
 
 Ein Rundgang durch SignageCast: was der Fernseher zeigt und wie du alles im Browser einstellst. Alle Bilder stammen
 aus einer Demo-Installation (Standort Berlin, öffentliche bzw. erfundene Beispieldaten, kein Home Assistant
-angebunden). Die Verwaltung zeigt Version 0.50 mit den sechs Bereichen Übersicht, Displays, Inhalte, Videos & Radio,
+angebunden). Die Verwaltung zeigt Version 0.58 mit den sechs Bereichen Übersicht, Displays, Inhalte, Live-Videos,
 Einstellungen und System und dem Knopf **📢 Durchsage** oben rechts.
 
 **🇬🇧 [English version](TOUR.md)**
@@ -79,7 +79,7 @@ offline) und seine Adresse.
 
 *Bearbeiten* öffnet einen Kanal mit fünf Reitern: **Anzeige & Zeitplan** (Layout, optionaler Zeitplan mit anderem
 Layout oder schwarz zu bestimmten Zeiten, Layout-Karussell), **Live-Video** (an/aus, was das Videofenster zeigt,
-Kategorien), **Ton** (Radio oder Originalton der Kameras, Lautstärke), **Ein/Aus (HA)** (Ein- und Ausschalten über Home
+Themen), **Ton** (Radio oder Originalton der Kameras, Lautstärke), **Ein/Aus (HA)** (Ein- und Ausschalten über Home
 Assistant, Zustand laut HA, nach dem Einschalten Quelle wählen und die TV-Seite öffnen – LG webOS, Android TV / Fire TV
 oder ein eigener HA-Dienst) und **Videostream** (Ausgabe Full HD oder 4K, Aufnahmegröße – 720p spart CPU, 1440p ist
 schärfer –, Bitrate und Codec). Gespeichert wird je Kanal; der offene Reiter bleibt dabei stehen.
@@ -147,6 +147,14 @@ Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten verbieten, ergeb
 
 ![Layout-Editor: Text mit Zeitraum](tour/de/06b-editor-period.jpg)
 
+Seit 0.58 öffnet **+ Baustein** eine Leiste mit allen Bausteinen nach Gruppen – anklicken setzt ihn an eine freie
+Stelle, oder du ziehst ihn auf die Leinwand. **Umschalt+Klick** oder ein aufgezogener Rahmen auf freier Fläche wählt
+mehrere Bausteine: zusammen verschieben, ausrichten oder gleich verteilen, duplizieren (Strg+D) oder entfernen; Strg+Z /
+Strg+Y nimmt zurück und wiederholt. Ein **⚠** markiert, was die Live-Vorschau schwer lesbar findet: Schrift aus 3 m zu
+klein, wenig Kontrast, Inhalt passt nicht, verdeckte Bausteine oder mehr als ein Live-Video.
+
+![Layout-Editor: Bausteine-Leiste und drei gewählte Bausteine](tour/de/06d-editor-multi.jpg)
+
 Seit 0.38 kopiert **„Mit KI erstellen …“** eine Anleitung mit dem vollständigen Layout-Format: in ChatGPT, Claude oder
 Gemini einfügen, Wunsch beschreiben, die Antwort mit **„Text einfügen …“** übernehmen – SignageCast repariert, was
 geht, und listet es auf. Im Menü „⋯“ hebt **Versionen** die letzten 10 Fassungen jedes Layouts auf (wiederherstellen
@@ -155,12 +163,20 @@ oder herunterladen), *Gelöschte Layouts* unter den Kacheln holt gelöschte zur�
 ![Layouts mit der Anleitung für eine KI](tour/de/06c-layout-ai.jpg)
 
 ### 11. Datenquellen
-Eigene JSON-Schnittstellen, RSS-/Atom-Feeds, Bilder, iCal-Kalender und Kameras, vom Container im gewählten Abstand
-abgerufen. „Daten ansehen“ zeigt die Antwort als Baum; ein Klick kopiert den Pfad für Bausteine und Platzhalter. Statt
-einer Adresse geht auch eine hochgeladene Datei (bis 1 MB) – z. B. der Abfuhrkalender deiner Stadt als `.ics` oder
-`.csv`, wenn es keine Abo-Adresse gibt.
+Eigene JSON-Schnittstellen, RSS-/Atom-Feeds, Bilder, iCal-Kalender, Tabellen (CSV) und Kameras, vom Container im
+gewählten Abstand abgerufen. Seit 0.57 ist die Seite eine **Liste**: je Quelle Art, Herkunft, Abstand, **in welchen
+Layouts sie benutzt wird**, der **letzte Wert** und eine Ampel – aktuell, wartet auf den ersten Abruf oder der Fehler in
+Klartext. Ein Klick öffnet rechts die Details: Zustand, *Benutzt in*, *Werte ansehen* – Wert antippen ergibt den Pfad
+für Bausteine und den Platzhalter für freien Text – und die Einstellungen.
 
-![Datenquellen mit Antwort-Baum](tour/de/07-data-sources.jpg)
+![Datenquellen: Liste und eine Quelle mit ihren Werten](tour/de/07-data-sources.jpg)
+
+**+ Datenquelle hinzufügen** führt in drei Schritten: **Was?** (Kacheln für Nachrichten, Wert aus dem Netz, Kalender,
+Tabelle, Bild, Kamera, Text – oder ein Beispiel), **Woher?** (Adresse, hochgeladene Datei bis 1 MB oder Datei aus einem
+Speicherort, Abstand) und **Werte** (*Testen*, dann den gewünschten Wert antippen). Technisches – Kennung, Methode,
+Kopfzeilen – steht unter *Erweitert*.
+
+![Assistent für eine neue Datenquelle](tour/de/07b-data-assistant.jpg)
 
 Bei CSV wählst du Trennzeichen, Anführungszeichen, Kopfzeile und Zeichensatz (alles wird erkannt), welche Spalten unter
 welchem Namen übernommen werden, optionale Zeilenfilter und eine Datumsspalte: Die Zeilen erscheinen dann als Termine im
@@ -170,43 +186,50 @@ und Schadstofftermine eines anderen Ortsteils hinaus.
 ![CSV-Import mit Zeilenfilter und Termin-Spalten](tour/de/07a-csv-import.jpg)
 
 ### 12. Aus curl übernehmen
-Einen `curl`-Befehl aus einer API-Anleitung einfügen – Adresse, Methode und Kopfzeilen werden ausgefüllt,
-`Authorization` wird automatisch als geheim markiert (nach dem Speichern nur als •••• sichtbar, nicht in Sicherungen,
-außer du wählst es). Der Befehl wird nur gelesen, nie ausgeführt.
+⋯ → *Aus curl-Befehl übernehmen …*: einen `curl`-Befehl aus einer API-Anleitung einfügen – Adresse, Methode und
+Kopfzeilen werden ausgefüllt, `Authorization` wird automatisch als geheim markiert (nach dem Speichern nur als ••••
+sichtbar, nicht in Sicherungen, außer du wählst es). Der Befehl wird nur gelesen, nie ausgeführt.
 
 ![Datenquelle aus einem curl-Befehl](tour/de/08-curl-import.jpg)
 
-### 13. Videos & Radio – Streams
-Die eingebaute Liste mit Tier- und Natur-Livestreams plus die Funde der nächtlichen Suche. Jeder Stream hat einen
-**Zustand** – bereit, Nacht (mit „Tageslicht in …“), nicht live, Auflösung zu gering, nach Strike pausiert, Ort
-unbekannt –, und die Knöpfe über der Liste filtern danach (mit Anzahl), dazu Text, Kategorie und Herkunft (fest /
-gefunden). Die Qualität wird beim Abspielen gemessen, und der nächste Stream wird bei YouTube geprüft, bevor er
-angekündigt wird. Lieblinge schützen, Unerwünschtes ablehnen.
+### 13. Live-Videos – Übersicht und Sammlung
+Live-Kameras von YouTube für das Videofenster, automatisch gesucht und nur dort gezeigt, wo gerade Tag ist. Die
+**Übersicht** (seit 0.56) zeigt, wie viele Streams in der Rotation, bereit oder vor Ort dunkel sind, was jeder Kanal
+gerade zeigt, Probleme mit *Ansehen*-Knopf und die automatische Suche.
 
-![Streamliste mit Zuständen und Filtern](tour/de/09-streams.jpg)
+![Übersicht Live-Videos](tour/de/09b-live-overview.jpg)
 
-### 14. Videos & Radio – Kategorien und Regeln
-**Kategorien** (seit 0.37 eine eigene Seite) sind in **Tiere** und **Weitere Themen** gegliedert (Städte & Plätze,
-Strände & Küsten, Berge & Ski, Häfen & Schiffe, Flughäfen & Flugzeuge, Züge & Bahn, Weltraum & Erde, Naturschauspiele).
-Jede lässt sich bearbeiten: Name, Gruppe, bis zu 6 eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen,
-„Tag/Nacht egal“, ein/aus für alle Kanäle oder je Kanal – mit der Zahl ihrer Streams. Gefundene Tier-Streams
-landen in der ersten Kategorie, deren Wörter passen. **Neue Kategorie** legt eigene an (z. B. Leuchttürme) mit eigener
-nächtlicher Suche; eingebaute lassen sich auf den Standard zurücksetzen.
+Die **Sammlung** listet jeden Stream als Zeile mit seinem Zustand in Alltagssprache („dunkel vor Ort · hell in 5:05 h“,
+„pausiert nach Ausfällen“), Filterknöpfen und Schalter. Ein Klick öffnet rechts das Seitenfeld: Name, Thema, Ort (mit
+Ortssuche), *Jetzt zeigen*, *Ausfälle nicht zählen*, Technik und Entfernen – *Nie wieder vorschlagen* hält die Suche
+davon ab, ihn wieder aufzunehmen.
 
-![Kategorien](tour/de/09a-categories.jpg)
+![Stream-Sammlung mit den Details eines Streams](tour/de/09-streams.jpg)
 
-*Regeln*: Minuten je Stream, nur Streams, wo vor Ort Tag ist, Mindest-Sonnenhöhe; unter *Erweitert* die
-Mindestqualität (360p … 1080p) und die Strike-Regeln.
+### 14. Live-Videos – Themen und Automatik
+**Themen** sind in **Tiere** und **Weitere Themen** gegliedert (Städte & Plätze, Strände & Küsten, Berge & Ski, Häfen &
+Schiffe, Flughäfen & Flugzeuge, Züge & Bahn, Weltraum & Erde, Naturschauspiele). Ein Klick öffnet ein Thema: Name,
+Gruppe, bis zu 6 eigene YouTube-Suchbegriffe, Wörter, die im Titel stehen müssen (mit der Zahl vorhandener Streams, auf
+die sie passen), „Tag/Nacht egal“, ein/aus für alle Kanäle oder je Kanal. **+ Neues Thema** legt eigene mit eigener
+nächtlicher Suche an.
+
+![Themen mit den Einstellungen eines Themas](tour/de/09a-categories.jpg)
+
+**Automatik** fasst Abspielen und Suchen zusammen: Minuten je Stream, nur Streams, wo vor Ort Tag ist, Mindest-Sonnenhöhe,
+Uhrzeit und Grenzen der Suche; unter *Erweitert* Sperrwörter und die Ortstabelle, die Orte im Titel erkennt, mit Testfeld.
+
+![Automatik: Abspielen, Suche und Ortstabelle](tour/de/09c-automation.jpg)
 
 ### 15. Radio
-Videos & Radio → Radio: eigene Sender (MP3/AAC, auch .m3u/.pls), Vorschläge für deinen Standort von radio-browser.info und ein
+Inhalte → Radio: eigene Sender (MP3/AAC, auch .m3u/.pls), Vorschläge für deinen Standort von radio-browser.info und ein
 Puffer, der kurze Aussetzer überbrückt.
 
 ![Radiosender](tour/de/10-radio.jpg)
 
 ### 16. Einspieler
-Zu festen Minuten unterbricht ein Einspieler die Rotation – z. B. „tagesschau in 100 Sekunden“. Puffer: Der Container
-lädt jede neue Ausgabe vorab (ganz oder nur das erste MB), damit der Einspieler ohne Stocken läuft.
+Live-Videos → Einspieler: Zu festen Minuten unterbricht ein Einspieler die Rotation – z. B. „tagesschau in 100
+Sekunden“. Puffer: Der Container lädt jede neue Ausgabe vorab (ganz oder nur das erste MB), damit der Einspieler ohne
+Stocken läuft.
 
 ![Einspieler mit Puffer](tour/de/11-clips.jpg)
 
