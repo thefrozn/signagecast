@@ -217,6 +217,33 @@ const LBED = {
          ueberlauf: "Inhalt passt nicht ganz hinein", verdeckt: "ganz verdeckt von einem anderen Baustein",
          videos: (n) => `${n} Live-Videos im Layout – jedes kostet Rechenzeit (Server bzw. Player)` },
     hinweise: (n) => (n === 1 ? "1 Hinweis" : `${n} Hinweise`),
+    reiter: { inhalt: "Inhalt", aussehen: "Aussehen", wann: "Wann" }, wannAktiv: "Zeitraum oder Bedingung gesetzt",
+    seite: { baustein: "Baustein", layout: "Layout" }, bausteinErst: "Erst einen Baustein auf der Leinwand anklicken",
+    layoutText: "Gilt für das ganze Layout. Einen Baustein auf der Leinwand anklicken, um ihn einzustellen.",
+    zoom: "Zoom", einpassen: "Einpassen", zoomHilfe: "Strg+Mausrad über der Leinwand zoomt", hilfe: "Hilfe",
+    h: { sichtbar: "Ausgeschaltet bleibt der Baustein im Layout, der Fernseher zeigt ihn aber nicht.",
+         karte: "Legt eine halbdurchsichtige Karte hinter den Inhalt – besser lesbar auf unruhigem Hintergrund.",
+         ausrichtung: "Wo der Inhalt innerhalb des Bausteins sitzt.",
+         schrift: "Eigene Schrift nur für diesen Baustein. „Wie Layout“ nimmt die Schrift aus dem Reiter Layout.",
+         textfarbe: "Eigene Textfarbe. Mit Haken gilt die Farbe aus dem Farbschema des Layouts.",
+         gewicht: "Strichstärke der Schrift.",
+         position: "Lage und Größe in Rasterfeldern: 48 × 27 Felder sind der ganze Bildschirm, ein Feld sind 40 Bildpunkte.",
+         bedingung: "Der Baustein erscheint nur, wenn der Wert passt – zum Beispiel ein Regenhinweis nur, wenn ein Sensor Regen meldet.",
+         quelle: "Woher die Werte kommen. Neue Datenquellen legst du unter Inhalte → Datenquellen an.",
+         pfad: "Welcher Wert aus der Antwort gezeigt wird. Mit „Wählen“ anklicken statt tippen.",
+         entity: "Entität aus Home Assistant, zum Beispiel sensor.wohnzimmer_temperatur. Beim Tippen erscheinen Vorschläge.",
+         vorlage: "Text mit {wert} als Platzhalter, zum Beispiel „Pegel: {wert}“.",
+         faktor: "Der Wert wird damit malgenommen, zum Beispiel 0,01, um Zentimeter in Meter umzurechnen.",
+         nachkomma: "Wie viele Stellen nach dem Komma. -1 zeigt den Wert so, wie die Quelle ihn liefert.",
+         url: "Adresse der Webseite. „Prüfen“ zeigt, ob sich die Seite einbetten lässt.",
+         neu_laden_min: "Wie oft die Seite neu geladen wird. 0 heißt nie.",
+         intervall: "Wie oft das Kamerabild neu geholt wird. Kürzer heißt mehr Netzlast.",
+         laufband: "Langer Text läuft von rechts nach links durch, statt abgeschnitten zu werden.",
+         deckkraft: "0 % ist ganz durchsichtig, 100 % deckt ganz.",
+         ziel: "Bis zu diesem Zeitpunkt zählt der Countdown herunter.", ende: "Erscheint, wenn der Countdown abgelaufen ist.",
+         inhalt: "Was der QR-Code enthält: ein Link, ein Text oder die WLAN-Zugangsdaten.",
+         stunden: "Wie weit die Kurve zurückreicht.", anzahl: "Wie viele Einträge höchstens gezeigt werden.",
+         dauer: "Wie lange jedes Bild oder jede Seite zu sehen ist." },
   },
   en: {
     baustein: "+ Element", leisteTitel: "Elements – click or drag onto the canvas",
@@ -231,6 +258,33 @@ const LBED = {
          ueberlauf: "content does not fit completely", verdeckt: "completely covered by another element",
          videos: (n) => `${n} live videos in the layout – each one costs computing time (server or player)` },
     hinweise: (n) => (n === 1 ? "1 note" : `${n} notes`),
+    reiter: { inhalt: "Content", aussehen: "Look", wann: "When" }, wannAktiv: "Period or condition set",
+    seite: { baustein: "Element", layout: "Layout" }, bausteinErst: "Click an element on the canvas first",
+    layoutText: "Applies to the whole layout. Click an element on the canvas to configure it.",
+    zoom: "Zoom", einpassen: "Fit", zoomHilfe: "Ctrl+mouse wheel over the canvas zooms", hilfe: "Help",
+    h: { sichtbar: "When switched off the element stays in the layout, but the TV does not show it.",
+         karte: "Puts a semi-transparent card behind the content – easier to read on a busy background.",
+         ausrichtung: "Where the content sits inside the element.",
+         schrift: "Own font for this element only. “As layout” uses the font from the Layout tab.",
+         textfarbe: "Own text colour. When ticked, the colour comes from the layout's colour scheme.",
+         gewicht: "Stroke weight of the font.",
+         position: "Position and size in grid cells: 48 × 27 cells are the whole screen, one cell is 40 pixels.",
+         bedingung: "The element only appears when the value matches – for example a rain notice only when a sensor reports rain.",
+         quelle: "Where the values come from. Add new data sources under Content → Data sources.",
+         pfad: "Which value of the answer is shown. Click “Choose” instead of typing.",
+         entity: "Entity from Home Assistant, for example sensor.living_room_temperature. Suggestions appear while typing.",
+         vorlage: "Text with {wert} as placeholder, for example “Level: {wert}”.",
+         faktor: "The value is multiplied by this, for example 0.01 to turn centimetres into metres.",
+         nachkomma: "How many decimal places. -1 shows the value as the source delivers it.",
+         url: "Address of the web page. “Check” tells whether the page can be embedded.",
+         neu_laden_min: "How often the page is reloaded. 0 means never.",
+         intervall: "How often the camera picture is fetched. Shorter means more network load.",
+         laufband: "Long text scrolls from right to left instead of being cut off.",
+         deckkraft: "0 % is fully transparent, 100 % fully opaque.",
+         ziel: "The countdown counts down to this moment.", ende: "Shown when the countdown has run out.",
+         inhalt: "What the QR code contains: a link, a text or the Wi-Fi credentials.",
+         stunden: "How far back the curve reaches.", anzahl: "How many entries are shown at most.",
+         dauer: "How long each picture or page is shown." },
   },
 };
 const LB = () => LBED[E && E.sprache === "en" ? "en" : "de"];
@@ -358,6 +412,11 @@ window.SC_VORSCHAU = {
   adr: (p) => (CONTAINER ? "/tvseite" + p : "/cockpit/channel/" + cockpit.transport.csrf_token + "?" + window.btoa(JSON.stringify(
     { payload: "http-stream2", address: "127.0.0.1", port: 8080, method: "GET", path: p, headers: {}, binary: "raw", external: {} }))),
 };
+let EIG_REITER = "inhalt";  // seit 0.59: Reiter der Baustein-Eigenschaften (Inhalt, Aussehen, Wann)
+try { EIG_REITER = localStorage.getItem("signagecast-eig-reiter") || "inhalt"; } catch (_) { /* egal */ }
+let ZOOM = 0;               // seit 0.59: 0 = einpassen, sonst Maßstab zur echten Größe (1 = 1920 px breit)
+const ZOOM_STUFEN = [0.5, 0.75, 1, 1.5, 2];
+const AUSSEHEN_OPT = ["farbe", "deckkraft", "anpassung", "laufband", "zoom"];
 const VS = { an: true, id: "", tageszeit: "", takt: null, fenster: null, rand: false, warnTakt: null, nachLaden: null };
 try { VS.an = localStorage.getItem("signagecast-vorschau") !== "skizze"; VS.rand = localStorage.getItem("signagecast-rand") === "1"; } catch (_) { /* egal */ }
 // Hilfslinien (seit 0.55): beim Verschieben/Größe ändern Linien, wo Kanten oder Mitten mit anderen Bausteinen oder der
@@ -439,7 +498,7 @@ async function layoutSeite(inhalt) {
   const neuZeichnen = () => { if (handy()) listeZeichnen(); else leinwandZeichnen(); eigenschaftenZeichnen(); const s = $("#lSpeichern"); if (s && GEAENDERT) s.textContent = L.speichern + " *"; };
   const nutzer = (id) => E.fernseher.filter((t) => t.layout === id || (t.zeitplan || []).some((z) => z.layout === id)).map((t) => t.name);
 
-  const offen = () => { const d = inhalt.querySelector("details"); if (d) d.open = true; };
+  const offen = () => {};     // seit 0.59 steht der Hintergrund im Reiter „Layout“ statt in einem zugeklappten Bereich
   const zeichnen = () => {
     const l = lay();
     inhalt.innerHTML = `<datalist id="ents">${ents.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</datalist>
@@ -451,7 +510,24 @@ async function layoutSeite(inhalt) {
           <button class="knopf" id="lVor" title="Strg+Y" ${VORWAERTS.length ? "" : "disabled"}><i class="mdi mdi-redo"></i> ${esc(B.wiederholen)}</button>
           <button class="knopf haupt" id="lSpeichern">${esc(L.speichern)}${GEAENDERT ? " *" : ""}</button></div>
         ${nutzer(l.id).length ? `<p class="laeuft">● ${esc(L.laeuftAuf(nutzer(l.id).join(", ")))} – ${esc(L.laeuftHinweis)}</p>` : `<p class="leise">${esc(L.nichtVerwendet)}</p>`}
-        <details><summary>${esc(L.hgFarben)}</summary>
+        <div class="zeile"><button class="knopf haupt" id="bPalette" aria-expanded="false" aria-controls="palette">${esc(B.baustein)}</button>
+          ${handy() ? "" : `<span class="leer"></span><label for="lAnsicht">${esc(L.ansicht)}</label><select id="lAnsicht">${Object.keys(L.ansichtArt).map((k) => `<option value="${k}" ${(k === "vorschau") === VS.an ? "selected" : ""}>${esc(L.ansichtArt[k])}</option>`).join("")}</select>
+          <label for="lZoom" title="${esc(B.zoomHilfe)}">${esc(B.zoom)}</label><select id="lZoom" title="${esc(B.zoomHilfe)}"><option value="0">${esc(B.einpassen)}</option>${ZOOM_STUFEN.map((z) => `<option value="${z}" ${z === ZOOM ? "selected" : ""}>${z * 100} %</option>`).join("")}</select>
+          <label title="${esc(L.randHilfe)}"><input type="checkbox" id="lRand" ${VS.rand ? "checked" : ""}> ${esc(L.rand)}</label>
+          <select id="lTz" aria-label="${esc(L.tzVorschau)}" ${VS.an ? "" : "hidden"}><option value="">${esc(L.tzAuto)}</option>${["morgen", "tag", "abend", "nacht"].map((z) => `<option value="${z}" ${z === VS.tageszeit ? "selected" : ""}>${esc(L.zeitName[z])}</option>`).join("")}</select>`}</div>
+        <div class="palette" id="palette" hidden><p class="leise">${esc(B.leisteTitel)}</p>
+          ${Object.keys(PALETTE).map((g) => `<div class="pal-gruppe"><h4>${esc(B.gruppen[g])}</h4><div class="pal-kacheln">${PALETTE[g].filter((t) => L.typ[t]).map((t) =>
+            `<button type="button" class="pal-kachel" draggable="${!handy()}" data-typ="${t}" title="${esc(L.typ[t])}"><i class="mdi mdi-${TYP_SYMBOL[t] || "plus"}"></i><span>${esc(L.typ[t])}</span></button>`).join("")}</div></div>`).join("")}
+          ${Object.keys(L.typ).filter((t) => !Object.values(PALETTE).flat().includes(t)).map((t) =>
+            `<button type="button" class="pal-kachel" data-typ="${t}"><i class="mdi mdi-plus"></i><span>${esc(L.typ[t])}</span></button>`).join("")}</div>
+        <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}${!handy() && VS.an ? " " + esc(L.vorschauHinweis) : ""}</p>
+        ${handy() ? "" : `<p class="leise">${esc(B.tasten)}</p>`}
+        <div id="lWarn"></div>
+      </div>
+      <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="lw-seite">${handy() ? "" : `<div class="karte" id="ebenen"></div>`}
+        <div class="reiter seitenreiter" role="tablist">${["baustein", "layout"].map((r) => `<button type="button" role="tab" class="reiter-knopf" data-seite="${r}" aria-selected="false">${esc(B.seite[r])}</button>`).join("")}</div>
+        <div class="karte" id="eigenschaften" role="tabpanel"></div>
+        <div class="karte" id="layoutEig" role="tabpanel" hidden><h2>${esc(L.hgFarben)}</h2><p class="leise">${esc(B.layoutText)}</p>
           <div class="zeile"><label>${esc(L.hintergrund)}</label><select id="hgArt">${Object.keys(L.hgArt).map((k) => `<option value="${k}" ${k === l.hintergrund.art ? "selected" : ""}>${esc(L.hgArt[k])}</option>`).join("")}</select></div>
           <div class="eintrag" id="hgStil" ${l.hintergrund.art === "stil" ? "" : "hidden"}>
             <div class="zeile"><label>${esc(L.stil)}</label><select id="hgStilWahl">${Object.keys(L.stilArt).map((k) => `<option value="${k}" ${k === l.hintergrund.stil ? "selected" : ""}>${esc(L.stilArt[k])}</option>`).join("")}</select></div>
@@ -481,21 +557,7 @@ async function layoutSeite(inhalt) {
             <label>${esc(L.karten)}</label><select id="thKarte">${Object.keys(L.kartenArt).map((k) => `<option value="${k}" ${k === (l.thema.karte || "weiss") ? "selected" : ""}>${esc(L.kartenArt[k])}</option>`).join("")}</select>
             <label>${esc(L.akzent)}</label><input type="color" id="thAkzent" value="${esc(l.thema.akzent)}">
             <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option data-schrift="${esc(k)}" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
-        </details>
-        <div class="zeile"><button class="knopf haupt" id="bPalette" aria-expanded="false" aria-controls="palette">${esc(B.baustein)}</button>
-          ${handy() ? "" : `<span class="leer"></span><label for="lAnsicht">${esc(L.ansicht)}</label><select id="lAnsicht">${Object.keys(L.ansichtArt).map((k) => `<option value="${k}" ${(k === "vorschau") === VS.an ? "selected" : ""}>${esc(L.ansichtArt[k])}</option>`).join("")}</select>
-          <label title="${esc(L.randHilfe)}"><input type="checkbox" id="lRand" ${VS.rand ? "checked" : ""}> ${esc(L.rand)}</label>
-          <select id="lTz" aria-label="${esc(L.tzVorschau)}" ${VS.an ? "" : "hidden"}><option value="">${esc(L.tzAuto)}</option>${["morgen", "tag", "abend", "nacht"].map((z) => `<option value="${z}" ${z === VS.tageszeit ? "selected" : ""}>${esc(L.zeitName[z])}</option>`).join("")}</select>`}</div>
-        <div class="palette" id="palette" hidden><p class="leise">${esc(B.leisteTitel)}</p>
-          ${Object.keys(PALETTE).map((g) => `<div class="pal-gruppe"><h4>${esc(B.gruppen[g])}</h4><div class="pal-kacheln">${PALETTE[g].filter((t) => L.typ[t]).map((t) =>
-            `<button type="button" class="pal-kachel" draggable="${!handy()}" data-typ="${t}" title="${esc(L.typ[t])}"><i class="mdi mdi-${TYP_SYMBOL[t] || "plus"}"></i><span>${esc(L.typ[t])}</span></button>`).join("")}</div></div>`).join("")}
-          ${Object.keys(L.typ).filter((t) => !Object.values(PALETTE).flat().includes(t)).map((t) =>
-            `<button type="button" class="pal-kachel" data-typ="${t}"><i class="mdi mdi-plus"></i><span>${esc(L.typ[t])}</span></button>`).join("")}</div>
-        <p class="leise">${esc(handy() ? L.hinweisHandy : L.hinweisZiehen)}${!handy() && VS.an ? " " + esc(L.vorschauHinweis) : ""}</p>
-        ${handy() ? "" : `<p class="leise">${esc(B.tasten)}</p>`}
-        <div id="lWarn"></div>
-      </div>
-      <div class="layoutbereich"><div id="leinwandRahmen"></div><div class="lw-seite">${handy() ? "" : `<div class="karte" id="ebenen"></div>`}<div class="karte" id="eigenschaften"></div></div></div>`;
+        </div></div></div>`;
     schriftVorschau(inhalt);
     if (handy()) listeZeichnen(); else leinwandZeichnen();
     eigenschaftenZeichnen();
@@ -553,6 +615,24 @@ async function layoutSeite(inhalt) {
       try { localStorage.setItem("signagecast-rand", VS.rand ? "1" : "0"); } catch (_) { /* egal */ }
       leinwandZeichnen();
     };
+    if ($("#lZoom")) $("#lZoom").onchange = () => zoomSetzen(Number($("#lZoom").value));
+    const rz = $("#leinwandRahmen");
+    if (!handy()) rz.addEventListener("wheel", (ev) => {      // Strg+Mausrad: zoomen, die Stelle unter dem Mauszeiger bleibt stehen
+      if (!(ev.ctrlKey || ev.metaKey)) return;
+      ev.preventDefault();
+      const passt = rz.clientWidth / 1920, jetzt = ZOOM || passt;
+      let neu = ev.deltaY < 0 ? ZOOM_STUFEN.find((z) => z > jetzt * 1.01) : [...ZOOM_STUFEN].reverse().find((z) => z < jetzt * 0.99);
+      if (neu === undefined) neu = ev.deltaY < 0 ? ZOOM_STUFEN[ZOOM_STUFEN.length - 1] : 0;
+      if (neu && neu <= passt) neu = 0;
+      const r = rz.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+      const fx = (rz.scrollLeft + mx) / (jetzt * 1920), fy = (rz.scrollTop + my) / (jetzt * 1080);
+      zoomSetzen(neu);
+      const m = ZOOM || rz.clientWidth / 1920;
+      rz.scrollLeft = fx * m * 1920 - mx; rz.scrollTop = fy * m * 1080 - my;
+    }, { passive: false });
+    inhalt.querySelectorAll("[data-seite]").forEach((k) => {
+      k.onclick = () => { if (k.dataset.seite === "layout") { GEWAEHLT = null; AUSWAHL.clear(); neuZeichnen(); } };
+    });
     if ($("#lTz")) $("#lTz").onchange = () => { VS.tageszeit = $("#lTz").value; vorschauSenden(lay()); };
     const pal = $("#palette");
     let palOffen = false;
@@ -564,6 +644,15 @@ async function layoutSeite(inhalt) {
       k.onclick = () => { palZeigen(false); neuerBaustein(k.dataset.typ); };   // zu, damit der neue Baustein zu sehen ist
       k.ondragstart = (ev) => { ev.dataTransfer.setData("text/plain", "sc-baustein:" + k.dataset.typ); ev.dataTransfer.effectAllowed = "copy"; };
     });
+  };
+  // Zoom (seit 0.59): Hülle in echter Breite × Maßstab, der Rahmen scrollt; Vorschau und Bausteine skalieren mit
+  const zoomSetzen = (z) => {
+    ZOOM = z || 0;
+    const rz = $("#leinwandRahmen"), h = rz && rz.querySelector(".lw-huelle");
+    if (!h) return;
+    rz.classList.toggle("gezoomt", !!ZOOM);
+    h.style.width = ZOOM ? ZOOM * 1920 + "px" : "";
+    const w = $("#lZoom"); if (w) w.value = String(ZOOM);
   };
   // Neuer Baustein an einer freien Stelle oder dort, wo er hingezogen wurde (x, y = Mitte in Feldern)
   const neuerBaustein = (typ, mx, my) => {
@@ -817,6 +906,7 @@ async function layoutSeite(inhalt) {
     else {
       rahmen.innerHTML = `<div class="lw-huelle"><div class="leinwand" id="leinwand" tabindex="0"></div></div>`;
       lw = $("#leinwand");
+      zoomSetzen(ZOOM);
     }
     const massstab = () => lw.clientWidth / 1920;
     // Auswahl abgleichen (seit 0.58): GEWAEHLT gehört immer zur Auswahl, gelöschte Bausteine fallen heraus
@@ -1040,9 +1130,19 @@ async function layoutSeite(inhalt) {
   };
 
   // ---------- Eigenschaften des gewählten Bausteins ----------
+  const seiteZeigen = (hatWahl) => {         // seit 0.59: Reiter „Baustein“ (gewählter Baustein) oder „Layout“ (nichts gewählt)
+    const le = $("#layoutEig"); if (!le) return;
+    $("#eigenschaften").hidden = !hatWahl; le.hidden = hatWahl;
+    inhalt.querySelectorAll("[data-seite]").forEach((k) => {
+      const an = (k.dataset.seite === "baustein") === hatWahl;
+      k.setAttribute("aria-selected", String(an)); k.classList.toggle("an", an);
+      if (k.dataset.seite === "baustein") { k.disabled = !hatWahl; k.title = hatWahl ? "" : B.bausteinErst; }
+    });
+  };
   const eigenschaftenZeichnen = () => {
     const ziel = $("#eigenschaften");
     const e = lay().elemente.find((x) => x.id === GEWAEHLT);
+    seiteZeigen(!!e || AUSWAHL.size > 1);
     if (AUSWAHL.size > 1) {                           // seit 0.58: mehrere gewählt – ausrichten, verteilen, duplizieren, entfernen
       const n = AUSWAHL.size, sym = { links: "align-horizontal-left", hmitte: "align-horizontal-center", rechts: "align-horizontal-right",
                                       oben: "align-vertical-top", vmitte: "align-vertical-center", unten: "align-vertical-bottom" };
@@ -1061,8 +1161,9 @@ async function layoutSeite(inhalt) {
     }
     if (!e) { ziel.innerHTML = `<p class="leise">${esc(L.keinerGewaehlt)}</p>`; return; }
     const o = e.optionen, b = e.bedingung || {};
+    const hi = (k) => (B.h[k] ? ` <button type="button" class="ihilfe" data-hilfe="${k}" aria-label="${esc(B.hilfe)}" aria-expanded="false" title="${esc(B.hilfe)}">ⓘ</button>` : "");
     const feld = (k) => {
-      const w = o[k], lab = esc(e.typ === "galerie" && k === "sekunden" ? L.galSekunden : L.opt[k] || k);
+      const w = o[k], lab = esc(e.typ === "galerie" && k === "sekunden" ? L.galSekunden : L.opt[k] || k) + hi(k);
       if (k === "ordner") return `<div class="zeile"><label>${lab}</label><select name="o_ordner">${galerieOptionen(w, L.galKeinOrdner)}</select></div>
         <p class="leise"><a href="#galerie">${esc(L.galOrdnerAnlegen)}</a></p>`;
       if (k === "liste") return `<h3>${lab}</h3><div id="raumListe">${(w || []).map((r, i) => `<div class="zeile" data-i="${i}">
@@ -1113,34 +1214,57 @@ async function layoutSeite(inhalt) {
       const liste = k === "entity" ? ' list="ents"' : "";
       return `<div class="zeile"><label>${lab}</label><input type="text" name="o_${k}" value="${esc(w ?? "")}"${liste}>${k === "icon" || k === "ohne_symbol" ? `<span class="icon mdi ${esc(w || "")}"></span>` : ""}</div>`;
     };
+    const wannAn = !!(e.ab || e.bis || b.entity || b.quelle);
+    if (!B.reiter[EIG_REITER]) EIG_REITER = "inhalt";
+    const feldReiter = (r, html) => `<div class="reiter-feld" role="tabpanel" data-feld="${r}" ${r === EIG_REITER ? "" : "hidden"}>${html}</div>`;
     ziel.innerHTML = `<div data-warn></div><h2>${esc(L.typ[e.typ] || e.typ)}</h2>${L.optHilfe[e.typ] ? `<p class="leise">${esc(L.optHilfe[e.typ])}</p>` : ""}
-      ${Object.keys(o).map(feld).join("")}
-      <div class="zeile"><label>${esc(L.sichtbar)}</label>${schalter("sichtbar", e.sichtbar)}</div>
-      <div class="zeile"><label>${esc(L.karte)}</label>${schalter("karte", e.karte)}</div>
-      <div class="zeile"><label>${esc(L.schriftPos)}</label><input type="hidden" name="ausrichtung" value="${esc(e.ausrichtung || "links")}">
+      <div class="reiter" role="tablist">${Object.keys(B.reiter).map((r) => `<button type="button" role="tab" class="reiter-knopf ${r === EIG_REITER ? "an" : ""}" data-reiter="${r}"
+        aria-selected="${r === EIG_REITER}">${esc(B.reiter[r])}${r === "wann" && wannAn ? ` <span class="punkt" title="${esc(B.wannAktiv)}">●</span>` : ""}</button>`).join("")}</div>
+      ${feldReiter("inhalt", `${Object.keys(o).filter((k) => !AUSSEHEN_OPT.includes(k)).map(feld).join("")}
+        <div class="zeile"><label>${esc(L.sichtbar)}${hi("sichtbar")}</label>${schalter("sichtbar", e.sichtbar)}</div>`)}
+      ${feldReiter("aussehen", `${Object.keys(o).filter((k) => AUSSEHEN_OPT.includes(k)).map(feld).join("")}
+      <div class="zeile"><label>${esc(L.karte)}${hi("karte")}</label>${schalter("karte", e.karte)}</div>
+      <div class="zeile"><label>${esc(L.schriftPos)}${hi("ausrichtung")}</label><input type="hidden" name="ausrichtung" value="${esc(e.ausrichtung || "links")}">
         <div class="neuner">${["oben-links", "oben-mitte", "oben-rechts", "links", "mitte", "rechts", "unten-links", "unten-mitte", "unten-rechts"].map((k) =>
           `<button type="button" class="${k === (e.ausrichtung || "links") ? "an" : ""}" data-pos="${k}" title="${esc(L.ausrichtungArt[k])}" aria-label="${esc(L.ausrichtungArt[k])}"></button>`).join("")}</div></div>
-      <div class="zeile"><label>${esc(L.schriftEl)}</label><select name="schrift"><option value="">${esc(L.wieLayout)}</option>
+      <div class="zeile"><label>${esc(L.schriftEl)}${hi("schrift")}</label><select name="schrift"><option value="">${esc(L.wieLayout)}</option>
         ${SCHRIFTEN.map((k) => `<option value="${esc(k)}" data-schrift="${esc(k)}" ${k === e.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
-      <div class="zeile"><label>${esc(L.textfarbe)}</label><input type="color" name="textfarbe" value="${esc(e.textfarbe || "#ffffff")}">
+      <div class="zeile"><label>${esc(L.textfarbe)}${hi("textfarbe")}</label><input type="color" name="textfarbe" value="${esc(e.textfarbe || "#ffffff")}">
         <label><input type="checkbox" name="textfarbeStd" ${e.textfarbe ? "" : "checked"}> ${esc(L.textfarbeStd)}</label></div>
-      <div class="zeile"><label>${esc(L.gewicht)}</label><select name="gewicht">${Object.keys(L.gewichtArt).map((k) => `<option value="${k}" ${k === (e.gewicht || "") ? "selected" : ""}>${esc(L.gewichtArt[k])}</option>`).join("")}</select></div>
-      <div class="zeile"><label>${esc(L.position)}</label></div>
-      <div class="zeile pos">${["x", "y", "w", "h"].map((k) => `<label>${{ x: "←", y: "↓", w: "↔", h: "↕" }[k]}<input type="number" name="p_${k}" value="${e[k]}" aria-label="${k}"></label>`).join("")}</div>
-      <details ${e.ab || e.bis ? "open" : ""}><summary>${esc(L.zeitraum)}</summary><p class="leise">${esc(L.zeitraumText)}</p>
+      <div class="zeile"><label>${esc(L.gewicht)}${hi("gewicht")}</label><select name="gewicht">${Object.keys(L.gewichtArt).map((k) => `<option value="${k}" ${k === (e.gewicht || "") ? "selected" : ""}>${esc(L.gewichtArt[k])}</option>`).join("")}</select></div>
+      <div class="zeile"><label>${esc(L.position)}${hi("position")}</label></div>
+      <div class="zeile pos">${["x", "y", "w", "h"].map((k) => `<label>${{ x: "←", y: "↓", w: "↔", h: "↕" }[k]}<input type="number" name="p_${k}" value="${e[k]}" aria-label="${k}"></label>`).join("")}</div>`)}
+      ${feldReiter("wann", `<h3>${esc(L.zeitraum)}</h3><p class="leise">${esc(L.zeitraumText)}</p>
         ${["ab", "bis"].map((k) => `<div class="zeile"><label>${esc(L[k])}</label><input type="date" name="z_${k}_tag" value="${esc((e[k] || "").slice(0, 10))}">
-          <input type="time" name="z_${k}_zeit" value="${esc((e[k] || "").slice(11, 16))}"></div>`).join("")}</details>
-      <details ${b.entity || b.quelle ? "open" : ""}><summary>${esc(L.bedingung)}</summary>
+          <input type="time" name="z_${k}_zeit" value="${esc((e[k] || "").slice(11, 16))}"></div>`).join("")}
+        <h3>${esc(L.bedingung)}${hi("bedingung")}</h3>
         <div class="zeile"><label>${esc(L.bedQuelle)}</label><select name="b_quelle"><option value="">${esc(L.bedHA)}</option>
           ${(E.quellen || []).map((q) => `<option value="${esc(q.id)}" ${q.id === b.quelle ? "selected" : ""}>${esc(q.name)} (${esc(q.id)})</option>`).join("")}</select></div>
         <div class="zeile" data-bed="ha" ${b.quelle ? "hidden" : ""}><input type="text" name="b_entity" list="ents" value="${esc(b.entity || "")}" placeholder="${esc(L.bedingungEntity)}"></div>
         <div class="zeile" data-bed="api" ${b.quelle ? "" : "hidden"}><input type="text" name="b_pfad" value="${esc(b.pfad || "")}" placeholder="${esc(L.bedPfad)}" spellcheck="false">
           <button class="knopf" type="button" name="bPfadWahl">${esc(L.waehlen)}</button></div><div class="bPfadBaum"></div>
         <div class="zeile"><select name="b_op">${Object.keys(L.op).map((k) => `<option value="${esc(k)}" ${k === (b.op || "=") ? "selected" : ""}>${esc(L.op[k])}</option>`).join("")}</select>
-          <input type="text" name="b_wert" value="${esc(b.wert || "")}" class="b140"></div></details>
-      <div class="zeile"><button class="knopf" name="vorne">${esc(L.vorne)}</button><button class="knopf" name="hinten">${esc(L.hinten)}</button>
+          <input type="text" name="b_wert" value="${esc(b.wert || "")}" class="b140"></div>`)}
+      <div class="zeile eig-fuss"><button class="knopf" name="vorne">${esc(L.vorne)}</button><button class="knopf" name="hinten">${esc(L.hinten)}</button>
         <button class="knopf" name="dup" title="Strg+D"><i class="mdi mdi-content-duplicate"></i> ${esc(B.duplizieren)}</button>
         <button class="knopf gefahr" name="weg">${esc(L.entfernen)}</button></div>`;
+    ziel.querySelectorAll("[data-reiter]").forEach((k) => {
+      k.onclick = () => {
+        EIG_REITER = k.dataset.reiter;
+        try { localStorage.setItem("signagecast-eig-reiter", EIG_REITER); } catch (_) { /* egal */ }
+        ziel.querySelectorAll("[data-reiter]").forEach((x) => { const an = x === k; x.classList.toggle("an", an); x.setAttribute("aria-selected", String(an)); });
+        ziel.querySelectorAll("[data-feld]").forEach((f) => { f.hidden = f.dataset.feld !== EIG_REITER; });
+      };
+    });
+    ziel.querySelectorAll(".ihilfe").forEach((k) => {
+      k.onclick = (ev) => {
+        ev.preventDefault();
+        const z = k.closest(".zeile, h3"), da = z.nextElementSibling;
+        if (da && da.classList.contains("hilfetext")) { da.remove(); k.setAttribute("aria-expanded", "false"); return; }
+        const t = document.createElement("p"); t.className = "leise hilfetext"; t.textContent = B.h[k.dataset.hilfe];
+        z.after(t); k.setAttribute("aria-expanded", "true");
+      };
+    });
     schriftVorschau(ziel);
     const aendern = () => {
       merken();

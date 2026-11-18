@@ -141,6 +141,9 @@ that forbid embedding make layouts like the service desk above.
 
 ![Layout editor: text with a period](tour/06b-editor-period.jpg)
 
+Since 0.59 the panel on the right has the tabs **Element** (with *Content*, *Look* and *When* and an ⓘ help per
+field) and **Layout** (background, colours, font), and *Zoom* shows the canvas up to 200 %.
+
 Since 0.58 **+ Element** opens a bar with all elements in groups – click one and it lands on a free spot, or drag it
 onto the canvas. **Shift+click** or a frame dragged on an empty part of the canvas selects several elements: move them
 together, align or distribute them evenly, duplicate (Ctrl+D) or remove them; Ctrl+Z / Ctrl+Y undo and redo. A **⚠**

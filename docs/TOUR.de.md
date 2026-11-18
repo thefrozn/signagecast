@@ -147,6 +147,9 @@ Darstellung „Bildschirmfoto“ für Seiten, die das Einbetten verbieten, ergeb
 
 ![Layout-Editor: Text mit Zeitraum](tour/de/06b-editor-period.jpg)
 
+Seit 0.59 hat das Feld rechts die Reiter **Baustein** (mit *Inhalt*, *Aussehen* und *Wann* und einer ⓘ-Hilfe je
+Feld) und **Layout** (Hintergrund, Farben, Schrift), und *Zoom* zeigt die Leinwand bis 200 %.
+
 Seit 0.58 öffnet **+ Baustein** eine Leiste mit allen Bausteinen nach Gruppen – anklicken setzt ihn an eine freie
 Stelle, oder du ziehst ihn auf die Leinwand. **Umschalt+Klick** oder ein aufgezogener Rahmen auf freier Fläche wählt
 mehrere Bausteine: zusammen verschieben, ausrichten oder gleich verteilen, duplizieren (Strg+D) oder entfernen; Strg+Z /

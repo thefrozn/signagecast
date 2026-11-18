@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.59.0 (2026-11-18)
+- **Layout editor – properties in tabs:**
+  - The panel on the right has the tabs **Element** and **Layout**. *Layout* holds background, picture area, colour
+    scheme, cards, accent colour and font – no longer in the collapsed *Background & colours* section above the
+    canvas. Clicking an empty spot of the canvas shows it.
+  - An element's settings are grouped into **Content**, **Look** and **When** (period and condition, ● when set);
+    the chosen tab stays open for the next element.
+  - **ⓘ** next to a field opens a one-sentence help (German and English).
+- **Zoom** for the canvas: *Fit*, 50–200 % (100 % = real size of a 1080p TV), Ctrl+mouse wheel around the pointer.
+- Fix: elements on the canvas no longer paint over the fixed header when the page is scrolled.
+- Consumption: only the admin page changed, the TV chain is byte-identical to 0.58. Stream 95.8–99.4 % · 1133–1164 MB,
+  25 fps without losses; direct 71.7–76.6 % · 447–471 MB, 60 fps without stutter (three runs). 0.58 measured right
+  before under the same conditions: 88.5 % · 1176 MB, direct 66.5 % · 562 MB; at its release 98.2 % · 900 MB and
+  72.1 % · 609 MB – the spread comes from the test container, not the code (test container, 4 cores, snack-bar
+  template).
+
 ## v0.58.0 (2026-11-18)
 - **Layout editor easier to use:**
   - **Elements bar** instead of the drop-down list: all elements with symbols, grouped (*Time & weather*, *Text &

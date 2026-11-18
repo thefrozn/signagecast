@@ -2814,6 +2814,36 @@ class Designer058(unittest.TestCase):
         self.assertIn("d.dataset.id = e.id;", self.lesen("www/seite.js"))            # Vorschau ordnet Warnungen zu
 
 
+class Designer059(unittest.TestCase):
+    """Seit 0.59: Eigenschaften in Reitern (Inhalt, Aussehen, Wann) mit Feldhilfe, Reiter „Layout“, Zoom."""
+
+    def lesen(self, f):
+        with open(os.path.join(os.path.dirname(__file__), "..", f), encoding="utf-8") as d:
+            return d.read()
+
+    def test_reiter_und_hilfe_zweisprachig(self):
+        import re
+        js = self.lesen("cockpit/signagecast/layout.js")
+        de = js[js.index("const LBED = {"):js.index("  en: {", js.index("const LBED = {"))]
+        en = js[js.index("  en: {", js.index("const LBED = {")):js.index("const LB = ")]
+        for t in (de, en):
+            for k in ("reiter:", "seite:", "layoutText:", "zoom:", "einpassen:", "h: {"):
+                self.assertIn(k, t)
+        hilfe = lambda t: set(re.findall(r"(\w+): \"", t[t.index("    h: {"):]))
+        self.assertEqual(hilfe(de), hilfe(en))                 # jede Feldhilfe in beiden Sprachen
+        for k in re.findall(r'hi\("(\w+)"\)', js):
+            self.assertIn(k, hilfe(de))                         # jeder ⓘ-Knopf hat einen Text
+
+    def test_hintergrund_nicht_mehr_zugeklappt(self):
+        js = self.lesen("cockpit/signagecast/layout.js")
+        self.assertNotIn("<details><summary>${esc(L.hgFarben)}", js)
+        self.assertIn('id="layoutEig"', js)
+        for f in ('data-feld="${r}"', '"signagecast-eig-reiter"', "ZOOM_STUFEN", 'addEventListener("wheel"', "{ passive: false }"):
+            self.assertIn(f, js)
+        css = self.lesen("cockpit/signagecast/tv.css")
+        self.assertIn("#leinwandRahmen { isolation: isolate; }", css)   # Bausteine nicht über der Kopfzeile
+
+
 class Fernnetz041(unittest.TestCase):
     """Seit 0.41: Player an anderem Standort über Tailscale/Headscale – Einmal-Schlüssel, Entfernen, Agent."""
 

@@ -157,6 +157,19 @@ Esc deselect.
 does not fit, when an element is completely covered by another one, and when a layout has more than one live video.
 They are measured in the live preview; in *Sketch* view only covering and videos are checked. Notes never block saving.
 
+### Properties in tabs, Layout tab and zoom in the layout editor (since 0.59)
+The panel on the right has two tabs: **Element** shows the selected element, **Layout** the settings of the whole
+layout – background, picture area, colour scheme, cards, accent colour and font (before 0.59 the collapsed section
+*Background & colours* above the canvas). Clicking an empty spot of the canvas or the *Layout* tab deselects and shows
+the layout; *Element* is greyed out until you select one.
+An element's settings are split into **Content** (what it shows: text, source, entity, options), **Look** (card,
+position of the text, font, text colour, weight, position and size, plus colour, opacity and picture fit where an
+element has them) and **When** (period and condition – a ● on the tab shows that one is set). The tab you chose stays
+open when you select the next element and after reloading. **ⓘ** next to a field opens a short explanation below it.
+**Zoom** in the toolbar: *Fit* (as before), 50, 75, 100 (real size of a 1080p TV), 150 or 200 %; Ctrl+mouse wheel
+over the canvas zooms around the mouse pointer. When zoomed, the canvas scrolls; dragging, the frame, guides and
+arrow keys work as usual.
+
 ### Let an AI build a layout (since 0.38)
 Content → Layouts → *Create with AI …* → *Copy instructions*. Paste them into an AI (ChatGPT, Claude, Gemini …), describe your wish
 at the marked place (“MY WISH: …”), copy the answer, then Content → Layouts → *Paste text …* → *Apply*. SignageCast repairs what

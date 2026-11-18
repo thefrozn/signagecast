@@ -335,3 +335,17 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 .lw-warn { position: absolute; top: 2px; right: 4px; font-size: 14px; line-height: 1; color: #ffb300; text-shadow: 0 0 3px #000; pointer-events: auto; cursor: help; }
 .warnliste { margin-top: 6px; } .warnliste summary { cursor: pointer; }
 .warnzeile { display: block; width: 100%; text-align: left; white-space: normal; margin-top: 4px; }
+/* Reiter in den Eigenschaften und Layout-Reiter, Feldhilfe, Zoom (seit 0.59) */
+.reiter { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--linie); margin: 8px 0 10px; }
+.seitenreiter { margin: 0 0 -12px; padding: 0 4px; }
+.reiter-knopf { border: 0; border-bottom: 3px solid transparent; background: none; color: inherit; font: inherit; padding: 7px 12px; cursor: pointer; }
+.reiter-knopf:hover:not(:disabled) { background: var(--linie); }
+.reiter-knopf.an { border-bottom-color: var(--akzent); color: var(--akzent); font-weight: 600; }
+.reiter-knopf:disabled { opacity: .45; cursor: default; }
+.reiter-knopf .punkt { color: var(--akzent); font-size: .7em; vertical-align: super; }
+.ihilfe { border: 0; background: none; color: var(--akzent); font: inherit; padding: 0 4px; cursor: pointer; line-height: 1; }
+.hilfetext { margin: -2px 0 8px; padding: 6px 8px; border-left: 3px solid var(--akzent); background: rgba(0,102,204,.06); border-radius: 0 6px 6px 0; }
+.eig-fuss { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--linie); }
+#leinwandRahmen.gezoomt { overflow: auto; max-height: 78vh; border-radius: 8px; }
+#leinwandRahmen.gezoomt .lw-huelle { flex: none; }
+#leinwandRahmen { isolation: isolate; }   /* Bausteine (z-index je Ebene) bleiben unter der festen Kopfzeile */
