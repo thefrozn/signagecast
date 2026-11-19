@@ -2264,9 +2264,14 @@ class Mcp039(unittest.TestCase):
             if pfad == "/api/layouts/pruefen":
                 l, h = L.import_pruefen(daten.get("layout") or L.json_aus_text(daten["text"]),
                                         [x["id"] for x in self.e["layouts"] if x["id"] != daten.get("ersetzen")])
-                return {"layout": l, "hinweise": [M.als_dict(x) for x in h]}
+                typ = {x["id"]: x["typ"] for x in l["elemente"]}
+                return {"layout": l, "hinweise": [M.als_dict(x) for x in h],
+                        "geometrie": [dict(x, baustein=i, typ=typ[i]) for i, xs in L.hinweise_geometrie(l).items() for x in xs]}
             if pfad.startswith("/api/vorschau/bild"):
                 return (b"\x89PNG\r\n\x1a\nxx", "image/png")
+            if pfad.startswith("/api/vorschau/pruefen"):
+                return {"ok": True, "bild": "iVBORw0K", "layout": "nacht", "gemessen": True,
+                        "hinweise": [{"art": "klein", "px": 14, "baustein": "uhr1", "typ": "uhr"}, {"art": "kontrast", "wert": 1.8, "baustein": "t1", "typ": "text"}]}
             if pfad == "/api/meldung":
                 return {"ok": True}
             raise mcp.Fehler("unerwartet " + pfad)
@@ -2355,6 +2360,10 @@ class Mcp039(unittest.TestCase):
         self.assertEqual(self.gesendet[-1][2]["fernseher"], ["tv"])
         r = self.werkzeug("preview", {"layout": "nacht"})
         self.assertEqual(r["content"][0]["type"], "image")
+        notes = json.loads(r["content"][1]["text"])["notes"]                      # seit 0.60: Lesbarkeits-Hinweise
+        self.assertIn("14 px", notes[0]["note"]); self.assertIn("1.8:1", notes[1]["note"])
+        r = self.werkzeug("preview", {"layout": "nacht", "notes": False})
+        self.assertEqual(len(r["content"]), 1)
         r = self.werkzeug("save_layout", {})                                           # Pflichtangabe fehlt
         self.assertTrue(r["isError"])
 
@@ -2392,6 +2401,128 @@ class Admin039(unittest.TestCase):
         finally:
             D.zustand["einstellungen"] = alt
             D.layout_vorrang.clear(); D.zustand["meldung_pult"] = None
+
+
+class Mcp060(unittest.TestCase):
+    """Seit 0.60: MCP mit Vorlagen, Datenquellen, Dateien, Galerie, Themen, Automatik, Einspielern und Radio."""
+
+    def setUp(self):
+        Mcp039.setUp(self)
+        innen = self.mcp.anfrage
+        self.e.update(kategorien=[{"id": "meer", "eingebaut": True, "name": "", "gruppe": "tiere", "begriffe": [], "woerter": ["reef"], "ohne_tag": False}],
+                      video={"kategorien_aus": [], "takt_min": 3, "nur_tag": True, "mindeststufe": "hd720", "aktiv": True},
+                      suche={"aktiv": True, "uhrzeit": "04:30", "max": 40, "behalten_tage": 14, "begriffe": ["zoo live cam"], "ausschluss": []},
+                      einspieler=[], radio={"sender": [{"id": "s1abc", "name": "Radio A", "url": "https://a.example/s"}], "anzeigen": True},
+                      galerie={"ordner": [{"id": "g1", "name": "Aktionen"}]},
+                      quellen=[{"id": "pegel", "name": "Pegel", "art": "json", "url": "https://x.example/p", "intervall_s": 300, "aktiv": True}])
+        self.e["fernseher"][0].update(ton="aus", radio_sender="", lautstaerke=70, kategorien_aus=[])
+        self.e["layouts"][0]["elemente"].append({"id": "w1", "typ": "apiwert", "x": 0, "y": 0, "w": 4, "h": 2, "sichtbar": True,
+                                                 "optionen": {"quelle": "pegel", "pfad": "wert"}})
+        self.teile = []
+
+        def anfrage(methode, pfad, daten=None, roh=False):
+            if pfad == "/api/vorlagen":
+                return {"vorlagen": L.vorlagen("en")}
+            if pfad == "/api/quellen/status":
+                return {"status": {"pegel": {"abruf": 1, "fehler": None, "kurz": "wert = 151"}}}
+            if pfad == "/api/quellen/test":
+                return {"dauer_ms": 12, "daten": {"wert": 1}}
+            if pfad in ("/api/quellen/jetzt", "/api/suche/starten", "/api/radio/sender/s1abc/entfernen") or pfad.startswith("/api/einspieler/"):
+                self.gesendet.append((methode, pfad, daten)); return {"suche": {"neu": 2}}
+            if pfad == "/api/streams":
+                return {"streams": [{"id": "a", "kategorie": "meer"}, {"id": "b", "kategorie": "meer"}]}
+            if pfad == "/api/einspieler":
+                return {"einspieler": self.e["einspieler"], "stand": {}}
+            if pfad == "/api/medien/teil":
+                self.teile.append(daten)
+                return {"pdf": "abc.pdf", "seiten": 3} if daten["fertig"] else {}
+            if pfad == "/api/quellen/datei":
+                return {"datei": {"hash": "0123456789abcdef", "name": daten["name"]}, "art": "csv"}
+            if pfad == "/api/csv/analysieren":
+                return {"optionen": {"trenner": ";", "anfuehrung": '"', "kodierung": "utf-8", "felder": []}, "spalten": [{"nr": 0, "name": "Gericht"}, {"nr": 1, "name": "Preis"}]}
+            if pfad.startswith("/api/radio/suche"):
+                return {"sender": [{"name": "Radio B", "url": "https://b.example/s", "land": "DE", "geheim": 1}]}
+            return innen(methode, pfad, daten, roh)
+        self.mcp.anfrage = anfrage
+
+    def tearDown(self):
+        Mcp039.tearDown(self)
+
+    rufen = Mcp039.rufen
+    werkzeug = Mcp039.werkzeug
+
+    def json_von(self, r):
+        self.assertFalse(r.get("isError"), r)
+        return json.loads(r["content"][0]["text"])
+
+    def test_vorlagen_und_geometrie(self):
+        v = self.json_von(self.werkzeug("list_templates", {}))
+        self.assertEqual(len(v), 16)
+        r = self.json_von(self.werkzeug("create_layout_from_template", {"template": "imbiss", "name": "Unser Imbiss"}))
+        self.assertEqual(r["name"], "Unser Imbiss")
+        self.assertTrue(any(l["name"] == "Unser Imbiss" for l in self.e["layouts"]))
+        l = {"name": "Zwei Videos", "elemente": [{"id": "u1", "typ": "uhr", "x": 1, "y": 1, "w": 4, "h": 2}]       # Uhr hinten, Video davor
+             + [{"id": f"v{i}", "typ": "video", "x": i * 10, "y": 0, "w": 10, "h": 6} for i in range(2)]}
+        r = self.json_von(self.werkzeug("save_layout", {"layout": l}))
+        texte = " ".join(n["note"] for n in r["notes"])
+        self.assertIn("2 live videos", texte); self.assertIn("covered by element v0", texte)
+
+    def test_datenquellen(self):
+        q = self.json_von(self.werkzeug("list_sources", {}))[0]
+        self.assertEqual((q["used_in"], q["last_value"]), (["Standard"], "wert = 151"))
+        self.json_von(self.werkzeug("add_source", {"id": "news", "kind": "rss", "url": "https://n.example/rss"}))
+        self.assertEqual(self.e["quellen"][-1]["art"], "rss")
+        self.json_von(self.werkzeug("update_source", {"id": "news", "interval_s": 900, "active": False}))
+        self.assertEqual((self.e["quellen"][-1]["intervall_s"], self.e["quellen"][-1]["aktiv"]), (900, False))
+        r = self.werkzeug("delete_source", {"id": "pegel"})                      # benutzt -> erst nachfragen
+        self.assertTrue(r["isError"]); self.assertIn("Standard", r["content"][0]["text"])
+        self.json_von(self.werkzeug("delete_source", {"id": "pegel", "confirm_in_use": True}))
+        self.assertEqual([x["id"] for x in self.e["quellen"]], ["news"])
+        self.json_von(self.werkzeug("fetch_source_now", {"id": "news"}))
+
+    def test_dateien_hochladen(self):
+        import base64 as b64
+        r = self.json_von(self.werkzeug("upload_file", {"target": "pdf", "data_base64": b64.b64encode(b"%PDF" + b"x" * (3 * 1024 * 1024 + 10)).decode(), "name": "karte.pdf"}))
+        self.assertEqual(r["pdf"], "abc.pdf")
+        self.assertEqual([t["nr"] for t in self.teile], [0, 1]); self.assertEqual([t["fertig"] for t in self.teile], [False, True])
+        self.assertEqual(len({t["kennung"] for t in self.teile}), 1)
+        r = self.json_von(self.werkzeug("upload_file", {"target": "source", "source_id": "karte", "data_base64": b64.b64encode(b"Gericht;Preis\nPommes;3").decode(), "name": "k.csv"}))
+        q = self.e["quellen"][-1]
+        self.assertEqual((q["herkunft"], q["art"], [f["name"] for f in q["csv"]["felder"]]), ("datei", "csv", ["Gericht", "Preis"]))
+        self.assertTrue(self.werkzeug("upload_file", {"target": "gallery", "folder": "gibtsnicht", "data_base64": "eA=="})["isError"])
+        self.assertTrue(self.werkzeug("upload_file", {"target": "pdf", "url": "file:///etc/passwd"})["isError"])
+
+    def test_themen_automatik_einspieler_radio(self):
+        t = self.json_von(self.werkzeug("list_topics", {}))[0]
+        self.assertEqual((t["id"], t["streams"], t["active"]), ("meer", 2, True))
+        t = self.json_von(self.werkzeug("save_topic", {"name": "Häfen der Welt", "search_terms": ["harbor live cam"], "active": False}))
+        self.assertEqual((t["id"], t["group"], t["active"]), ("haefenderwel", "themes", False))
+        self.json_von(self.werkzeug("set_tv_topics", {"tv": "tv", "off": ["meer"]}))
+        self.assertEqual(self.e["fernseher"][0]["kategorien_aus"], ["meer"])
+        self.assertTrue(self.werkzeug("set_tv_topics", {"tv": "tv", "off": ["quatsch"]})["isError"])
+        v = self.json_von(self.werkzeug("update_video_settings", {"minutes_per_stream": 5, "search_terms": ["otter live cam"]}))
+        self.assertEqual((v["minutes_per_stream"], v["search_terms"]), (5, ["otter live cam"]))
+        self.json_von(self.werkzeug("run_stream_search_now", {}))
+        c = self.json_von(self.werkzeug("save_clip", {"name": "Nachrichten", "minutes": [0, 30], "tvs": ["tv"]}))
+        self.assertEqual((c["source"], c["minutes"]), ("tagesschau100", [0, 30]))
+        self.json_von(self.werkzeug("play_clip_now", {"id": c["id"]}))
+        self.json_von(self.werkzeug("delete_clip", {"id": c["id"]}))
+        self.assertEqual(self.e["einspieler"], [])
+        s = self.json_von(self.werkzeug("search_radio", {"name": "b"}))
+        self.assertNotIn("geheim", s[0])
+        r = self.json_von(self.werkzeug("set_tv_sound", {"tv": "tv", "sound": "radio", "station": "s1abc", "volume": 40}))
+        self.assertEqual((r["sound"], self.e["fernseher"][0]["ton"], self.e["fernseher"][0]["lautstaerke"]), ("radio", "radio", 40))
+        self.assertTrue(self.werkzeug("set_tv_sound", {"tv": "tv", "station": "gibtsnicht"})["isError"])
+
+    def test_nur_lesen_sieht_keine_neuen_aenderungen(self):
+        self.mcp._lokal.nur_lesen = True
+        try:
+            namen = {w["name"] for w in self.rufen({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})[0]["result"]["tools"]}
+        finally:
+            self.mcp._lokal.nur_lesen = False
+        self.assertTrue({"list_templates", "list_topics", "list_clips", "list_radio", "list_gallery", "get_video_settings", "search_radio"} <= namen)
+        self.assertFalse(namen & {"upload_file", "save_topic", "save_clip", "set_tv_sound", "delete_source", "run_stream_search_now"})
+        self.assertNotIn("alarm", " ".join(self.mcp.WERKZEUGE))                  # Notfall-Vollbild bewusst nicht
 
 
 class McpDoku039(unittest.TestCase):

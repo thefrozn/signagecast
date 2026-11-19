@@ -73,7 +73,7 @@ import kizugang as KZ                         # noqa: E402
 import fernnetz as FN                         # noqa: E402
 import mcp as MCP                             # noqa: E402
 import speicherorte as SO                     # noqa: E402
-import base64, hashlib, datetime, queue       # noqa: E402
+import base64, hashlib, datetime, html, queue   # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WWW = os.path.join(BASIS, "www")
@@ -2359,7 +2359,7 @@ def entwurf_ablegen(d):
     return kennung
 
 
-def vorschau_bild(tv_id, layout_id=""):
+def vorschau_bild(tv_id, layout_id="", hinweise=False):
     """TV-Seite eines Fernsehers (wahlweise mit einem bestimmten Layout) in einem kurzlebigen Headless-Chromium
     fotografieren, 960 × 540 (seit 0.39). Nur eine Aufnahme gleichzeitig, niedrige Priorität."""
     t = fernseher(tv_id) or (einst()["fernseher"][0] if not tv_id else None)
@@ -2367,13 +2367,33 @@ def vorschau_bild(tv_id, layout_id=""):
         raise KeyError(f"unbekannter Fernseher {tv_id}")
     if layout_id and not any(l["id"] == layout_id for l in einst()["layouts"]):
         raise KeyError(f"unbekanntes Layout {layout_id}")
-    url = f"http://127.0.0.1:{os.environ.get('SC_PORT', '8080')}/?tv={t['id']}&vorschau=1" + (f"&layout={layout_id}" if layout_id else "")
+    url = (f"http://127.0.0.1:{os.environ.get('SC_PORT', '8080')}/?tv={t['id']}&vorschau=1" + (f"&layout={layout_id}" if layout_id else "")
+           + ("&hinweise=1" if hinweise else ""))
     ziel = os.path.join(DATEN, "vorschau-mcp.png")
     if not vorschau_sperre.acquire(timeout=60):
         raise RuntimeError("Vorschau beschäftigt")
     try:
-        WB.aufnehmen(url, 1920, 1080, 0.5, ziel, einst()["sprache"] or "en")
-        return open(ziel, "rb").read()
+        dom = WB.aufnehmen(url, 1920, 1080, 0.5, ziel, einst()["sprache"] or "en", dom=hinweise)
+        bild = open(ziel, "rb").read()
+        if not hinweise:
+            return bild
+        # seit 0.60: Lesbarkeit aus der gezeichneten Seite (www/hinweise.js) und Geometrie aus dem Layout
+        m = re.search(r'<script type="application/json" id="sc-hinweise">(.*?)</script>', dom or "", re.S)
+        try:
+            gemessen = json.loads(html.unescape(m.group(1))) if m else None
+        except ValueError:
+            gemessen = None
+        lid = layout_id or t["layout"]
+        lay = next((l for l in einst()["layouts"] if l["id"] == lid), {"elemente": []})
+        geo = L.hinweise_geometrie(lay)
+        alle = {}
+        for quelle in (gemessen or {}, geo):
+            for eid, liste in quelle.items():
+                if isinstance(liste, list):
+                    alle.setdefault(eid, []).extend(liste)
+        typ = {e["id"]: e["typ"] for e in lay.get("elemente", [])}
+        return bild, {"layout": lid, "gemessen": gemessen is not None,
+                      "hinweise": [dict(h, baustein=eid, typ=typ.get(eid, "")) for eid, liste in alle.items() for h in liste]}
     finally:
         vorschau_sperre.release()
 
@@ -3503,6 +3523,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             except (RuntimeError, KeyError) as f:
                 return self.antwort(200, {"ok": False, "fehler": str(f)[:200]})
             return self.antwort(200, bild, "image/png")
+        if pfad == "/api/vorschau/pruefen":           # seit 0.60: Foto + Lesbarkeits-Hinweise in einem Lauf (MCP „preview“)
+            try:
+                bild, h = vorschau_bild((q.get("tv") or [""])[0], (q.get("layout") or [""])[0], hinweise=True)
+            except (RuntimeError, KeyError) as f:
+                return self.antwort(200, {"ok": False, "fehler": str(f)[:200]})
+            return self.antwort(200, dict(h, ok=True, bild=base64.b64encode(bild).decode()))
         if pfad == "/api/vorschau.jpg":
             bild = vorschau((q.get("tv") or [None])[0])
             return self.antwort(200, bild, "image/jpeg") if bild else self.antwort(404, {"ok": False})
@@ -3868,7 +3894,9 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                            quellen=[q["id"] for q in e["quellen"]],
                                            pdf_da=lambda n: bool(PDF.seiten(PDF_ORDNER, n)),
                                            ordner={o["id"] for o in e["galerie"]["ordner"]})
-            return {"layout": l, "hinweise": [M.als_dict(h) for h in hinweise]}
+            typ = {e["id"]: e["typ"] for e in l.get("elemente", [])}
+            return {"layout": l, "hinweise": [M.als_dict(h) for h in hinweise],      # seit 0.60 mit Geometrie-Hinweisen (MCP)
+                    "geometrie": [dict(h, baustein=eid, typ=typ.get(eid, "")) for eid, liste in L.hinweise_geometrie(l).items() for h in liste]}
         if p == "/api/layouts/wiederherstellen":       # alte Fassung zurückholen (seit 0.38) – auch ein gelöschtes Layout
             lid, nr = str(d.get("id", "")), d.get("nr")
             try:

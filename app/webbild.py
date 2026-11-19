@@ -11,15 +11,16 @@ def schluessel(url, breite, hoehe, faktor):
     return hashlib.sha256(f"{url}|{breite}x{hoehe}@{faktor}".encode()).hexdigest()[:16]
 
 
-def aufnehmen(url, breite, hoehe, faktor, ziel, sprache="de", zeit_s=45):
-    """Ein Foto der Seite in der Größe breite x hoehe (CSS-Pixel) nach ziel (PNG). Wirft RuntimeError bei Fehlern."""
+def aufnehmen(url, breite, hoehe, faktor, ziel, sprache="de", zeit_s=45, dom=False):
+    """Ein Foto der Seite in der Größe breite x hoehe (CSS-Pixel) nach ziel (PNG). Wirft RuntimeError bei Fehlern.
+    dom=True (seit 0.60): im selben Lauf auch das DOM nach dem Zeichnen zurückgeben (für die Lesbarkeits-Hinweise)."""
     profil = tempfile.mkdtemp(prefix="sc-webbild-")
     tmp = ziel + ".neu.png"
     try:
         befehl = ["nice", "-n", "10", "chromium", "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
                   "--mute-audio", "--no-first-run", "--disable-extensions", "--disable-features=Translate,MediaRouter",
                   f"--lang={sprache}", f"--user-data-dir={profil}", f"--window-size={breite},{hoehe}",
-                  f"--force-device-scale-factor={faktor}", "--virtual-time-budget=15000", f"--screenshot={tmp}", url]
+                  f"--force-device-scale-factor={faktor}", "--virtual-time-budget=15000", f"--screenshot={tmp}"] + (["--dump-dom"] if dom else []) + [url]
         try:
             r = subprocess.run(befehl, capture_output=True, timeout=zeit_s, env=dict(os.environ, HOME=profil))
         except subprocess.TimeoutExpired:
@@ -28,6 +29,7 @@ def aufnehmen(url, breite, hoehe, faktor, ziel, sprache="de", zeit_s=45):
             fehler = r.stderr.decode("utf-8", "replace").strip().splitlines()
             raise RuntimeError((fehler[-1] if fehler else f"Chromium beendet mit {r.returncode}")[:200])
         os.replace(tmp, ziel)
+        return r.stdout.decode("utf-8", "replace") if dom else None
     finally:
         shutil.rmtree(profil, ignore_errors=True)
         if os.path.exists(tmp):

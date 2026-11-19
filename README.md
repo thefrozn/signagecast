@@ -166,7 +166,9 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   last 10 versions of every layout, also of deleted ones.
 - **AI assistants via MCP** – Claude, Cursor, VS Code and other assistants manage layouts, TVs, tickers, pictures
   and streams, look at preview pictures; connect a computer with one click in the admin (Claude Desktop: a file to
-  double-click), remove it any time; every change lands in the log ([MCP.md](docs/MCP.md)).
+  double-click), remove it any time; every change lands in the log ([MCP.md](docs/MCP.md)). Since 0.60 also templates,
+  data sources, files (PDF, media, gallery), topics, stream search, clips and radio – and `preview` returns the same
+  readability notes as the layout editor (text size, contrast, fit).
 - **Layouts from an AI** – copy the instructions with the complete [layout format](docs/LAYOUT-FORMAT.md) into
   ChatGPT, Claude or Gemini and paste the answer; the import repairs what it can and tells you what.
 

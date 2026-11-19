@@ -68,21 +68,31 @@ the container too (port 8890 must be published, as for the panel).
 | `get_layout_format` | The [layout format](LAYOUT-FORMAT.md) – the assistant reads it before building |
 | `save_layout` | Create a layout or replace one; invalid parts are repaired and listed, the old version is kept |
 | `delete_layout`, `list_layout_versions`, `restore_layout_version` | Delete unused layouts, undo changes, bring back deleted ones |
-| `preview` | Picture (960 × 540) of a TV page – as it is now, or with any layout without changing anything (the video window is a placeholder) |
+| `preview` | Picture (960 × 540) of a TV page – as it is now, or with any layout without changing anything (the video window is a placeholder). Since 0.60 with **readability notes** per element, measured on the rendered page with the same rules as the layout editor: main text under 18 px (1080p) or any text under 12 px, contrast below 3:1, content that does not fit, an element completely covered, more than one live video. `save_layout` reports covering and live videos right away |
+| `list_templates`, `create_layout_from_template` | The 16 ready layouts for places (since 0.60) – a copy to start from |
 | `set_tv_layout`, `set_tv_schedule`, `set_tv_carousel` | What a TV shows and when |
 | `send_ticker`, `end_ticker` | Ticker message along the bottom (optionally red) |
 | `show_layout_for_a_while`, `end_layout_for_a_while` | Another layout for N minutes, then back by itself |
 | `announce` | Announcement in the middle of the screen, optionally read aloud |
 | `upload_picture`, `list_media`, `set_media`, `delete_media` | Pictures for layouts (logo, background) and own media for the video window |
 | `list_streams`, `add_stream`, `update_stream`, `remove_stream` | Live cams |
-| `list_sources`, `get_source_data`, `add_source_from_curl` | Own data sources and their values |
+| `list_sources`, `get_source_data`, `add_source_from_curl` | Own data sources with state, last value and the layouts using them; their values |
+| `add_source`, `update_source`, `delete_source`, `fetch_source_now` | Since 0.60: a source from an address (JSON, text, RSS, picture, iCal, camera – tested first), change name/address/interval, pause, delete (asks when layouts use it), fetch now |
+| `upload_file` | Since 0.60: a PDF for the PDF element, a picture or video for the video window, a picture/PDF into a gallery folder, or a JSON/text/RSS/iCal/CSV file as data source (CSV columns are recognised) – from an http(s) address or as Base64 |
+| `list_gallery`, `create_gallery_folder`, `delete_gallery_folder`, `delete_gallery_items` | Since 0.60: gallery folders for the gallery element and gallery backgrounds |
+| `list_topics`, `save_topic`, `delete_topic`, `set_tv_topics` | Since 0.60: live video topics with search terms and title words, on/off overall and per TV |
+| `get_video_settings`, `update_video_settings`, `run_stream_search_now` | Since 0.60: rotation (minutes per stream, daytime only, minimum quality) and the automatic stream search |
+| `list_clips`, `save_clip`, `delete_clip`, `play_clip_now` | Since 0.60: clips at fixed times (e.g. *tagesschau in 100 Sekunden*, own video, YouTube) |
+| `list_radio`, `search_radio`, `add_radio_station`, `remove_radio_station`, `set_tv_sound` | Since 0.60: internet radio and the sound of every TV (off, radio, original sound of the cams), volume |
 | `list_players` | Raspberry Pi/PC players, **read only** (since 0.44): online, seconds since the last report, display mode wanted/actual, temperature, hints and the newest remote management entries – no keys, Wi-Fi or IP addresses |
 | `get_log` | Change log |
 
-A computer with the right **only read** sees only the reading tools (status, lists, layouts, preview, log).
+A computer with the right **only read** sees only the reading tools (status, lists, layouts, preview, templates, topics,
+clips, radio, gallery, log).
 
-**Deliberately not possible:** updates, backups and restore, commands and settings for players, their terminal, Home Assistant connection,
-passwords, keys and tokens, notifications, connecting further computers. Secret headers of data sources are shown as
+**Deliberately not possible:** the red emergency screen (a false alarm by an assistant would do too much harm – people use
+the announcement panel), updates, backups and restore, commands and settings for players, their terminal, Home Assistant
+connection, storage locations with their credentials, passwords, keys and tokens, notifications, connecting further computers. Secret headers of data sources are shown as
 ••••.
 
 ## Safety
@@ -95,14 +105,19 @@ passwords, keys and tokens, notifications, connecting further computers. Secret 
 - Content that the assistant reads (data sources, web pages, stream titles) can contain text that tries to give it
   instructions. Let it ask before changes, give computers that only need to look the right *only read*, and check the
   log now and then.
-- Pictures are fetched only from http/https addresses, JPG/PNG up to 10 MB.
+- Pictures are fetched only from http/https addresses, JPG/PNG up to 10 MB. Files for `upload_file` too: PDFs and
+  gallery files up to 100 MB, media up to 500 MB, data source files up to 1 MB – sent in pieces like the admin does.
 - The preview uses a short-lived headless browser at low priority, one picture at a time; it never loads YouTube.
 
 ## Deutsch (kurz)
 
 SignageCast hat eine **MCP-Schnittstelle**: Claude, Cursor, VS Code oder ein anderer Assistent verwaltet die Inhalte
 direkt – Layouts bauen und ändern, Vorschaubild ansehen, Layout einem Fernseher zuweisen (auch Zeitplan, Karussell),
-Laufschrift, Layout auf Zeit, Durchsage, Bilder hochladen, Streams und Datenquellen.
+Laufschrift, Layout auf Zeit, Durchsage, Bilder hochladen, Streams und Datenquellen. **Seit 0.60** außerdem: Vorlagen als
+Startpunkt, **Lesbarkeits-Hinweise** zur Vorschau (dieselben Regeln wie im Designer: Schrift, Kontrast, Überlauf, verdeckt,
+mehrere Live-Videos), Datenquellen komplett (per Adresse anlegen, ändern, pausieren, löschen, jetzt abrufen), Dateien
+hochladen (PDF, Bilder/Videos, Galerie, Datei-Quellen inkl. CSV), Galerie-Ordner, Themen mit Suchbegriffen, Stream-Suche,
+Einspieler und Radio mit Ton je Fernseher.
 
 **Seit 0.40 per Klick im Heimnetz:** Einstellungen → **KI-Assistenten** → *Computer verbinden*: Name, Programm und Recht
 (*Inhalte ändern* oder *nur lesen*) wählen.
@@ -117,5 +132,6 @@ Laufschrift, Layout auf Zeit, Durchsage, Bilder hochladen, Streams und Datenquel
 `ssh-copy-id tvadmin@<IP>`). Claude Code: `claude mcp add signagecast -- ssh -T tvadmin@<IP> signagecast-mcp`.
 Docker: `docker exec -i signagecast signagecast-mcp`.
 
-Player nur lesen (`list_players`, seit 0.44: letzte Meldung, Anzeigemodus, Fernverwaltung). Nicht möglich: Updates, Sicherungen, Befehle und Einstellungen für Player, Terminal, HA-Verbindung, Passwörter und Schlüssel, weitere Computer
+Player nur lesen (`list_players`, seit 0.44: letzte Meldung, Anzeigemodus, Fernverwaltung). Nicht möglich: das rote
+Notfall-Vollbild (bewusst – dafür gibt es das Durchsage-Pult), Speicherorte mit Zugangsdaten, Updates, Sicherungen, Befehle und Einstellungen für Player, Terminal, HA-Verbindung, Passwörter und Schlüssel, weitere Computer
 verbinden. Jede Änderung steht im Protokoll („MCP *Computer*“), jede Layout-Änderung hinterlässt eine Version.

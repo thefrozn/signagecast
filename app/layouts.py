@@ -611,6 +611,25 @@ def _z(text, wert="", info="", icon="", hervor=False):
     return {"text": text, "info": info, "wert": wert, "icon": icon, "hervor": hervor}
 
 
+def hinweise_geometrie(l):
+    """Hinweise aus dem Layout selbst (seit 0.60, wie warnGeometrie im Designer): Baustein ganz verdeckt von einem
+    deckenden Baustein darüber, mehr als ein Live-Video. {id: [{"art": "verdeckt"}, {"art": "videos", "n": 2}]}"""
+    w, els = {}, [e for e in (l.get("elemente") or []) if isinstance(e, dict)]
+    for i, e in enumerate(els):
+        if not e.get("sichtbar", True):
+            continue
+        for o in els[i + 1:]:
+            deckt = o.get("typ") == "video" or o.get("karte") or (o.get("typ") == "flaeche" and (o.get("optionen") or {}).get("deckkraft", 100) >= 90)
+            if o.get("sichtbar", True) and deckt and o["x"] <= e["x"] and o["y"] <= e["y"] and o["x"] + o["w"] >= e["x"] + e["w"] and o["y"] + o["h"] >= e["y"] + e["h"]:
+                w.setdefault(e["id"], []).append({"art": "verdeckt", "von": o["id"]})
+                break
+    videos = [e for e in els if e.get("sichtbar", True) and e.get("typ") == "video"]
+    if len(videos) > 1:
+        for e in videos:
+            w.setdefault(e["id"], []).append({"art": "videos", "n": len(videos)})
+    return w
+
+
 def vorlagen(sprache="de"):
     """Vorlagen für neue Layouts – Namen und Beispieltexte in der Sprache der Verwaltung (seit 0.53 auch Englisch).
     Die Beispieltexte sind Platzhalter: Logo, Zeilen, Adressen und Datenquellen trägt man im Editor ein."""

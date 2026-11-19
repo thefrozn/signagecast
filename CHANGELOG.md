@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.60.0 (2026-11-19)
+- **MCP interface for AI assistants – everything a person does with content** (27 new tools, 58 in all):
+  - **Readability notes:** `preview` returns, next to the picture, a note per element when the main text is under 18 px
+    (1080p) or any text under 12 px, the contrast is below 3:1, the content does not fit, an element is completely
+    covered or there is more than one live video. Measured on the rendered page in the same run as the picture (no
+    second render); the layout editor uses the same rules from now on (`www/hinweise.js`). `save_layout` reports
+    covering and live videos right away.
+  - **Templates:** `list_templates`, `create_layout_from_template` – the 16 ready layouts for places as a start.
+  - **Data sources complete:** `add_source` from an address (JSON, text, RSS, picture, iCal, camera; tested first),
+    `update_source` (name, address, interval, pause), `delete_source` (asks when layouts use it), `fetch_source_now`;
+    `list_sources` now shows state, last value and the layouts using a source.
+  - **Files:** `upload_file` – PDF for the PDF element, picture or video for the video window, picture/PDF into a
+    gallery folder, JSON/text/RSS/iCal/CSV file as data source (CSV columns recognised); from an http(s) address or
+    Base64, in pieces like the admin.
+  - **Gallery:** `list_gallery`, `create_gallery_folder`, `delete_gallery_folder`, `delete_gallery_items`.
+  - **Live videos:** `list_topics`, `save_topic`, `delete_topic`, `set_tv_topics` (topics with search terms and title
+    words, on/off overall and per TV); `get_video_settings`, `update_video_settings`, `run_stream_search_now`
+    (rotation and automatic stream search).
+  - **Clips and radio:** `list_clips`, `save_clip`, `delete_clip`, `play_clip_now`; `list_radio`, `search_radio`,
+    `add_radio_station`, `remove_radio_station`, `set_tv_sound`.
+  - Computers with *only read* see the new reading tools only. Still deliberately not possible: the emergency screen,
+    updates, backups, player commands, storage locations with credentials, secrets.
+- `run_stream_search_now` starts the search in the background (it can take longer than an MCP answer may wait).
+- Consumption unchanged (TV page only loads the small measuring script, which runs only on request): stream 98.1 % ·
+  1109 MB and 98.4 % · 1107 MB, 25 fps without losses; direct 73.1 % · 446 MB and 74.4 % · 474 MB, 60 fps without
+  stutter (0.59: 95.8–99.4 % · 1133–1164 MB, 71.7–76.6 % · 447–471 MB; test container, 4 cores, snack-bar template).
+  The preview with notes takes one headless run as before (screenshot and DOM together).
+
 ## v0.59.0 (2026-11-18)
 - **Layout editor – properties in tabs:**
   - The panel on the right has the tabs **Element** and **Layout**. *Layout* holds background, picture area, colour

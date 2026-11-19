@@ -173,7 +173,9 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - **KI-Assistenten per MCP** – Claude, Cursor, VS Code und andere Assistenten verwalten Layouts, Fernseher, Laufbänder,
   Bilder und Streams und schauen sich Vorschaubilder an; Computer per Klick in der Verwaltung verbinden (Claude
   Desktop: eine Datei zum Doppelklicken) und jederzeit wieder entfernen; jede Änderung landet im Protokoll
-  ([MCP.md](docs/MCP.md#deutsch-kurz)).
+  ([MCP.md](docs/MCP.md#deutsch-kurz)). Seit 0.60 auch Vorlagen, Datenquellen, Dateien (PDF, Medien, Galerie), Themen,
+  Stream-Suche, Einspieler und Radio – und `preview` liefert dieselben Lesbarkeits-Hinweise wie der Layout-Editor
+  (Schriftgröße, Kontrast, Überlauf).
 - **Layouts von einer KI** – die Anleitung mit dem vollständigen [Layout-Format](docs/LAYOUT-FORMAT.md) in ChatGPT,
   Claude oder Gemini kopieren und die Antwort einfügen; der Import repariert, was geht, und sagt was.
 
