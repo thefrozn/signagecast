@@ -261,7 +261,15 @@ showing YouTube streams there is your responsibility: check YouTube's terms, the
 sound – music licensing (e.g. GEMA in Germany). The simple way: show **own media only**. The templates for businesses
 do this from 0.61 on (video window → *What to show* → “own media only”); for other layouts set it there or per channel
 (Displays → Channels → *Video window shows*). In **stream mode** the server records the picture and passes it on to
-the TVs; for YouTube content prefer **direct mode**, where every TV plays the official player itself.
+the TVs; that is fine for private use at home – for business or public use prefer **direct mode**, where every TV
+plays the official player itself, or switch off *Show YouTube in stream mode too* for the channel (since 0.63; the
+stream then shows own media, TVs and players in direct mode keep YouTube).
+
+**Search and checks:** without further setup SignageCast fetches public YouTube pages automatically (nightly search,
+live checks) – sparingly and pausing when YouTube says “too many requests”, but YouTube's terms do not really allow
+automated access. Since 0.63 you can enter your own free key for the **YouTube Data API v3** (not yet tested with a real key) (Live videos →
+Automation): search and checks then use the official interface (about 100 units per search term and night, of 10,000
+free per day). Or switch the search off and keep only streams you added yourself.
 
 **Music and sound in public:** as soon as SignageCast plays sound in a public or business place – internet radio, the
 original sound of the live cams, clips or own videos – that is a public performance. Almost everywhere it needs a licence

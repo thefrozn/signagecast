@@ -74,7 +74,7 @@ PULSE_SINK=$SINK LANG=de_DE.UTF-8 LANGUAGE=de DISPLAY=$DISP setsid chromium --la
   --disable-domain-reliability $GPUARG \
   --window-position=0,0 --window-size=1920,1080 --user-data-dir="$PROFIL" \
   --remote-debugging-port=$DEVPORT --remote-debugging-address=127.0.0.1 --load-extension="$ERW" $SHM \
-  "http://127.0.0.1:8080/?tv=$TV" >/dev/null 2>&1 & CR=$!
+  "http://127.0.0.1:8080/?tv=$TV&kette=1" >/dev/null 2>&1 & CR=$!
 echo "$CR" >> "$PIDS"
 sleep 12   # Seite und Videos laden lassen
 

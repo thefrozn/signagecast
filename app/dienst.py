@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import einstellungen as E                     # noqa: E402
 from ha import HA, HAFehler                   # noqa: E402
 from streams import Streams, ID, DATEN, sonnenhoehe   # noqa: E402
+import streams as ST                                     # noqa: E402
 import wache                                  # noqa: E402
 import radio                                  # noqa: E402
 import layouts as L                           # noqa: E402
@@ -107,6 +108,7 @@ def einst_aussen():
     return dict(e, quellen=Q.maskieren(e["quellen"]),
                 sicherung=dict(e["sicherung"], passwort=Q.MASKE if e["sicherung"]["passwort"] else ""),
                 webhook=dict(e["webhook"], token=Q.MASKE if e["webhook"]["token"] else ""),
+                suche=dict(e["suche"], api_schluessel=Q.MASKE if e["suche"]["api_schluessel"] else ""),
                 benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: Q.MASKE if w else ""),
                 pult=dict(e["pult"], zugaenge=[dict(z, passwort=Q.MASKE if z["passwort"] else "") for z in e["pult"]["zugaenge"]]))
 
@@ -1928,7 +1930,7 @@ def schalten_schleife():
         schalten_neu.clear()
 
 
-def tv_daten(tv_id, vorschau_layout=None, entwurf=None):
+def tv_daten(tv_id, vorschau_layout=None, entwurf=None, kette=False):
     e = einst()
     t = fernseher(tv_id)
     if not t:
@@ -1942,6 +1944,10 @@ def tv_daten(tv_id, vorschau_layout=None, entwurf=None):
     # seit 0.61: Videofenster mit herkunft "medien" (Geschäftsvorlagen) zeigt nur eigene Medien, nie YouTube
     quelle = "medien" if any(x["typ"] == "video" and x["sichtbar"] and (x.get("optionen") or {}).get("herkunft") == "medien"
                              for x in layout.get("elemente", [])) else t["video_quelle"]
+    # seit 0.63: die Stream-Kette (kette=1) zeigt kein YouTube, wenn das für diesen Kanal ausgeschaltet ist
+    ohne_youtube = kette and not t.get("youtube_im_stream", True)
+    if ohne_youtube:
+        quelle = "medien"
     vr = streams.vorrang if streams.vorrang and streams.vorrang["bis"] > time.time() \
         and streams.vorrang.get("tv") in (None, t["id"]) else None
     sender = next((x for x in e["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
@@ -1957,7 +1963,8 @@ def tv_daten(tv_id, vorschau_layout=None, entwurf=None):
     eins = []
     for x in e["einspieler"]:
         a = zustand.get("einspieler", {}).get(x["id"], {})
-        if x["aktiv"] and (not x["fernseher"] or t["id"] in x["fernseher"]) and (a.get("url") or a.get("video_id")):
+        if x["aktiv"] and (not x["fernseher"] or t["id"] in x["fernseher"]) and (a.get("url") or a.get("video_id")) \
+                and not (ohne_youtube and a.get("art") == "youtube"):
             eins.append({"id": x["id"], "name": x["name"], "minuten": x["minuten"], "von": x["von"], "bis": x["bis"], "ton": x["ton"],
                          "art": a["art"], "url": a.get("lokal") or a.get("url"), "video_id": a.get("video_id"), "stand": a.get("stand", ""),
                          "vorlauf_s": x["vorlauf_s"] if x["puffer"] == "vorlauf" else 0})
@@ -2927,6 +2934,7 @@ def sicherung(mit_geheimnissen=False):
     if not mit_geheimnissen:              # Standard: ohne API-Schlüssel/Passwörter (Datei kann weitergegeben werden)
         e = dict(e, quellen=Q.ohne_geheimnisse(e["quellen"]), sicherung=dict(e["sicherung"], passwort=""),
                  webhook=dict(e["webhook"], token=""), benachrichtigung=bn_geheim(e["benachrichtigung"], lambda w: ""),
+                 suche=dict(e["suche"], api_schluessel=""),
                  pult=dict(e["pult"], zugaenge=[dict(z, passwort="") for z in e["pult"]["zugaenge"]]))
     return dict({"art": "signagecast-sicherung", "version": 1, "erstellt": time.strftime("%Y-%m-%d %H:%M"),
                  "mit_geheimnissen": mit_geheimnissen, "einstellungen": e, "streams": streams.alle(), "strikes": streams.strikes()},
@@ -3061,6 +3069,8 @@ def einspielen(d, mit_strikes=True):
         neu = d["einstellungen"]
         if isinstance(neu, dict) and isinstance(neu.get("webhook"), dict) and not neu["webhook"].get("token"):
             neu["webhook"]["token"] = einst()["webhook"]["token"]
+        if isinstance(neu, dict) and isinstance(neu.get("suche"), dict) and not neu["suche"].get("api_schluessel"):
+            neu["suche"]["api_schluessel"] = einst()["suche"]["api_schluessel"]     # ohne Geheimnisse: vorhandenen behalten
         bn_behalten(neu, auch_leer=True)
         pult_behalten(neu)
         if isinstance(neu, dict) and isinstance(neu.get("sicherung"), dict) and not neu["sicherung"].get("passwort"):
@@ -3286,7 +3296,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, ds_warten((qs.get("tv") or [""])[0], (qs.get("stand") or [""])[0][:40]))
         if p.path == "/daten.json":
             qs = urllib.parse.parse_qs(p.query)
-            return self.antwort(200, tv_daten((qs.get("tv") or [None])[0], (qs.get("layout") or [None])[0], (qs.get("entwurf") or [None])[0]))
+            return self.antwort(200, tv_daten((qs.get("tv") or [None])[0], (qs.get("layout") or [None])[0], (qs.get("entwurf") or [None])[0],
+                                              kette=(qs.get("kette") or [""])[0] == "1"))
         m = re.fullmatch(r"/kamera/(camera\.[a-z0-9_]+)\.jpg", p.path)
         if m:                                     # für die TV-Seite (nur Kameras aus den Layouts)
             try:
@@ -3648,6 +3659,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             Q.demaskieren(d["quellen"], einst()["quellen"])
         if p == "/api/einstellungen" and isinstance(d.get("webhook"), dict) and d["webhook"].get("token") == Q.MASKE:
             d["webhook"]["token"] = einst()["webhook"]["token"]
+        if p == "/api/einstellungen" and isinstance(d.get("suche"), dict) and d["suche"].get("api_schluessel") == Q.MASKE:
+            d["suche"]["api_schluessel"] = einst()["suche"]["api_schluessel"]
+        if p == "/api/suche/api-pruefen":           # seit 0.63: Schlüssel für die YouTube Data API testen (1 Einheit)
+            k = str(d.get("schluessel") or "")
+            if k == Q.MASKE or not k:
+                k = einst()["suche"]["api_schluessel"]
+            if not re.fullmatch(r"[A-Za-z0-9_-]{30,80}", k):
+                return {"gueltig": False, "grund": "format"}
+            g = ST.api_probe(k)
+            return {"gueltig": g is None, "grund": g or ""}
         if p == "/api/einstellungen":
             bn_behalten(d)
             pult_behalten(d)

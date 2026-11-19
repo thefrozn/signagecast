@@ -271,8 +271,17 @@ private, nicht-gewerbliche Nutzung**. Wer SignageCast in Praxis, Laden, Gaststä
 Bedingungen, Bedingungen des Kamera-Betreibers und – bei Ton – GEMA prüfen. Der einfache Weg: **nur eigene Medien**
 zeigen. Die Geschäftsvorlagen tun das ab 0.61 (Videofenster → *Was zeigen* → „nur eigene Medien“); bei anderen Layouts
 dort einstellen oder je Kanal (Displays → Kanäle → *Videofenster zeigt*). Im **Stream-Modus** nimmt der Server das Bild
-auf und gibt es an die Fernseher weiter; für YouTube-Inhalte besser den **Direktmodus** nehmen, dann spielt jeder
-Fernseher den offiziellen Player selbst.
+auf und gibt es an die Fernseher weiter; für den privaten Gebrauch zu Hause ist das in Ordnung – gewerblich oder
+öffentlich besser den **Direktmodus** nehmen, dann spielt jeder Fernseher den offiziellen Player selbst, oder beim Kanal
+*YouTube auch im Stream-Modus zeigen* ausschalten (seit 0.63; der Stream zeigt dann eigene Medien, Fernseher und Player
+im Direktmodus behalten YouTube).
+
+**Suche und Prüfung:** Ohne weitere Einrichtung ruft SignageCast öffentliche YouTube-Seiten automatisch ab (nächtliche
+Suche, Live-Prüfung) – sparsam und mit Pause, wenn YouTube „zu viele Anfragen“ meldet, aber die YouTube-Bedingungen
+erlauben automatisierten Abruf eigentlich nicht. Seit 0.63 lässt sich ein eigener, kostenloser Schlüssel für die
+**YouTube Data API v3** eintragen (mit echtem Schlüssel noch ungetestet) (Live-Videos → Automatik): Suche und Prüfung laufen dann über die offizielle
+Schnittstelle (etwa 100 Einheiten je Suchbegriff und Nacht, 10 000 am Tag frei). Oder die Suche ausschalten und nur
+selbst eingetragene Streams behalten.
 
 **Musik und Ton in der Öffentlichkeit:** Sobald SignageCast an einem öffentlichen oder gewerblichen Ort Ton abspielt –
 Internetradio, Originalton der Live-Kameras, Einspieler oder eigene Videos –, ist das eine öffentliche Wiedergabe. Dafür

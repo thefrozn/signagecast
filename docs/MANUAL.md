@@ -469,6 +469,12 @@ Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfe
 
 Seit 0.37: **Themen (bis 0.55 „Kategorien“) bearbeiten und eigene anlegen** unter Live-Videos → **Themen**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
 
+Seit 0.63: **YouTube-API (optional, mit echtem Schlüssel noch ungetestet)** – Live-Videos → Automatik → *YouTube-API*: eigenen, kostenlosen Schlüssel für die
+YouTube Data API v3 eintragen und mit *Prüfen* testen; Suche und Prüfung laufen dann über die offizielle Schnittstelle statt
+über YouTube-Seiten (Anzeige des Tagesverbrauchs dort). Ohne Schlüssel bleibt alles wie bisher, ein wegklickbarer Hinweis
+sagt, dass dann Seiten abgerufen werden. **YouTube im Stream-Modus** je Kanal (Displays → Kanäle → Live-Video): an
+(Standard) wie bisher; aus = der Stream zeigt nur eigene Medien, Direktmodus und HDMI am Server behalten YouTube.
+
 Seit 0.61: **Musik in der Öffentlichkeit** – unter Inhalte → Radio, Live-Videos und beim Ton des Kanals steht: Ton an
 öffentlichen oder gewerblichen Orten (Radio, Originalton, Einspieler, eigene Videos) ist eine öffentliche Wiedergabe und
 braucht fast überall eine Lizenz der zuständigen Verwertungsgesellschaft (z. B. GEMA, AKM, SUISA, PRS/PPL, ASCAP/BMI).

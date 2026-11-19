@@ -1,8 +1,11 @@
 # Streamliste von SignageCast: feste und gefundene YouTube-Livestreams, Tag/Nacht, Live-Prüfung (schonend),
 # Strikes, Qualität und tägliche Suche. Nur Python-Standardbibliothek.
-# Es werden nur öffentliche Seiten gelesen (Suche, Kanal-, Videoseite, oEmbed); abgespielt wird über den
-# offiziellen Einbettungsplayer. Keine Umgehung von YouTube-Sperren: bei HTTP 429 wird eine Stunde pausiert.
-import json, math, os, re, threading, time, urllib.error, urllib.parse, urllib.request
+# Ohne Schlüssel werden öffentliche Seiten gelesen (Suche, Kanal-, Videoseite, oEmbed); mit einem eigenen Schlüssel für
+# die YouTube Data API v3 (seit 0.63, Einstellung suche.api_schluessel) laufen Suche und Prüfung über die offizielle API
+# (search.list 100 Einheiten je Suchbegriff, videos.list 1 Einheit je 50 Videos; 10 000 Einheiten am Tag frei).
+# Abgespielt wird immer über den offiziellen Einbettungsplayer. Keine Umgehung von YouTube-Sperren: bei HTTP 429 wird
+# eine Stunde pausiert, ist das Tageskontingent der API aufgebraucht, bis zum nächsten Tag (Mitternacht Pazifikzeit).
+import html, json, math, os, re, threading, time, urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from meldung import Meldung
 
@@ -117,6 +120,88 @@ def schreib(pfad, daten):
     with open(tmp, "w") as f:
         json.dump(daten, f, ensure_ascii=False, indent=1)
     os.replace(tmp, pfad)
+
+
+API = "https://www.googleapis.com/youtube/v3/"
+API_KOSTEN = {"search": 100, "videos": 1}
+
+
+class ApiFehler(Exception):
+    """Fehler der YouTube Data API: grund = keyInvalid, quotaExceeded, accessNotConfigured, forbidden, netz …"""
+    def __init__(self, grund, text=""):
+        super().__init__(grund)
+        self.grund, self.text = grund, text
+
+
+api_verbrauch = {"tag": "", "einheiten": 0}       # grobe Zählung (Pazifik-Tag), für die Anzeige
+api_sperre = threading.Lock()
+
+
+def _pazifik_tag(t=None):
+    return time.strftime("%Y-%m-%d", time.gmtime((t or time.time()) - 8 * 3600))
+
+
+def api(schluessel, art, **params):
+    """Eine Anfrage an die YouTube Data API v3 (nur GET). Der Schlüssel steht nur im Abfrage-Teil, nie im Protokoll."""
+    q = urllib.parse.urlencode(dict(params, key=schluessel))
+    try:
+        roh = urllib.request.urlopen(urllib.request.Request(API + art + "?" + q, headers={"Accept": "application/json"}),
+                                     timeout=15).read()
+    except urllib.error.HTTPError as e:
+        try:
+            f = json.loads(e.read() or b"{}").get("error", {})
+            grund = ((f.get("errors") or [{}])[0].get("reason") or f.get("status") or str(e.code))
+            text = f.get("message", "")
+        except Exception:
+            grund, text = str(e.code), ""
+        if e.code == 400 and grund in ("badRequest", "INVALID_ARGUMENT") and "key" in text.lower():
+            grund = "keyInvalid"
+        raise ApiFehler(grund, re.sub(r"key=[\w-]+", "key=…", text)[:200])
+    except (urllib.error.URLError, OSError) as e:
+        raise ApiFehler("netz", str(getattr(e, "reason", e))[:200])
+    with api_sperre:
+        tag = _pazifik_tag()
+        if api_verbrauch["tag"] != tag:
+            api_verbrauch.update(tag=tag, einheiten=0)
+        api_verbrauch["einheiten"] += API_KOSTEN.get(art, 1)
+    return json.loads(roh)
+
+
+def api_videos(schluessel, ids):
+    """{video_id: {"live", "einbettbar", "titel", "kanal"}} für bis zu 50 Videos je Anfrage (1 Einheit)."""
+    erg = {}
+    ids = list(dict.fromkeys(i for i in ids if i))
+    for i in range(0, len(ids), 50):
+        d = api(schluessel, "videos", part="snippet,status", id=",".join(ids[i:i + 50]), maxResults=50)
+        for v in d.get("items", []):
+            sn, stt = v.get("snippet", {}), v.get("status", {})
+            erg[v["id"]] = {"live": sn.get("liveBroadcastContent") == "live" and stt.get("privacyStatus") == "public",
+                            "einbettbar": bool(stt.get("embeddable")), "titel": sn.get("title", ""),
+                            "kanal": sn.get("channelTitle", "")}
+    return erg
+
+
+def api_kanal_live(schluessel, kanal):
+    """Aktuelles Livevideo eines Kanals (search.list, 100 Einheiten) – nur, wenn das bekannte nicht mehr läuft."""
+    d = api(schluessel, "search", part="id", channelId=kanal, eventType="live", type="video", maxResults=1)
+    return next((x["id"]["videoId"] for x in d.get("items", []) if x.get("id", {}).get("videoId")), None)
+
+
+def api_suche(schluessel, begriff):
+    """[(video_id, titel)] laufender, einbettbarer Livestreams zu einem Suchbegriff (search.list, 100 Einheiten)."""
+    d = api(schluessel, "search", part="snippet", q=begriff, type="video", eventType="live", videoEmbeddable="true",
+            maxResults=50, safeSearch="strict")
+    return [(x["id"]["videoId"], html.unescape(x.get("snippet", {}).get("title", "")))
+            for x in d.get("items", []) if x.get("id", {}).get("videoId")]
+
+
+def api_probe(schluessel):
+    """Schlüssel testen (videos.list, 1 Einheit). Rückgabe None = in Ordnung, sonst der Grund."""
+    try:
+        api(schluessel, "videos", part="id", id="jfKfPfyJRdk", maxResults=1)
+        return None
+    except ApiFehler as f:
+        return f.grund
 
 
 def lade(url):
@@ -295,7 +380,11 @@ class Streams:
                                                               "proben", "beste_angeboten", "zuletzt")}))
         return {"streams": sorted(aus, key=lambda x: (x.get("herkunft") != "fest", x.get("kategorie", ""), x.get("name", ""))),
                 "abgelehnt": d.get("abgelehnt", []), "pause_bis": ca.get("pause_bis", 0), "zaehler": zaehler,
-                "vorab": self.status.get("vorab")}
+                "vorab": self.status.get("vorab"),
+                # seit 0.63: Abrufweg (api = YouTube Data API, seiten = öffentliche Seiten), grober Tagesverbrauch, letzter API-Fehler
+                "abruf": {"weg": "api" if e["suche"].get("api_schluessel") else "seiten",
+                          "einheiten_heute": api_verbrauch["einheiten"] if api_verbrauch["tag"] == _pazifik_tag() else 0,
+                          "fehler": (self.status.get("api") or {}).get("fehler", "")}}
 
     def aendern(self, sid, felder):
         with sperre:
@@ -546,6 +635,9 @@ class Streams:
             return 0
         if time.time() < lies(CACHE, {}).get("pause_bis", 0):
             return 0
+        schluessel = self.e()["suche"].get("api_schluessel", "")
+        if schluessel:
+            return self._pruefen_api(auftraege, schluessel)
         jetzt, erg, gesperrt = time.time(), {}, False
 
         def pruefe(k):
@@ -564,6 +656,47 @@ class Streams:
             cache.setdefault("quellen", {}).update(erg)
             if gesperrt:
                 cache["pause_bis"] = jetzt + PAUSE_BEI_429_S
+            schreib(CACHE, cache)
+        return len(erg)
+
+    def _api_fehler(self, f):
+        """Fehler der API merken; Tageskontingent aufgebraucht -> bis Mitternacht Pazifikzeit nicht mehr fragen."""
+        self.status["api"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": f.grund}
+        if f.grund in ("quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded"):
+            jetzt = time.time()
+            naechster = (jetzt - 8 * 3600) // 86400 * 86400 + 86400 + 8 * 3600 + 300
+            with cache_sperre:
+                cache = lies(CACHE, {"quellen": {}, "pause_bis": 0})
+                cache["pause_bis"] = max(cache.get("pause_bis", 0), naechster)
+                schreib(CACHE, cache)
+
+    def _pruefen_api(self, auftraege, schluessel):
+        """Wie _pruefen, aber über die YouTube Data API (seit 0.63): alle Videos in einer Anfrage (1 Einheit je 50).
+        Kanäle: das bekannte Livevideo prüfen, nur wenn es nicht mehr läuft, das neue suchen (100 Einheiten)."""
+        jetzt = time.time()
+        qc = lies(CACHE, {"quellen": {}}).get("quellen", {})
+        vids = {sid: (sid if s.get("art", "video") == "video" else (qc.get(sid) or {}).get("video_id")) for sid, s in auftraege}
+        try:
+            info = api_videos(schluessel, [v for v in vids.values() if v])
+            for sid, s in auftraege:
+                if s.get("art") == "kanal" and not (info.get(vids[sid]) or {}).get("live"):
+                    vids[sid] = api_kanal_live(schluessel, sid)
+                    if vids[sid]:
+                        info.update(api_videos(schluessel, [vids[sid]]))
+        except ApiFehler as f:
+            self._api_fehler(f)
+            return 0
+        self.status.pop("api", None)
+        erg = {}
+        for sid, s in auftraege:
+            vid, x = vids[sid], info.get(vids[sid] or "", {})
+            alt = qc.get(sid) or {}
+            # die API nennt keine angebotene Auflösung: den zuletzt bekannten Wert behalten, sonst unbekannt
+            erg[sid] = {"video_id": vid, "live": bool(vid and x.get("live") and x.get("einbettbar")),
+                        "hoehe": alt.get("hoehe") if alt.get("video_id") == vid else None, "geprueft": jetzt, "api": True}
+        with cache_sperre:
+            cache = lies(CACHE, {"quellen": {}, "pause_bis": 0})
+            cache.setdefault("quellen", {}).update(erg)
             schreib(CACHE, cache)
         return len(erg)
 
@@ -751,9 +884,17 @@ class Streams:
         # Treffer der allgemeinen Tiersuche haben Vorrang
         mit_suche = [k for k, x in kats.items() if x["begriffe"] and k not in v["kategorien_aus"]]
         auftraege = [(b, None) for b in su["begriffe"]] + [(b, k) for k in mit_suche for b in kats[k]["begriffe"]]
+        schluessel = su.get("api_schluessel", "")
         try:
-            with ThreadPoolExecutor(max_workers=2) as pool:
-                ergebnisse = list(pool.map(lambda a: (a[1], self._suche(a[0])), auftraege))
+            if schluessel:                         # seit 0.63: offizielle API, nur einbettbare Livestreams
+                ergebnisse = [(k, api_suche(schluessel, b)) for b, k in auftraege]
+            else:
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    ergebnisse = list(pool.map(lambda a: (a[1], self._suche(a[0])), auftraege))
+        except ApiFehler as f:
+            self._api_fehler(f)
+            self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": f.grund, "neu": []}
+            return self.status["suche"]
         except Gesperrt:
             cache["pause_bis"] = time.time() + PAUSE_BEI_429_S
             schreib(CACHE, cache)
@@ -795,8 +936,11 @@ class Streams:
                 return vid if oembed(vid) else None
             except Gesperrt:
                 return None
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            ok = [vid for vid in pool.map(einbettbar, neu_ids) if vid]
+        if schluessel:
+            ok = neu_ids                           # die API-Suche liefert schon nur einbettbare (videoEmbeddable)
+        else:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                ok = [vid for vid in pool.map(einbettbar, neu_ids) if vid]
         neu = []
         with sperre:
             d = self.alle()
@@ -826,5 +970,5 @@ class Streams:
                 d["streams"].pop(vid)
             self._speichern(d)
         self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "pause": False, "neu": neu,
-                                "gefunden": len(funde)}
+                                "gefunden": len(funde), "api": bool(schluessel)}
         return self.status["suche"]

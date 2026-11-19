@@ -2125,6 +2125,124 @@ class Installation062(unittest.TestCase):
         for weg in ("Proxmox VE", "Docker / Podman", "QNAP", "Synology", "Windows (Docker Desktop)", "Windows (WSL)"):
             self.assertIn(weg, self.lese("docs", "INSTALL.md"))
 
+
+class YoutubeApi063(unittest.TestCase):
+    """Seit 0.63: Suche und Prüfung über die YouTube Data API, wenn ein Schlüssel eingetragen ist; sonst wie bisher."""
+    K = "AIza" + "x" * 35
+
+    def setUp(self):
+        self.e = E.pruefen({})
+        self.s = ST.Streams(lambda: self.e)
+        ST.schreib(ST.STRIKES, {})
+        ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
+        self.anfragen = []
+
+    def fake(self, antworten):
+        """urlopen-Ersatz: liefert je API-Art (videos/search) eine Antwort, merkt sich alle Adressen."""
+        from unittest import mock
+        import io
+        def auf(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else req
+            self.anfragen.append(url)
+            art = url.split("/youtube/v3/")[1].split("?")[0] if "/youtube/v3/" in url else "seite"
+            a = antworten[art]
+            if isinstance(a, Exception):
+                raise a
+            return io.BytesIO(json.dumps(a).encode())
+        return mock.patch("urllib.request.urlopen", auf)
+
+    def test_einstellung_geheim(self):
+        self.assertEqual(E.pruefen({})["suche"]["api_schluessel"], "")
+        self.assertEqual(E.pruefen({"suche": {"api_schluessel": self.K}})["suche"]["api_schluessel"], self.K)
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"suche": {"api_schluessel": "kurz"}})
+        with self.assertRaises(E.Fehler):
+            E.pruefen({"suche": {"api_schluessel": self.K + "&x=1"}})
+        d = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app", "dienst.py")).read()
+        self.assertIn('suche=dict(e["suche"], api_schluessel=Q.MASKE', d)          # maskiert in der Verwaltung
+        self.assertIn('suche=dict(e["suche"], api_schluessel=""),', d)              # nicht in Sicherungen ohne Geheimnisse
+
+    def test_pruefen_ueber_api(self):
+        self.e["suche"]["api_schluessel"] = self.K
+        auftraege = [("aaaaaaaaaaa", {"art": "video"}), ("bbbbbbbbbbb", {"art": "video"}), ("ccccccccccc", {"art": "video"})]
+        ST.schreib(ST.CACHE, {"quellen": {"aaaaaaaaaaa": {"video_id": "aaaaaaaaaaa", "hoehe": 1080}}, "pause_bis": 0})
+        antw = {"videos": {"items": [
+            {"id": "aaaaaaaaaaa", "snippet": {"liveBroadcastContent": "live", "title": "A"}, "status": {"embeddable": True, "privacyStatus": "public"}},
+            {"id": "bbbbbbbbbbb", "snippet": {"liveBroadcastContent": "live"}, "status": {"embeddable": False, "privacyStatus": "public"}},
+            {"id": "ccccccccccc", "snippet": {"liveBroadcastContent": "none"}, "status": {"embeddable": True, "privacyStatus": "public"}}]}}
+        with self.fake(antw):
+            self.assertEqual(self.s._pruefen(auftraege), 3)
+        self.assertEqual(len(self.anfragen), 1)                                         # alle in einer Anfrage
+        self.assertTrue(all("googleapis.com" in u for u in self.anfragen))              # keine YouTube-Seite
+        q = ST.lies(ST.CACHE, {})["quellen"]
+        self.assertTrue(q["aaaaaaaaaaa"]["live"])
+        self.assertEqual(q["aaaaaaaaaaa"]["hoehe"], 1080)                               # bekannte Auflösung bleibt
+        self.assertFalse(q["bbbbbbbbbbb"]["live"])                                      # nicht einbettbar
+        self.assertFalse(q["ccccccccccc"]["live"])                                      # nicht live
+
+    def test_kontingent_pausiert_bis_morgen(self):
+        import urllib.error, io
+        self.e["suche"]["api_schluessel"] = self.K
+        f = urllib.error.HTTPError("u", 403, "x", {}, io.BytesIO(json.dumps({"error": {"errors": [{"reason": "quotaExceeded"}]}}).encode()))
+        with self.fake({"videos": f}):
+            self.assertEqual(self.s._pruefen([("aaaaaaaaaaa", {"art": "video"})]), 0)
+        self.assertGreater(ST.lies(ST.CACHE, {})["pause_bis"], time.time() + 60)
+        self.assertEqual(self.s.uebersicht()["abruf"]["fehler"], "quotaExceeded")
+        self.assertNotIn("key=", json.dumps(self.s.status))                            # Schlüssel nie im Status
+
+    def test_suche_ueber_api(self):
+        self.e["suche"]["api_schluessel"] = self.K
+        self.e["suche"]["begriffe"] = ["bear live cam"]
+        for k in self.e["kategorien"]:
+            k["begriffe"] = []
+        antw = {"search": {"items": [{"id": {"videoId": "ddddddddddd"}, "snippet": {"title": "Brown Bear Live Cam &amp; River"}}]},
+                "videos": {"items": []}}
+        with self.fake(antw):
+            r = self.s.suchen()
+        self.assertTrue(r["api"])
+        self.assertTrue(all("googleapis.com" in u for u in self.anfragen))
+        self.assertIn("eventType=live", self.anfragen[0])
+        self.assertIn("videoEmbeddable=true", self.anfragen[0])
+        self.assertIn("ddddddddddd", self.s.alle()["streams"])
+        self.assertEqual(self.s.alle()["streams"]["ddddddddddd"]["titel"], "Brown Bear Live Cam & River")   # HTML-Entitäten aufgelöst
+
+    def test_ohne_schluessel_unveraendert(self):
+        with self.fake({"seite": "<html>"}):
+            try:
+                self.s._pruefen([("aaaaaaaaaaa", {"art": "video"})])
+            except Exception:
+                pass
+        self.assertFalse(any("googleapis.com" in u for u in self.anfragen))
+        self.assertEqual(self.s.uebersicht()["abruf"]["weg"], "seiten")
+
+
+class YoutubeImStream063(unittest.TestCase):
+    """Seit 0.63: je Kanal „YouTube auch im Stream-Modus“ (Standard an = unverändert), nur die Stream-Kette ist betroffen."""
+    W = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def lese(self, *p):
+        with open(os.path.join(self.W, *p), encoding="utf-8") as f:
+            return f.read()
+
+    def test_standard_an(self):
+        self.assertTrue(E.pruefen({})["fernseher"][0]["youtube_im_stream"])
+        e = E.pruefen({"fernseher": [{"id": "tv", "name": "TV", "youtube_im_stream": False}]})
+        self.assertFalse(e["fernseher"][0]["youtube_im_stream"])
+        alt = E.pruefen({"fernseher": [{"id": "tv", "name": "TV"}]})          # alte Einstellungen ohne Feld: an
+        self.assertTrue(alt["fernseher"][0]["youtube_im_stream"])
+
+    def test_nur_kette(self):
+        self.assertIn("?tv=$TV&kette=1", self.lese("render", "tv-render.sh"))
+        self.assertIn('(KETTE ? "&kette=1" : "")', self.lese("www", "seite.js"))
+        d = self.lese("app", "dienst.py")
+        self.assertIn('ohne_youtube = kette and not t.get("youtube_im_stream", True)', d)
+        self.assertIn('kette=(qs.get("kette") or [""])[0] == "1"', d)
+        self.assertNotIn("kette=1", self.lese("render", "hdmi.py"))          # HDMI am Server ist kein Weitergeben
+        tv = self.lese("cockpit", "signagecast", "tv.js")
+        self.assertIn('rechtHinweis("stream", T.streamRecht)', tv)
+        self.assertIn('youtube_im_stream: w("youtube_im_stream").checked', tv)
+        self.assertIn("stream", E.HINWEISE)
+
 if __name__ == "__main__":
     unittest.main()
 

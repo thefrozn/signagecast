@@ -19,6 +19,15 @@ see [NOTICE.md](../NOTICE.md).
 
 - Only public YouTube pages and the **official embed player** are used; streams whose operators do not allow embedding
   are not shown. If YouTube reports too many requests, SignageCast pauses for an hour. Nothing is circumvented.
+- **YouTube Data API (since 0.63, optional, not yet tested with a real key):** with your own key (Live videos → Automation) the nightly search uses
+  `search.list` (live, embeddable; 100 units per term) and the checks `videos.list` (1 unit per 50 videos) instead of
+  YouTube pages; channels are only searched again (100 units) when their known live video has ended. The API does not
+  tell the offered resolution – the last known value is kept, otherwise the guard judges the picture while playing.
+  Quota used up: no YouTube requests until midnight Pacific time. The key is shown as •••• and left out of backups
+  without secrets. Without a key everything works as before.
+- **YouTube in stream mode per channel (since 0.63):** *Show YouTube in stream mode too* (on by default). Off: the
+  render chain loads the page with `kette=1` and gets own media only; TVs and players in direct mode and HDMI on the
+  server keep YouTube.
 - **Private use (since 0.61 stated in the interface):** YouTube's terms allow private, non-commercial use only. In
   business or public places show own media (video window option `herkunft: "medien"`, set in the business templates,
   or per channel) – see [README](../README.md#youtube-and-commercial-use). In stream mode the server records the

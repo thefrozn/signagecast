@@ -76,7 +76,8 @@ OEFFENTLICH=$(sed -n 's/^SCHLUESSEL=//p' werkzeug/aktualisieren.sh)
 python3 -m unittest discover -s tests >/dev/null 2>&1 || fehler "Tests schlagen fehl (python3 -m unittest discover -s tests -v)"
 find . -name __pycache__ -prune -exec rm -rf {} +
 if command -v shellcheck >/dev/null; then
-  shellcheck -S warning install.sh installieren.sh werkzeug/aktualisieren.sh render/tv-render.sh docker/start.sh proxmox/ct.sh \
+  shellcheck -S warning install.sh installieren.sh werkzeug/aktualisieren.sh werkzeug/deinstallieren.sh werkzeug/startpasswort.sh \
+    render/tv-render.sh docker/start.sh proxmox/ct.sh \
     || fehler "shellcheck"
 fi
 echo "   ok: $TAG, Tests grün"

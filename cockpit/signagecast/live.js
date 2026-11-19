@@ -44,6 +44,15 @@ const LIVE_TEXTE = {
     passt: (n) => `passt auf ${n} der vorhandenen Streams`, zeigeStreams: "Streams ansehen",
     // Automatik
     aTitel: "Automatik", aText: "Wie oft gewechselt und wann gesucht wird. Alles andere regelt SignageCast selbst.",
+    apiTitel: "YouTube-API (optional, neu – noch ungetestet)",
+    apiText: "Mit einem eigenen, kostenlosen Schlüssel für die YouTube Data API v3 laufen Suche und Prüfung über die offizielle Schnittstelle statt über YouTube-Seiten. Ohne Schlüssel bleibt alles wie bisher.",
+    apiAnleitung: "So bekommst du einen Schlüssel: console.cloud.google.com → Projekt anlegen → „APIs & Dienste“ → Bibliothek → „YouTube Data API v3“ aktivieren → Anmeldedaten → API-Schlüssel erstellen (am besten auf „YouTube Data API v3“ beschränken).",
+    apiSchluessel: "API-Schlüssel", apiPruefen: "Prüfen", apiEntfernen: "Entfernen", apiOk: "Schlüssel funktioniert.",
+    apiWegApi: (n) => `Abruf über die offizielle API – heute etwa ${n} von 10 000 Einheiten (jeder Suchbegriff 100, Prüfungen fast nichts).`,
+    apiWegSeiten: "Abruf über öffentliche YouTube-Seiten (kein Schlüssel eingetragen).",
+    apiFehler: { keyInvalid: "Schlüssel ungültig", quotaExceeded: "Tageskontingent aufgebraucht – ab morgen (9 Uhr deutscher Zeit) wieder", accessNotConfigured: "YouTube Data API v3 im Projekt nicht aktiviert", forbidden: "Zugriff verweigert (Beschränkungen des Schlüssels prüfen)", netz: "keine Verbindung zu googleapis.com", format: "sieht nicht wie ein API-Schlüssel aus" },
+    apiFehlerText: "Letzter Fehler",
+    abrufRecht: "Ohne Schlüssel ruft SignageCast für Suche und Prüfung YouTube-Seiten automatisch ab – sparsam, aber die YouTube-Bedingungen erlauben das eigentlich nicht. Mit eigenem API-Schlüssel (unten) läuft es über die offizielle Schnittstelle; die Suche lässt sich auch ausschalten.",
     abspielen: "Abspielen", suchenTitel: "Suchen", sperrwoerter: "Sperrwörter: Titel darf keines enthalten (je Zeile eines)",
     orte: "Ortserkennung aus dem Titel", orteText: "Steht eines der Wörter im Titel, gilt dieser Ort (für Tag/Nacht). Mehrere Wörter mit | trennen.",
     muster: "Wörter im Titel", zeileNeu: "+ Zeile", testen: "Mit einem Titel testen …", erkannt: (m, b, l) => `erkannt: „${m}“ → ${b} / ${l}`,
@@ -88,6 +97,15 @@ const LIVE_TEXTE = {
     streams: (n) => (n === 1 ? "1 stream" : `${n} streams`), mitSuche: (n) => `${n} search terms`, ausBei: (x) => `off on ${x}`,
     passt: (n) => `matches ${n} of the existing streams`, zeigeStreams: "Show streams",
     aTitel: "Automation", aText: "How often the picture changes and when to search. SignageCast handles everything else itself.",
+    apiTitel: "YouTube API (optional, new – not yet tested)",
+    apiText: "With your own free key for the YouTube Data API v3, search and checks use the official interface instead of YouTube pages. Without a key everything stays as before.",
+    apiAnleitung: "How to get a key: console.cloud.google.com → create a project → “APIs & Services” → Library → enable “YouTube Data API v3” → Credentials → create API key (best restricted to “YouTube Data API v3”).",
+    apiSchluessel: "API key", apiPruefen: "Test", apiEntfernen: "Remove", apiOk: "The key works.",
+    apiWegApi: (n) => `Fetching via the official API – about ${n} of 10,000 units used today (each search term 100, checks almost nothing).`,
+    apiWegSeiten: "Fetching via public YouTube pages (no key set).",
+    apiFehler: { keyInvalid: "invalid key", quotaExceeded: "daily quota used up – again tomorrow (midnight Pacific time)", accessNotConfigured: "YouTube Data API v3 not enabled in the project", forbidden: "access denied (check the key's restrictions)", netz: "no connection to googleapis.com", format: "does not look like an API key" },
+    apiFehlerText: "Last error",
+    abrufRecht: "Without a key SignageCast fetches YouTube pages automatically for search and checks – sparingly, but YouTube's terms do not really allow it. With your own API key (below) it uses the official interface; the search can also be switched off.",
     abspielen: "Playback", suchenTitel: "Search", sperrwoerter: "Blocked words: title must not contain any (one per line)",
     orte: "Location from the title", orteText: "If one of the words is in the title, this location applies (for day/night). Separate several words with |.",
     muster: "Words in the title", zeileNeu: "+ Row", testen: "Test with a title …", erkannt: (m, b, l) => `recognised: “${m}” → ${b} / ${l}`,
@@ -485,8 +503,10 @@ async function kategorienSeite(inhalt) {
 // ---------- Automatik (früher Stream-Suche + Regeln) ----------
 async function automatikSeite(inhalt) {
   const L = LT(), v = E.video, s = E.suche;
-  const status = await holen("/api/status");
+  const [status, st] = await Promise.all([holen("/api/status"), holen("/api/streams")]);
   const letzte = status.liste && status.liste.suche;
+  const ab = st.abruf || { weg: "seiten", einheiten_heute: 0, fehler: "" };
+  const apiFehler = (g) => L.apiFehler[g] || g;
   const zahl = (id, w, min, max, step) => `<input type="number" id="${id}" value="${w}" min="${min}" max="${max}" step="${step || 1}" class="b120">`;
   inhalt.innerHTML = `<div class="karte"><h2>${esc(L.aTitel)}</h2><p class="leise">${esc(L.aText)}</p></div>
     <div class="karte"><h3>${esc(L.abspielen)}</h3>
@@ -514,6 +534,16 @@ async function automatikSeite(inhalt) {
           <div class="zeile"><button type="button" class="knopf klein" id="aOrtNeu">${esc(L.zeileNeu)}</button></div>
           <div class="zeile"><input type="text" id="aTest" placeholder="${esc(L.testen)}" aria-label="${esc(L.testen)}" class="breit"><span id="aTestErg" class="leise"></span></div></div>
       </details></div>
+    <div class="karte"><h3>${esc(L.apiTitel)}</h3>
+      ${ab.weg === "seiten" ? rechtHinweis("abruf", L.abrufRecht) : ""}
+      <p class="leise">${esc(L.apiText)}</p>
+      <div class="zeile"><label for="aApi">${esc(L.apiSchluessel)}</label>
+        <input type="password" id="aApi" value="${esc(s.api_schluessel || "")}" placeholder="AIza…" autocomplete="off" spellcheck="false" class="breit">
+        <button type="button" class="knopf" id="aApiTest">${esc(L.apiPruefen)}</button>
+        ${s.api_schluessel ? `<button type="button" class="knopf gefahr" id="aApiWeg">${esc(L.apiEntfernen)}</button>` : ""}
+        <span class="leise" id="aApiErg"></span></div>
+      <p class="leise">${esc(ab.weg === "api" ? L.apiWegApi(ab.einheiten_heute) : L.apiWegSeiten)}${ab.fehler ? ` · ${esc(L.apiFehlerText)}: ${esc(apiFehler(ab.fehler))}` : ""}</p>
+      <details class="erweitert"><summary>${esc(L.erweitert)}</summary><p class="leise">${esc(L.apiAnleitung)}</p></details></div>
     <div class="zeile"><button type="button" class="knopf haupt" id="aOk">${esc(L.speichern)}</button></div>`;
   const body = $("#aOrte");
   const ortZeile = (o) => {
@@ -553,8 +583,16 @@ async function automatikSeite(inhalt) {
   $("#aOk").onclick = (e) => speichernE({
     video: { takt_min: n("aTakt"), nur_tag: $("[name=nurTag]").checked, min_sonnenhoehe: n("aSonne"), mindeststufe: $("#aStufe").value,
              schlecht_s: n("aSchlecht"), strike_grenze: n("aGrenze"), sperre_h: n("aSperre") },
-    suche: { aktiv: $("[name=sAktiv]").checked, uhrzeit: $("#aUhr").value, max: n("aMax"), behalten_tage: n("aBehalten"), ausschluss: zeilen("aNein"), orte: orte() },
+    suche: { aktiv: $("[name=sAktiv]").checked, uhrzeit: $("#aUhr").value, max: n("aMax"), behalten_tage: n("aBehalten"), ausschluss: zeilen("aNein"), orte: orte(),
+             api_schluessel: $("#aApi").value.trim() },
   }, e.target);
+  $("#aApiTest").onclick = (e) => aktion(e.target, async () => {
+    const r = await senden("/api/suche/api-pruefen", { schluessel: $("#aApi").value.trim() });
+    $("#aApiErg").textContent = r.gueltig ? L.apiOk : apiFehler(r.grund);
+  });
+  if ($("#aApiWeg")) $("#aApiWeg").onclick = (e) => aktion(e.target, async () => {
+    await speichernE({ suche: { api_schluessel: "" } }); zeigeSeite("automatik");
+  });
   $("#aJetzt").onclick = (e) => aktion(e.target, async () => {
     $("#aErg").textContent = L.laeuft;
     const r = await senden("/api/suche/starten");

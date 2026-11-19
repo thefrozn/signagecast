@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.63.0 (2026-11-19)
+- **YouTube in stream mode – note and switch per channel:** in stream mode the server records the YouTube picture and
+  passes it on. The channel's *Live video* tab now says so (fine for private use, for business or public use prefer
+  direct mode; can be hidden like the other notes) and has a switch *Show YouTube in stream mode too* – **on by
+  default, so nothing changes for existing installations**. Off: the render chain (it now loads the page with
+  `kette=1`) shows own media only and leaves out YouTube clips; TVs and players in direct mode and HDMI on the server
+  keep YouTube.
+- **Optional YouTube Data API v3 – not yet tested with a real key** (tested with simulated answers and a real call
+  with an invalid key; feedback welcome): with your own free key (Live videos → Automation → *YouTube API*, with a *Test*
+  button) the nightly search uses `search.list` (only live, embeddable streams) and the live checks `videos.list`
+  (50 videos per request) instead of reading YouTube pages. The page shows the units used today (search ≈ 100 per term,
+  10,000 free per day) and the last API error in plain words; when the daily quota is used up, SignageCast asks
+  YouTube nothing until midnight Pacific time. The key is masked (••••), kept when restoring a backup without secrets
+  and left out of such backups. The API does not report the offered resolution: the last known value is kept,
+  otherwise the guard judges the picture while playing. **Without a key everything stays as before** – a note (can be
+  hidden) says that pages are read then.
+- `release.sh` also shellchecks `deinstallieren.sh` and `startpasswort.sh`.
+- **Consumption unchanged** (CT 104, Imbiss test layout, 4 paired runs each, 0.62 measured again in between):
+  stream mode 94.8–100.2 % (mean 97.7) / 859–880 MB vs 0.62 93.5–100.7 % (97.5) / 848–876 MB; direct mode
+  72.0–77.8 % (75.7) / 566–576 MB vs 0.62 72.9–75.7 % (74.3) / 551–574 MB – within the usual spread; 25 fps, 0 lost,
+  60 fps, no frame over 50 ms.
+
 ## v0.62.0 (2026-11-19)
 - **Random initial password everywhere:** Proxmox containers (`ct.sh`) and Debian containers now also get a random
   14-character password for `tvadmin` instead of `tvadmin` (without look-alike characters). It is shown at the end and

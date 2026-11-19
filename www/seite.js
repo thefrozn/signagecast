@@ -46,6 +46,7 @@ const A = (u) => (SCV && u && !/^(https?:|data:|blob:)/.test(u) ? SCV.adr(u.star
 const TV = PARAM.get("tv") || "tv";
 // Vorschau eines bestimmten Layouts (seit 0.39, z. B. für die MCP-Schnittstelle): ?layout=<kennung> – nur Anzeige
 const VORSCHAU_LAYOUT = PARAM.get("layout") || "";
+const KETTE = PARAM.get("kette") === "1";      // seit 0.63: von der Stream-Kette geladen (tv-render.sh)
 // Vorschaubild (seit 0.39, ?vorschau=1): kein YouTube und keine Daueranfrage – ein Headless-Browser soll schnell fertig werden
 const VORSCHAU = PARAM.get("vorschau") === "1";
 if (VORSCHAU) document.documentElement.classList.add("vorschau");
@@ -797,7 +798,7 @@ setInterval(() => {
 async function laden() {
   try {
     const r = await fetch(A("/daten.json?tv=" + encodeURIComponent(TV) + (VORSCHAU_LAYOUT ? "&layout=" + encodeURIComponent(VORSCHAU_LAYOUT) : "")
-                            + (ENTWURF ? "&entwurf=" + encodeURIComponent(ENTWURF) : "")), { cache: "no-store" });
+                            + (ENTWURF ? "&entwurf=" + encodeURIComponent(ENTWURF) : "") + (KETTE ? "&kette=1" : "")), { cache: "no-store" });
     const d = await r.json();
     if (!d || !d.ok) return;
     // seit 0.28.1: nach einem Update (andere Version im Dienst) sofort mit dem neuen Code neu laden

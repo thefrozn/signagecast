@@ -126,7 +126,7 @@ def pruefe_kategorien(liste):
 AUFNAHMEN = (720, 1080, 1440)             # Höhe der Aufnahme (Chromium zeichnet in 16:9)
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
 
-HINWEISE = ("youtube", "musik")           # wegklickbare Rechtshinweise (seit 0.61)
+HINWEISE = ("youtube", "musik", "stream", "abruf")           # wegklickbare Rechtshinweise (seit 0.61)
 
 STANDARD = {
     "sprache": "",                        # de | en – TV-Seite und Verwaltung; leer = beim ersten Öffnen der Verwaltung aus der Browsersprache
@@ -203,6 +203,7 @@ STANDARD = {
     },
     "suche": {
         "aktiv": True,
+        "api_schluessel": "",             # seit 0.63: eigener Schlüssel für die YouTube Data API v3 (leer = YouTube-Seiten lesen)
         "uhrzeit": "04:30",
         "max": 40,                        # höchstens so viele gefundene Streams
         "behalten_tage": 14,              # so lange nicht mehr gefunden -> raus
@@ -418,6 +419,9 @@ def pruefen(e):
                           "ha_daten": _ha_daten(t.get("ha_daten")),
                           # seit 0.15: Quelle des Videofensters und Layout-Karussell
                           "video_quelle": t.get("video_quelle") if t.get("video_quelle") in ("youtube", "medien", "gemischt") else "youtube",
+                          # seit 0.63: YouTube auch im Stream-Modus (Server nimmt auf und gibt weiter) – Standard ja (privat);
+                          # aus = im Stream nur eigene Medien, Fernseher/Player im Direktmodus zeigen YouTube weiter
+                          "youtube_im_stream": bool(t.get("youtube_im_stream", True)),
                           "medien_alle": _zahl(t.get("medien_alle", 3), 1, 20, int),
                           "karussell": {"aktiv": bool((t.get("karussell") or {}).get("aktiv", False)),
                                         "layouts": [x for x in (t.get("karussell") or {}).get("layouts", []) if x in layout_ids][:10],
@@ -495,6 +499,7 @@ def pruefen(e):
     su = e.get("suche", {})
     ss = s["suche"]
     if "aktiv" in su: ss["aktiv"] = bool(su["aktiv"])
+    if "api_schluessel" in su: ss["api_schluessel"] = _text(su["api_schluessel"] or "", 80, r"([A-Za-z0-9_-]{30,80})?")
     if "uhrzeit" in su: ss["uhrzeit"] = _text(su["uhrzeit"], 5, r"([01]\d|2[0-3]):[0-5]\d")
     if "max" in su: ss["max"] = _zahl(su["max"], 0, 200, int)
     if "behalten_tage" in su: ss["behalten_tage"] = _zahl(su["behalten_tage"], 1, 365, int)

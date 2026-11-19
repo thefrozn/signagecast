@@ -438,7 +438,7 @@ const TEXTE = {
     sichAutoText: "Die automatischen Sicherungen liegen im Container; lade ab und zu eine herunter, damit sie auch einen Ausfall des Containers überstehen.",
     pwEinspielen: "Passwort (falls verschlüsselt)",
     karussell: "Layout-Karussell", karussellText: "Wechselt alle paar Minuten zwischen den gewählten Layouts (mindestens zwei). Ein Zeitplan hat Vorrang.",
-    karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt", hinweisWeg: "Verstanden, ausblenden", hinweisWegTitel: "Hinweis auf allen Geräten ausblenden (unter Einstellungen → Allgemein wieder einblendbar)",
+    karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt", streamRecht: "Im Stream-Modus nimmt der Server das YouTube-Bild auf und gibt es an die Fernseher weiter. Für den privaten Gebrauch zu Hause ist das in Ordnung. Gewerblich oder öffentlich besser den Direktmodus nehmen (offizieller Player am Fernseher bzw. Player im Direktmodus) oder unten YouTube im Stream ausschalten.", ytStream: "YouTube auch im Stream-Modus zeigen", ytStreamText: "Aus: Der Stream dieses Kanals zeigt im Videofenster nur eigene Medien; Fernseher und Player im Direktmodus zeigen YouTube weiter.", hinweisWeg: "Verstanden, ausblenden", hinweisWegTitel: "Hinweis auf allen Geräten ausblenden (unter Einstellungen → Allgemein wieder einblendbar)",
     hinweiseEin: "Ausgeblendete Rechtshinweise wieder zeigen", videoRecht: "YouTube erlaubt nur die private, nicht-gewerbliche Nutzung. In Praxis, Laden, Hotel, Verein oder an anderen öffentlichen Orten bitte nur eigene Medien zeigen oder die Rechte selbst klären (YouTube-Bedingungen, Betreiber der Kamera, GEMA bei Ton).",
     videoQuelleArt: { youtube: "Live-Streams (YouTube)", medien: "nur eigene Medien", gemischt: "gemischt" }, medienAlle: "jedes N-te Mal ein eigenes Medium",
     medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Kanal unter „Kanäle“ einstellen: nur eigene Medien oder gemischt mit den Live-Streams. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
@@ -1053,7 +1053,7 @@ const TEXTE = {
     sichAutoText: "Automatic backups are stored in the container; download one now and then so it survives a loss of the container.",
     pwEinspielen: "Password (if encrypted)",
     karussell: "Layout carousel", karussellText: "Switches between the chosen layouts every few minutes (at least two). A schedule takes priority.",
-    karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows", hinweisWeg: "Got it, hide", hinweisWegTitel: "Hide this note on all devices (can be shown again under Settings → General)",
+    karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows", streamRecht: "In stream mode the server records the YouTube picture and passes it on to the TVs. That is fine for private use at home. For business or public use better choose direct mode (official player on the TV or a player in direct mode) or switch YouTube off for the stream below.", ytStream: "Show YouTube in stream mode too", ytStreamText: "Off: the stream of this channel shows only own media in the video window; TVs and players in direct mode still show YouTube.", hinweisWeg: "Got it, hide", hinweisWegTitel: "Hide this note on all devices (can be shown again under Settings → General)",
     hinweiseEin: "Show hidden legal notes again", videoRecht: "YouTube only allows private, non-commercial use. In a practice, shop, hotel, club or other public place please show own media only or clear the rights yourself (YouTube terms, camera operator, music licensing for sound).",
     videoQuelleArt: { youtube: "live streams (YouTube)", medien: "own media only", gemischt: "mixed" }, medienAlle: "every N-th time own media",
     medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per channel under “Channels”: own media only or mixed with the live streams. Pictures stay for their duration, videos play completely.",
@@ -2606,6 +2606,9 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" class="b70"></span></div>
         ${rechtHinweis("youtube", T.videoRecht)}
+        ${t.video_quelle !== "medien" ? rechtHinweis("stream", T.streamRecht) : ""}
+        <div class="zeile"><label>${esc(T.ytStream)}</label>${schalter("youtube_im_stream", t.youtube_im_stream !== false)}</div>
+        <p class="leise">${esc(T.ytStreamText)}</p>
         <details><summary>${esc(T.kategorien)} (${katIds().length - t.kategorien_aus.length}/${katIds().length})</summary>
         ${katSchalter("kat_", t.kategorien_aus)}</details>
         </div><div class="kanal-teil" data-teil="ton">
@@ -2685,7 +2688,7 @@ async function fernseherSeite(inhalt) {
       const w = (n) => k.querySelector(`[name=${n}]`);
       return { ...t, name: w("name").value, id: w("id").value.trim().toLowerCase(), video: w("video").checked, ton: w("ton").value,
                radio_sender: w("radio_sender").value, lautstaerke: Number(w("lautstaerke").value),
-               kategorien_aus: katIds().filter((x) => !w("kat_" + x).checked), aufloesung: Number(w("aufloesung").value),
+               kategorien_aus: katIds().filter((x) => !w("kat_" + x).checked), youtube_im_stream: w("youtube_im_stream").checked, aufloesung: Number(w("aufloesung").value),
                aufnahme: Number(w("aufnahme").value), bitrate_mbit: Number(w("bitrate_mbit").value), codec: w("codec").value, layout: w("layout").value,
                encoder: w("encoder").value, preset: w("preset").value, tune: w("tune").value, bframes: Number(w("bframes").value) || 0,
                video_quelle: w("video_quelle").value, medien_alle: Number(w("medien_alle").value) || 3, ha_schalten: w("ha_schalten").value.trim(),
