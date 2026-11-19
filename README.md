@@ -45,6 +45,8 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
+To try it out, Docker without `/dev/dri` is enough (software fallback) – just leave out `--device /dev/dri`.
+
 **Own computer (ISO)** – mini PC or old laptop with UEFI: write `signagecast-server-vX.Y.Z.iso` from the
 [latest release](https://github.com/thefrozn/signagecast/releases/latest) to a USB stick and boot from it. The
 computer can also show the TV page itself via HDMI – no second device needed
@@ -67,7 +69,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 
 **The screen**
 - Live window to the world: YouTube live cams that rotate and skip bad streams by themselves
-- Clock, weather, forecast, official severe weather warnings (DWD)
+- Clock, weather and forecast worldwide (MET Norway), official severe weather warnings for Germany (DWD)
 - Backgrounds that follow the real sun at your location
 - [Templates for many places](docs/TEMPLATES.md): living room, waiting room, reception, menu board, shopping centre,
   hospital, hotel, gym, canteen, picture frame and night
@@ -148,7 +150,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
   updates; optional terminal in the browser. [PLAYER.md](docs/PLAYER.md)
 - **PC as player** (experimental) – a PC or thin client (x86-64, UEFI, Secure Boot may stay on) starts from a USB stick
   and shows the page itself. [PLAYER.md](docs/PLAYER.md#pc-as-player-since-036-experimental)
-- **Messages and notifications** – DWD warnings as an element; banners from other systems via a webhook; notifications
+- **Messages and notifications** – DWD warnings as an element (Germany only; weather itself works worldwide via MET Norway); banners from other systems via a webhook; notifications
   when a TV fails, an update or backup fails or Home Assistant is disconnected.
 - **Elements with a period** – e.g. “Closed from 23 Dec to 2 Jan” appears and disappears by itself.
 - **Emergency screen and announcement panel** – a red full-screen message on all TVs; a separate reception page that

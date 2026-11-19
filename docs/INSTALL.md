@@ -24,7 +24,10 @@ Run on the Proxmox host shell, answer the questions (Enter = suggestion):
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
-It creates a Debian 13 container, passes the Intel GPU through and installs SignageCast.
+It creates a Debian 13 container, passes the Intel GPU through and installs SignageCast. At the end it shows the
+admin address and a **random initial password** for the user `tvadmin` (since 0.62; before it was `tvadmin`). Read it
+again later on the Proxmox host: `pct exec <ID> -- cat /root/signagecast-startpasswort` – the file disappears by itself
+as soon as you set your own password. Your own password right away: `SC_PASSWORT='…' bash -c "$(curl …)"`.
 
 ## Debian 13
 
@@ -78,6 +81,7 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
 or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the same command with `podman`.
 
 - `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
+  **To try SignageCast out, Docker without `/dev/dri` is enough.**
   Rootless Podman additionally needs `--group-add keep-groups`.
 - **Rootless Podman: use host networking.** Its default port forwarder can hide the client address – every request
   then seems to come from inside the container, and camera streams (only readable inside the container) could be
@@ -100,8 +104,9 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 
 | Installation | Admin | TV stream | Initial login |
 |---|---|---|---|
-| Proxmox LXC (`ct.sh`) or Debian **container** | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>` | user `tvadmin`, password `tvadmin` – please change it |
-| Debian **VM / real computer** (`install.sh`, “native”) | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>`, other port with `SC_STREAM_PORT` | user `tvadmin` with a **random password shown once** at the end of the installation – or your own Cockpit user |
+| Proxmox LXC (`ct.sh`) or Debian **container** | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>` | user `tvadmin` with a **random password** shown at the end (since 0.62), readable in `/root/signagecast-startpasswort` until you change it |
+| Debian **VM / real computer** (`install.sh`, “native”) | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>`, other port with `SC_STREAM_PORT` | user `tvadmin` with a **random password** shown at the end (file as above) – or your own Cockpit user |
+| **Installation ISO** | **https://&lt;IP&gt;:9090** (Cockpit) | `http://<IP>:8888/<tv>` | user `tvadmin` with the password you chose in the installer |
 | **Docker / Podman / NAS** | **http://&lt;host&gt;:19090** (own login, no Cockpit) | `http://<host>:8888/<tv>` | random password in the container log (or `SC_PASSWORT`) |
 
 - **Cockpit already installed?** On a native installation SignageCast integrates into your existing Cockpit: it only
@@ -110,8 +115,8 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
   Note: Cockpit cannot hide an extension per user – everyone who may log in to this Cockpit can also configure SignageCast.
 - **Why 19090 for Docker/Podman?** Many servers already run Cockpit on 9090. With host networking (recommended for
   rootless Podman) both would collide. Change it with `SC_VERWALTUNG_PORT`, the stream port with `SC_STREAM_PORT`.
-- **Why a random password on native installations?** `tvadmin` is a Linux account that can log in to Cockpit; on a real
-  computer a known default password would be a risk. In a container it only affects the container.
+- **Why a random password?** `tvadmin` is a Linux account that can log in to Cockpit (with a terminal). A known
+  default password would be a risk – since 0.62 also in containers. `SC_PASSWORT=…` sets your own (at least 8 characters).
 - **Webhook messages** (optional, from v0.16): port **8890** (`SC_WEBHOOK_PORT`; Docker: add `-p 8890:8890`), only
   answers with a secret key created in the admin – see the [manual](MANUAL.md). The same port serves the announcement
   panel and the **Raspberry Pi players** (signed requests per device).
@@ -124,10 +129,84 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 2. On a new installation a short **assistant** asks for language, location and (optionally) Home Assistant and shows
    the TV address. Later: **Settings → Home Assistant** – enter the address and follow the guide shown there. Home
    Assistant trusts the container via `trusted_networks` – no password or token is stored.
-3. **Settings → General**: weather comes from MET Norway (or choose a Home Assistant weather entity).
+3. **Settings → General**: weather comes from MET Norway – worldwide (or choose a Home Assistant weather entity).
+   Official **severe weather warnings** come from the DWD and exist **for Germany only**.
    **Content → Layouts**: adapt the standard layout or start from a template.
 4. On the TV open **http://&lt;IP&gt;:8888/tv** in the browser and set it as start page.
 5. Optional: **Radio**, **Clips**, more **TVs**, schedules – see the [manual](MANUAL.md).
+
+## Forgot the password? (reset)
+
+| Installation | Reset |
+|---|---|
+| **Proxmox LXC** | on the Proxmox host: `pct exec <ID> -- passwd tvadmin` |
+| **Debian / installation ISO** | as root on the computer (console or SSH): `passwd tvadmin` – on the ISO log in at the console as `tvadmin` and run `sudo passwd tvadmin`; if that password is lost too, boot the Debian rescue mode from the installation stick |
+| **Docker / Podman** | `docker exec signagecast rm /data/config/verwaltung.json && docker restart signagecast` – a new random initial password is then in `docker logs signagecast` (or start with `-e SC_PASSWORT=…` before the restart). Podman: the same with `podman` |
+| **QNAP / Synology** | Container Station / Container Manager → container **signagecast** → **Terminal** (or *Execute command*): `rm /data/config/verwaltung.json`, then restart the container and read the new password in its **log** |
+| **Windows (Docker Desktop)** | PowerShell: `docker exec signagecast rm /data/config/verwaltung.json; docker restart signagecast; docker logs signagecast` |
+| **Windows (WSL)** | PowerShell: `wsl -d Debian -u root passwd tvadmin` |
+
+Settings, layouts and data are not touched by a reset.
+
+## What the installation changes on the system
+
+`install.sh` / `installieren.sh` (Debian, Proxmox container, installation ISO) – as root:
+
+- **Package sources:** in `/etc/apt/sources.list.d/debian.sources` the components `contrib non-free non-free-firmware`
+  are added (for the Intel video driver).
+- **Debian packages** (`--no-install-recommends`): xvfb, chromium, ffmpeg, vainfo, intel-media-va-driver-non-free,
+  libmfx-gen1.2, mesa-va-drivers, pulseaudio, pulseaudio-utils, fonts (roboto, dejavu, open-sans, lato, montserrat,
+  ubuntu, cantarell, comic-neue, firacode, noto-core, noto-color-emoji), python3, python3-pyzipper, python3-smbc, curl,
+  ca-certificates, openssl, procps, minisign, poppler-utils, cockpit-ws, cockpit-system, cockpit-bridge,
+  cracklib-runtime. With HDMI (`SC_HDMI=1`, ISO): also cage and seatd.
+- **MediaMTX** (stream server) from its GitHub release, checksum verified, to `/opt/mediamtx`.
+- **Users:** `signagecast` (system user without login, runs all services) and `tvadmin` (admin login for Cockpit, in
+  the group `systemd-journal` to read the logs; random initial password, see above).
+- **Folders:** program `/opt/signagecast` (previous version `/opt/signagecast.vorher` for “back to the previous
+  version”), settings `/etc/signagecast` (700), data `/var/lib/signagecast` (750), update backups
+  `/var/lib/signagecast-aktualisierung` (root only), Cockpit extension `/usr/share/cockpit/signagecast`, command
+  `/usr/local/bin/signagecast-mcp` (MCP for AI assistants), initial password `/root/signagecast-startpasswort` (until changed).
+- **systemd units** in `/etc/systemd/system`: `signagecast.service` (data service, only 127.0.0.1:8080),
+  `signagecast-mediamtx.service` (stream, starts the render chain on demand), `signagecast-aktualisieren.path/.service`
+  (updates from the admin: a request file starts a root script with fixed actions – no sudo, no polkit),
+  `signagecast-startpasswort.path/.service` (deletes the initial-password file after the change), with HDMI
+  `signagecast-hdmi.service` and a drop-in `seatd.service.d/signagecast.conf`. **Cockpit** (`cockpit.socket`) is enabled.
+- **Ports:** 9090 (Cockpit), 8888 (stream, `SC_STREAM_PORT`), 8890 (players, webhook, panel – only answers signed or
+  keyed requests). No firewall rules are changed, no SSH server is installed, no sudo rights are given.
+- **Only when you ask for it in the admin:** Tailscale for remote sites (package source `pkgs.tailscale.com`, key
+  checked) and package upgrades via **System → Updates**.
+
+**Docker / Podman / NAS / Windows:** nothing on the host except the image `ghcr.io/thefrozn/signagecast`, the
+container `signagecast` and its volume (`/data`). Windows additionally: the folder `%USERPROFILE%\SignageCast`
+(compose file); Docker Desktop and WSL only if you installed them for it.
+
+## Uninstall
+
+All ways keep a backup unless you delete the data on purpose. Export a backup first if you might come back:
+**System → Backup**.
+
+- **Debian / installation ISO / inside a container** (since 0.62): `sh /opt/signagecast/werkzeug/deinstallieren.sh` –
+  removes services and program; settings and data stay in `/etc/signagecast` and `/var/lib/signagecast` (a new
+  installation picks them up). With `--alles` also settings, data and the users `signagecast` and `tvadmin` (not on the
+  ISO, where `tvadmin` is the computer's login). It always puts a backup to `/root/signagecast-sicherung-<date>.tar.gz`
+  first. Debian packages stay; remove them only if nothing else needs them:
+  `apt purge chromium ffmpeg xvfb pulseaudio cockpit-ws cockpit-system cockpit-bridge intel-media-va-driver-non-free && apt autoremove --purge`
+- **Proxmox VE:** remove the whole container on the host: `pct stop <ID> && pct destroy <ID> --purge` (also removes it
+  from backup jobs and HA). Nothing else was changed on the host.
+- **Docker / Podman:** `docker rm -f signagecast`, then the data: `docker volume ls | grep signagecast` and
+  `docker volume rm <name>` (with `docker run` it is `signagecast`, with compose usually `<folder>_signagecast`), finally
+  `docker image rm ghcr.io/thefrozn/signagecast`. With compose: `docker compose down -v` in the folder of `compose.yaml`.
+- **QNAP (Container Station):** **Applications** → `signagecast` → **Delete** (if the dialog offers to remove the volumes,
+  tick it to delete the data as well; otherwise delete the volume `signagecast_signagecast` under **Volumes**), then **Images** → `ghcr.io/thefrozn/signagecast` → **Delete**.
+- **Synology (Container Manager):** **Project** → `signagecast` → **Action → Stop**, then **Action → Delete**; **Image**
+  → `ghcr.io/thefrozn/signagecast` → **Delete**; the data is in the shared folder `docker/signagecast` – delete it in
+  **File Station**.
+- **Windows (Docker Desktop):** PowerShell: `docker compose -p signagecast down -v` and
+  `docker image rm ghcr.io/thefrozn/signagecast`, then delete the folder `%USERPROFILE%\SignageCast`. Docker Desktop
+  itself only if you do not need it any more: `winget uninstall Docker.DockerDesktop`.
+- **Windows (WSL):** inside Debian as above (`deinstallieren.sh`), or remove the whole Debian: `wsl --unregister Debian`
+  (deletes everything in it).
+- **Raspberry Pi players:** remove the device in the admin (**Displays → Devices**), then reflash the SD card.
 
 ## Updates
 
@@ -153,8 +232,9 @@ Container lesbar) aus dem Netz abrufbar.
 
 | Weg | Verwaltung | Stream | Erste Anmeldung |
 |---|---|---|---|
-| Proxmox-LXC bzw. Debian-**Container** | https://&lt;IP&gt;:9090 (Cockpit) | :8888 | `tvadmin` / `tvadmin` (bitte ändern) |
-| Debian **VM / echter Rechner** (nativ) | https://&lt;IP&gt;:9090 (Cockpit) | :8888, änderbar mit `SC_STREAM_PORT` | `tvadmin` mit **zufälligem Passwort**, das am Ende der Installation einmal angezeigt wird – oder dein eigener Cockpit-Benutzer |
+| Proxmox-LXC bzw. Debian-**Container** | https://&lt;IP&gt;:9090 (Cockpit) | :8888 | `tvadmin` mit **zufälligem Passwort** (seit 0.62), am Ende angezeigt und bis zur Änderung in `/root/signagecast-startpasswort` (Proxmox-Host: `pct exec <ID> -- cat /root/signagecast-startpasswort`) |
+| Debian **VM / echter Rechner** (nativ) | https://&lt;IP&gt;:9090 (Cockpit) | :8888, änderbar mit `SC_STREAM_PORT` | `tvadmin` mit **zufälligem Passwort** (Datei wie oben) – oder dein eigener Cockpit-Benutzer |
+| **Installations-ISO** | https://&lt;IP&gt;:9090 (Cockpit) | :8888 | `tvadmin` mit dem Passwort aus dem Installer |
 | **Docker / Podman / NAS** | http://&lt;Host&gt;:**19090** (eigene Anmeldung) | :8888 | zufälliges Passwort im Protokoll des Containers (Zeile „Startpasswort der Verwaltung“) |
 
 **Schon Cockpit installiert?** Bei der nativen Installation fügt sich SignageCast in dein vorhandenes Cockpit ein – es
@@ -162,6 +242,37 @@ kommt nur der Menüpunkt „SignageCast“ dazu, kein zweiter Port, keine zweite
 Cockpit kann Erweiterungen nicht pro Benutzer ausblenden – wer sich an diesem Cockpit anmelden darf, kann auch
 SignageCast einstellen. Docker/Podman nutzt 19090, weil auf vielen Servern Cockpit schon 9090 belegt.
 
+Zum Ausprobieren reicht Docker ohne `/dev/dri` (Software-Fallback). Wetter und Vorhersage kommen weltweit von MET
+Norway, amtliche Unwetterwarnungen (DWD) gibt es nur für Deutschland.
+
 Danach: Verwaltung öffnen, Startpasswort ändern, der Assistent führt durch Sprache, Ort und Home Assistant; am
 Fernseher **http://&lt;IP&gt;:8888/tv** als Startseite öffnen. Updates: Proxmox/Debian in der Verwaltung unter
 **System → Updates**, Docker/NAS durch neues Image und Neuerstellen des Containers (Daten in `/data` bleiben).
+
+Eigenes Passwort gleich bei der Installation: `SC_PASSWORT='…'` vor den Befehl setzen (mindestens 8 Zeichen; bei
+Docker `-e SC_PASSWORT=…`).
+
+**Passwort vergessen:** Proxmox `pct exec <ID> -- passwd tvadmin` · Debian/ISO `passwd tvadmin` als root (ISO: an der
+Konsole als tvadmin anmelden, `sudo passwd tvadmin`) · Docker/Podman/Windows
+`docker exec signagecast rm /data/config/verwaltung.json`, Container neu starten, neues Startpasswort im Protokoll ·
+QNAP/Synology dasselbe über das Terminal des Containers in der Container-App · WSL `wsl -d Debian -u root passwd tvadmin`.
+Einstellungen und Daten bleiben dabei unberührt. Details: [Forgot the password?](#forgot-the-password-reset)
+
+**Was die Installation am System ändert** (Debian, Proxmox-Container, ISO): Paketquellen um `contrib non-free
+non-free-firmware` ergänzt, Debian-Pakete (Chromium, ffmpeg, Xvfb, PulseAudio, Intel-Videotreiber, Schriften, Python,
+Cockpit …), MediaMTX nach `/opt/mediamtx`, Benutzer `signagecast` (ohne Anmeldung) und `tvadmin`, Ordner
+`/opt/signagecast`, `/etc/signagecast`, `/var/lib/signagecast`, `/var/lib/signagecast-aktualisierung`,
+`/usr/share/cockpit/signagecast`, `/usr/local/bin/signagecast-mcp`, systemd-Dienste `signagecast`,
+`signagecast-mediamtx`, `signagecast-aktualisieren`, `signagecast-startpasswort` (bei HDMI `signagecast-hdmi` + seatd),
+Cockpit eingeschaltet, Ports 9090/8888/8890. Keine Firewall-Regeln, kein SSH-Server, keine sudo-Rechte. Tailscale nur auf
+Wunsch aus der Verwaltung. Docker/NAS/Windows: nur Image, Container und Volume. Vollständige Liste:
+[What the installation changes](#what-the-installation-changes-on-the-system).
+
+**Deinstallieren:** Debian/ISO/im Container `sh /opt/signagecast/werkzeug/deinstallieren.sh` (Daten bleiben, mit
+`--alles` alles weg, vorher immer Sicherung nach `/root`) · Proxmox `pct stop <ID> && pct destroy <ID> --purge` ·
+Docker/Podman `docker rm -f signagecast`, Volume (`docker volume ls`) und Image löschen bzw. `docker compose down -v` ·
+QNAP Container Station → Anwendungen → signagecast → Löschen (Volumes mit entfernen), Image löschen · Synology Container
+Manager → Projekt → Stoppen, Löschen, Image löschen, Ordner `docker/signagecast` in der File Station löschen · Windows
+`docker compose -p signagecast down -v`, Image löschen, Ordner `%USERPROFILE%\SignageCast` löschen (WSL: `wsl
+--unregister Debian`) · Pi-Player in der Verwaltung entfernen, SD-Karte neu beschreiben. Details:
+[Uninstall](#uninstall).

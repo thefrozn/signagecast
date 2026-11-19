@@ -23,7 +23,7 @@ encoding (H.265/HEVC in 4K via VAAPI); the CPU mainly runs the browser, which de
 | **Good** | Any Intel CPU with integrated graphics from the **7th generation** (Kaby Lake) on, e.g. Core i5-7500T – via VAAPI; the encoder *Intel Quick Sync (QSV)* needs the 11th/12th generation or newer (N100 etc.) |
 | **Works** | Intel 6th generation (Skylake): H.265 only 8 bit |
 | **Without usable graphics** | Software fallback: H.264 in Full HD on the CPU (about one more core while someone is watching) |
-| **AMD graphics** | VAAPI drivers are installed, but untested so far |
+| **AMD graphics** | Works via VAAPI (radeonsi) – tested with Ryzen 9 4900H / Radeon Vega, see below |
 | **NVIDIA graphics card** | Experimental from 0.22: encoder *NVIDIA NVENC* per TV, if card and driver are passed into the container (`/dev/nvidia*`, Docker `--gpus all`) – untested |
 | **Raspberry Pi** | Not suitable as a server: the Pi 5 has **no** hardware video encoder, the Pi 4 only H.264 up to 1080p and too little CPU for browser + video. **As a player at the TV** it works from 0.23: the Pi plays the finished stream via HDMI – see [Raspberry Pi as player](PLAYER.md). |
 
@@ -40,6 +40,27 @@ in an LXC container with 4 cores and 3 GB RAM, one Samsung TV (4K H.265, 16 Mbit
 | Earlier prototype rendering the full Home Assistant dashboard in 4K | about 16–23 W – the light own TV page and Full HD rendering with GPU upscaling saved more than half |
 | Software fallback test (no GPU, 2 cores) | ffmpeg ~70 % of one core for H.264 1080p25 |
 
+## Tested devices
+
+What the author has running or has tested. Everything else should work if it meets the requirements – reports welcome
+(GitHub Discussions).
+
+| Device | Role | Way | Status |
+|---|---|---|---|
+| Mini PC Intel Core i5-7500T / HD Graphics 630 | server | Proxmox VE 9, LXC (4 cores, 3 GB) | **in daily use** since 0.1, 4K H.265 via VAAPI |
+| Intel test container (same host) | server | Proxmox LXC, Debian 13 | every release is tested and measured here first |
+| AMD Ryzen 9 4900H / Radeon Vega (Renoir) | server | Proxmox VE 9, LXC | **in daily use** since 0.45, VAAPI radeonsi |
+| Docker (inside the Intel test container) | server | `docker run` / compose | tested; without `/dev/dri` software fallback |
+| Rootless Podman, Docker bridge network on a normal host | server | `--network host` / `-p` | **untested** |
+| Installation ISO | server | virtual machine (UEFI, Secure Boot) | tested – **not yet on a real mini PC** |
+| Windows 10/11 Docker Desktop / WSL | server | `schnellstart.ps1` | **untested** on real Windows |
+| QNAP / Synology NAS | server | Container Station / Container Manager | **untested** on a real NAS (guides follow the official apps) |
+| Raspberry Pi 4 (4 GB) | player | player image, Wi-Fi, also via Tailscale | tested (stream and direct mode) |
+| Raspberry Pi 5 | player | player image | **untested** on real hardware |
+| Raspberry Pi offline copy | player | player image | **untested** on a real Pi |
+| PC player (x86 image) / browser device | player | image / any browser | tested in a VM / in browsers |
+| Samsung smart TV (Tizen, 4K) | TV | built-in browser, H.265 | **in daily use** (Full HD and 4K) |
+
 YouTube in the container is decoded in software; the small extension `render/h264-fluessig` keeps YouTube at 720p/1080p
 instead of 144p (see [how it works](HOW-IT-WORKS.md#good-to-know)).
 
@@ -52,5 +73,10 @@ Grafik ab der 7. Generation läuft gut, auch ein QNAP-/Synology-NAS mit Intel-Ce
 gibt es einen Notbetrieb (H.264 Full HD per CPU, etwa ein Kern je zuschauendem Fernseher). Nur x86 (Intel/AMD), kein ARM.
 **Raspberry Pi** eignet sich nicht als Server: Der Pi 5 hat keinen Video-Encoder, der Pi 4 nur H.264 bis 1080p und zu
 wenig CPU für Browser und Video. **Als Player am Fernseher** geht er ab 0.23 – siehe [Raspberry Pi als Player](PLAYER.md#deutsch-raspberry-pi-als-player). Je Fernseher etwa 1 GB RAM und ein Kern; der Fernseher-Browser muss für 4K H.265 können.
+**Getestete Geräte** (Tabelle oben): im Alltag Mini-PC Core i5-7500T (Proxmox-LXC), AMD Ryzen 9 4900H mit Vega
+(Proxmox-LXC), Raspberry Pi 4 als Player (WLAN, Tailscale), Samsung-Smart-TV (4K, H.265); getestet Docker (im Test-Container, mit und
+ohne `/dev/dri`), Installations-ISO und PC-Player in einer VM. **Ungetestet:** echter Mini-PC mit ISO, Windows,
+QNAP/Synology, rootless Podman, Raspberry Pi 5, Pi-Offline-Kopie. Rückmeldungen gern in den GitHub Discussions.
+
 Erfahrung des Autors: Core i5-7500T mit HD 630 unter Proxmox, LXC mit 4 Kernen/3 GB, 4K-Stream mit Live-Video und Ton
 bei etwa **10–11 W** CPU-Paket, im Leerlauf etwa 1,2 W.

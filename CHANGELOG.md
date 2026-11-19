@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.62.0 (2026-11-19)
+- **Random initial password everywhere:** Proxmox containers (`ct.sh`) and Debian containers now also get a random
+  14-character password for `tvadmin` instead of `tvadmin` (without look-alike characters). It is shown at the end and
+  stays readable for root in `/root/signagecast-startpasswort` (Proxmox host: `pct exec <ID> -- cat …`) until you set
+  your own – then `signagecast-startpasswort.path` deletes the file by itself. `SC_PASSWORT=…` sets your own right
+  away (`ct.sh` passes it via a file, not the command line). Existing installations are not touched.
+- **Uninstall:** new `werkzeug/deinstallieren.sh` for Debian, the installation ISO and inside containers – removes
+  services and program, keeps settings and data unless `--alles`, always writes a backup to `/root` first, never locks
+  you out on the ISO (keeps the login user `tvadmin`). `docs/INSTALL.md` has the uninstall steps for Debian, Proxmox VE,
+  Docker/Podman, QNAP, Synology, Windows (Docker Desktop and WSL) and Raspberry Pi players.
+- **Docs:** password reset for every way of installation; complete list of what the installation changes on the system
+  (packages, users, folders, systemd units, ports – checked against `installieren.sh` by a test); list of tested
+  devices in `docs/HARDWARE.md` (AMD Vega now confirmed); quick start: Docker without `/dev/dri` is enough to try it;
+  severe weather warnings are Germany only (DWD), weather itself is worldwide (MET Norway). NAS/Windows guides: the
+  password is changed under *Settings → Access* (was wrongly *System → Access*).
+- **Consumption unchanged** (CT 104, Imbiss test layout, paired): stream mode 98.5 % / 851 MB and 100.7 % / 848 MB
+  CPU/RAM of the chain (0.61: 98.7–99.2 % / 875–885 MB), 25 fps, 0 lost; direct mode 72.9 % / 567 MB and
+  74.9 % / 551 MB (0.61: 72.4–73.0 % / 579–590 MB), 60 fps, no frame over 50 ms. Nothing in the TV chain changed.
+
 ## v0.61.0 (2026-11-19)
 - **YouTube only for private use – said clearly:** YouTube's terms allow private, non-commercial use only. The Live
   videos overview, the channel setting *Video window shows* and the README ([YouTube and commercial use](README.md#youtube-and-commercial-use))

@@ -3,8 +3,10 @@
 # Aufruf als root im Projektordner:  sh installieren.sh [--profil datei.json]
 # Optional: SC_STREAM_PORT=8899 sh installieren.sh  – anderer Port für den Stream (Standard 8888, wird gemerkt).
 # Optional: SC_SICHERUNG=/pfad/sicherung.zip [SC_SICHERUNG_PASSWORT=…] – Sicherung (ZIP oder .json) gleich einspielen.
-# In einem Container (LXC) bekommt der Benutzer tvadmin das Startpasswort „tvadmin“; auf einem echten Rechner (nativ)
-# ein zufälliges, das am Ende angezeigt wird. Ist Cockpit schon installiert, erscheint SignageCast dort als Menüpunkt.
+# Optional: SC_PASSWORT=… (oder SC_PASSWORT_DATEI=/pfad) – Startpasswort für tvadmin selbst vorgeben.
+# Der Benutzer tvadmin bekommt sonst ein zufälliges Startpasswort (seit 0.62 auch im Container/LXC, vorher „tvadmin“). Es
+# wird am Ende angezeigt und steht in /root/signagecast-startpasswort (nur root), bis es geändert ist – danach löscht
+# signagecast-startpasswort.path die Datei. Ist Cockpit schon installiert, erscheint SignageCast dort als Menüpunkt.
 # Ein erneuter Aufruf aktualisiert Programm und Dienste; Einstellungen und Daten bleiben erhalten.
 set -eu
 QUELLE=$(cd "$(dirname "$0")" && pwd)
@@ -91,7 +93,8 @@ rm -rf /opt/signagecast.neu && mkdir -p /opt/signagecast.neu
 cp -r "$QUELLE/app" "$QUELLE/www" "$QUELLE/render" "$QUELLE/werkzeug" "$QUELLE/player" "$QUELLE/VERSION" /opt/signagecast.neu/
 mkdir -p /opt/signagecast.neu/cockpit && cp -r "$QUELLE/cockpit/signagecast" /opt/signagecast.neu/cockpit/   # für die Rückkehr
 chown -R root:root /opt/signagecast.neu && chmod -R a+rX,go-w /opt/signagecast.neu
-chmod 755 /opt/signagecast.neu/render/tv-render.sh /opt/signagecast.neu/werkzeug/aktualisieren.sh
+chmod 755 /opt/signagecast.neu/render/tv-render.sh /opt/signagecast.neu/werkzeug/aktualisieren.sh \
+  /opt/signagecast.neu/werkzeug/startpasswort.sh /opt/signagecast.neu/werkzeug/deinstallieren.sh
 # Vorige Version aufheben – für „Zurück zur vorigen Version“ und die automatische Rückkehr nach einem fehlerhaften Update
 rm -rf /opt/signagecast.vorher /opt/signagecast.alt; [ -d /opt/signagecast ] && mv /opt/signagecast /opt/signagecast.vorher
 mv /opt/signagecast.neu /opt/signagecast
@@ -109,14 +112,17 @@ chmod -R a+rX /usr/share/cockpit/signagecast
 systemctl enable --now cockpit.socket >/dev/null 2>&1
 if ! id tvadmin >/dev/null 2>&1; then
   useradd -m -s /bin/bash tvadmin
-  if [ "$UMGEBUNG" = none ] || [ "$UMGEBUNG" = wsl ]; then
-    # Echter Rechner oder WSL (seit 0.44; im Modus „mirrored“ aus dem Heimnetz erreichbar): kein bekanntes Passwort
-    # für ein Linux-Konto, das sich über Cockpit anmelden kann
-    STARTPW=$(head -c 64 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 14)
-  else
-    STARTPW=tvadmin
+  # Nie ein bekanntes Passwort für ein Linux-Konto, das sich über Cockpit anmelden kann (seit 0.62 überall zufällig;
+  # ohne Doppeldeutiges wie 0/O, 1/l/I, damit man es vom Bildschirm abtippen kann)
+  [ -n "${SC_PASSWORT_DATEI:-}" ] && [ -f "$SC_PASSWORT_DATEI" ] && SC_PASSWORT=$(cat "$SC_PASSWORT_DATEI") && rm -f "$SC_PASSWORT_DATEI"
+  STARTPW=${SC_PASSWORT:-$(head -c 256 /dev/urandom | tr -dc 'A-HJ-NP-Za-km-z2-9' | head -c 14)}
+  [ ${#STARTPW} -ge 8 ] || { echo "SC_PASSWORT ist zu kurz (mindestens 8 Zeichen)."; exit 1; }
+  printf 'tvadmin:%s\n' "$STARTPW" | chpasswd
+  if [ -z "${SC_PASSWORT:-}" ]; then
+    # zum Nachlesen (nur root), bis das Passwort geändert ist; der Abdruck im Schatten erkennt die Änderung
+    ( umask 077; printf '%s\n' "$STARTPW" > /root/signagecast-startpasswort
+      getent shadow tvadmin | cut -d: -f2 | sha256sum | cut -d' ' -f1 > /root/.signagecast-startpasswort.abdruck )
   fi
-  echo "tvadmin:$STARTPW" | chpasswd
   NEUER_ADMIN=1
 fi
 usermod -aG systemd-journal tvadmin
@@ -126,6 +132,9 @@ install -m 644 /opt/signagecast/render/signagecast.service /etc/systemd/system/s
 # Updates aus der Verwaltung: Anfrage-Datei -> root-Skript mit festen Aktionen (kein sudo, kein polkit)
 install -m 644 /opt/signagecast/render/signagecast-aktualisieren.service /etc/systemd/system/signagecast-aktualisieren.service
 install -m 644 /opt/signagecast/render/signagecast-aktualisieren.path /etc/systemd/system/signagecast-aktualisieren.path
+# Startpasswort-Datei löschen, sobald tvadmin ein eigenes Passwort hat (seit 0.62; beobachtet /etc/shadow)
+install -m 644 /opt/signagecast/render/signagecast-startpasswort.service /etc/systemd/system/signagecast-startpasswort.service
+install -m 644 /opt/signagecast/render/signagecast-startpasswort.path /etc/systemd/system/signagecast-startpasswort.path
 # MediaMTX nur neu starten, wenn sich seine Dienstdatei geändert hat – sonst läuft der Stream am Fernseher weiter
 # (Änderungen an tv-render.sh wirken beim nächsten Start der Kette, die Pfade schreibt der Datendienst)
 MTX_NEU=1; cmp -s /opt/signagecast/render/signagecast-mediamtx.service /etc/systemd/system/signagecast-mediamtx.service && MTX_NEU=""
@@ -146,6 +155,12 @@ fi
 systemctl daemon-reload
 systemctl enable signagecast signagecast-mediamtx >/dev/null 2>&1
 systemctl enable --now signagecast-aktualisieren.path >/dev/null 2>&1
+if [ -f /root/signagecast-startpasswort ]; then
+  systemctl enable --now signagecast-startpasswort.path >/dev/null 2>&1
+  systemctl start signagecast-startpasswort.service || true     # schon geändert (z. B. vor dem Update)? dann gleich weg
+else
+  systemctl disable --now signagecast-startpasswort.path >/dev/null 2>&1 || true
+fi
 systemctl restart signagecast
 if [ -n "$MTX_NEU" ]; then systemctl restart signagecast-mediamtx; else systemctl is-active -q signagecast-mediamtx || systemctl start signagecast-mediamtx; fi
 if [ -f /etc/signagecast/hdmi ] && [ -f /etc/systemd/system/signagecast-hdmi.service ]; then
@@ -186,8 +201,9 @@ echo "Fertig (Version $(cat /opt/signagecast/VERSION))."
 [ -n "${UMZUG:-}" ] && echo "  Alte Installation „TV-Stream“ übernommen. Der frühere Systembenutzer „tv“ wird nicht mehr gebraucht."
 echo "  Verwaltung:  https://$IP:9090   (Benutzer tvadmin$([ -n "${COCKPIT_DA:-}" ] && echo " – oder dein Cockpit-Benutzer; SignageCast ist ein neuer Menüpunkt"))"
 if [ -n "${NEUER_ADMIN:-}" ]; then
-  if [ "$STARTPW" = tvadmin ]; then echo "  Startpasswort = Benutzername. Bitte nach dem ersten Anmelden ändern (Konten → tvadmin)."
-  else echo "  Startpasswort für tvadmin: $STARTPW   (nur jetzt sichtbar – bitte notieren oder ändern: passwd tvadmin)"; fi
+  if [ -n "${SC_PASSWORT:-}" ]; then echo "  Passwort für tvadmin: das vorgegebene (SC_PASSWORT)."
+  else echo "  Startpasswort für tvadmin: $STARTPW"
+       echo "  (nachlesen: cat /root/signagecast-startpasswort – bitte nach dem ersten Anmelden ändern: Konten → tvadmin oder passwd tvadmin)"; fi
 fi
 echo "  Stream (TV): http://$IP:$PORT/tv   (weitere Fernseher: http://$IP:$PORT/<kennung>)"
 echo "  Danach in der Verwaltung unter „Einstellungen → Home Assistant“ Home Assistant einrichten (Anleitung steht dort)."

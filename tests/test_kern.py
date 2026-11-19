@@ -2087,6 +2087,44 @@ class VideoHerkunft061(unittest.TestCase):
         self.assertIn("## YouTube und gewerbliche Nutzung", lese("README.de.md"))
         self.assertIn('quelle = "medien" if any(', lese("app", "dienst.py"))
 
+
+class Installation062(unittest.TestCase):
+    """Doku „What the installation changes“ muss zu installieren.sh passen (Pakete, Dienste)."""
+    W = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    lese = staticmethod(lambda *p: open(os.path.join(Installation062.W, *p), encoding="utf-8").read())
+
+    def test_pakete_dokumentiert(self):
+        sh, doku = self.lese("installieren.sh"), self.lese("docs", "INSTALL.md")
+        m = re.search(r"^apt-get install [^\n]*?--no-install-recommends(.*?)>/dev/null", sh, re.S | re.M)
+        pakete = [p for p in re.split(r"[\s\\]+", m.group(1)) if p and not p.startswith("fonts-")]
+        self.assertGreater(len(pakete), 20)
+        fehlt = [p for p in pakete if p not in doku]
+        self.assertEqual(fehlt, [], "in docs/INSTALL.md nachtragen")
+
+    def test_dienste_dokumentiert(self):
+        doku = self.lese("docs", "INSTALL.md")
+        for n in os.listdir(os.path.join(self.W, "render")):
+            if n.endswith((".service", ".path")):
+                self.assertIn(n.rsplit(".", 1)[0], doku, n)
+
+    def test_kein_festes_startpasswort(self):
+        sh, ct = self.lese("installieren.sh"), self.lese("proxmox", "ct.sh")
+        self.assertNotIn("STARTPW=tvadmin", sh)
+        self.assertNotIn("initial password tvadmin", ct)
+        self.assertIn("/root/signagecast-startpasswort", sh)
+        self.assertIn("signagecast-startpasswort.path", sh)
+        self.assertIn("SC_PASSWORT_DATEI", ct)
+
+    def test_deinstallation(self):
+        d = self.lese("werkzeug", "deinstallieren.sh")
+        for n in os.listdir(os.path.join(self.W, "render")):
+            if n.endswith((".service", ".path")):
+                self.assertIn(n, d, n)
+        self.assertIn("--alles", d)
+        self.assertIn("tar -czf", d)              # Sicherung vor dem Löschen
+        for weg in ("Proxmox VE", "Docker / Podman", "QNAP", "Synology", "Windows (Docker Desktop)", "Windows (WSL)"):
+            self.assertIn(weg, self.lese("docs", "INSTALL.md"))
+
 if __name__ == "__main__":
     unittest.main()
 

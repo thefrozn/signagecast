@@ -1,0 +1,10 @@
+# SignageCast (seit 0.62): sobald sich /etc/shadow ändert, prüfen, ob tvadmin ein eigenes Passwort hat
+[Unit]
+Description=SignageCast – Startpasswort-Datei nach dem Passwortwechsel löschen
+ConditionPathExists=/root/signagecast-startpasswort
+
+[Path]
+PathChanged=/etc/shadow
+
+[Install]
+WantedBy=multi-user.target

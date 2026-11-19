@@ -34,7 +34,7 @@ Two ways: **Docker Desktop** (recommended – one command) or **WSL** with Debia
    restart (the container itself restarts by itself).
 
 - **Admin:** <http://localhost:19090> on the PC, `http://<PC-IP>:19090` in the home network. Change the initial
-  password under **System → Access**.
+  password under **Settings → Access**.
 - **TV:** `http://<PC-IP>:8888/tv` · **Raspberry Pi / PC players:** port 8890 is open, images from the admin work as usual.
 - **Update:** run the same command again – settings and data stay in the Docker volume `signagecast`.
 - **Other IP** (several network cards, VPN): `$env:SC_HOST_IP = "10.0.0.20"` before the command.
@@ -115,7 +115,7 @@ Grafikbeschleunigung – Windows reicht Quick Sync nicht an Linux-Container durc
 3. Fragt die **Windows-Firewall**: Zugriff in **privaten Netzwerken** erlauben.
 4. Docker Desktop → **Settings → General → „Start Docker Desktop when you sign in“** einschalten.
 
-- **Verwaltung:** <http://localhost:19090> am PC, `http://<PC-IP>:19090` im Heimnetz; Startpasswort unter **System → Zugang** ändern.
+- **Verwaltung:** <http://localhost:19090> am PC, `http://<PC-IP>:19090` im Heimnetz; Startpasswort unter **Einstellungen → Zugang** ändern.
 - **Fernseher:** `http://<PC-IP>:8888/tv` · **Raspberry-Pi-/PC-Player:** Port 8890 ist offen.
 - **Update:** denselben Befehl noch einmal – Einstellungen und Daten bleiben im Docker-Volume `signagecast`.
 - **Andere IP** (mehrere Netzwerkkarten, VPN): vorher `$env:SC_HOST_IP = "10.0.0.20"` setzen.

@@ -55,7 +55,7 @@ Installation by mouse in **Container Manager** – no command line needed.
 7. **Find the initial password:** go to **Container**, click **signagecast** → **Details** → **Log**. Look for the line starting with
    `SignageCast – Startpasswort der Verwaltung / initial admin password:` – the word after the colon is the password.
 8. **Open the admin** in your browser: `http://<NAS-IP>:19090` and log in with this password. Change it right away
-   under **System → Access**. A short assistant asks for language, location and (optionally) Home Assistant.
+   under **Settings → Access**. A short assistant asks for language, location and (optionally) Home Assistant.
 9. **On the TV** open `http://<NAS-IP>:8888/tv` in the browser and set it as start page.
 
 **Firewall:** if the DSM firewall is on (Control Panel → Security → Firewall), allow the ports **8888** and **19090**
@@ -125,7 +125,7 @@ Installation per Maus im **Container Manager** – ohne Kommandozeile.
 7. **Startpasswort finden:** unter **Container** auf **signagecast** klicken → **Details** → **Protokoll**. Dort steht eine
    Zeile `SignageCast – Startpasswort der Verwaltung / initial admin password: …` – das Wort nach dem Doppelpunkt ist das Passwort.
 8. **Verwaltung öffnen:** im Browser `http://<NAS-IP>:19090`, mit diesem Passwort anmelden und es gleich unter
-   **System → Zugang** ändern. Ein kurzer Assistent fragt nach Sprache, Ort und (optional) Home Assistant.
+   **Einstellungen → Zugang** ändern. Ein kurzer Assistent fragt nach Sprache, Ort und (optional) Home Assistant.
 9. **Am Fernseher** im Browser `http://<NAS-IP>:8888/tv` öffnen und als Startseite festlegen.
 
 **Firewall:** Ist die DSM-Firewall an (Systemsteuerung → Sicherheit → Firewall), die Ports **8888** und **19090** für

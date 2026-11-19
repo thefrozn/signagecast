@@ -44,6 +44,8 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
+Zum Ausprobieren reicht Docker ohne `/dev/dri` (Software-Fallback) – einfach `--device /dev/dri` weglassen.
+
 **Eigener Rechner (ISO)** – Mini-PC oder altes Notebook mit UEFI: `signagecast-server-vX.Y.Z.iso` aus dem
 [neuesten Release](https://github.com/thefrozn/signagecast/releases/latest) auf einen USB-Stick schreiben und davon
 starten. Der Rechner kann die TV-Seite auch selbst per HDMI zeigen – ohne zweites Gerät
@@ -67,7 +69,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 
 **Der Bildschirm**
 - Fenster zur Welt: YouTube-Live-Kameras, die wechseln und schlechte Streams selbst überspringen
-- Uhr, Wetter, Vorhersage, amtliche Unwetterwarnungen (DWD)
+- Uhr, Wetter und Vorhersage weltweit (MET Norway), amtliche Unwetterwarnungen für Deutschland (DWD)
 - Hintergründe, die dem echten Sonnenstand an deinem Ort folgen
 - [Vorlagen für viele Orte](docs/TEMPLATES.de.md): Wohnzimmer, Wartezimmer, Empfang, Menütafel, Einkaufszentrum,
   Krankenhaus, Hotel, Fitnessstudio, Kantine, Bilderrahmen und Nacht
@@ -160,7 +162,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
   Debian-13-Installer mit vorbereiteten Antworten auf einem USB-Stick (UEFI, Secure Boot darf an bleiben); auf Wunsch
   zeigt der Rechner einen Kanal selbst per HDMI ([Details](docs/INSTALL.md#own-computer-installation-iso)). Noch nicht
   auf vielen echten Rechnern getestet.
-- **Meldungen und Benachrichtigungen** – DWD-Warnungen als Baustein; Banner aus anderen Systemen per Webhook;
+- **Meldungen und Benachrichtigungen** – DWD-Warnungen als Baustein (nur Deutschland; das Wetter selbst weltweit über MET Norway); Banner aus anderen Systemen per Webhook;
   Benachrichtigungen, wenn ein Fernseher ausfällt, ein Update oder eine Sicherung scheitert oder Home Assistant getrennt ist.
 - **Bausteine mit Zeitraum** – z. B. „Vom 23.12. bis 2.1. geschlossen“ erscheint und verschwindet von selbst.
 - **Notfall-Vollbild und Durchsage-Pult** – eine rote Vollbild-Meldung auf allen Fernsehern; eine eigene Empfangsseite,

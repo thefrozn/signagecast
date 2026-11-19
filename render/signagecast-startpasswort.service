@@ -1,0 +1,7 @@
+[Unit]
+Description=SignageCast – Startpasswort-Datei nach dem Passwortwechsel löschen
+ConditionPathExists=/root/signagecast-startpasswort
+
+[Service]
+Type=oneshot
+ExecStart=/opt/signagecast/werkzeug/startpasswort.sh

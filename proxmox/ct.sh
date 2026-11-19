@@ -6,7 +6,8 @@
 # Asks a few questions (Enter = suggested value), creates an unprivileged Debian 13 container with the Intel GPU
 # (/dev/dri/renderD128) passed through and installs SignageCast inside it.
 # Without questions: SIGNAGECAST_YES=1 plus optional CTID, CT_HOSTNAME, CORES, RAM, DISK, STORAGE, BRIDGE, IP (dhcp or
-# 192.168.1.50/24), GW as environment variables.
+# 192.168.1.50/24), GW as environment variables. SC_PASSWORT=… sets the admin password yourself (otherwise random,
+# shown at the end and readable later with: pct exec <ID> -- cat /root/signagecast-startpasswort).
 set -euo pipefail
 REPO=thefrozn/signagecast
 INSTALL_URL=${SIGNAGECAST_INSTALL_URL:-https://raw.githubusercontent.com/$REPO/main/install.sh}
@@ -62,12 +63,23 @@ echo "== Waiting for network"
 for _ in $(seq 1 60); do pct exec "$CTID" -- getent hosts deb.debian.org >/dev/null 2>&1 && break; sleep 2; done
 
 echo "== Installing SignageCast inside the container (takes a few minutes)"
+PW_DATEI=""
+if [ -n "${SC_PASSWORT:-}" ]; then     # über eine Datei (600) statt der Befehlszeile – sonst stünde es in der Prozessliste
+  printf '%s' "$SC_PASSWORT" | pct exec "$CTID" -- sh -c 'umask 077; cat > /root/.sc-passwort'
+  PW_DATEI=/root/.sc-passwort
+fi
 pct exec "$CTID" -- bash -c "export LC_ALL=C.UTF-8; apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates >/dev/null && \
-  curl -fsSL '$INSTALL_URL' | SIGNAGECAST_TARBALL='${SIGNAGECAST_TARBALL:-}' SIGNAGECAST_VERSION='${SIGNAGECAST_VERSION:-}' sh"
+  curl -fsSL '$INSTALL_URL' | SIGNAGECAST_TARBALL='${SIGNAGECAST_TARBALL:-}' SIGNAGECAST_VERSION='${SIGNAGECAST_VERSION:-}' SC_PASSWORT_DATEI='$PW_DATEI' sh"
 
 ADR=$(pct exec "$CTID" -- hostname -I | awk '{print $1}')
 echo
 gruen "SignageCast is ready in container $CTID."
-echo "  Admin:  https://$ADR:9090   (user tvadmin, initial password tvadmin – please change it)"
+STARTPW=$(pct exec "$CTID" -- cat /root/signagecast-startpasswort 2>/dev/null || true)
+if [ -n "$STARTPW" ]; then
+  echo "  Admin:  https://$ADR:9090   (user tvadmin, initial password: $STARTPW – please change it)"
+  echo "          read it again later: pct exec $CTID -- cat /root/signagecast-startpasswort"
+else
+  echo "  Admin:  https://$ADR:9090   (user tvadmin, the password you set with SC_PASSWORT)"
+fi
 echo "  TV:     http://$ADR:8888/tv  (open in the TV browser)"
 echo "  Next:   in the admin page open “Connection” and follow the Home Assistant guide."
