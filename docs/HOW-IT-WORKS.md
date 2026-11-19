@@ -19,6 +19,10 @@ see [NOTICE.md](../NOTICE.md).
 
 - Only public YouTube pages and the **official embed player** are used; streams whose operators do not allow embedding
   are not shown. If YouTube reports too many requests, SignageCast pauses for an hour. Nothing is circumvented.
+- **Private use (since 0.61 stated in the interface):** YouTube's terms allow private, non-commercial use only. In
+  business or public places show own media (video window option `herkunft: "medien"`, set in the business templates,
+  or per channel) – see [README](../README.md#youtube-and-commercial-use). In stream mode the server records the
+  picture and passes it on; for YouTube content direct mode (official player on every TV) is the cleaner way.
 - **Stream checks (since 0.31):** every 5 minutes up to 6 streams are checked on YouTube – first those where daylight
   starts within 30 minutes, then daytime streams not checked for 2 hours, then night streams not checked for 6 hours.
   Separately, each TV reports its next two streams; the data service checks them if their last check is older than
@@ -108,7 +112,9 @@ in an AES-256 encrypted ZIP with a strong password; automatic backups; restore i
 Verwaltung als Cockpit-Erweiterung (Docker/NAS: eigene Anmeldung auf 19090). Nur Python-Standardbibliothek und
 Debian-Pakete.
 
-**Gut zu wissen:** Nur öffentliche YouTube-Seiten und der offizielle Einbett-Player, nichts wird umgangen. Datenquellen
+**Gut zu wissen:** Nur öffentliche YouTube-Seiten und der offizielle Einbett-Player, nichts wird umgangen. YouTube
+erlaubt nur private, nicht-gewerbliche Nutzung – an gewerblichen/öffentlichen Orten eigene Medien zeigen (seit 0.61
+in den Geschäftsvorlagen voreingestellt), für YouTube besser Direktmodus statt Stream-Modus. Datenquellen
 nur http/https mit Größen- und Zeitgrenzen; geheime Kopfzeilen bleiben im Container. Kameras liest nur MediaMTX im
 Container (H.264 nötig). Webseiten live nur, wo die Seite das Einbetten erlaubt, sonst als Bildschirmfoto.
 Seit 0.38: **Internet-Prüfung** (je Minute eine TCP-Verbindung zum YouTube-Player, nur wenn Live-Videos laufen; offline

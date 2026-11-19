@@ -7,7 +7,7 @@ const LIVE_TEXTE = {
   de: {
     schliessen: "Schließen", speichern: "Speichern", mehr: "Weitere Aktionen", erweitert: "Erweitert",
     // Übersicht
-    uTitel: "Live-Videos", uText: "Live-Kameras von YouTube laufen im Videofenster der Layouts – automatisch gesucht, nach Themen sortiert und nur dort, wo gerade Tag ist.",
+    uTitel: "Live-Videos", musik: "Musik in der Öffentlichkeit ist lizenzpflichtig: Wer Radio, Livestreams oder eigene Videos mit Ton in Praxis, Laden, Gaststätte, Hotel, Verein oder an einem anderen öffentlichen Ort abspielt, braucht dafür in fast allen Ländern eine Lizenz der zuständigen Verwertungsgesellschaft – auch für Internetradio. Bitte vorher klären; zu Hause gilt das nicht.", recht: "YouTube erlaubt nur die private, nicht-gewerbliche Nutzung. In Praxis, Laden, Hotel, Verein oder an anderen öffentlichen Orten bitte nur eigene Medien zeigen oder die Rechte selbst klären (YouTube-Bedingungen, Betreiber der Kamera, GEMA bei Ton).", uText: "Live-Kameras von YouTube laufen im Videofenster der Layouts – automatisch gesucht, nach Themen sortiert und nur dort, wo gerade Tag ist.",
     laeuftAuf: "Läuft gerade", nichts: "– (Kanal zeigt gerade kein Live-Video)", kanalAus: "Kette aus (niemand schaut zu)",
     zahlen: { rotation: "in der Rotation", bereit: "bereit", nacht: "dunkel vor Ort", probleme: "mit Problemen" },
     probleme: "Probleme", keineProbleme: "Keine Probleme – alles läuft.", ansehen: "Ansehen",
@@ -54,7 +54,7 @@ const LIVE_TEXTE = {
   },
   en: {
     schliessen: "Close", speichern: "Save", mehr: "More actions", erweitert: "Advanced",
-    uTitel: "Live videos", uText: "Live cams from YouTube play in the video window of the layouts – found automatically, sorted by topic and only where it is daytime.",
+    uTitel: "Live videos", musik: "Playing music in public needs a licence: if you play radio, live streams or own videos with sound in a practice, shop, restaurant, hotel, club or other public place, you need a licence from the music rights organisation in your country in almost every country – internet radio included. Please check this first; at home it does not apply.", recht: "YouTube only allows private, non-commercial use. In a practice, shop, hotel, club or other public place please show own media only or clear the rights yourself (YouTube terms, camera operator, music licensing for sound).", uText: "Live cams from YouTube play in the video window of the layouts – found automatically, sorted by topic and only where it is daytime.",
     laeuftAuf: "Playing now", nichts: "– (channel shows no live video right now)", kanalAus: "chain off (nobody watching)",
     zahlen: { rotation: "in rotation", bereit: "ready", nacht: "dark on site", probleme: "with problems" },
     probleme: "Problems", keineProbleme: "No problems – everything is running.", ansehen: "Show",
@@ -163,7 +163,7 @@ async function liveSeite(inhalt) {
   const z = (f) => st.streams.filter(f).length;
   const probleme = PROBLEME.map((p) => [p, z((s) => s.zustand === p)]).filter(([, n]) => n);
   const letzte = status.liste && status.liste.suche;
-  inhalt.innerHTML = `<div class="karte"><h2>${esc(L.uTitel)}</h2><p class="leise">${esc(L.uText)}</p>
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(L.uTitel)}</h2><p class="leise">${esc(L.uText)}</p>${rechtHinweis("youtube", L.recht)}${rechtHinweis("musik", L.musik)}
       <div class="kennzahlen">
         ${[["rotation", z((s) => s.in_rotation)], ["bereit", z((s) => s.zustand === "bereit")], ["nacht", z((s) => s.zustand === "nacht")],
           ["probleme", z((s) => PROBLEME.includes(s.zustand))]].map(([k, n]) =>

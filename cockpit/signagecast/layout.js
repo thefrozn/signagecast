@@ -59,7 +59,7 @@ const LTEXTE = {
            webcam: "Kamera (Video)", diagramm: "Verlauf / Diagramm", webseite: "Webseite", unwetter: "Unwetterwarnung (DWD)",
            pdf: "PDF (Seite für Seite)", galerie: "Galerie (Bilder/PDFs)", liste: "Liste (Speisekarte, Zeiten, Wegweiser)" },
     opt: { sekunden: "mit Sekunden", wochentag: "mit Wochentag", jahr: "mit Jahr", entity: "Entität (aus HA)", tage: "Tage",
-           liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", text: "Text",
+           liste: "Räume", name: "Beschriftung", icon: "Symbol (mdi-…)", leiste: "LIVE-Leiste zeigen", herkunft: "Was zeigen", text: "Text",
            bild: "Bild hochladen (PNG mit durchsichtigem Hintergrund oder JPG)", laufband: "als Laufband (läuft durch)", nur_mit_terminen: "nur zeigen, wenn in diesem Zeitraum Termine anstehen",
            ansicht: "Darstellung", symbole: "Symbole je Termin (erste passende Regel gilt)", ohne_symbol: "Symbol für andere Termine (leer = weglassen)", wann: "Tag unter dem Symbol (Heute, Morgen, Di …)",
            intervall: "Bild erneuern alle (s)", anzahl: "Einträge", titel: "Überschrift", dauer: "anzeigen für (s)", farbe: "Farbe", deckkraft: "Deckkraft (%)",
@@ -89,7 +89,7 @@ const LTEXTE = {
                 pdf: "Preisliste, Speisekarte, Aushang oder Präsentation (als PDF speichern). Bis 50 Seiten; die Seiten wechseln nach der Uhr – alle Fernseher blättern gleich.",
                 galerie: "Zeigt einen Ordner aus Inhalte → Mediathek → Galerien: Bilder und PDF-Seiten nacheinander, nach der Uhr – alle Fernseher zeigen dasselbe Bild. Neue Bilder im Ordner erscheinen von selbst. Für Vollbild den Baustein auf 0 0 48 27 ziehen.",
                 liste: "Zeilen mit Text links, kleinem Zusatz darunter (z. B. Allergene) und Wert rechts (Preis, Uhrzeit, Ebene). Hervorgehobene Zeilen in der Akzentfarbe. Statt fester Zeilen geht auch eine Datenquelle, z. B. eine CSV-Datei mit den Spalten text, info, wert – dann pflegt man nur die Datei." },
-    wahl: { liste: "Liste", symbole: "nur Symbole", balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)", einbetten: "einbetten (live)", bild: "Bildschirmfoto",
+    wahl: { kanal: "wie im Kanal eingestellt", medien: "nur eigene Medien (ohne YouTube)", liste: "Liste", symbole: "nur Symbole", balken: "Balken", ampel: "Ampel", einpassen: "einpassen (ganzes Bild)", fuellen: "füllen (zuschneiden)", einbetten: "einbetten (live)", bild: "Bildschirmfoto",
             schwarz: "schwarz", unscharf: "Bild unscharf dahinter", eigene: "wie im Ordner", name: "nach Name", neu: "neueste zuerst", zufall: "zufällig",
             blenden: "überblenden", hart: "direkt" },
     galSekunden: "Sekunden je Bild", galKeinOrdner: "– Ordner wählen –", galOrdnerAnlegen: "Ordner anlegen und Bilder hochladen: Inhalte → Mediathek → Galerien",
@@ -155,7 +155,7 @@ const LTEXTE = {
            webcam: "Camera (video)", diagramm: "History / chart", webseite: "Web page", unwetter: "Weather warning (DWD)",
            pdf: "PDF (page by page)", galerie: "Gallery (pictures/PDFs)", liste: "List (menu, times, directory)" },
     opt: { sekunden: "with seconds", wochentag: "with weekday", jahr: "with year", entity: "Entity (from HA)", tage: "Days",
-           liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", text: "Text",
+           liste: "Rooms", name: "Label", icon: "Icon (mdi-…)", leiste: "show LIVE bar", herkunft: "What to show", text: "Text",
            bild: "Upload picture (PNG with transparent background or JPG)", laufband: "as ticker (scrolling)", nur_mit_terminen: "only show when events are due in this period",
            ansicht: "Display", symbole: "Icon per event (first matching rule wins)", ohne_symbol: "Icon for other events (empty = leave out)", wann: "day below the icon (Today, Tomorrow, Tue …)",
            intervall: "refresh picture every (s)", anzahl: "Entries", titel: "Heading", dauer: "show for (s)", farbe: "Colour", deckkraft: "Opacity (%)",
@@ -185,7 +185,7 @@ const LTEXTE = {
                 pdf: "Price list, menu, notice or presentation (saved as PDF). Up to 50 pages; pages change by the clock – all TVs turn pages together.",
                 galerie: "Shows a folder from Content → Media library → Galleries: pictures and PDF pages one after another, by the clock – all TVs show the same picture. New pictures in the folder appear by themselves. For full screen set the element to 0 0 48 27.",
                 liste: "Rows with text on the left, a small extra line below (e.g. allergens) and a value on the right (price, time, floor). Highlighted rows use the accent colour. Instead of fixed rows a data source works too, e.g. a CSV file with the columns text, info, wert – then you only maintain the file." },
-    wahl: { liste: "List", symbole: "icons only", balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)", einbetten: "embed (live)", bild: "Screenshot",
+    wahl: { kanal: "as set for the channel", medien: "own media only (no YouTube)", liste: "List", symbole: "icons only", balken: "Bar", ampel: "Traffic light", einpassen: "fit (whole picture)", fuellen: "fill (crop)", einbetten: "embed (live)", bild: "Screenshot",
             schwarz: "black", unscharf: "blurred picture behind", eigene: "as in the folder", name: "by name", neu: "newest first", zufall: "random",
             blenden: "cross-fade", hart: "cut" },
     galSekunden: "Seconds per picture", galKeinOrdner: "– choose folder –", galOrdnerAnlegen: "Create folders and upload pictures: Content → Media library → Galleries",
@@ -221,7 +221,9 @@ const LBED = {
     seite: { baustein: "Baustein", layout: "Layout" }, bausteinErst: "Erst einen Baustein auf der Leinwand anklicken",
     layoutText: "Gilt für das ganze Layout. Einen Baustein auf der Leinwand anklicken, um ihn einzustellen.",
     zoom: "Zoom", einpassen: "Einpassen", zoomHilfe: "Strg+Mausrad über der Leinwand zoomt", hilfe: "Hilfe",
-    h: { sichtbar: "Ausgeschaltet bleibt der Baustein im Layout, der Fernseher zeigt ihn aber nicht.",
+    h: { herkunft: "YouTube erlaubt nur private, nicht-gewerbliche Nutzung. In Praxis, Laden, Hotel oder Verein „nur eigene Medien“ wählen – "
+           + "die Medien lädst du unter Inhalte → Mediathek hoch. Ohne Medien zeigt das Fenster ein ruhiges Bild.",
+         sichtbar: "Ausgeschaltet bleibt der Baustein im Layout, der Fernseher zeigt ihn aber nicht.",
          karte: "Legt eine halbdurchsichtige Karte hinter den Inhalt – besser lesbar auf unruhigem Hintergrund.",
          ausrichtung: "Wo der Inhalt innerhalb des Bausteins sitzt.",
          schrift: "Eigene Schrift nur für diesen Baustein. „Wie Layout“ nimmt die Schrift aus dem Reiter Layout.",
@@ -262,7 +264,9 @@ const LBED = {
     seite: { baustein: "Element", layout: "Layout" }, bausteinErst: "Click an element on the canvas first",
     layoutText: "Applies to the whole layout. Click an element on the canvas to configure it.",
     zoom: "Zoom", einpassen: "Fit", zoomHilfe: "Ctrl+mouse wheel over the canvas zooms", hilfe: "Help",
-    h: { sichtbar: "When switched off the element stays in the layout, but the TV does not show it.",
+    h: { herkunft: "YouTube only allows private, non-commercial use. In a practice, shop, hotel or club choose “own media only” – "
+           + "upload the media under Content → Media library. Without media the window shows a calm picture.",
+         sichtbar: "When switched off the element stays in the layout, but the TV does not show it.",
          karte: "Puts a semi-transparent card behind the content – easier to read on a busy background.",
          ausrichtung: "Where the content sits inside the element.",
          schrift: "Own font for this element only. “As layout” uses the font from the Layout tab.",
@@ -355,7 +359,7 @@ const SYM_TEXTE = {
 };
 const QUELL_ARTEN = { webcam: ["video"], kalender: ["ical", "csv"], apibild: ["bild", "json"], apiliste: ["json", "rss", "ical", "text", "csv"],
   diagramm: ["json", "text", "csv"], apiwert: ["json", "text", "rss", "ical", "csv"], anzeige: ["json", "text", "csv"], countdown: ["json", "text", "ical", "csv"], liste: ["csv", "json"] };
-const WAHL = { ansicht: ["liste", "symbole"], darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"], modus: ["einbetten", "bild"],
+const WAHL = { herkunft: ["kanal", "medien"], ansicht: ["liste", "symbole"], darstellung: ["balken", "ampel"], anpassung: ["einpassen", "fuellen"], modus: ["einbetten", "bild"],
   rand: ["schwarz", "unscharf"], reihenfolge: ["eigene", "name", "neu", "zufall"], uebergang: ["blenden", "hart"] };   // Galerie seit 0.45
 // Schriftvorschau in Auswahllisten (seit 0.45.1 per Skript – Cockpit lässt style="…" im HTML nicht zu)
 const schriftVorschau = (w) => w.querySelectorAll("option[data-schrift]").forEach((o) => { o.style.fontFamily = `'${o.dataset.schrift}'`; });

@@ -1939,14 +1939,17 @@ def tv_daten(tv_id, vorschau_layout=None, entwurf=None):
     ew = ENTWUERFE.get(entwurf) if entwurf else None     # seit 0.55: ungespeicherter Entwurf aus dem Designer
     layout = (ew and ew["layout"]) or layout or layout_fuer(t, e["layouts"])
     hat_video = any(x["typ"] == "video" and x["sichtbar"] for x in layout.get("elemente", []))
+    # seit 0.61: Videofenster mit herkunft "medien" (Geschäftsvorlagen) zeigt nur eigene Medien, nie YouTube
+    quelle = "medien" if any(x["typ"] == "video" and x["sichtbar"] and (x.get("optionen") or {}).get("herkunft") == "medien"
+                             for x in layout.get("elemente", [])) else t["video_quelle"]
     vr = streams.vorrang if streams.vorrang and streams.vorrang["bis"] > time.time() \
         and streams.vorrang.get("tv") in (None, t["id"]) else None
     sender = next((x for x in e["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
     liste = [x for x in streams.liste if x["kategorie"] not in t["kategorien_aus"]] \
-        if v["aktiv"] and t["video"] and hat_video and t["video_quelle"] != "medien" else []
+        if v["aktiv"] and t["video"] and hat_video and quelle != "medien" else []
     alle_medien = [{"id": m["id"], "name": m["name"], "art": m["art"], "url": f"/medien/{m['datei']}", "dauer_s": m["dauer_s"]}
                    for m in e["medien"] if m["aktiv"]] if t["video"] and hat_video else []
-    medien = alle_medien if t["video_quelle"] != "youtube" else []
+    medien = alle_medien if quelle != "youtube" else []
     with sperre:
         teil = dict(zustand["ha_teil"])
     kal = {k: w for k, w in zustand["kalender"].items()
@@ -1982,7 +1985,7 @@ def tv_daten(tv_id, vorschau_layout=None, entwurf=None):
                 # Galerie (seit 0.45): je gezeigtem Ordner nur der Stand – die Folien holt die Seite bei einer Änderung
                 galerie={oid: GALERIE.stand(oid) for oid in galerie_im_layout(layout) if oid in {o["id"] for o in e["galerie"]["ordner"]}},
                 jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M"), alarm=alarm_fuer(t["id"]),
-                medien=medien, medien_modus=t["video_quelle"], medien_alle=t["medien_alle"],
+                medien=medien, medien_modus=quelle, medien_alle=t["medien_alle"],
                 # Internet weg (seit 0.38): statt der Live-Kameras eigene Medien im Kreis, sonst ein ruhiges Bild
                 offline=NETZ.offline, ersatz={"medien": alle_medien, "bild": "bilder/stile/" + (
                     layout["hintergrund"]["stil"] if layout.get("hintergrund", {}).get("art") == "stil" else "natur") + f"-{tz}.jpg"},

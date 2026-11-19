@@ -302,6 +302,7 @@ const TEXTE = {
     wirklichTvWeg: "Diesen Kanal entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Kanal",
     tvHinweis: "Ton, Sender, Lautstärke und Videos wirken sofort; Ausgabe und Bitrate beim nächsten Start des Streams.",
     meineSender: "Meine Sender", keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
+    radioRecht: "Musik in der Öffentlichkeit ist lizenzpflichtig: Wer Radio, Livestreams oder eigene Videos mit Ton in Praxis, Laden, Gaststätte, Hotel, Verein oder an einem anderen öffentlichen Ort abspielt, braucht dafür in fast allen Ländern eine Lizenz der zuständigen Verwertungsgesellschaft – auch für Internetradio. Bitte vorher klären; zu Hause gilt das nicht.",
     senderNutzung: "Welcher Kanal welchen Sender spielt, stellst du unter „Kanäle“ ein (Ton = Radio).",
     eigenerSender: "Eigenen Sender hinzufügen", senderAdresse: "Stream-Adresse (MP3/AAC, auch .m3u/.pls)", senderName: "Name",
     senderAnzeigen: "Sendernamen am Fernseher zeigen", puffer: "Puffer (Vorlauf)",
@@ -437,7 +438,8 @@ const TEXTE = {
     sichAutoText: "Die automatischen Sicherungen liegen im Container; lade ab und zu eine herunter, damit sie auch einen Ausfall des Containers überstehen.",
     pwEinspielen: "Passwort (falls verschlüsselt)",
     karussell: "Layout-Karussell", karussellText: "Wechselt alle paar Minuten zwischen den gewählten Layouts (mindestens zwei). Ein Zeitplan hat Vorrang.",
-    karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt",
+    karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt", hinweisWeg: "Verstanden, ausblenden", hinweisWegTitel: "Hinweis auf allen Geräten ausblenden (unter Einstellungen → Allgemein wieder einblendbar)",
+    hinweiseEin: "Ausgeblendete Rechtshinweise wieder zeigen", videoRecht: "YouTube erlaubt nur die private, nicht-gewerbliche Nutzung. In Praxis, Laden, Hotel, Verein oder an anderen öffentlichen Orten bitte nur eigene Medien zeigen oder die Rechte selbst klären (YouTube-Bedingungen, Betreiber der Kamera, GEMA bei Ton).",
     videoQuelleArt: { youtube: "Live-Streams (YouTube)", medien: "nur eigene Medien", gemischt: "gemischt" }, medienAlle: "jedes N-te Mal ein eigenes Medium",
     medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Kanal unter „Kanäle“ einstellen: nur eigene Medien oder gemischt mit den Live-Streams. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
     medHoch: "Dateien hochladen", medLaedt: (n, p) => `Lade ${n} … ${p} %`, medKeine: "Noch keine eigenen Medien.", medDauer: "Anzeigedauer (s)",
@@ -783,6 +785,7 @@ const TEXTE = {
     wirklichTvWeg: "Remove this channel? Its address will stop working.", weitererTv: "Another channel",
     tvHinweis: "Sound, station, volume and videos apply immediately; output and bitrate at the next stream start.",
     meineSender: "My stations", keineSender: "No stations yet – load suggestions below or enter your own address.",
+    radioRecht: "Playing music in public needs a licence: if you play radio, live streams or own videos with sound in a practice, shop, restaurant, hotel, club or other public place, you need a licence from the music rights organisation in your country in almost every country – internet radio included. Please check this first; at home it does not apply.",
     senderNutzung: "Which channel plays which station is set under “Channels” (sound = radio).",
     eigenerSender: "Add your own station", senderAdresse: "Stream address (MP3/AAC, also .m3u/.pls)", senderName: "Name",
     senderAnzeigen: "Show station name on the TV", puffer: "Buffer (lead time)",
@@ -1050,7 +1053,8 @@ const TEXTE = {
     sichAutoText: "Automatic backups are stored in the container; download one now and then so it survives a loss of the container.",
     pwEinspielen: "Password (if encrypted)",
     karussell: "Layout carousel", karussellText: "Switches between the chosen layouts every few minutes (at least two). A schedule takes priority.",
-    karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows",
+    karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows", hinweisWeg: "Got it, hide", hinweisWegTitel: "Hide this note on all devices (can be shown again under Settings → General)",
+    hinweiseEin: "Show hidden legal notes again", videoRecht: "YouTube only allows private, non-commercial use. In a practice, shop, hotel, club or other public place please show own media only or clear the rights yourself (YouTube terms, camera operator, music licensing for sound).",
     videoQuelleArt: { youtube: "live streams (YouTube)", medien: "own media only", gemischt: "mixed" }, medienAlle: "every N-th time own media",
     medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per channel under “Channels”: own media only or mixed with the live streams. Pictures stay for their duration, videos play completely.",
     medHoch: "Upload files", medLaedt: (n, p) => `Uploading ${n} … ${p} %`, medKeine: "No own media yet.", medDauer: "Duration (s)",
@@ -1304,6 +1308,23 @@ async function einstellungenLaden() {
   } BAUSTEINE = d.bausteine || {}; SCHRIFTEN = d.schriften || SCHRIFTEN;
   T = TEXTE[E.sprache] || TEXTE.de;
 }
+// Rechtshinweise (seit 0.61): YouTube nur privat, Musik öffentlich lizenzpflichtig. Wegklickbar für alle Geräte
+// (hinweise_aus beim Dienst), unter Anzeige wieder einblendbar.
+function rechtHinweis(key, text) {
+  if ((E.hinweise_aus || []).includes(key)) return "";
+  const W = TEXTE[E.sprache] || TEXTE.de;
+  return `<p class="leise recht" data-recht="${key}">⚖ ${esc(text)} <button type="button" class="knopf klein" data-recht-weg="${key}"
+    title="${esc(W.hinweisWegTitel)}">${esc(W.hinweisWeg)}</button></p>`;
+}
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest && ev.target.closest("[data-recht-weg]");
+  if (!b) return;
+  const key = b.dataset.rechtWeg;
+  b.disabled = true;
+  try { E = (await senden("/api/einstellungen", { hinweise_aus: [...new Set([...(E.hinweise_aus || []), key])] })).einstellungen; }
+  catch (f) { b.disabled = false; melden(f.message, true); return; }
+  document.querySelectorAll(`[data-recht="${key}"]`).forEach((p) => p.remove());
+});
 async function speichernE(teil, knopf) {
   if (!("layouts" in teil)) LS = null;      // Layout-Editor beim nächsten Öffnen frisch laden
   return aktion(knopf, async () => { const d = await senden("/api/einstellungen", teil); E = d.einstellungen; });
@@ -2264,7 +2285,9 @@ async function anzeige(inhalt) {
       <p class="leise" id="metText">${esc(T.metText)}</p>
       <div class="zeile" id="haZeile"><label>${esc(T.wetter)}</label><input type="text" id="wetter" list="ents" value="${esc(E.anzeige.wetter)}"></div>
       <p class="leise" id="haText">${esc(T.wetterText)}</p>
-      <div class="zeile"><button class="knopf haupt" id="okAnz">${esc(T.speichern)}</button></div></div>`;
+      <div class="zeile"><button class="knopf haupt" id="okAnz">${esc(T.speichern)}</button>
+        ${(E.hinweise_aus || []).length ? `<button class="knopf" id="hinweiseEin">${esc(T.hinweiseEin)}</button>` : ""}</div></div>`;
+  if ($("#hinweiseEin")) $("#hinweiseEin").onclick = async (e) => { await speichernE({ hinweise_aus: [] }, e.target); e.target.remove(); };
   $("#sprache").value = E.sprache || "de";
   const sicht = () => { const ha = $("#wetterQ").value === "ha"; $("#haZeile").style.display = ha ? "" : "none"; $("#haText").style.display = ha ? "" : "none"; $("#metText").style.display = ha ? "none" : ""; };
   $("#wetterQ").onchange = sicht; sicht();
@@ -2582,6 +2605,7 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.videoZeigen)}</label>${schalter("video", t.video)}</div>
         <div class="zeile"><label>${esc(T.videoQuelle)}</label><select name="video_quelle">${Object.keys(T.videoQuelleArt).map((x) => `<option value="${x}" ${x === (t.video_quelle || "youtube") ? "selected" : ""}>${esc(T.videoQuelleArt[x])}</option>`).join("")}</select>
           <span name="alleTeil"><label>${esc(T.medienAlle)}</label><input type="number" name="medien_alle" min="1" max="20" value="${t.medien_alle || 3}" class="b70"></span></div>
+        ${rechtHinweis("youtube", T.videoRecht)}
         <details><summary>${esc(T.kategorien)} (${katIds().length - t.kategorien_aus.length}/${katIds().length})</summary>
         ${katSchalter("kat_", t.kategorien_aus)}</details>
         </div><div class="kanal-teil" data-teil="ton">
@@ -2589,6 +2613,7 @@ async function fernseherSeite(inhalt) {
         <div class="zeile" name="senderZeile"><label>${esc(T.sender)}</label><select name="radio_sender" class="breit"><option value="">${esc(T.keinSender)}</option>
           ${E.radio.sender.map((x) => `<option value="${esc(x.id)}" ${x.id === t.radio_sender ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
         <div class="zeile"><label>${esc(T.lautstaerke)}</label><input type="range" name="lautstaerke" min="0" max="100" value="${t.lautstaerke}"><span class="leise" name="lw">${t.lautstaerke} %</span></div>
+        ${rechtHinweis("musik", T.radioRecht)}
         </div><div class="kanal-teil" data-teil="stream"><h3>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}${(t.aufnahme || 1080) !== 1080 ? " (" + esc(T.aufnahme) + " " + t.aufnahme + "p)" : ""}, ${t.bitrate_mbit} Mbit/s, ${
           (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}${
           t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</h3>
@@ -2677,7 +2702,7 @@ async function fernseherSeite(inhalt) {
 
 // ---------- Radio ----------
 async function radioSeite(inhalt) {
-  inhalt.innerHTML = `<div class="karte"><h2>${esc(T.meineSender)}</h2><p class="leise">${esc(T.senderNutzung)}</p><div id="meine"></div>
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(T.meineSender)}</h2><p class="leise">${esc(T.senderNutzung)}</p>${rechtHinweis("musik", T.radioRecht)}<div id="meine"></div>
       <div class="zeile"><label>${esc(T.senderAnzeigen)}</label>${schalter("anzeigen", E.radio.anzeigen)}</div>
       <details class="erweitert"><summary>${esc(T.erweitert)}</summary>
       <div class="zeile"><label>${esc(T.puffer)}</label><input type="number" id="puffer" min="0" max="120" value="${E.radio.puffer_s}"><span class="leise">s</span>

@@ -118,7 +118,8 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - **Fenster zur Welt** – feste und automatisch gefundene YouTube-Livestreams (Safari, Meer, Vögel, Bären; auch Städte,
   Strände, Berge, Häfen, Flughäfen, Züge, Weltraum und Naturwunder – einschalten, was dir gefällt), wechseln alle paar
   Minuten, nur wo gerade Tag ist. Schlechte Streams (startet nicht, puffert, steht, niedrige Auflösung) werden
-  übersprungen; Favoriten lassen sich schützen, unerwünschte ablehnen.
+  übersprungen; Favoriten lassen sich schützen, unerwünschte ablehnen. Für den privaten Gebrauch – siehe
+  [YouTube und gewerbliche Nutzung](#youtube-und-gewerbliche-nutzung).
 - **Live-Videos** – ein eigener Bereich für die Sammlung (Liste mit Seitenfeld), Themen mit Suchbegriffen,
   automatische Stream-Suche mit Regeln, Einspieler.
 - **Layout-Editor** – Uhr, Datum, Wetter, Vorhersage, Räume, Kacheln mit beliebigen Home-Assistant-Werten, Live-Video,
@@ -141,7 +142,8 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - **Listen** – Speisekarten mit Preisen, Öffnungszeiten, Wegweiser mit Etagen: im Editor getippt oder aus einer CSV-Datei.
 - **Hintergründe nach Tageszeit** – Bildersets für Sonnenaufgang, Tag, Sonnenuntergang und Nacht, Wetterbilder,
   Diashow oder eigene Bilder.
-- **Internetradio** – eigene Streams oder Vorschläge für deinen Ort; oder der Originalton der Kameras.
+- **Internetradio** – eigene Streams oder Vorschläge für deinen Ort; oder der Originalton der Kameras. An öffentlichen
+  oder gewerblichen Orten braucht es eine Musiklizenz (z. B. GEMA) – siehe [YouTube und gewerbliche Nutzung](#youtube-und-gewerbliche-nutzung).
 - **Einspieler zu festen Zeiten** – z. B. *tagesschau in 100 Sekunden* zur vollen Stunde.
 - **Mehrere Fernseher** – jeder mit eigener Adresse, eigenem Layout, Zeitplan, Ton und eigenen Themen.
 - **Raspberry Pi als Player** (experimentell) – ein fertiges SD-Karten-Image je Bildschirm (mit WLAN, Hotspot mit
@@ -258,6 +260,25 @@ Fehler: [GitHub-Issues](https://github.com/thefrozn/signagecast/issues).
 ## Lizenz
 
 MIT – siehe [LICENSE](LICENSE). Bilder, Symbole und die Schrift des Logos: siehe [NOTICE.md](NOTICE.md).
+
+## YouTube und gewerbliche Nutzung
+
+Die Live-Kameras kommen über den offiziellen Einbett-Player von YouTube. Die YouTube-Bedingungen erlauben **nur die
+private, nicht-gewerbliche Nutzung**. Wer SignageCast in Praxis, Laden, Gaststätte, Hotel, Verein oder an einem anderen
+öffentlichen oder gewerblichen Ort betreibt, ist für das Zeigen von YouTube-Streams dort selbst verantwortlich: YouTube-
+Bedingungen, Bedingungen des Kamera-Betreibers und – bei Ton – GEMA prüfen. Der einfache Weg: **nur eigene Medien**
+zeigen. Die Geschäftsvorlagen tun das ab 0.61 (Videofenster → *Was zeigen* → „nur eigene Medien“); bei anderen Layouts
+dort einstellen oder je Kanal (Displays → Kanäle → *Videofenster zeigt*). Im **Stream-Modus** nimmt der Server das Bild
+auf und gibt es an die Fernseher weiter; für YouTube-Inhalte besser den **Direktmodus** nehmen, dann spielt jeder
+Fernseher den offiziellen Player selbst.
+
+**Musik und Ton in der Öffentlichkeit:** Sobald SignageCast an einem öffentlichen oder gewerblichen Ort Ton abspielt –
+Internetradio, Originalton der Live-Kameras, Einspieler oder eigene Videos –, ist das eine öffentliche Wiedergabe. Dafür
+braucht es fast überall eine Lizenz der zuständigen Verwertungsgesellschaft, z. B. GEMA (Deutschland), AKM (Österreich),
+SUISA (Schweiz), PRS for Music/PPL (Großbritannien), ASCAP, BMI, SESAC oder GMR (USA), SACEM (Frankreich) oder SIAE
+(Italien). Dass ein Sender frei im Internet zu hören ist, ersetzt diese Lizenz nicht. Wer SignageCast öffentlich nutzt,
+muss sich selbst darum kümmern – ohne Lizenz am besten den Ton ausschalten oder nur selbst lizenzierte Musik verwenden.
+Zu Hause gilt das nicht. Das ist keine Rechtsberatung.
 
 ## Haftung und Gewährleistung
 

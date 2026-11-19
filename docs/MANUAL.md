@@ -105,6 +105,10 @@ Displays → Channels → *Carousel*: tick the layouts and set the minutes. Exam
 
 ### Own pictures and videos instead of (or between) live cams
 Content → Media library → *Media for the video window* → upload JPG/PNG/MP4 (H.264)/WebM. Then Displays → Channels → *Video source*: “own media” or “mixed” (every N-th item own media).
+Since 0.61 a single layout can do this too: select the video window → *What to show* → “own media only (no YouTube)”.
+The business templates (practice, company, hotel, gym/club) come set this way. **YouTube allows private, non-commercial
+use only** – in business or public places show own media or clear the rights yourself (see the README). Sound in
+public (radio, original sound, clips, own videos) needs a licence from your music rights organisation (GEMA, PRS, ASCAP …).
 
 ### When the internet is gone (since 0.38)
 Nothing to set up. If YouTube is not reachable (checked once a minute, two failures in a row), the video window shows
@@ -464,6 +468,16 @@ Seit 0.35: Einträge in **Zu erledigen** (Übersicht) mit **✕** ausblenden, oh
 Seit 0.32: **Themen ohne Tiere** – Städte, Strände, Berge, Häfen, Flughäfen, Bahn, Weltraum, Naturschauspiele (Live-Videos → Themen → *Weitere Themen*); eigene Suche je Thema, beim Update zunächst ausgeschaltet.
 
 Seit 0.37: **Themen (bis 0.55 „Kategorien“) bearbeiten und eigene anlegen** unter Live-Videos → **Themen**: Name, Gruppe, bis zu 6 Suchbegriffe (je eine YouTube-Anfrage pro Suchlauf), Wörter im Titel, Tag/Nacht egal, ein-/ausschalten für alle Fernseher oder je Fernseher, Zahl der Streams. Gefundene Tier-Streams landen über die Wörter in der passenden Kategorie statt in „Neu gefunden“. Eingebaute lassen sich auf den Standard zurücksetzen (unveränderte folgen Verbesserungen per Update), eigene löschen – ihre Streams wandern in eine Kategorie deiner Wahl.
+
+Seit 0.61: **Musik in der Öffentlichkeit** – unter Inhalte → Radio, Live-Videos und beim Ton des Kanals steht: Ton an
+öffentlichen oder gewerblichen Orten (Radio, Originalton, Einspieler, eigene Videos) ist eine öffentliche Wiedergabe und
+braucht fast überall eine Lizenz der zuständigen Verwertungsgesellschaft (z. B. GEMA, AKM, SUISA, PRS/PPL, ASCAP/BMI).
+Die Hinweise lassen sich mit „Verstanden, ausblenden“ wegklicken (gilt für alle Geräte); unter Einstellungen → Allgemein
+wieder einblendbar.
+
+Seit 0.61: **Videofenster → „Was zeigen“** – „wie im Kanal eingestellt“ oder „nur eigene Medien (ohne YouTube)“; die
+Geschäftsvorlagen (Praxis, Firma, Hotel, Fitness/Verein) sind so voreingestellt. YouTube erlaubt nur private,
+nicht-gewerbliche Nutzung – an gewerblichen oder öffentlichen Orten eigene Medien zeigen oder die Rechte selbst klären.
 
 Seit 0.38: **Internet weg** – das Videofenster zeigt eigene Medien im Kreis (ohne Medien ein ruhiges Bild zur
 Tageszeit) statt Schwarz oder Fehler, keine Strikes; Kachel *Internet* in der Übersicht, Ereignis „Internet nicht

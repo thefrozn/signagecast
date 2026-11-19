@@ -117,7 +117,8 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - **Live window to the world** – fixed and automatically discovered YouTube live streams (safari, sea, birds, bears;
   also cities, beaches, mountains, harbours, airports, trains, space and natural wonders – switch on what you like),
   rotating every few minutes, only where it is daytime. Bad streams (not starting, buffering, frozen, low resolution)
-  are skipped; favourites can be protected, unwanted ones rejected.
+  are skipped; favourites can be protected, unwanted ones rejected. For private use – see
+  [YouTube and commercial use](#youtube-and-commercial-use).
 - **Layout editor** – clock, date, weather, forecast, rooms, tiles with any Home Assistant value, live video, radio,
   free text and ticker, logo, camera, calendar / waste collection, messages from Home Assistant. Conditions (“only show
   when …”), fonts, colours, 9 text positions. The canvas shows the **real TV page as live preview** before saving;
@@ -136,7 +137,8 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - **Lists** – menus with prices, opening hours, directories with floors: typed in the editor or from a CSV file.
 - **Backgrounds by time of day** – picture sets for sunrise, day, sunset and night, weather pictures, slideshow or your
   own pictures.
-- **Internet radio** – own streams or suggestions for your location; or the original sound of the cams.
+- **Internet radio** – own streams or suggestions for your location; or the original sound of the cams. In public or
+  business places you need a music licence (e.g. GEMA) – see [YouTube and commercial use](#youtube-and-commercial-use).
 - **Clips at fixed times** – e.g. *tagesschau in 100 Sekunden* on the hour.
 - **Several TVs** – each with its own address, layout, schedule, sound and topics.
 - **Live videos** – one area for the collection (list with panel), topics with search words, automatic stream search
@@ -248,6 +250,23 @@ Bugs: [GitHub issues](https://github.com/thefrozn/signagecast/issues).
 ## License
 
 MIT – see [LICENSE](LICENSE). Pictures, icons and the logo font: see [NOTICE.md](NOTICE.md).
+
+## YouTube and commercial use
+
+The live cams come from YouTube through the official embed player. YouTube's terms allow **private, non-commercial
+use** only. If you run SignageCast in a practice, shop, restaurant, hotel, club or any other public or business place,
+showing YouTube streams there is your responsibility: check YouTube's terms, the camera operator's conditions and – for
+sound – music licensing (e.g. GEMA in Germany). The simple way: show **own media only**. The templates for businesses
+do this from 0.61 on (video window → *What to show* → “own media only”); for other layouts set it there or per channel
+(Displays → Channels → *Video window shows*). In **stream mode** the server records the picture and passes it on to
+the TVs; for YouTube content prefer **direct mode**, where every TV plays the official player itself.
+
+**Music and sound in public:** as soon as SignageCast plays sound in a public or business place – internet radio, the
+original sound of the live cams, clips or own videos – that is a public performance. Almost everywhere it needs a licence
+from the music rights organisation in charge, e.g. GEMA (Germany), AKM (Austria), SUISA (Switzerland), PRS for Music/PPL
+(UK), ASCAP, BMI, SESAC or GMR (USA), SACEM (France) or SIAE (Italy). A station being freely audible on the internet does
+not replace this licence. If you use SignageCast in public, this is your responsibility – without a licence better switch
+the sound off or use only music you have licensed yourself. At home it does not apply. This is not legal advice.
 
 ## Liability and warranty
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.61.0 (2026-11-19)
+- **YouTube only for private use – said clearly:** YouTube's terms allow private, non-commercial use only. The Live
+  videos overview, the channel setting *Video window shows* and the README ([YouTube and commercial use](README.md#youtube-and-commercial-use))
+  now say so, including the GEMA note for sound and the hint to prefer direct mode over stream mode for YouTube.
+- **Music in public needs a licence – general note:** Content → Radio, Live videos, the channel's sound setting and the
+  README say that sound in public or business places (radio, original sound, clips, own videos) is a public performance
+  and almost everywhere needs a licence from the music rights organisation (GEMA, AKM, SUISA, PRS/PPL, ASCAP/BMI/SESAC/GMR,
+  SACEM, SIAE …); at home it does not apply. Both notes can be hidden with *Got it, hide* (stored for all devices;
+  Settings → General → *Show hidden legal notes again*).
+- **Video window: “What to show”** – new option on the video element: *as set for the channel* (default, unchanged) or
+  *own media only (no YouTube)*. The business templates (practice, company, hotel, gym/club) use *own media only*;
+  layouts you already have stay as they are. Without own media the window shows a calm picture instead of
+  “No live stream right now”. Layout format: `herkunft: "kanal" | "medien"`.
+- **Consumption unchanged** (CT 104, Imbiss test layout, paired with 0.60 under the same conditions): stream mode
+  98.7 % / 885 MB and 99.2 % / 875 MB CPU/RAM of the chain (0.60: 95.3 % / 847 MB), 25 fps, 0 lost; direct mode
+  73.0 % / 590 MB and 72.4 % / 579 MB (0.60: 75.1 % / 570 MB), 60 fps, no frame over 50 ms.
+
 ## v0.60.0 (2026-11-19)
 - **MCP interface for AI assistants – everything a person does with content** (27 new tools, 58 in all):
   - **Readability notes:** `preview` returns, next to the picture, a note per element when the main text is under 18 px

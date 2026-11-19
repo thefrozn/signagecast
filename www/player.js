@@ -198,6 +198,11 @@ class LivePlayer {
     const m = (this.ersatz && this.ersatz.medien) || [];
     if (!this.einspieler && m.length) this.medienStart(m);
     if (this.einspieler) return false;                 // eigenes Medium läuft wie ein Einspieler (siehe unten)
+    return this.ersatzBild();
+  }
+
+  // ruhiges Bild statt Video (offline oder „nur eigene Medien“ ohne Medien). true = tick ist fertig
+  ersatzBild() {
     if (this.id !== "ersatz") {
       if (this.frame) { this.frame.remove(); this.frame = null; }
       if (this.video) { this.video.remove(); this.video = null; }
@@ -236,6 +241,8 @@ class LivePlayer {
         return;
       }
     }
+    // nur eigene Medien, aber keine da (seit 0.61): ruhiges Bild statt „Gerade kein Live-Stream“
+    if (this.medienModus === "medien" && !this.medien.length && !this.aus && this.ersatzBild()) return;
     const p = this.plan();
     // gemischt: bei jedem N-ten Wechsel des Streams zuerst ein eigenes Medium
     if (this.medienModus === "gemischt" && this.medien.length && p.aktuell && !this.aus && this.festSlot !== this.zaehlSlot) {

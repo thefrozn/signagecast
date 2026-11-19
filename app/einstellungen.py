@@ -126,6 +126,8 @@ def pruefe_kategorien(liste):
 AUFNAHMEN = (720, 1080, 1440)             # Höhe der Aufnahme (Chromium zeichnet in 16:9)
 STUFEN = ["tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "highres"]
 
+HINWEISE = ("youtube", "musik")           # wegklickbare Rechtshinweise (seit 0.61)
+
 STANDARD = {
     "sprache": "",                        # de | en – TV-Seite und Verwaltung; leer = beim ersten Öffnen der Verwaltung aus der Browsersprache
     "ha": {"url": "http://homeassistant.local:8123"},
@@ -170,6 +172,7 @@ STANDARD = {
               "ton": True},
     # Einrichtungs-Assistent (seit 0.17): nur bei Neuinstallation; vorhandene Einstellungen ohne den Schlüssel gelten als eingerichtet
     "assistent_fertig": False,
+    "hinweise_aus": [],                   # seit 0.61: weggeklickte Rechtshinweise in der Verwaltung ("youtube", "musik")
     # Benachrichtigungen (seit 0.16): Kanäle Telegram, E-Mail (SMTP), Home Assistant; Geheimnisse: Bot-Token, SMTP-Passwort
     "benachrichtigung": {
         "telegram": {"aktiv": False, "token": "", "chat_id": ""},
@@ -560,6 +563,8 @@ def pruefen(e):
     if ss_["mit_geheimnissen"] and ss_["plan"] != "aus" and not ss_["passwort"]:
         raise Meldung("sich_geheim_ohne_pw")
     if "assistent_fertig" in e: s["assistent_fertig"] = bool(e["assistent_fertig"])
+    if isinstance(e.get("hinweise_aus"), list):
+        s["hinweise_aus"] = sorted({x for x in e["hinweise_aus"] if x in HINWEISE})
     pu = e.get("pult", {})
     if isinstance(pu, dict):
         sp = s["pult"]

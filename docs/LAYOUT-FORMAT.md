@@ -128,13 +128,14 @@ No minimum size.
 | `name` | text (max 30 characters) | `""` |
 | `icon` | Material Design Icon name "mdi-…" (e.g. "mdi-thermometer") | `"mdi-information-outline"` |
 
-### `video` – live video window: rotating YouTube nature/wildlife live cams or own media (at most one per layout makes sense)
+### `video` – live video window: rotating YouTube nature/wildlife live cams or own media (at most one per layout makes sense); herkunft "medien" = own media only, never YouTube (use this for business or public places)
 
 Minimum size 8 × 5 cells.
 
 | Option | Value | Default |
 |---|---|---|
 | `leiste` | true or false | `true` |
+| `herkunft` | one of "kanal", "medien" | `"kanal"` |
 
 ### `sender` – name of the current live cam or radio station
 

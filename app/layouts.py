@@ -149,7 +149,9 @@ TYPEN = {
     "vorhersage": {"tage": (_zahl(1, 5), 3)},
     "raeume":     {"liste": (_raeume, [])},
     "kachel":     {"entity": (_ent(), ""), "name": (_t(30), ""), "icon": (_icon, "mdi-information-outline")},
-    "video":      {"leiste": (_b, True)},
+    # herkunft (seit 0.61): "kanal" = wie im Kanal eingestellt (YouTube/eigene Medien/gemischt), "medien" = nur eigene
+    # Medien, nie YouTube – für den gewerblichen/öffentlichen Einsatz (YouTube erlaubt nur private Nutzung)
+    "video":      {"leiste": (_b, True), "herkunft": (_wahl("kanal", "medien"), "kanal")},
     "sender":     {},
     "text":       {"text": (_t(300), ""), "laufband": (_b, False)},
     "logo":       {"bild": (_bild, "")},
@@ -442,7 +444,8 @@ TYP_TEXT = {
     "wetterlage": "current weather condition (icon and text)", "feuchte": "humidity", "wind": "wind speed and direction",
     "vorhersage": "weather forecast for the next days", "raeume": "list of room temperatures from Home Assistant",
     "kachel": "tile with one Home Assistant value (name, icon, value)",
-    "video": "live video window: rotating YouTube nature/wildlife live cams or own media (at most one per layout makes sense)",
+    "video": "live video window: rotating YouTube nature/wildlife live cams or own media (at most one per layout makes sense); "
+    "herkunft \"medien\" = own media only, never YouTube (use this for business or public places)",
     "sender": "name of the current live cam or radio station", "text": "free text; laufband = scrolling ticker; "
     "placeholders {source:path} insert values of own data sources", "logo": "picture (e.g. company logo)",
     "kamera": "Home Assistant camera picture", "kalender": "calendar (Home Assistant calendar or iCal data source) as list or symbols",
@@ -678,7 +681,7 @@ def vorlagen(sprache="de"):
                                     _el("datum", "datum", 2, 12, 12, 1, ausrichtung="mitte"),
                                     _el("temp", "temperatur", 2, 15, 12, 3, ausrichtung="mitte", gewicht="duenn"),
                                     _el("lage", "wetterlage", 2, 18, 12, 1, ausrichtung="mitte"),
-                                    _el("video", "video", 16, 1, 31, 21, karte=True, optionen={"leiste": False}),
+                                    _el("video", "video", 16, 1, 31, 21, karte=True, optionen={"leiste": False, "herkunft": "medien"}),
                                     _el("gruss", "text", 16, 23, 31, 3, karte=True, ausrichtung="mitte", gewicht="duenn",
                                         optionen={"text": t("Herzlich willkommen – wir sind gleich für Sie da.", "Welcome – we will be with you shortly.")})]}),
         # Firma: sachlich im eigenen Farbton – Kopfzeile mit Logo, Uhr, Datum; Video groß; Wetter rechts; Laufband unten
@@ -689,7 +692,7 @@ def vorlagen(sprache="de"):
                                     _el("logo", "logo", 1, 0, 10, 3, ausrichtung="links"),
                                     _el("datum", "datum", 24, 1, 13, 1, ausrichtung="rechts", textfarbe="#ffffff"),
                                     _el("uhr", "uhr", 38, 0, 9, 3, ausrichtung="rechts", textfarbe="#ffffff", gewicht="normal"),
-                                    _el("video", "video", 1, 4, 34, 19, karte=True),
+                                    _el("video", "video", 1, 4, 34, 19, karte=True, optionen={"herkunft": "medien"}),
                                     _el("temp", "temperatur", 36, 4, 11, 3, karte=True, ausrichtung="mitte"),
                                     _el("lage", "wetterlage", 36, 7, 11, 2, karte=True, ausrichtung="mitte"),
                                     _el("vh", "vorhersage", 36, 9, 11, 6, karte=True),
@@ -848,7 +851,7 @@ def vorlagen(sprache="de"):
                                         _z(t("Geführte Wanderung", "Guided hike"), t("9:30", "9:30 am"), t("Treffpunkt Rezeption", "Meet at reception")),
                                         _z(t("Kaffee & Kuchen", "Coffee & cake"), t("15:00", "3 pm"), t("Terrasse", "Terrace")),
                                         _z(t("Weinprobe", "Wine tasting"), t("19:00", "7 pm"), t("Kaminzimmer", "Fireplace room"), hervor=True)]),
-                                    _el("video", "video", 32, 11, 15, 15, karte=True)]}),
+                                    _el("video", "video", 32, 11, 15, 15, karte=True, optionen={"herkunft": "medien"})]}),
         # Fitnessstudio / Verein: Kursplan, Auslastung (Ampel aus einer Datenquelle), Countdown zum nächsten Event, Video;
         # seit 0.54 Sportbilder als langsame Diashow, leicht abgedunkelt, dunkle durchscheinende Karten
         pruefe_layout({"id": "fitness", "name": t("Fitnessstudio / Verein", "Gym / sports club"),
@@ -865,7 +868,7 @@ def vorlagen(sprache="de"):
                                         _z("Spinning", "17:00", t("Raum 1 · bitte anmelden", "Room 1 · please sign up"), "mdi-bicycle", True),
                                         _z("Zumba", "18:30", t("Raum 2", "Room 2"), "mdi-run"),
                                         _z("Functional Training", "19:30", t("Halle", "Hall"), "mdi-dumbbell")]),
-                                    _el("video", "video", 22, 6, 25, 13, karte=True),
+                                    _el("video", "video", 22, 6, 25, 13, karte=True, optionen={"herkunft": "medien"}),
                                     _el("auslastung", "anzeige", 22, 20, 12, 3, karte=True,
                                         optionen={"name": t("Auslastung", "Occupancy"), "darstellung": "ampel", "einheit": "%"}),
                                     _el("fest", "countdown", 35, 20, 12, 3, karte=True, ausrichtung="mitte",

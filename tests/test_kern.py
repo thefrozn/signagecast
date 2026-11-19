@@ -2050,6 +2050,43 @@ class Hintergrund054(unittest.TestCase):
         self.assertEqual(v["standard"]["hintergrund"].get("bewegen"), False)          # bestehende Vorlagen unverändert
 
 
+
+class VideoHerkunft061(unittest.TestCase):
+    def test_geschaeftsvorlagen_nur_eigene_medien(self):
+        vs = {v["id"]: v for v in L.vorlagen("de")}
+        for vid in ("praxis", "firma", "hotel", "fitness"):
+            v = [e for e in vs[vid]["elemente"] if e["typ"] == "video"]
+            self.assertTrue(v and all(e["optionen"]["herkunft"] == "medien" for e in v), vid)
+        for vid in ("fenster", "videogross", "nurvideo"):
+            self.assertTrue(all(e["optionen"]["herkunft"] == "kanal" for e in vs[vid]["elemente"] if e["typ"] == "video"), vid)
+
+    def test_pruefung(self):
+        l = {"id": "test061", "name": "Test", "elemente": [{"id": "video", "typ": "video", "x": 0, "y": 0, "w": 10, "h": 6}]}
+        self.assertEqual(L.pruefe_layout(l)["elemente"][0]["optionen"]["herkunft"], "kanal")   # alte Layouts unverändert
+        l["elemente"][0]["optionen"] = {"herkunft": "youtube"}
+        with self.assertRaises(M.Meldung):
+            L.pruefe_layout(l)
+
+    def test_hinweise_wegklicken(self):
+        self.assertEqual(E.pruefen({})["hinweise_aus"], [])
+        self.assertEqual(E.pruefen({"hinweise_aus": ["musik", "youtube", "musik", "<b>"]})["hinweise_aus"], ["musik", "youtube"])
+        self.assertEqual(E.pruefen({"hinweise_aus": "musik"})["hinweise_aus"], [])
+        e = E.zusammenfuehren(E.pruefen({}), {"hinweise_aus": ["youtube"]})
+        self.assertEqual(E.pruefen(e)["hinweise_aus"], ["youtube"])
+
+    def test_hinweise_sichtbar(self):
+        wurzel = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        lese = lambda *p: open(os.path.join(wurzel, *p), encoding="utf-8").read()
+        self.assertIn("YouTube erlaubt nur die private", lese("cockpit", "signagecast", "live.js"))
+        self.assertIn("videoRecht", lese("cockpit", "signagecast", "tv.js"))
+        self.assertIn('rechtHinweis("musik", T.radioRecht)', lese("cockpit", "signagecast", "tv.js"))
+        self.assertIn("**Musik und Ton in der Öffentlichkeit:**", lese("README.de.md"))
+        self.assertIn("ASCAP", lese("README.md"))
+        self.assertIn('rechtHinweis("musik", L.musik)', lese("cockpit", "signagecast", "live.js"))
+        self.assertIn("## YouTube and commercial use", lese("README.md"))
+        self.assertIn("## YouTube und gewerbliche Nutzung", lese("README.de.md"))
+        self.assertIn('quelle = "medien" if any(', lese("app", "dienst.py"))
+
 if __name__ == "__main__":
     unittest.main()
 
