@@ -1,0 +1,38 @@
+# Live-Demo auf GitHub Pages (seit 0.64): baut bei jedem Release-Tag (v*) aus genau diesem Stand die statische Demo
+# (werkzeug/demo_bauen.py: TV-Seite mit Beispieldaten, ohne Server, ohne fremde Abrufe) und veröffentlicht sie.
+# Von Hand: Actions → Live-Demo → Run workflow. Voraussetzung: Settings → Pages → Source „GitHub Actions“.
+name: Live-Demo
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    container: debian:trixie                 # dieselbe Python-Fassung wie die Installationen (Debian 13)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Demo bauen und prüfen
+        run: |
+          apt-get update -qq && apt-get install -y -qq python3 >/dev/null
+          python3 -m unittest tests.test_kern.Demo064 -v
+          python3 werkzeug/demo_bauen.py _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  veroeffentlichen:
+    needs: bauen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

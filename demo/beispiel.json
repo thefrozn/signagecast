@@ -1,0 +1,129 @@
+{
+ "_hinweis": "Beispieldaten der Live-Demo (GitHub Pages). Alles erfunden; Datumsangaben sind relativ zu heute (tage).",
+ "ort": {
+  "name": "Köln",
+  "breite": 50.94,
+  "laenge": 6.96
+ },
+ "wetter": {
+  "zustand": "partlycloudy",
+  "temperatur": 12.4,
+  "feuchte": 71,
+  "wind": 14.4,
+  "wind_einheit": "km/h",
+  "quelle": "MET Norway"
+ },
+ "vorhersage": [
+  {
+   "tage": 0,
+   "zustand": "partlycloudy",
+   "max": 13.1,
+   "min": 6.2
+  },
+  {
+   "tage": 1,
+   "zustand": "rainy",
+   "max": 10.4,
+   "min": 5.8
+  },
+  {
+   "tage": 2,
+   "zustand": "sunny",
+   "max": 14.9,
+   "min": 4.1
+  },
+  {
+   "tage": 3,
+   "zustand": "cloudy",
+   "max": 11.7,
+   "min": 6.9
+  },
+  {
+   "tage": 4,
+   "zustand": "sunny",
+   "max": 15.3,
+   "min": 5.0
+  }
+ ],
+ "werte": {
+  "sensor.wohnzimmer_temperatur": {
+   "state": "21.4",
+   "einheit": "°C",
+   "name": "Wohnzimmer"
+  },
+  "sensor.kueche_temperatur": {
+   "state": "20.1",
+   "einheit": "°C",
+   "name": "Küche"
+  },
+  "sensor.kinderzimmer_temperatur": {
+   "state": "19.6",
+   "einheit": "°C",
+   "name": "Kinderzimmer"
+  },
+  "sensor.bad_temperatur": {
+   "state": "22.8",
+   "einheit": "°C",
+   "name": "Bad"
+  }
+ },
+ "kalender": {
+  "calendar.familie": [
+   {
+    "titel": {
+     "de": "Elternabend",
+     "en": "Parents' evening"
+    },
+    "tage": 0,
+    "zeit": "19:30"
+   },
+   {
+    "titel": {
+     "de": "Müllabfuhr: Papier",
+     "en": "Bin collection: paper"
+    },
+    "tage": 1,
+    "ganztag": true
+   },
+   {
+    "titel": {
+     "de": "Fußballtraining",
+     "en": "Football practice"
+    },
+    "tage": 2,
+    "zeit": "17:00"
+   },
+   {
+    "titel": {
+     "de": "Oma kommt zu Besuch",
+     "en": "Grandma visits"
+    },
+    "tage": 4,
+    "zeit": "15:00"
+   },
+   {
+    "titel": {
+     "de": "Zahnarzt",
+     "en": "Dentist"
+    },
+    "tage": 6,
+    "zeit": "08:30"
+   }
+  ]
+ },
+ "quellen": {
+  "pegel": {
+   "value": 312
+  },
+  "solar": {
+   "heute_kwh": 8.6
+  }
+ },
+ "medien": [
+  "natur",
+  "meer",
+  "berge",
+  "himmel",
+  "stadt"
+ ]
+}

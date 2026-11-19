@@ -1,0 +1,374 @@
+{
+ "de": {
+  "id": "wohnzimmer",
+  "name": "Wohnzimmer",
+  "hintergrund": {
+   "art": "wetter",
+   "abdunkeln": true
+  },
+  "elemente": [
+   {
+    "id": "uhr",
+    "typ": "uhr",
+    "x": 1,
+    "y": 1,
+    "w": 10,
+    "h": 4,
+    "karte": true,
+    "optionen": {
+     "sekunden": false
+    }
+   },
+   {
+    "id": "datum",
+    "typ": "datum",
+    "x": 1,
+    "y": 5,
+    "w": 10,
+    "h": 2,
+    "optionen": {
+     "wochentag": true,
+     "jahr": false
+    }
+   },
+   {
+    "id": "temperatur",
+    "typ": "temperatur",
+    "x": 1,
+    "y": 8,
+    "w": 5,
+    "h": 3,
+    "karte": true,
+    "optionen": {
+     "entity": ""
+    }
+   },
+   {
+    "id": "wetterlage",
+    "typ": "wetterlage",
+    "x": 6,
+    "y": 8,
+    "w": 5,
+    "h": 3,
+    "karte": true,
+    "optionen": {
+     "entity": ""
+    }
+   },
+   {
+    "id": "vorhersage",
+    "typ": "vorhersage",
+    "x": 1,
+    "y": 12,
+    "w": 10,
+    "h": 7,
+    "karte": true,
+    "optionen": {
+     "tage": 3
+    }
+   },
+   {
+    "id": "video",
+    "typ": "video",
+    "x": 12,
+    "y": 1,
+    "w": 22,
+    "h": 17,
+    "karte": true,
+    "optionen": {
+     "leiste": false,
+     "herkunft": "medien"
+    }
+   },
+   {
+    "id": "raeume",
+    "typ": "raeume",
+    "x": 35,
+    "y": 1,
+    "w": 12,
+    "h": 8,
+    "karte": true,
+    "optionen": {
+     "liste": [
+      {
+       "name": "Wohnzimmer",
+       "entity": "sensor.wohnzimmer_temperatur"
+      },
+      {
+       "name": "Küche",
+       "entity": "sensor.kueche_temperatur"
+      },
+      {
+       "name": "Kinderzimmer",
+       "entity": "sensor.kinderzimmer_temperatur"
+      },
+      {
+       "name": "Bad",
+       "entity": "sensor.bad_temperatur"
+      }
+     ]
+    }
+   },
+   {
+    "id": "kalender",
+    "typ": "kalender",
+    "x": 35,
+    "y": 10,
+    "w": 12,
+    "h": 9,
+    "karte": true,
+    "optionen": {
+     "entity": "calendar.familie",
+     "anzahl": 4,
+     "tage": 14,
+     "titel": "Familie"
+    }
+   },
+   {
+    "id": "pegel",
+    "typ": "apiwert",
+    "x": 12,
+    "y": 19,
+    "w": 11,
+    "h": 4,
+    "karte": true,
+    "optionen": {
+     "quelle": "pegel",
+     "pfad": "value",
+     "name": "Rhein, Köln",
+     "icon": "mdi-waves",
+     "einheit": "cm"
+    }
+   },
+   {
+    "id": "solar",
+    "typ": "apiwert",
+    "x": 23,
+    "y": 19,
+    "w": 11,
+    "h": 4,
+    "karte": true,
+    "optionen": {
+     "quelle": "solar",
+     "pfad": "heute_kwh",
+     "name": "Solar heute",
+     "icon": "mdi-solar-power",
+     "einheit": "kWh",
+     "nachkomma": 1
+    }
+   },
+   {
+    "id": "countdown",
+    "typ": "countdown",
+    "x": 35,
+    "y": 20,
+    "w": 12,
+    "h": 3,
+    "karte": true,
+    "optionen": {
+     "ziel": "2026-12-24",
+     "vorlage": "noch {tage} Tage bis Heiligabend",
+     "ende": "Frohe Weihnachten!"
+    }
+   },
+   {
+    "id": "laufband",
+    "typ": "text",
+    "x": 0,
+    "y": 24,
+    "w": 48,
+    "h": 3,
+    "optionen": {
+     "laufband": true,
+     "text": "+++ Demo mit Beispieldaten +++ Werte aus Home Assistant, Datenquellen und Kalender – hier erfunden +++ Uhrzeit und Sonnenstand sind echt +++"
+    }
+   }
+  ]
+ },
+ "en": {
+  "id": "wohnzimmer",
+  "name": "Living room",
+  "hintergrund": {
+   "art": "wetter",
+   "abdunkeln": true
+  },
+  "elemente": [
+   {
+    "id": "uhr",
+    "typ": "uhr",
+    "x": 1,
+    "y": 1,
+    "w": 10,
+    "h": 4,
+    "karte": true,
+    "optionen": {
+     "sekunden": false
+    }
+   },
+   {
+    "id": "datum",
+    "typ": "datum",
+    "x": 1,
+    "y": 5,
+    "w": 10,
+    "h": 2,
+    "optionen": {
+     "wochentag": true,
+     "jahr": false
+    }
+   },
+   {
+    "id": "temperatur",
+    "typ": "temperatur",
+    "x": 1,
+    "y": 8,
+    "w": 5,
+    "h": 3,
+    "karte": true,
+    "optionen": {
+     "entity": ""
+    }
+   },
+   {
+    "id": "wetterlage",
+    "typ": "wetterlage",
+    "x": 6,
+    "y": 8,
+    "w": 5,
+    "h": 3,
+    "karte": true,
+    "optionen": {
+     "entity": ""
+    }
+   },
+   {
+    "id": "vorhersage",
+    "typ": "vorhersage",
+    "x": 1,
+    "y": 12,
+    "w": 10,
+    "h": 7,
+    "karte": true,
+    "optionen": {
+     "tage": 3
+    }
+   },
+   {
+    "id": "video",
+    "typ": "video",
+    "x": 12,
+    "y": 1,
+    "w": 22,
+    "h": 17,
+    "karte": true,
+    "optionen": {
+     "leiste": false,
+     "herkunft": "medien"
+    }
+   },
+   {
+    "id": "raeume",
+    "typ": "raeume",
+    "x": 35,
+    "y": 1,
+    "w": 12,
+    "h": 8,
+    "karte": true,
+    "optionen": {
+     "liste": [
+      {
+       "name": "Living room",
+       "entity": "sensor.wohnzimmer_temperatur"
+      },
+      {
+       "name": "Kitchen",
+       "entity": "sensor.kueche_temperatur"
+      },
+      {
+       "name": "Kids' room",
+       "entity": "sensor.kinderzimmer_temperatur"
+      },
+      {
+       "name": "Bathroom",
+       "entity": "sensor.bad_temperatur"
+      }
+     ]
+    }
+   },
+   {
+    "id": "kalender",
+    "typ": "kalender",
+    "x": 35,
+    "y": 10,
+    "w": 12,
+    "h": 9,
+    "karte": true,
+    "optionen": {
+     "entity": "calendar.familie",
+     "anzahl": 4,
+     "tage": 14,
+     "titel": "Family"
+    }
+   },
+   {
+    "id": "pegel",
+    "typ": "apiwert",
+    "x": 12,
+    "y": 19,
+    "w": 11,
+    "h": 4,
+    "karte": true,
+    "optionen": {
+     "quelle": "pegel",
+     "pfad": "value",
+     "name": "Rhine, Cologne",
+     "icon": "mdi-waves",
+     "einheit": "cm"
+    }
+   },
+   {
+    "id": "solar",
+    "typ": "apiwert",
+    "x": 23,
+    "y": 19,
+    "w": 11,
+    "h": 4,
+    "karte": true,
+    "optionen": {
+     "quelle": "solar",
+     "pfad": "heute_kwh",
+     "name": "Solar today",
+     "icon": "mdi-solar-power",
+     "einheit": "kWh",
+     "nachkomma": 1
+    }
+   },
+   {
+    "id": "countdown",
+    "typ": "countdown",
+    "x": 35,
+    "y": 20,
+    "w": 12,
+    "h": 3,
+    "karte": true,
+    "optionen": {
+     "ziel": "2026-12-24",
+     "vorlage": "{tage} days until Christmas Eve",
+     "ende": "Merry Christmas!"
+    }
+   },
+   {
+    "id": "laufband",
+    "typ": "text",
+    "x": 0,
+    "y": 24,
+    "w": 48,
+    "h": 3,
+    "optionen": {
+     "laufband": true,
+     "text": "+++ Demo with sample data +++ values from Home Assistant, data sources and calendar – made up here +++ time and sun position are real +++"
+    }
+   }
+  ]
+ }
+}

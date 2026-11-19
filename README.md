@@ -31,6 +31,10 @@
 
 ### Quick start
 
+**Try it first in the browser:** [**live demo**](https://thefrozn.github.io/signagecast/?sprache=en) – the real TV page with
+sample data (four templates, time of day), no installation, no tracking. The admin is shown in the
+[screenshot tour](docs/TOUR.md).
+
 **Proxmox VE** – one command on the shell of the Proxmox host:
 
 ```bash

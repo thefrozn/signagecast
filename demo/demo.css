@@ -1,0 +1,27 @@
+/* SignageCast – Hülle der Live-Demo: schmaler Balken oben, darunter die TV-Seite (1920 × 1080) passend skaliert */
+:root {
+  --grund: #0b0d10; --balken: #15191f; --text: #e8eaed; --leise: #9aa3ad; --rand: #2a3038; --akzent: #3d8cd0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--grund); color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+body { display: flex; flex-direction: column; }
+.balken { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 6px 16px;
+  background: var(--balken); border-bottom: 1px solid var(--rand); }
+.titel { font-weight: 600; white-space: nowrap; }
+.leise { color: var(--leise); font-weight: 400; }
+.hinweis { color: #ffd479; white-space: nowrap; }
+label { display: inline-flex; align-items: center; gap: 6px; color: var(--leise); white-space: nowrap; }
+select { background: var(--grund); color: var(--text); border: 1px solid var(--rand); border-radius: 6px; padding: 3px 6px;
+  font: inherit; min-height: 28px; }
+select:focus-visible, a:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.links { margin-left: auto; display: flex; gap: 14px; }
+.links a { color: #8cc4ff; text-decoration: none; white-space: nowrap; }
+.links a:hover { text-decoration: underline; }
+.buehne { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+#tv { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; background: #000; }
+@media (max-width: 700px) {
+  .balken { padding: 6px 16px; gap: 6px 10px; }
+  .links { margin-left: 0; }
+}

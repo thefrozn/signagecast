@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.64.0 (unreleased)
+- **Live demo on GitHub Pages:** <https://thefrozn.github.io/signagecast/> – the real TV page in direct mode without a
+  server: templates *Living room*, *Practice*, *Snack bar* and *Hotel*, time of day (real sun position or fixed),
+  German/English. Weather, Home Assistant values, calendar and data sources come from fixed sample data; time and sun
+  position are real. The video window shows the CC0 picture sets – no YouTube, radio, cameras or external requests, no
+  cookies, no tracking, no external fonts or scripts (Content-Security-Policy). A slim bar says “Demo with sample
+  data” and links to the repository and the screenshot tour.
+- Built by `werkzeug/demo_bauen.py` from the current code (templates, element values, TV page) and published by the
+  new workflow *Live-Demo* on every release tag; a test makes sure the demo knows every field the data service sends.
+  The real TV page is unchanged. README: link next to the quick start.
+
 ## v0.63.0 (2026-11-19)
 - **YouTube in stream mode – note and switch per channel:** in stream mode the server records the YouTube picture and
   passes it on. The channel's *Live video* tab now says so (fine for private use, for business or public use prefer

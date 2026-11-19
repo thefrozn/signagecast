@@ -15,6 +15,16 @@
 Only the Python standard library and Debian packages are used. Third-party components and picture sources:
 see [NOTICE.md](../NOTICE.md).
 
+## Live demo (GitHub Pages)
+
+Since 0.64 <https://thefrozn.github.io/signagecast/> shows the real TV page without a server. `werkzeug/demo_bauen.py`
+builds it from the current code on every release (workflow *Live-Demo*): a copy of `www/` whose `index.html` loads
+`demo/demo-netz.js` first – it answers `/daten.json`, `/durchsage.json` and `/meldung/…` from `demo-daten.json`
+(templates from `layouts.vorlagen()`, element values from `quellen.baustein_werte()` with `demo/beispiel.json`) and
+computes time, date and sun position in the browser. A Content-Security-Policy and the fetch replacement allow only
+requests to the page's own server; no YouTube, radio, cameras, cookies, tracking or external fonts. The real TV page is
+not changed. A test checks that every field `tv_daten()` delivers is also set by the demo.
+
 ## Good to know
 
 - Only public YouTube pages and the **official embed player** are used; streams whose operators do not allow embedding

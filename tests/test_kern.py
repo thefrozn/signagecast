@@ -2243,6 +2243,63 @@ class YoutubeImStream063(unittest.TestCase):
         self.assertIn('youtube_im_stream: w("youtube_im_stream").checked', tv)
         self.assertIn("stream", E.HINWEISE)
 
+
+class Demo064(unittest.TestCase):
+    """Seit 0.64: statische Live-Demo (werkzeug/demo_bauen.py) – baut aus dem aktuellen Code, ohne fremde Abrufe."""
+    W = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def lese(self, *p):
+        with open(os.path.join(self.W, *p), encoding="utf-8") as f:
+            return f.read()
+
+    def test_bauen(self):
+        sys.path.insert(0, os.path.join(self.W, "werkzeug"))
+        import demo_bauen
+        ziel = os.path.join(tempfile.mkdtemp(), "site")
+        d = demo_bauen.bauen(ziel)
+        self.assertEqual(d["reihenfolge"], ["wohnzimmer", "praxis", "imbiss", "hotel"])
+        for v in d["reihenfolge"]:
+            for s in ("de", "en"):
+                x = d["vorlagen"][v][s]
+                self.assertTrue(x["layout"]["elemente"], v)
+                for e in x["layout"]["elemente"]:
+                    if e["typ"] == "video":
+                        self.assertEqual(e["optionen"]["herkunft"], "medien", v)      # nie YouTube
+                    if e["typ"] in ("kamera", "webcam", "webseite", "apibild", "sender"):
+                        self.fail(f"{v}: Baustein {e['typ']} braucht Netz oder Server")
+                    if e["typ"] == "apiwert":
+                        self.assertTrue(x["api"][e["id"]]["da"], e["id"])
+                    if e["typ"] == "raeume":
+                        for r in e["optionen"]["liste"]:
+                            self.assertIn(r["entity"], x["werte"])
+        seite = open(os.path.join(ziel, "tv", "index.html"), encoding="utf-8").read()
+        self.assertLess(seite.index("demo-netz.js"), seite.index("qrcode.js"))
+        self.assertIn("connect-src 'self'", seite)
+        self.assertNotIn('href="/', seite)
+        for f in ("index.html", "demo.js", "demo.css", ".nojekyll", "tv/demo-daten.json", "tv/seite.js", "tv/bilder/stile/natur-tag.jpg"):
+            self.assertTrue(os.path.exists(os.path.join(ziel, f)), f)
+        self.assertFalse(os.path.exists(os.path.join(ziel, "tv", "pult.html")))
+        # keine fremden Adressen in dem, was der Browser lädt (Links zum Repo in der Hülle sind nur Verweise)
+        for f in ("tv/index.html", "tv/demo-netz.js", "demo.js", "demo.css", "tv/stil.css"):
+            text = open(os.path.join(ziel, f), encoding="utf-8").read()
+            self.assertFalse(re.search(r"(src|href)=[\"']https?://|url\([\"']?https?://|@import", text), f)
+        self.assertNotRegex(open(os.path.join(ziel, "index.html"), encoding="utf-8").read(), r"<(script|link|img)[^>]+(src|href)=\"https?://")
+
+    def test_daten_wie_dienst(self):
+        """Gegen Veralten: jedes Feld, das tv_daten() an die TV-Seite liefert, setzt auch demo-netz.js."""
+        import ast
+        baum = ast.parse(self.lese("app", "dienst.py"))
+        f = next(n for n in baum.body if isinstance(n, ast.FunctionDef) and n.name == "tv_daten")
+        ret = [n for n in ast.walk(f) if isinstance(n, ast.Return) and isinstance(n.value, ast.Call)][-1].value
+        felder = {k.arg for k in ret.keywords if k.arg} | {"wetter", "vorhersage", "werte"}
+        js = self.lese("demo", "demo-netz.js")
+        fehlt = sorted(x for x in felder if not re.search(r"\b" + x + r"\b\s*[:,}]", js))
+        self.assertEqual(fehlt, [], "neue Felder von tv_daten() in demo/demo-netz.js ergänzen")
+
+    def test_echte_seite_unveraendert(self):
+        self.assertNotIn("demo", self.lese("www", "index.html").lower())
+        self.assertNotIn("demo-netz", self.lese("www", "seite.js"))
+
 if __name__ == "__main__":
     unittest.main()
 

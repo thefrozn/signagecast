@@ -30,6 +30,10 @@
 
 ### Schnellstart
 
+**Erst im Browser ausprobieren:** [**Live-Demo**](https://thefrozn.github.io/signagecast/?sprache=de) – die echte TV-Seite mit
+Beispieldaten (vier Vorlagen, Tageszeit), ohne Installation, ohne Tracking. Die Verwaltung zeigt die
+[Screenshot-Tour](docs/TOUR.de.md).
+
 **Proxmox VE** – ein Befehl in der Shell des Proxmox-Hosts:
 
 ```bash

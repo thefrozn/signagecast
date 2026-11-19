@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SignageCast – Live-Demo der TV-Seite mit Beispieldaten">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>SignageCast Demo</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+<header class="balken">
+  <strong class="titel">SignageCast <span class="leise">{VERSION}</span></strong>
+  <span class="hinweis" data-t="hinweis">Demo mit Beispieldaten</span>
+  <label><span data-t="vorlage">Vorlage</span> <select id="vorlage">{VORLAGEN}</select></label>
+  <label><span data-t="tz">Tageszeit</span> <select id="tz">
+    <option value="auto" data-t="auto">echt (Sonnenstand)</option>
+    <option value="morgen" data-t="morgen">Morgen</option>
+    <option value="tag" data-t="tag">Tag</option>
+    <option value="abend" data-t="abend">Abend</option>
+    <option value="nacht" data-t="nacht">Nacht</option>
+  </select></label>
+  <label><span data-t="sprache">Sprache</span> <select id="sprache"><option value="de">Deutsch</option><option value="en">English</option></select></label>
+  <nav class="links">
+    <a id="tour" href="https://github.com/thefrozn/signagecast/blob/main/docs/TOUR.de.md" rel="noopener noreferrer" data-t="tour">Tour der Verwaltung</a>
+    <a href="https://github.com/thefrozn/signagecast" rel="noopener noreferrer">GitHub</a>
+  </nav>
+</header>
+<main class="buehne" id="buehne">
+  <iframe id="tv" title="TV-Seite" src="about:blank" scrolling="no"></iframe>
+</main>
+<script src="demo.js"></script>
+</body>
+</html>
