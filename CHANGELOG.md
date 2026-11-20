@@ -1,6 +1,18 @@
 # Changelog
 
-## v0.64.0 (unreleased)
+## v0.64.0 (2026-11-20)
+- **YouTube requests made transparent:** Live videos → Automation has a new table *What was asked at YouTube* – every
+  search with its **search term**, topic, hit count and the streams it found new, every check (which streams, how many
+  live), every channel lookup and key test, with trigger (nightly, by hand, AI assistant, check), way (API or page),
+  units and errors in plain words; newest first, the last 300, never the key. System → Log gets one entry per search
+  listing all search terms and the result.
+- **Search with an API key protected:** only one search at a time (several clicks no longer start several searches);
+  before a manual search the admin shows the cost (≈ 100 units per term) and what is left today and asks; terms that
+  no longer fit into the daily quota are skipped and logged. *Too many requests in a short time* now pauses for
+  15 minutes only, *daily quota used up* until midnight Pacific time – both shown with the time in the Live videos
+  overview and under Automation. Seen in practice: ten clicks on *Search now* used up the whole day's quota.
+- The YouTube API ran with a real key on the author's instance (key test and searches worked); the “not yet tested”
+  notes are removed. The live checks via the API had not run yet because the quota was used up – they are covered by tests.
 - **Live demo on GitHub Pages:** <https://thefrozn.github.io/signagecast/> – the real TV page in direct mode without a
   server: templates *Living room*, *Practice*, *Snack bar* and *Hotel*, time of day (real sun position or fixed),
   German/English. Weather, Home Assistant values, calendar and data sources come from fixed sample data; time and sun
@@ -10,6 +22,9 @@
 - Built by `werkzeug/demo_bauen.py` from the current code (templates, element values, TV page) and published by the
   new workflow *Live-Demo* on every release tag; a test makes sure the demo knows every field the data service sends.
   The real TV page is unchanged. README: link next to the quick start.
+- **Consumption unchanged** (CT 104, Imbiss test layout, paired; the TV page itself is unchanged): stream mode
+  99.5 % / 876 MB and 96.6 % / 882 MB (0.63: 94.8–100.2 % / 859–880 MB), 25 fps, 0 lost; direct mode 71.8 % / 595 MB and
+  75.5 % / 586 MB (0.63: 72.0–77.8 % / 566–576 MB, 0.61: 579–590 MB), about 60 fps, no frame over 50 ms.
 
 ## v0.63.0 (2026-11-19)
 - **YouTube in stream mode – note and switch per channel:** in stream mode the server records the YouTube picture and

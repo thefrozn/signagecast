@@ -349,3 +349,4 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 #leinwandRahmen.gezoomt { overflow: auto; max-height: 78vh; border-radius: 8px; }
 #leinwandRahmen.gezoomt .lw-huelle { flex: none; }
 #leinwandRahmen { isolation: isolate; }   /* Bausteine (z-index je Ebene) bleiben unter der festen Kopfzeile */
+.nowrap { white-space: nowrap; }

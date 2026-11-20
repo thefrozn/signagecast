@@ -44,13 +44,28 @@ const LIVE_TEXTE = {
     passt: (n) => `passt auf ${n} der vorhandenen Streams`, zeigeStreams: "Streams ansehen",
     // Automatik
     aTitel: "Automatik", aText: "Wie oft gewechselt und wann gesucht wird. Alles andere regelt SignageCast selbst.",
-    apiTitel: "YouTube-API (optional, neu – noch ungetestet)",
+    abrufTitel: "Was bei YouTube abgefragt wurde",
+    abrufText: "Jede Suche (mit Suchbegriff), jede Prüfung und jeder Test des Schlüssels – neueste oben. Der Schlüssel steht hier nie.",
+    abrufLeer: "Noch keine Abrufe seit 0.64.",
+    abrufSp: { zeit: "Zeit", anlass: "Anlass", art: "Was", was: "Suchbegriff / Streams", einheiten: "Einheiten", ergebnis: "Ergebnis" },
+    abrufAnlass: { nacht: "nächtlich", hand: "von Hand", mcp: "KI-Assistent", pruefung: "Prüfung", vorab: "Vorabprüfung" },
+    abrufArt: { suche: "Suche", pruefung: "Prüfung", kanal: "Kanal", probe: "Schlüsseltest" },
+    abrufWeg: { api: "API", seiten: "Seite" },
+    abrufNeu: "neu",
+    apiStand: (v, k, r) => `Heute verbraucht: ${v} von ${k} Einheiten · übrig ${r}`,
+    apiSucheKostet: (n, k) => `Eine Suche fragt ${n} Begriffe ab und kostet etwa ${k} Einheiten.`,
+    apiPause: (z, g) => `YouTube-Abfragen pausieren bis ${z}${g ? " (" + g + ")" : ""}.`,
+    sucheFrage: (k, r) => `Die Suche kostet etwa ${k} Einheiten, heute sind noch ${r} übrig. Jetzt suchen?`,
+    sucheLaeuft: "Es läuft schon eine Suche – bitte warten.",
+    sucheKontingent: "Das restliche Tageskontingent reicht nicht für eine Suche.",
+    sucheUebersprungen: (n) => ` · ${n} Begriffe übersprungen (Kontingent)`,
+    apiTitel: "YouTube-API (optional)",
     apiText: "Mit einem eigenen, kostenlosen Schlüssel für die YouTube Data API v3 laufen Suche und Prüfung über die offizielle Schnittstelle statt über YouTube-Seiten. Ohne Schlüssel bleibt alles wie bisher.",
     apiAnleitung: "So bekommst du einen Schlüssel: console.cloud.google.com → Projekt anlegen → „APIs & Dienste“ → Bibliothek → „YouTube Data API v3“ aktivieren → Anmeldedaten → API-Schlüssel erstellen (am besten auf „YouTube Data API v3“ beschränken).",
     apiSchluessel: "API-Schlüssel", apiPruefen: "Prüfen", apiEntfernen: "Entfernen", apiOk: "Schlüssel funktioniert.",
     apiWegApi: (n) => `Abruf über die offizielle API – heute etwa ${n} von 10 000 Einheiten (jeder Suchbegriff 100, Prüfungen fast nichts).`,
     apiWegSeiten: "Abruf über öffentliche YouTube-Seiten (kein Schlüssel eingetragen).",
-    apiFehler: { keyInvalid: "Schlüssel ungültig", quotaExceeded: "Tageskontingent aufgebraucht – ab morgen (9 Uhr deutscher Zeit) wieder", accessNotConfigured: "YouTube Data API v3 im Projekt nicht aktiviert", forbidden: "Zugriff verweigert (Beschränkungen des Schlüssels prüfen)", netz: "keine Verbindung zu googleapis.com", format: "sieht nicht wie ein API-Schlüssel aus" },
+    apiFehler: { keyInvalid: "Schlüssel ungültig", quotaExceeded: "Tageskontingent aufgebraucht", dailyLimitExceeded: "Tageskontingent aufgebraucht", rateLimitExceeded: "zu viele Anfragen in kurzer Zeit", userRateLimitExceeded: "zu viele Anfragen in kurzer Zeit", kontingent: "Tageskontingent reicht nicht", accessNotConfigured: "YouTube Data API v3 im Projekt nicht aktiviert", forbidden: "Zugriff verweigert (Beschränkungen des Schlüssels prüfen)", netz: "keine Verbindung zu googleapis.com", format: "sieht nicht wie ein API-Schlüssel aus" },
     apiFehlerText: "Letzter Fehler",
     abrufRecht: "Ohne Schlüssel ruft SignageCast für Suche und Prüfung YouTube-Seiten automatisch ab – sparsam, aber die YouTube-Bedingungen erlauben das eigentlich nicht. Mit eigenem API-Schlüssel (unten) läuft es über die offizielle Schnittstelle; die Suche lässt sich auch ausschalten.",
     abspielen: "Abspielen", suchenTitel: "Suchen", sperrwoerter: "Sperrwörter: Titel darf keines enthalten (je Zeile eines)",
@@ -97,13 +112,28 @@ const LIVE_TEXTE = {
     streams: (n) => (n === 1 ? "1 stream" : `${n} streams`), mitSuche: (n) => `${n} search terms`, ausBei: (x) => `off on ${x}`,
     passt: (n) => `matches ${n} of the existing streams`, zeigeStreams: "Show streams",
     aTitel: "Automation", aText: "How often the picture changes and when to search. SignageCast handles everything else itself.",
-    apiTitel: "YouTube API (optional, new – not yet tested)",
+    abrufTitel: "What was asked at YouTube",
+    abrufText: "Every search (with its search term), every check and every key test – newest first. The key is never shown here.",
+    abrufLeer: "No requests yet since 0.64.",
+    abrufSp: { zeit: "Time", anlass: "Trigger", art: "What", was: "Search term / streams", einheiten: "Units", ergebnis: "Result" },
+    abrufAnlass: { nacht: "nightly", hand: "by hand", mcp: "AI assistant", pruefung: "check", vorab: "pre-check" },
+    abrufArt: { suche: "Search", pruefung: "Check", kanal: "Channel", probe: "Key test" },
+    abrufWeg: { api: "API", seiten: "page" },
+    abrufNeu: "new",
+    apiStand: (v, k, r) => `Used today: ${v} of ${k} units · ${r} left`,
+    apiSucheKostet: (n, k) => `One search asks for ${n} terms and costs about ${k} units.`,
+    apiPause: (z, g) => `YouTube requests are paused until ${z}${g ? " (" + g + ")" : ""}.`,
+    sucheFrage: (k, r) => `The search costs about ${k} units, ${r} are left today. Search now?`,
+    sucheLaeuft: "A search is already running – please wait.",
+    sucheKontingent: "The remaining daily quota is not enough for a search.",
+    sucheUebersprungen: (n) => ` · ${n} terms skipped (quota)`,
+    apiTitel: "YouTube API (optional)",
     apiText: "With your own free key for the YouTube Data API v3, search and checks use the official interface instead of YouTube pages. Without a key everything stays as before.",
     apiAnleitung: "How to get a key: console.cloud.google.com → create a project → “APIs & Services” → Library → enable “YouTube Data API v3” → Credentials → create API key (best restricted to “YouTube Data API v3”).",
     apiSchluessel: "API key", apiPruefen: "Test", apiEntfernen: "Remove", apiOk: "The key works.",
     apiWegApi: (n) => `Fetching via the official API – about ${n} of 10,000 units used today (each search term 100, checks almost nothing).`,
     apiWegSeiten: "Fetching via public YouTube pages (no key set).",
-    apiFehler: { keyInvalid: "invalid key", quotaExceeded: "daily quota used up – again tomorrow (midnight Pacific time)", accessNotConfigured: "YouTube Data API v3 not enabled in the project", forbidden: "access denied (check the key's restrictions)", netz: "no connection to googleapis.com", format: "does not look like an API key" },
+    apiFehler: { keyInvalid: "invalid key", quotaExceeded: "daily quota used up", dailyLimitExceeded: "daily quota used up", rateLimitExceeded: "too many requests in a short time", userRateLimitExceeded: "too many requests in a short time", kontingent: "daily quota not enough", accessNotConfigured: "YouTube Data API v3 not enabled in the project", forbidden: "access denied (check the key's restrictions)", netz: "no connection to googleapis.com", format: "does not look like an API key" },
     apiFehlerText: "Last error",
     abrufRecht: "Without a key SignageCast fetches YouTube pages automatically for search and checks – sparingly, but YouTube's terms do not really allow it. With your own API key (below) it uses the official interface; the search can also be switched off.",
     abspielen: "Playback", suchenTitel: "Search", sperrwoerter: "Blocked words: title must not contain any (one per line)",
@@ -196,16 +226,13 @@ async function liveSeite(inhalt) {
         : `<p class="gut">${esc(L.keineProbleme)}</p>`}</div>
     <div class="karte"><h3>${esc(L.suche)}</h3>
       <p>${esc(E.suche.aktiv ? L.sucheAn(E.suche.uhrzeit) : L.sucheAus)}${letzte ? ` · ${esc(L.letzte)}: ${esc(letzte.zeit || "")}${letzte.neu ? " – " + esc(L.ergebnis(letzte.neu.length, letzte.gefunden ?? "?")) : ""}` : ""}</p>
+      ${pauseText(st.abruf) ? `<p class="warn">${esc(pauseText(st.abruf))}</p>` : ""}
       <div class="zeile"><button type="button" class="knopf" id="lvSuchen">${esc(L.jetztSuchen)}</button>
         <a class="knopf" href="#automatik">${esc(L.einstellen)}</a><span class="leise" id="lvErg"></span></div></div>`;
   inhalt.querySelectorAll("[data-gruppe]").forEach((b) => {
     b.onclick = () => { SF = Object.assign(SF, { gruppe: b.dataset.gruppe, zustand: b.dataset.zustand || "", kat: "", text: "" }); sfMerken(); zeigeSeite("streams"); };
   });
-  $("#lvSuchen").onclick = (e) => aktion(e.target, async () => {
-    $("#lvErg").textContent = L.laeuft;
-    const r = await senden("/api/suche/starten");
-    $("#lvErg").textContent = r.suche.pause ? T.pause : L.ergebnis((r.suche.neu || []).length, r.suche.gefunden ?? "?");
-  }, null);
+  $("#lvSuchen").onclick = (e) => aktion(e.target, () => sucheStarten($("#lvErg")), null);
 }
 
 // ---------- Sammlung ----------
@@ -501,6 +528,39 @@ async function kategorienSeite(inhalt) {
 }
 
 // ---------- Automatik (früher Stream-Suche + Regeln) ----------
+// seit 0.64: Pause der YouTube-Abfragen in Klartext, Suche mit Kostenfrage, Abruf-Protokoll
+function pauseText(ab) {
+  const L = LT();
+  if (!ab || !ab.pause_bis || ab.pause_bis * 1000 < Date.now()) return "";
+  const z = new Date(ab.pause_bis * 1000).toLocaleString(ORT(), { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  return L.apiPause(z, ab.fehler ? (L.apiFehler[ab.fehler] || ab.fehler) : "");
+}
+async function sucheStarten(ausgabe) {
+  const L = LT();
+  const ab = ((await holen("/api/streams")).abruf) || {};
+  if (ab.suche_laeuft) { ausgabe.textContent = L.sucheLaeuft; return; }
+  if (ab.weg === "api") {
+    if (ab.rest < 100) { ausgabe.textContent = L.sucheKontingent; return; }
+    if (!confirm(L.sucheFrage(ab.suche_kosten, ab.rest))) return;
+  }
+  ausgabe.textContent = L.laeuft;
+  const r = (await senden("/api/suche/starten")).suche || {};
+  ausgabe.textContent = r.laeuft ? L.sucheLaeuft : r.fehler ? (L.apiFehler[r.fehler] || r.fehler) : r.pause ? T.pause
+    : L.ergebnis((r.neu || []).length, r.gefunden ?? "?") + (r.uebersprungen ? L.sucheUebersprungen(r.uebersprungen) : "");
+}
+async function abrufeZeigen(ziel) {
+  const L = LT();
+  const liste = ((await holen("/api/streams/abrufe")).eintraege || []).slice(0, 100);
+  if (!liste.length) { ziel.innerHTML = `<p class="leise">${esc(L.abrufLeer)}</p>`; return; }
+  const S = L.abrufSp;
+  ziel.innerHTML = `<table class="tabelle"><thead><tr><th>${esc(S.zeit)}</th><th>${esc(S.anlass)}</th><th>${esc(S.art)}</th><th>${esc(S.was)}</th>
+    <th>${esc(S.einheiten)}</th><th>${esc(S.ergebnis)}</th></tr></thead><tbody>${liste.map((x) => `<tr>
+    <td class="nowrap">${esc(E.sprache === "en" ? x.zeit.slice(5, 16) : `${x.zeit.slice(8, 10)}.${x.zeit.slice(5, 7)}. ${x.zeit.slice(11, 16)}`)}</td><td>${esc(L.abrufAnlass[x.anlass] || x.anlass)}</td>
+    <td>${esc((L.abrufArt[x.art] || x.art) + " · " + (L.abrufWeg[x.weg] || x.weg))}</td><td>${esc(x.was)}</td>
+    <td>${x.einheiten || ""}</td><td>${x.fehler ? `<span class="warn">${esc(L.apiFehler[x.fehler.split(" ")[0]] ? L.apiFehler[x.fehler.split(" ")[0]] + x.fehler.slice(x.fehler.split(" ")[0].length) : x.fehler)}</span>`
+      : esc(x.ergebnis + ((x.neu || []).length ? ` · ${L.abrufNeu}: ${x.neu.join(", ")}` : ""))}</td></tr>`).join("")}</tbody></table>`;
+}
+
 async function automatikSeite(inhalt) {
   const L = LT(), v = E.video, s = E.suche;
   const [status, st] = await Promise.all([holen("/api/status"), holen("/api/streams")]);
@@ -542,8 +602,10 @@ async function automatikSeite(inhalt) {
         <button type="button" class="knopf" id="aApiTest">${esc(L.apiPruefen)}</button>
         ${s.api_schluessel ? `<button type="button" class="knopf gefahr" id="aApiWeg">${esc(L.apiEntfernen)}</button>` : ""}
         <span class="leise" id="aApiErg"></span></div>
-      <p class="leise">${esc(ab.weg === "api" ? L.apiWegApi(ab.einheiten_heute) : L.apiWegSeiten)}${ab.fehler ? ` · ${esc(L.apiFehlerText)}: ${esc(apiFehler(ab.fehler))}` : ""}</p>
+      <p class="leise">${esc(ab.weg === "api" ? L.apiStand(ab.einheiten_heute, ab.kontingent, ab.rest) + " · " + L.apiSucheKostet(ab.suche_begriffe, ab.suche_kosten) : L.apiWegSeiten)}${ab.fehler ? ` · ${esc(L.apiFehlerText)}: ${esc(apiFehler(ab.fehler))}` : ""}</p>
+      ${pauseText(ab) ? `<p class="warn">${esc(pauseText(ab))}</p>` : ""}
       <details class="erweitert"><summary>${esc(L.erweitert)}</summary><p class="leise">${esc(L.apiAnleitung)}</p></details></div>
+    <div class="karte"><h3>${esc(L.abrufTitel)}</h3><p class="leise">${esc(L.abrufText)}</p><div id="aAbrufe" class="tabelle-rahmen"></div></div>
     <div class="zeile"><button type="button" class="knopf haupt" id="aOk">${esc(L.speichern)}</button></div>`;
   const body = $("#aOrte");
   const ortZeile = (o) => {
@@ -593,9 +655,6 @@ async function automatikSeite(inhalt) {
   if ($("#aApiWeg")) $("#aApiWeg").onclick = (e) => aktion(e.target, async () => {
     await speichernE({ suche: { api_schluessel: "" } }); zeigeSeite("automatik");
   });
-  $("#aJetzt").onclick = (e) => aktion(e.target, async () => {
-    $("#aErg").textContent = L.laeuft;
-    const r = await senden("/api/suche/starten");
-    $("#aErg").textContent = r.suche.pause ? T.pause : L.ergebnis((r.suche.neu || []).length, r.suche.gefunden ?? "?");
-  }, null);
+  $("#aJetzt").onclick = (e) => aktion(e.target, async () => { await sucheStarten($("#aErg")); abrufeZeigen($("#aAbrufe")); }, null);
+  abrufeZeigen($("#aAbrufe"));
 }

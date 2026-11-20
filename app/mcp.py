@@ -690,7 +690,7 @@ def w_run_stream_search_now(a):
     """Die Suche dauert oft länger als eine MCP-Antwort warten darf – im Hintergrund starten, der Dienst sucht zu Ende."""
     def suchen():
         try:
-            post("/api/suche/starten", {})
+            post("/api/suche/starten", {"anlass": "mcp"})
         except Fehler:
             pass
     threading.Thread(target=suchen, daemon=True).start()

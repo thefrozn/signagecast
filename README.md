@@ -272,7 +272,7 @@ stream then shows own media, TVs and players in direct mode keep YouTube).
 
 **Search and checks:** without further setup SignageCast fetches public YouTube pages automatically (nightly search,
 live checks) – sparingly and pausing when YouTube says “too many requests”, but YouTube's terms do not really allow
-automated access. Since 0.63 you can enter your own free key for the **YouTube Data API v3** (not yet tested with a real key) (Live videos →
+automated access. Since 0.63 you can enter your own free key for the **YouTube Data API v3** (Live videos →
 Automation): search and checks then use the official interface (about 100 units per search term and night, of 10,000
 free per day). Or switch the search off and keep only streams you added yourself.
 

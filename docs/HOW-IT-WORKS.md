@@ -29,7 +29,7 @@ not changed. A test checks that every field `tv_daten()` delivers is also set by
 
 - Only public YouTube pages and the **official embed player** are used; streams whose operators do not allow embedding
   are not shown. If YouTube reports too many requests, SignageCast pauses for an hour. Nothing is circumvented.
-- **YouTube Data API (since 0.63, optional, not yet tested with a real key):** with your own key (Live videos → Automation) the nightly search uses
+- **YouTube Data API (since 0.63, optional):** with your own key (Live videos → Automation) the nightly search uses
   `search.list` (live, embeddable; 100 units per term) and the checks `videos.list` (1 unit per 50 videos) instead of
   YouTube pages; channels are only searched again (100 units) when their known live video has ended. The API does not
   tell the offered resolution – the last known value is kept, otherwise the guard judges the picture while playing.

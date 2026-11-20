@@ -1231,7 +1231,7 @@ class Streamliste(unittest.TestCase):
         ST.schreib(ST.CACHE, {"quellen": {"aaaaaaaaaaa": {"video_id": "aaaaaaaaaaa", "live": True, "geprueft": jetzt - 60},
                                           "bbbbbbbbbbb": {"video_id": "bbbbbbbbbbb", "live": True, "geprueft": jetzt - 3600}}})
         gesehen = []
-        self.s._pruefen = lambda a: gesehen.extend(sid for sid, _ in a) or len(a)
+        self.s._pruefen = lambda a, anlass="pruefung": gesehen.extend(sid for sid, _ in a) or len(a)
         self.assertFalse(self.s.vormerken(["kaputt", 5]))
         self.assertTrue(self.s.vormerken(["aaaaaaaaaaa", "bbbbbbbbbbb"]))
         self.assertEqual(self.s.vorpruefen(), 1)
@@ -2299,6 +2299,90 @@ class Demo064(unittest.TestCase):
     def test_echte_seite_unveraendert(self):
         self.assertNotIn("demo", self.lese("www", "index.html").lower())
         self.assertNotIn("demo-netz", self.lese("www", "seite.js"))
+
+
+class AbrufProtokoll064(unittest.TestCase):
+    """Seit 0.64: jede YouTube-Abfrage im Abruf-Protokoll (mit Suchbegriff), Suche nie doppelt, Kontingent, Fehlerarten."""
+    K = "AIza" + "x" * 35
+
+    def setUp(self):
+        self.e = E.pruefen({})
+        self.e["suche"]["api_schluessel"] = self.K
+        self.e["suche"]["begriffe"] = ["bear live cam", "wolf live cam"]
+        for k in self.e["kategorien"]:
+            k["begriffe"] = []
+        self.s = ST.Streams(lambda: self.e)
+        self.gemeldet = []
+        self.s.melden = lambda a, d: self.gemeldet.append((a, d))
+        ST.schreib(ST.STRIKES, {}); ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0}); ST.schreib(ST.ABRUF_LOG, {"eintraege": []})
+        with ST.api_sperre:
+            ST.api_verbrauch.update(tag=ST._pazifik_tag(), einheiten=0)
+
+    def fake(self, antw):
+        return YoutubeApi063.fake(self, antw)
+
+    def test_suchbegriffe_im_protokoll(self):
+        self.anfragen = []
+        antw = {"search": {"items": [{"id": {"videoId": "eeeeeeeeeee"}, "snippet": {"title": "Grizzly Bear Live Cam"}}]}}
+        with self.fake(antw):
+            r = self.s.suchen("hand")
+        log = ST.abruf_liste()
+        such = [x for x in log if x["art"] == "suche"]
+        self.assertEqual(sorted(x["was"] for x in such), ["bear live cam", "wolf live cam"])
+        self.assertTrue(all(x["einheiten"] == 100 and x["anlass"] == "hand" and x["weg"] == "api" for x in such))
+        self.assertTrue(any(x.get("neu") for x in such))                      # neue Streams beim Begriff vermerkt
+        self.assertEqual(len(r["neu"]), 1)
+        a, d = self.gemeldet[-1]
+        self.assertEqual(a, "suche_fertig")
+        self.assertIn("bear live cam", d); self.assertIn("wolf live cam", d); self.assertIn("von Hand", d)
+        self.assertNotIn(self.K, json.dumps(log) + d)                          # Schlüssel nie im Protokoll
+
+    def test_neue_gleich_wieder_aussortiert(self):
+        """Höchstzahl erreicht: ein neuer Stream wird beim Aufräumen sofort wieder entfernt – darf nicht abstürzen."""
+        self.e["suche"]["max"] = 0
+        self.anfragen = []
+        with self.fake({"search": {"items": [{"id": {"videoId": "hhhhhhhhhhh"}, "snippet": {"title": "Black Bear Live Cam"}}]}}):
+            r = self.s.suchen("nacht")
+        self.assertIn("gefunden", r)
+        self.assertEqual(self.gemeldet[-1][0], "suche_fertig")
+
+    def test_nie_doppelt(self):
+        self.s.such_sperre.acquire()
+        try:
+            self.assertTrue(self.s.suchen("hand")["laeuft"])
+        finally:
+            self.s.such_sperre.release()
+
+    def test_kontingent(self):
+        with ST.api_sperre:
+            ST.api_verbrauch["einheiten"] = ST.API_KONTINGENT - 150             # reicht für einen Begriff
+        self.anfragen = []
+        with self.fake({"search": {"items": []}}):
+            r = self.s.suchen("hand")
+        self.assertEqual(r["uebersprungen"], 1)
+        self.assertEqual(len([u for u in self.anfragen if "/search?" in u]), 1)
+        with ST.api_sperre:
+            ST.api_verbrauch["einheiten"] = ST.API_KONTINGENT - 50
+        with self.fake({}):
+            self.assertEqual(self.s.suchen("hand")["fehler"], "kontingent")
+
+    def test_fehlerarten(self):
+        import urllib.error, io
+        def f(grund):
+            return urllib.error.HTTPError("u", 403, "x", {}, io.BytesIO(json.dumps({"error": {"errors": [{"reason": grund}]}}).encode()))
+        self.anfragen = []
+        with self.fake({"videos": f("rateLimitExceeded")}):
+            self.s._pruefen([("aaaaaaaaaaa", {"art": "video"})])
+        kurz = ST.lies(ST.CACHE, {})["pause_bis"] - time.time()
+        self.assertTrue(10 * 60 < kurz <= 15 * 60 + 5)                        # nur 15 min
+        ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
+        with self.fake({"videos": f("quotaExceeded")}):
+            self.s._pruefen([("aaaaaaaaaaa", {"art": "video"})])
+        self.assertGreater(ST.lies(ST.CACHE, {})["pause_bis"] - time.time(), 15 * 60)
+        self.assertIn("quotaExceeded", ST.abruf_liste()[0]["fehler"])
+        ab = self.s.uebersicht()["abruf"]
+        self.assertEqual(ab["suche_kosten"], 200)
+        self.assertGreater(ab["pause_bis"], time.time())
 
 if __name__ == "__main__":
     unittest.main()

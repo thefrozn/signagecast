@@ -135,6 +135,45 @@ class ApiFehler(Exception):
 
 api_verbrauch = {"tag": "", "einheiten": 0}       # grobe Zählung (Pazifik-Tag), für die Anzeige
 api_sperre = threading.Lock()
+API_KONTINGENT = 10000                            # frei je Tag und Google-Projekt
+ABRUF_LOG = os.path.join(DATEN, "abruf-protokoll.json")   # seit 0.64: was bei YouTube gefragt wurde (ohne Schlüssel)
+ABRUF_MAX = 300
+abruf_sperre = threading.Lock()
+KURZ_SPERRE = ("rateLimitExceeded", "userRateLimitExceeded")             # zu viele in kurzer Zeit: 15 min Pause
+TAG_SPERRE = ("quotaExceeded", "dailyLimitExceeded")                     # Tageskontingent leer: bis Mitternacht Pazifikzeit
+
+
+def abruf_merken(art, was, anlass, weg, einheiten=0, ergebnis="", fehler=""):
+    """Ein Eintrag im Abruf-Protokoll (Live-Videos → Automatik). art: suche | pruefung | kanal | probe;
+    weg: api | seiten. Rückgabe: der Eintrag (für spätere Ergänzung, z. B. „neu“ nach der Auswertung)."""
+    x = {"zeit": time.strftime("%Y-%m-%d %H:%M:%S"), "art": art, "was": str(was)[:300], "anlass": anlass, "weg": weg,
+         "einheiten": einheiten, "ergebnis": str(ergebnis)[:300], "fehler": str(fehler)[:120]}
+    with abruf_sperre:
+        d = lies(ABRUF_LOG, {"eintraege": []})
+        d["eintraege"] = (d.get("eintraege") or [])[-(ABRUF_MAX - 1):] + [x]
+        schreib(ABRUF_LOG, d)
+    return x
+
+
+def abruf_ergaenzen(felder):
+    """Einträge nachträglich ergänzen: felder = {(zeit, was): {feld: wert}} – die Suche weiß erst am Ende, welche
+    Treffer neu waren."""
+    with abruf_sperre:
+        d = lies(ABRUF_LOG, {"eintraege": []})
+        for x in d.get("eintraege") or []:
+            f = felder.get((x["zeit"], x["was"]))
+            if f:
+                x.update(f)
+        schreib(ABRUF_LOG, d)
+
+
+def abruf_liste(n=ABRUF_MAX):
+    return list(reversed((lies(ABRUF_LOG, {"eintraege": []}).get("eintraege") or [])[-n:]))
+
+
+def api_rest():
+    with api_sperre:
+        return API_KONTINGENT - (api_verbrauch["einheiten"] if api_verbrauch["tag"] == _pazifik_tag() else 0)
 
 
 def _pazifik_tag(t=None):
@@ -329,6 +368,8 @@ class Streams:
 
     def __init__(self, einstellungen_holen):
         self.e = einstellungen_holen          # Funktion -> aktuelle Einstellungen
+        self.such_sperre = threading.Lock()   # seit 0.64: nie zwei Suchen gleichzeitig
+        self.melden = None                    # seit 0.64: fn(aktion, detail) -> allgemeines Protokoll (setzt dienst.py)
         self.liste = []                       # aktuelle Rotationsliste [{video_id, name, kategorie, geschuetzt}]
         self.status = {"zeit": None, "geprueft": 0, "suche": None}
         self.vorrang = None                   # {"video_id", "name", "bis"} – "Jetzt zeigen" aus der Verwaltung
@@ -383,8 +424,11 @@ class Streams:
                 "vorab": self.status.get("vorab"),
                 # seit 0.63: Abrufweg (api = YouTube Data API, seiten = öffentliche Seiten), grober Tagesverbrauch, letzter API-Fehler
                 "abruf": {"weg": "api" if e["suche"].get("api_schluessel") else "seiten",
-                          "einheiten_heute": api_verbrauch["einheiten"] if api_verbrauch["tag"] == _pazifik_tag() else 0,
-                          "fehler": (self.status.get("api") or {}).get("fehler", "")}}
+                          "einheiten_heute": API_KONTINGENT - api_rest(), "kontingent": API_KONTINGENT, "rest": api_rest(),
+                          "suche_begriffe": len(self.such_auftraege(e)),
+                          "suche_kosten": API_KOSTEN["search"] * len(self.such_auftraege(e)) if e["suche"].get("api_schluessel") else 0,
+                          "suche_laeuft": self.such_sperre.locked(),
+                          "fehler": (self.status.get("api") or {}).get("fehler", ""), "pause_bis": ca.get("pause_bis", 0)}}
 
     def aendern(self, sid, felder):
         with sperre:
@@ -628,7 +672,7 @@ class Streams:
                 plan.append((3, -alt, sid, s))
         return [(sid, s) for *_, sid, s in sorted(plan, key=lambda p: p[:2])]
 
-    def _pruefen(self, auftraege):
+    def _pruefen(self, auftraege, anlass="pruefung"):
         """auftraege [(sid, stream)] bei YouTube prüfen (höchstens 3 gleichzeitig) und ins cache.json schreiben.
         Rückgabe: Anzahl geprüfter. Bei HTTP 429 eine Stunde Pause für alle Prüfungen und die Suche."""
         if not auftraege:
@@ -637,7 +681,7 @@ class Streams:
             return 0
         schluessel = self.e()["suche"].get("api_schluessel", "")
         if schluessel:
-            return self._pruefen_api(auftraege, schluessel)
+            return self._pruefen_api(auftraege, schluessel, anlass)
         jetzt, erg, gesperrt = time.time(), {}, False
 
         def pruefe(k):
@@ -657,34 +701,54 @@ class Streams:
             if gesperrt:
                 cache["pause_bis"] = jetzt + PAUSE_BEI_429_S
             schreib(CACHE, cache)
+        abruf_merken("pruefung", self._namen(auftraege), anlass, "seiten",
+                     ergebnis=f"{sum(1 for x in erg.values() if x['live'])} von {len(erg)} live",
+                     fehler="429 – 1 h Pause" if gesperrt else "")
         return len(erg)
 
+    @staticmethod
+    def _namen(auftraege):
+        n = [s.get("name") or sid for sid, s in auftraege]
+        return f"{len(n)} Streams: " + ", ".join(n[:6]) + (f" … (+{len(n) - 6})" if len(n) > 6 else "")
+
     def _api_fehler(self, f):
-        """Fehler der API merken; Tageskontingent aufgebraucht -> bis Mitternacht Pazifikzeit nicht mehr fragen."""
-        self.status["api"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": f.grund}
-        if f.grund in ("quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded"):
-            jetzt = time.time()
-            naechster = (jetzt - 8 * 3600) // 86400 * 86400 + 86400 + 8 * 3600 + 300
+        """Fehler der API merken. Zu viele Anfragen in kurzer Zeit -> 15 min Pause; Tageskontingent leer -> bis
+        Mitternacht Pazifikzeit (dann setzt Google es zurück) nicht mehr fragen. Rückgabe: Pause bis (0 = keine)."""
+        jetzt, bis = time.time(), 0
+        if f.grund in KURZ_SPERRE:
+            bis = jetzt + 15 * 60
+        elif f.grund in TAG_SPERRE:
+            bis = (jetzt - 8 * 3600) // 86400 * 86400 + 86400 + 8 * 3600 + 300
+        self.status["api"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": f.grund, "pause_bis": bis}
+        if bis:
             with cache_sperre:
                 cache = lies(CACHE, {"quellen": {}, "pause_bis": 0})
-                cache["pause_bis"] = max(cache.get("pause_bis", 0), naechster)
+                cache["pause_bis"] = max(cache.get("pause_bis", 0), bis)
                 schreib(CACHE, cache)
+        return bis
 
-    def _pruefen_api(self, auftraege, schluessel):
+    def _pruefen_api(self, auftraege, schluessel, anlass="pruefung"):
         """Wie _pruefen, aber über die YouTube Data API (seit 0.63): alle Videos in einer Anfrage (1 Einheit je 50).
         Kanäle: das bekannte Livevideo prüfen, nur wenn es nicht mehr läuft, das neue suchen (100 Einheiten)."""
         jetzt = time.time()
         qc = lies(CACHE, {"quellen": {}}).get("quellen", {})
         vids = {sid: (sid if s.get("art", "video") == "video" else (qc.get(sid) or {}).get("video_id")) for sid, s in auftraege}
+        ids = [v for v in vids.values() if v]
         try:
-            info = api_videos(schluessel, [v for v in vids.values() if v])
+            info = api_videos(schluessel, ids)
+            abruf_merken("pruefung", self._namen(auftraege), anlass, "api", einheiten=(len(ids) + 49) // 50,
+                         ergebnis=f"{sum(1 for x in info.values() if x['live'] and x['einbettbar'])} von {len(ids)} live und einbettbar")
             for sid, s in auftraege:
                 if s.get("art") == "kanal" and not (info.get(vids[sid]) or {}).get("live"):
                     vids[sid] = api_kanal_live(schluessel, sid)
+                    abruf_merken("kanal", s.get("name") or sid, anlass, "api", einheiten=100,
+                                 ergebnis=f"neues Livevideo {vids[sid]}" if vids[sid] else "kein Livevideo")
                     if vids[sid]:
                         info.update(api_videos(schluessel, [vids[sid]]))
         except ApiFehler as f:
-            self._api_fehler(f)
+            bis = self._api_fehler(f)
+            abruf_merken("pruefung", self._namen(auftraege), anlass, "api", fehler=f.grund + (
+                " – Pause bis " + time.strftime("%H:%M", time.localtime(bis)) if bis else ""))
             return 0
         self.status.pop("api", None)
         erg = {}
@@ -767,7 +831,7 @@ class Streams:
         auftraege = auftraege[:frei]
         with sperre:
             self.vor_zeiten += [jetzt] * len(auftraege)
-        n = self._pruefen(auftraege)
+        n = self._pruefen(auftraege, "vorab")
         if n:
             self.liste_bauen()
             self.status["vorab"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "geprueft": n}
@@ -868,7 +932,24 @@ class Streams:
             behalten += 1
         return raus
 
-    def suchen(self):
+    def suchen(self, anlass="nacht"):
+        """Neue Streams suchen. anlass: nacht | hand | mcp (fürs Protokoll). Läuft schon eine Suche, wird keine zweite
+        gestartet (seit 0.64 – Doppelklicks kosteten mit API-Schlüssel je 100 Einheiten pro Suchbegriff)."""
+        if not self.such_sperre.acquire(blocking=False):
+            return {"zeit": time.strftime("%Y-%m-%d %H:%M"), "laeuft": True, "neu": []}
+        try:
+            return self._suchen(anlass)
+        finally:
+            self.such_sperre.release()
+
+    def such_auftraege(self, e=None):
+        """[(Suchbegriff, Kategorie oder None)] – was eine Suche abfragen würde (auch für die Kostenanzeige)."""
+        e = e or self.e()
+        kats, v = kategorien(e), e["video"]
+        mit_suche = [k for k, x in kats.items() if x["begriffe"] and k not in v["kategorien_aus"]]
+        return [(b, None) for b in e["suche"]["begriffe"]] + [(b, k) for k in mit_suche for b in kats[k]["begriffe"]]
+
+    def _suchen(self, anlass):
         e = self.e()
         su, v = e["suche"], e["video"]
         cache = lies(CACHE, {"quellen": {}, "pause_bis": 0})
@@ -883,21 +964,47 @@ class Streams:
         # Seit 0.32 zusätzlich je eingeschalteter Kategorie mit eigenen Suchbegriffen (seit 0.37 auch eigene und Tiere);
         # Treffer der allgemeinen Tiersuche haben Vorrang
         mit_suche = [k for k, x in kats.items() if x["begriffe"] and k not in v["kategorien_aus"]]
-        auftraege = [(b, None) for b in su["begriffe"]] + [(b, k) for k in mit_suche for b in kats[k]["begriffe"]]
+        auftraege = self.such_auftraege(e)
         schluessel = su.get("api_schluessel", "")
+        weg = "api" if schluessel else "seiten"
+        thema = lambda k: (kats[k].get("name") or k) if k in kats else "Tiere (allgemein)"
+        posten = {}                                # (zeit, begriff) -> [ids] für „neu“ am Ende
+        uebrig = []
+        if schluessel:
+            # nur so viele Begriffe, wie das restliche Tageskontingent trägt (100 Einheiten je Begriff)
+            passt = max(0, api_rest() // API_KOSTEN["search"])
+            if passt < len(auftraege):
+                auftraege, uebrig = auftraege[:passt], auftraege[passt:]
+            if not auftraege:
+                abruf_merken("suche", f"{len(uebrig)} Begriffe", anlass, weg, fehler="Tageskontingent reicht nicht – nichts gesucht")
+                self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": "kontingent", "neu": []}
+                return self.status["suche"]
+
+        def eine(a):
+            b, k = a
+            erg = api_suche(schluessel, b) if schluessel else self._suche(b)
+            x = abruf_merken("suche", b, anlass, weg, einheiten=API_KOSTEN["search"] if schluessel else 0,
+                             ergebnis=f"{len(erg)} Treffer · Thema {thema(k)}")
+            posten[(x["zeit"], b)] = [vid for vid, t in erg]
+            return k, erg
         try:
             if schluessel:                         # seit 0.63: offizielle API, nur einbettbare Livestreams
-                ergebnisse = [(k, api_suche(schluessel, b)) for b, k in auftraege]
+                ergebnisse = [eine(a) for a in auftraege]
             else:
                 with ThreadPoolExecutor(max_workers=2) as pool:
-                    ergebnisse = list(pool.map(lambda a: (a[1], self._suche(a[0])), auftraege))
+                    ergebnisse = list(pool.map(eine, auftraege))
         except ApiFehler as f:
-            self._api_fehler(f)
+            bis = self._api_fehler(f)
+            abruf_merken("suche", "abgebrochen", anlass, weg, fehler=f.grund + (
+                " – Pause bis " + time.strftime("%H:%M", time.localtime(bis)) if bis else ""))
             self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": f.grund, "neu": []}
+            self._melden(anlass, weg, auftraege, 0, [], f.grund)
             return self.status["suche"]
         except Gesperrt:
             cache["pause_bis"] = time.time() + PAUSE_BEI_429_S
             schreib(CACHE, cache)
+            abruf_merken("suche", "abgebrochen", anlass, weg, fehler="429 zu viele Anfragen – 1 h Pause")
+            self._melden(anlass, weg, auftraege, 0, [], "429")
             self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "pause": True, "neu": []}
             return self.status["suche"]
         heute = time.strftime("%Y-%m-%d")
@@ -941,7 +1048,7 @@ class Streams:
         else:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 ok = [vid for vid in pool.map(einbettbar, neu_ids) if vid]
-        neu = []
+        neu, hinzu = [], []
         with sperre:
             d = self.alle()
             for vid in ok:
@@ -957,6 +1064,7 @@ class Streams:
                 if th.get("ohne_tag") or (th.get("ohne_tag_woerter") and _muster(th["ohne_tag_woerter"]).search(funde[vid])):
                     d["streams"][vid]["ohne_tag"] = True
                 neu.append(d["streams"][vid]["name"])
+                hinzu.append((vid, d["streams"][vid]["name"]))
             for vid in funde:
                 if vid in d["streams"] and d["streams"][vid].get("herkunft") == "entdeckt":
                     d["streams"][vid]["zuletzt_gefunden"] = heute
@@ -969,6 +1077,26 @@ class Streams:
             for vid in self.ueberzaehlig(d["streams"], su["max"], v, themen={k for k, x in kats.items() if x["gruppe"] == "themen"}):
                 d["streams"].pop(vid)
             self._speichern(d)
+        # Namen beim Hinzufügen merken – das Aufräumen danach kann neue gleich wieder entfernen (Höchstzahl)
+        neu_namen = dict(hinzu)
+        abruf_ergaenzen({k: {"neu": [neu_namen[v] for v in dict.fromkeys(ids) if v in neu_namen][:10]}
+                         for k, ids in posten.items()})
+        if uebrig:
+            abruf_merken("suche", ", ".join(b for b, k in uebrig), anlass, weg, fehler="übersprungen – Tageskontingent reicht nicht")
         self.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "pause": False, "neu": neu,
-                                "gefunden": len(funde), "api": bool(schluessel)}
+                                "gefunden": len(funde), "api": bool(schluessel), "uebersprungen": len(uebrig)}
+        self._melden(anlass, weg, auftraege, len(funde), neu, "", len(uebrig))
         return self.status["suche"]
+
+    def _melden(self, anlass, weg, auftraege, gefunden, neu, fehler, uebersprungen=0):
+        """Eintrag im allgemeinen Protokoll (System → Protokoll): wonach gesucht wurde und was herauskam."""
+        if not self.melden:
+            return
+        art = {"nacht": "nächtlich", "hand": "von Hand", "mcp": "per KI-Assistent"}.get(anlass, anlass)
+        begriffe = ", ".join(b for b, k in auftraege)
+        teile = [f"{art}, über {'YouTube-API' if weg == 'api' else 'YouTube-Seiten'}",
+                 f"Fehler {fehler}" if fehler else f"{gefunden} Treffer, {len(neu)} neu",
+                 f"{uebersprungen} übersprungen (Kontingent)" if uebersprungen else "",
+                 f"{len(auftraege)} Begriffe: {begriffe}",
+                 "neu: " + ", ".join(neu[:8]) + (f" … (+{len(neu) - 8})" if len(neu) > 8 else "") if neu else ""]
+        self.melden("suche_fertig", " · ".join(t for t in teile if t))

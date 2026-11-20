@@ -284,7 +284,7 @@ im Direktmodus behalten YouTube).
 **Suche und Prüfung:** Ohne weitere Einrichtung ruft SignageCast öffentliche YouTube-Seiten automatisch ab (nächtliche
 Suche, Live-Prüfung) – sparsam und mit Pause, wenn YouTube „zu viele Anfragen“ meldet, aber die YouTube-Bedingungen
 erlauben automatisierten Abruf eigentlich nicht. Seit 0.63 lässt sich ein eigener, kostenloser Schlüssel für die
-**YouTube Data API v3** eintragen (mit echtem Schlüssel noch ungetestet) (Live-Videos → Automatik): Suche und Prüfung laufen dann über die offizielle
+**YouTube Data API v3** eintragen (Live-Videos → Automatik): Suche und Prüfung laufen dann über die offizielle
 Schnittstelle (etwa 100 Einheiten je Suchbegriff und Nacht, 10 000 am Tag frei). Oder die Suche ausschalten und nur
 selbst eingetragene Streams behalten.
 

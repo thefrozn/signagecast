@@ -240,6 +240,7 @@ def layout_fuer(t, layouts=None):
 
 ha = HA(lambda: einst()["ha"]["url"])
 streams = Streams(einst)
+streams.melden = lambda aktion, detail: PROTOKOLL.eintragen("SignageCast", "system", aktion, detail, laenge=1500)
 
 
 # ---------- Daten für die TV-Seite ----------
@@ -2149,7 +2150,7 @@ def suche_schleife():
         jetzt = time.strftime("%H:%M")
         if e["aktiv"] and letzte < e["uhrzeit"] <= jetzt:
             try:
-                streams.suchen()
+                streams.suchen("nacht")
                 neu_liste.set()
             except Exception as ex:
                 streams.status["suche"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": str(ex)[:300]}
@@ -3494,6 +3495,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, tv_daten((q.get("tv") or [None])[0]))
         if pfad == "/api/streams":
             return self.antwort(200, streams.uebersicht())
+        if pfad == "/api/streams/abrufe":          # seit 0.64: Abruf-Protokoll (was bei YouTube gefragt wurde)
+            return self.antwort(200, {"eintraege": ST.abruf_liste()})
         if pfad == "/api/ha/test":
             return self.antwort(200, dict(ha.testen(), eigene_ip=eigene_ip()))
         if pfad == "/api/ha/einrichtung":
@@ -3668,6 +3671,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if not re.fullmatch(r"[A-Za-z0-9_-]{30,80}", k):
                 return {"gueltig": False, "grund": "format"}
             g = ST.api_probe(k)
+            ST.abruf_merken("probe", "Schlüssel prüfen", "hand", "api", einheiten=1, ergebnis="in Ordnung" if g is None else "", fehler=g or "")
             return {"gueltig": g is None, "grund": g or ""}
         if p == "/api/einstellungen":
             bn_behalten(d)
@@ -4069,7 +4073,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             streams._speichern(with_d)
             return {}
         if p == "/api/suche/starten":
-            return {"suche": streams.suchen()}
+            return {"suche": streams.suchen("mcp" if str(d.get("anlass")) == "mcp" else "hand")}
         if p == "/api/liste/neu":
             neu_liste.set()
             return {}

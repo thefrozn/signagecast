@@ -43,10 +43,10 @@ class Protokoll:
         d = _laden(pfad, {})
         self.eintraege = [x for x in (d.get("eintraege") or []) if isinstance(x, dict)][-MAX:]
 
-    def eintragen(self, wer, quelle, aktion, detail=""):
+    def eintragen(self, wer, quelle, aktion, detail="", laenge=200):
         """quelle: verwaltung | pult | webhook | system. aktion: Kennung (die Verwaltung übersetzt sie). detail: kurzer Text."""
         x = {"zeit": time.strftime("%Y-%m-%d %H:%M:%S"), "wer": wer_pruefen(wer, "?"), "quelle": quelle,
-             "aktion": str(aktion)[:60], "detail": " ".join(str(detail or "").split())[:200]}
+             "aktion": str(aktion)[:60], "detail": " ".join(str(detail or "").split())[:laenge]}
         with self.sperre:
             self.eintraege.append(x)
             del self.eintraege[:-MAX]
