@@ -7,7 +7,7 @@ button at the top right.
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
-[← README](../README.md) · [installation](INSTALL.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
+[← README](../README.md) · [live demo](https://thefrozn.github.io/signagecast/?sprache=en) · [installation](INSTALL.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
 ---
 

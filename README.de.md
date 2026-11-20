@@ -16,6 +16,7 @@
 <p align="center">
   <a href="#installation"><b>Installieren</b></a> ·
   <a href="docs/TOUR.de.md"><b>Tour</b></a> ·
+  <a href="https://thefrozn.github.io/signagecast/?sprache=de"><b>Live-Demo</b></a> ·
   <a href="docs/TEMPLATES.de.md"><b>Vorlagen</b></a> ·
   <a href="docs/PLAYER.md#deutsch-raspberry-pi-als-player">Player</a> ·
   <a href="docs/MANUAL.md#deutsch-kurz">Handbuch</a> ·

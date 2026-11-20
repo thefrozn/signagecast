@@ -16,6 +16,7 @@
 <p align="center">
   <a href="#installation"><b>Install</b></a> ·
   <a href="docs/TOUR.md"><b>Tour</b></a> ·
+  <a href="https://thefrozn.github.io/signagecast/?sprache=en"><b>Live demo</b></a> ·
   <a href="docs/TEMPLATES.md"><b>Templates</b></a> ·
   <a href="docs/PLAYER.md">Players</a> ·
   <a href="docs/MANUAL.md">Manual &amp; FAQ</a> ·

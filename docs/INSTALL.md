@@ -1,6 +1,6 @@
 # SignageCast – installation
 
-[← README](../README.md) · [hardware](HARDWARE.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
+[← README](../README.md) · [live demo](https://thefrozn.github.io/signagecast/?sprache=en) · [hardware](HARDWARE.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
 Choose one way. All of them need an **x86 computer** (Intel or AMD CPU); for 4K a CPU with **Intel graphics**
 (Quick Sync) – see [hardware](HARDWARE.md). The TV only opens one address in its browser.

@@ -7,7 +7,7 @@ Einstellungen und System und dem Knopf **📢 Durchsage** oben rechts.
 
 **🇬🇧 [English version](TOUR.md)**
 
-[← README](../README.md) · [Installation (englisch)](INSTALL.md) · [Handbuch (englisch)](MANUAL.md) · [Technik (englisch)](HOW-IT-WORKS.md)
+[← README](../README.md) · [Live-Demo](https://thefrozn.github.io/signagecast/?sprache=de) · [Installation (englisch)](INSTALL.md) · [Handbuch (englisch)](MANUAL.md) · [Technik (englisch)](HOW-IT-WORKS.md)
 
 ---
 
