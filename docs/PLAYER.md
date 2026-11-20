@@ -27,7 +27,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 
 ## Step by step
 
-1. Admin → **Displays → + New device** → **Download player image** (once, about 850 MB; checked with the project's
+1. Admin → **Devices → + New device** → **Download player image** (once, about 850 MB; checked with the project's
    signature). After a SignageCast update, *To do* reminds you to download it again – new images then get all fixes.
 2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
@@ -81,7 +81,7 @@ open and 60 new requests per hour. Pairing needs an image from 0.25 on.
 
 ## Direct mode (since 0.24, experimental)
 
-Under *Displays → Devices* → the Pi's card → *Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
+Under *Devices* → the Pi's card → *Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
 kiosk shell `cage` (no desktop) and opens the page from your server. Text and ticker are sharp, there is no stream
 delay, and the server does not need to render or encode anything for this Pi. Sound (radio, announcements, gong) comes
 from the Pi's HDMI.
@@ -122,7 +122,7 @@ says *not possible – create a new image*.
 - **Symbol:** while the player shows the copy, a crossed-out globe stands at the top right.
 - **Back online:** the page asks every 15 s; the next answer comes from the server again – changes arrive within a
   minute, without a restart and without the page reloading (it only rebuilds when the layout changed).
-- **Size:** *Displays → + New device → Advanced → Offline copy at most (MB)*, default 512, `0` switches it off and
+- **Size:** *Devices → + New device → Advanced → Offline copy at most (MB)*, default 512, `0` switches it off and
   deletes the copy. If the space is not enough, own media are dropped first, then gallery/PDF pages, then layout
   pictures; the page itself always stays. The device card shows *Offline copy: 143 of 512 MB · complete* (or how many
   files are missing or do not fit). On a Pi the partition grows to the end of the SD card on first start; on a PC
@@ -181,7 +181,7 @@ fallback to the stream.
 | USB stick | 4 GB or more |
 | Network | LAN cable (nothing to set up) or Wi-Fi (hotspot setup as with the Pi, if the Wi-Fi card can do it) |
 
-1. Admin → **Displays → + New device** → **PC image: Download** (once, about 750 MB; checked with the project's signature).
+1. Admin → **Devices → + New device** → **PC image: Download** (once, about 750 MB; checked with the project's signature).
 2. **Add player** → model **PC** → choose the format:
    - **USB stick (.img.gz)** – write with balenaEtcher, Raspberry Pi Imager (*Use custom*) or Rufus (choose *DD image*).
      The PC keeps pairing, Wi-Fi and player updates on the stick.
@@ -216,7 +216,7 @@ or just a browser in full screen. *Add player* → model **Browser device** → 
 ## Player at another site (since 0.41)
 
 A player at another place (office, holiday flat) reaches SignageCast through **Tailscale** or **Headscale** – tick
-*At another site* when creating its image. Set up once under *Displays → Remote sites*. Guide: [REMOTE.md](REMOTE.md).
+*At another site* when creating its image. Set up once under *Settings → Remote sites*. Guide: [REMOTE.md](REMOTE.md).
 
 ## How it works (short)
 
@@ -277,7 +277,7 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 
 ## Schritt für Schritt
 
-1. Verwaltung → **Displays → + Neues Gerät** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
+1. Verwaltung → **Geräte → + Neues Gerät** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
    des Projekts geprüft). Nach einem SignageCast-Update erinnert „Zu erledigen“ daran, es neu zu laden – neue Images
    bekommen dann alle Korrekturen.
 2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
@@ -334,7 +334,7 @@ wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht n
 
 ## Direktmodus (seit 0.24, experimentell)
 
-Unter *Displays → Geräte* → Karte des Pi → *Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
+Unter *Geräte* → Karte des Pi → *Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
 Kiosk-Rahmen `cage` (ohne Desktop) und öffnet die Seite von deinem Server. Schrift und Laufband sind gestochen scharf,
 es gibt keine Stream-Verzögerung, und der Server muss für diesen Pi nichts zeichnen oder kodieren. Der Ton (Radio,
 Durchsagen, Gong) kommt aus dem HDMI des Pi.
@@ -375,7 +375,7 @@ auf ihrer Karte steht *nicht möglich – dafür ein neues Image erstellen*.
 - **Symbol:** Solange der Player die Kopie zeigt, steht oben rechts eine durchgestrichene Weltkugel.
 - **Wieder verbunden:** Die Seite fragt alle 15 s; die nächste Antwort kommt wieder vom Server – Änderungen sind
   innerhalb einer Minute da, ohne Neustart und ohne dass die Seite neu lädt (sie baut nur bei geändertem Layout neu).
-- **Größe:** *Displays → + Neues Gerät → Erweitert → Offline-Kopie höchstens (MB)*, Standard 512, `0` schaltet aus und
+- **Größe:** *Geräte → + Neues Gerät → Erweitert → Offline-Kopie höchstens (MB)*, Standard 512, `0` schaltet aus und
   löscht die Kopie. Reicht der Platz nicht, fallen zuerst die eigenen Medien weg, dann Galerie-/PDF-Seiten, dann
   Layout-Bilder; die Seite selbst bleibt immer. Die Gerätekarte zeigt *Offline-Kopie: 143 von 512 MB · vollständig*
   (oder wie viele Dateien fehlen bzw. nicht hineinpassen). Auf einem Pi wächst die Partition beim ersten Start bis zum
@@ -435,7 +435,7 @@ Fernwartung, Kopplungscode, Rückfall auf den Stream.
 | USB-Stick | ab 4 GB |
 | Netz | LAN-Kabel (nichts einzurichten) oder WLAN (Hotspot-Einrichtung wie beim Pi, wenn die WLAN-Karte das kann) |
 
-1. Verwaltung → **Displays → + Neues Gerät** → **PC-Image laden** (einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
+1. Verwaltung → **Geräte → + Neues Gerät** → **PC-Image laden** (einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
 2. **Player hinzufügen** → Modell **PC** → Format wählen:
    - **USB-Stick (.img.gz)** – mit balenaEtcher, Raspberry Pi Imager („Eigenes Image“) oder Rufus („DD-Image“) schreiben.
      Der PC merkt sich Kopplung, WLAN und Updates des Players auf dem Stick.
@@ -472,7 +472,7 @@ als Startseite eintragen.
 ## Player an einem anderen Standort (seit 0.41)
 
 Ein Player an einem anderen Ort (Praxis, Ferienwohnung) erreicht SignageCast über **Tailscale** oder **Headscale** –
-beim Image das Häkchen *An einem anderen Standort* setzen. Einmal einrichten unter *Displays → Fernstandorte*.
+beim Image das Häkchen *An einem anderen Standort* setzen. Einmal einrichten unter *Einstellungen → Fernstandorte*.
 Anleitung: [REMOTE.md](REMOTE.md#deutsch-kurz).
 
 ## Technik (kurz)

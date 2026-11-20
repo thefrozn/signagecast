@@ -2,7 +2,7 @@
 
 *[Deutsch](TEMPLATES.de.md)*
 
-Every new layout can start from a template: **Content → Layouts → + New layout → Start from**. All templates exist in German and English (the language of the admin decides). The texts are examples – replace them in the editor, upload your logo and pick a gallery folder or data source where the template has one. Check phone numbers, times and prices before the screen goes live.
+Every new layout can start from a template: **Layouts → + New layout → Start from**. All templates exist in German and English (the language of the admin decides). The texts are examples – replace them in the editor, upload your logo and pick a gallery folder or data source where the template has one. Check phone numbers, times and prices before the screen goes live.
 
 **Click a picture** to open the template's page with a moving picture, all elements used and tips to make it yours.
 

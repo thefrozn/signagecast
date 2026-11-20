@@ -174,7 +174,7 @@ Minimum size 6 × 3 cells.
 | Option | Value | Default |
 |---|---|---|
 | `entity` | Home Assistant entity id (calendar.*), empty = none | `""` |
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `anzahl` | integer 1–10 | `4` |
 | `tage` | integer 1–60 | `14` |
 | `nur_mit_terminen` | true or false | `false` |
@@ -208,7 +208,7 @@ No minimum size.
 
 | Option | Value | Default |
 |---|---|---|
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `""` |
 | `vorlage` | text (max 300 characters) | `""` |
 | `name` | text (max 30 characters) | `""` |
@@ -223,7 +223,7 @@ Minimum size 4 × 1 cells.
 
 | Option | Value | Default |
 |---|---|---|
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `"eintraege"` |
 | `zeile` | text (max 300 characters) | `"{titel}"` |
 | `anzahl` | integer 1–20 | `5` |
@@ -238,7 +238,7 @@ Minimum size 2 × 2 cells.
 
 | Option | Value | Default |
 |---|---|---|
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `""` |
 | `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
 
@@ -248,7 +248,7 @@ No minimum size.
 
 | Option | Value | Default |
 |---|---|---|
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `""` |
 | `name` | text (max 30 characters) | `""` |
 | `darstellung` | one of "balken", "ampel" | `"balken"` |
@@ -268,7 +268,7 @@ No minimum size.
 | Option | Value | Default |
 |---|---|---|
 | `ziel` | text (max 40 characters) | `""` |
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `""` |
 | `vorlage` | text (max 120 characters) | `"noch {tage} Tage"` |
 | `ende` | text (max 60 characters) | `"Heute!"` |
@@ -288,7 +288,7 @@ Minimum size 4 × 3 cells.
 
 | Option | Value | Default |
 |---|---|---|
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `ton` | true or false | `false` |
 | `anpassung` | one of "fuellen", "einpassen" | `"fuellen"` |
 
@@ -298,7 +298,7 @@ Minimum size 4 × 2 cells.
 
 | Option | Value | Default |
 |---|---|---|
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `""` |
 | `entity` | Home Assistant entity id (sensor.*, input_number.*, number.*, counter.*), empty = none | `""` |
 | `stunden` | integer 1–168 | `24` |
@@ -339,13 +339,13 @@ Minimum size 3 × 3 cells.
 | `sekunden` | integer 3–3600 | `15` |
 | `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
 
-### `galerie` – slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Media library → Galleries); the user picks the folder
+### `galerie` – slideshow of a gallery folder (pictures and PDF pages uploaded under Media → Galleries); the user picks the folder
 
 Minimum size 3 × 3 cells.
 
 | Option | Value | Default |
 |---|---|---|
-| `ordner` | id of a gallery folder (Content → Media library → Galleries), "" = none; the user picks it later in the editor | `""` |
+| `ordner` | id of a gallery folder (Media → Galleries), "" = none; the user picks it later in the editor | `""` |
 | `sekunden` | integer 3–3600 | `10` |
 | `anpassung` | one of "einpassen", "fuellen" | `"einpassen"` |
 | `rand` | one of "schwarz", "unscharf" | `"schwarz"` |
@@ -362,7 +362,7 @@ Minimum size 4 × 2 cells.
 | `zeilen` | list of rows {"text": "Currywurst", "info": "small line below, e.g. allergens", "wert": "4,50 €", "icon": "mdi-…" or "", "hervor": true/false = highlight} (max 20) | `[]` |
 | `spalten` | integer 1–3 | `1` |
 | `punkte` | true or false | `true` |
-| `quelle` | id of one of your own data sources (Content → Data sources), "" = none | `""` |
+| `quelle` | id of one of your own data sources (Data sources), "" = none | `""` |
 | `pfad` | path into the data source answer, e.g. "current.temp" or "items.0.title" | `"zeilen"` |
 | `spalte_text` | text (max 120 characters) | `"{text}"` |
 | `spalte_info` | text (max 120 characters) | `"{info}"` |

@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.65.0 (2026-11-20)
+- **Admin page reorganised after fixed UI rules** ([docs/UI-RULES.md](docs/UI-RULES.md), German
+  [UI-RULES.de.md](docs/UI-RULES.de.md)): the menu now lists things – Overview · Channels · Devices · Layouts · Data
+  sources · **Media** (pictures & videos, galleries, clips) · **Live videos** (collection, topics) · **Radio stations** –
+  and **Settings** stand apart at the right end.
+- **Settings as tiles:** one tile per topic with icon, one sentence and its state in plain words (e.g. “connected”,
+  “2 accesses”, “update ready”). **System** (health, updates, backup, log) is one tile with four tabs.
+- **New tile Accounts & access:** admin login, accesses of the announcement panel, AI assistant computers and the
+  webhook key in one place; keys for other services stay with their connection and are linked from there.
+- **⚠ Emergency is its own button** next to 📢 Announcement in the header and turns red while an emergency screen is shown.
+- Live video automation moved to Settings → Live videos; the search state and *Search now* sit above the collection,
+  what each channel plays is on the overview. Clips moved to Media.
+- All old addresses (`#live`, `#suche`, `#video` …) redirect; page addresses are unchanged otherwise.
+- New: [docs/GLOSSARY.md](docs/GLOSSARY.md) (one term per thing, German and English), [CONTRIBUTING.md](CONTRIBUTING.md)
+  and a pull request template that asks where a feature belongs according to the UI rules.
+- The tour still shows the menu of 0.58; new pictures follow.
+
 ## v0.64.1 (2026-11-20)
 - **YouTube API: the daily unit count survives restarts and updates** – it is kept in `api-verbrauch.json` (per Pacific
   day). Before, it started again at 0 after every restart although Google kept counting, so *used today* and the cost

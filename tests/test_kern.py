@@ -271,23 +271,38 @@ class Uebersetzungen(unittest.TestCase):
         self.assertEqual(fehlt, [])
 
     def test_menue_vollstaendig(self):
-        """Seit 0.49: jede Seite im Menü hat eine Funktion und einen Namen in beiden Sprachen; alte Adressen zeigen auf Seiten."""
+        """Seit 0.49, seit 0.65 nach docs/UI-RULES.md: jede Seite im Menü, in den Kacheln und im Kopf hat eine Funktion und einen
+        Namen in beiden Sprachen; höchstens 7 Hauptpunkte außer Übersicht und Einstellungen, höchstens 2 Ebenen; alte Adressen zeigen auf Seiten."""
         with open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", "tv.js"), encoding="utf-8") as f:
             js = f.read()
-        bereiche = js[js.index("const BEREICHE = ["):js.index("const NEBEN")]
-        bnamen = set(re.findall(r'\["([a-z]+)", \[', bereiche))           # Bereiche; „uebersicht“ ist Bereich und Seite
-        seiten = set(re.findall(r'"([a-z]+)"', bereiche)) - (bnamen - {"uebersicht"})
-        seiten |= set(re.findall(r'"([a-z]+)"', js[js.index("const NEBEN"):js.index("const ALT")].split("//")[0]))
-        funk = js[js.index("const SEITEN = {"):js.index("// Bereiche (seit 0.17)")]
+        def gruppen(name):
+            teil = js[js.index(f"const {name} = ["):js.index("]]];", js.index(f"const {name} = [")) + 4]
+            return [(b, re.findall(r'"([a-z]+)"', l)) for b, l in re.findall(r'\["([a-z]+)", \[([^\]]*)\]\]', teil)]
+        bereiche, kacheln = gruppen("BEREICHE"), gruppen("KACHELN")
+        self.assertEqual([b for b, _ in bereiche][0], "uebersicht")
+        self.assertEqual([b for b, _ in bereiche][-1], "einstellungen")
+        self.assertLessEqual(len(bereiche) - 2, 7)
+        neben = re.findall(r'"([a-z]+)"', js[js.index("const NEBEN = ["):js.index("]", js.index("const NEBEN = ["))])
+        unter = dict(re.findall(r'(\w+): "(\w+)"', js[js.index("const UNTER = {"):js.index("}", js.index("const UNTER = {"))]))
+        seiten = {s for _, l in bereiche + kacheln for s in l} | set(neben) | set(unter)
+        funk = js[js.index("const SEITEN = {"):js.index("// Bereiche (seit 0.17")]
         for sprache, start in (("de", "  de: {"), ("en", "  en: {")):
             t = js[js.index(start):]
             reiter = t[t.index("reiter: {"):t.index("}", t.index("reiter: {"))]
             ber = t[t.index("bereiche: {"):t.index("}", t.index("bereiche: {"))]
+            satz = t[t.index("satz: {"):t.index("}", t.index("satz: {"))]
             self.assertEqual([s for s in sorted(seiten) if not re.search(r"\b" + s + r":", reiter)], [], sprache)
-            self.assertEqual([b for b in sorted(bnamen) if not re.search(r"\b" + b + r":", ber)], [], sprache)
+            self.assertEqual([b for b, _ in bereiche if not re.search(r"\b" + b + r":", ber)], [], sprache)
+            self.assertEqual([k for k, _ in kacheln if not re.search(r"\b" + k + r":", satz)], [], sprache)
         self.assertEqual([s for s in sorted(seiten) if not re.search(r"\b" + s + r"[:,]", funk)], [])
+        self.assertEqual([k for k, _ in kacheln if f"{k}:" not in js[js.index("const SYMBOL = {"):js.index("};", js.index("const SYMBOL = {"))]], [])
         alt = dict(re.findall(r'(\w+): "(\w+)"', js[js.index("const ALT = {"):js.index("};", js.index("const ALT = {"))]))
         self.assertEqual([z for z in alt.values() if z not in seiten], [])
+        self.assertEqual([z for z in unter.values() if z not in seiten], [])
+        # Seiten erscheinen genau einmal (Menü oder Kacheln), keine Seite ist zugleich alte Adresse
+        alle = [s for _, l in bereiche + kacheln for s in l]
+        self.assertEqual(len(alle), len(set(alle)))
+        self.assertEqual(set(alt) & seiten, set())
 
     def test_benachrichtigung_beide_sprachen(self):
         import benachrichtigung as BN
@@ -3224,10 +3239,12 @@ class LiveVideos056(unittest.TestCase):
     def test_seiten_und_weiterleitung(self):
         idx, tv = self.lesen("index.html"), self.lesen("tv.js")
         self.assertLess(idx.index("live.js"), idx.index("tv.js"))          # live.js vor tv.js (SEITEN braucht die Funktionen)
-        self.assertIn('["videoton", ["live", "streams", "kategorien", "automatik", "einspieler"]]', tv)
-        self.assertIn('["inhalte", ["layout", "quellen", "medien", "radio"]]', tv)
-        self.assertIn('suche: "automatik", video: "automatik"', tv)
-        for f in ("liveSeite", "streamsSeite", "kategorienSeite", "automatikSeite"):
+        # seit 0.65 (UI-Regel): Live-Videos = Sammlung + Themen, Automatik ist eine Einstellungs-Kachel, Einspieler unter Medien
+        self.assertIn('["live", ["streams", "kategorien"]]', tv)
+        self.assertIn('["medien", ["medien", "galerie", "einspieler"]]', tv)
+        self.assertIn('["automatik", ["automatik"]]', tv)
+        self.assertIn('suche: "automatik", video: "automatik", live: "streams"', tv)
+        for f in ("liveKopf", "streamsSeite", "kategorienSeite", "automatikSeite"):
             self.assertIn(f"async function {f}(", self.lesen("live.js"))
 
     def test_keine_doppelten_namen(self):

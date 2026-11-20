@@ -15,9 +15,9 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 // ---------- Texte ----------
 const TEXTE = {
   de: {
-    reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", live: "Übersicht", streams: "Sammlung", kategorien: "Themen", automatik: "Automatik", radio: "Radio", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Mediathek", updates: "Updates", sicherung: "Sicherung",
-              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerie", speicher: "Speicher", speicherorte: "Speicherorte" },
+    reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", live: "Übersicht", streams: "Sammlung", kategorien: "Themen", automatik: "Live-Videos", radio: "Radiosender", einspieler: "Einspieler", anzeige: "Anzeige",
+              video: "Regeln", suche: "Stream-Suche", verbindung: "Verbindung", medien: "Bilder & Videos", updates: "Updates", sicherung: "Sicherung",
+              allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Konten & Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", notfall: "Notfall", einstellungen: "Einstellungen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerien", speicher: "Speicher", speicherorte: "Speicherorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Kanäle – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
@@ -27,10 +27,10 @@ const TEXTE = {
           art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Kanäle mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
           darfAlarm: "darf das Notfall-Vollbild auslösen",
           recht: { meldung: "darf Laufschrift-Meldungen senden", layout: "darf das Layout vorübergehend umschalten", schalten: "darf Fernseher ein- und ausschalten (HA)" } },
-    al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Displays → Kanäle → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
+    al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Kanäle → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
           vorlagen: "Vorlagen (eine je Zeile)", ton: "Warnton alle 10 Sekunden (hörbar auf Kanälen mit Ton oder Pult-Vorlesen)", an: "Jetzt auslösen", aus: "Beenden", alle: "alle Kanäle",
           wirklich: "Notfall-Vollbild wirklich jetzt auf den Fernsehern zeigen?", laeuft: (z, v) => `Notfall-Vollbild läuft seit ${z} Uhr (${v})`,
-          webhook: "Per Webhook (Schlüssel aus „Meldung per Webhook“):", beendet: "Notfall-Vollbild beendet", ausgeloest: "Notfall-Vollbild ausgelöst", ausloesenWo: "📢 Auslösen unter „Durchsage“" },
+          webhook: "Per Webhook (Schlüssel aus „Meldung per Webhook“ unter Konten & Zugang):", beendet: "Notfall-Vollbild beendet", ausgeloest: "Notfall-Vollbild ausgelöst", ausloesenWo: "⚠ Auslösen mit „Notfall“ oben rechts" },
     mediathek: { medien: "Medien fürs Videofenster", galerie: "Galerien für Layouts", orte: "Dateien von NAS oder Cloud holen:" },
     kanalTeil: { anzeige: "Anzeige & Zeitplan", video: "Live-Video", ton: "Ton", schalten: "Ein/Aus (HA)", stream: "Videostream" },
     kanalListe: { alle: "Alle Kanäle", layout: "Layout", bearbeiten: "Bearbeiten", keinGeraet: "keines – Adresse im Browser des Fernsehers öffnen",
@@ -76,7 +76,7 @@ const TEXTE = {
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Kanal dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           ram: "Arbeitsspeicher: Für den Stream reicht 1 GB (Zero 2 W: 512 MB). Für den Direktmodus mindestens 2 GB, besser 4 GB – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe; mit Schreibschutz liegt auch alles, was der Browser speichert, im Arbeitsspeicher. Schätzwerte, auf echten Pis noch nicht gemessen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
-          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Displays → Geräte → Karte des Pi → Anzeige).",
+          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Geräte → Karte des Pi → Anzeige).",
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisAlt: (s) => `veraltet – bitte neu laden (SignageCast ${s})`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
@@ -204,7 +204,7 @@ const TEXTE = {
           boxText: (ip) => `Der Player tritt beim ersten Start mit einem Einmal-Schlüssel (7 Tage gültig) dem Tailnet bei und spricht SignageCast unter ${ip} an. Nur mit dem Image für genau dieses Gerät.`,
           boxLink: "Beim ersten Start meldet sich der Player per Link an: Steht er noch hier, erscheint auf seiner Karte „Player freigeben“; am anderen Ort zeigt der Fernseher einen QR-Code. Nur mit dem Image für genau dieses Gerät.",
           freigeben: "Player freigeben (Tailscale)", freigebenText: "Öffnet Tailscale – anmelden und bestätigen. Danach verbindet sich der Player von selbst.",
-          ohneTag: "Ohne Tag angemeldet: Die Zugriffsregel fehlt – dieser Player kann alle Geräte in deinem Tailnet erreichen, und seine Anmeldung läuft nach 180 Tagen ab. Regel einfügen (Displays → Fernstandorte), dann neues Image.",
+          ohneTag: "Ohne Tag angemeldet: Die Zugriffsregel fehlt – dieser Player kann alle Geräte in deinem Tailnet erreichen, und seine Anmeldung läuft nach 180 Tagen ab. Regel einfügen (Einstellungen → Fernstandorte), dann neues Image.",
           zeile: "Anderer Standort", wartet: "Image erstellt – noch nicht beigetreten", direkt: "direkt", relay: (r) => `über Relay ${r}`,
           fehler: { fehlt: "Image vor 0.41 ohne Tailscale – neues Image erstellen", abgemeldet: "vom Tailnet abgemeldet – neues Image erstellen", startet: "startet …" },
           entfernt: "Player entfernt – auch aus dem Tailnet", nichtGefunden: "Player entfernt – im Tailnet nicht (mehr) gefunden",
@@ -264,7 +264,7 @@ const TEXTE = {
     todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
     todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
     todo: { speicherort: (n) => `Speicherort „${n}“ war beim letzten Zugriff nicht erreichbar`,
-            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Displays → + Neues Gerät neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Geräte → + Neues Gerät neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
             internet: (s) => `Internet seit ${s} nicht erreichbar – die Kanäle zeigen eigene Medien bzw. ein Ersatzbild`,
             bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
             player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
@@ -276,7 +276,28 @@ const TEXTE = {
             doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“`,
             speicher: (st, f) => st === "rot" ? `Speicher voll (${f} GB frei) – Uploads gesperrt, bitte aufräumen` : `Speicher wird knapp (${f} GB frei) – bitte aufräumen` },
     erweitert: "Erweitert", ungespeichert: "nicht gespeichert", ungespeichertFrage: "Es gibt nicht gespeicherte Änderungen. Trotzdem weiter?",
-    bereiche: { uebersicht: "Übersicht", displays: "Displays", inhalte: "Inhalte", videoton: "Live-Videos", einstellungen: "Einstellungen", system: "System" },
+    bereiche: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", layout: "Layouts", quellen: "Datenquellen", medien: "Medien", live: "Live-Videos",
+                radio: "Radiosender", einstellungen: "Einstellungen", system: "System" },
+    // Einstellungs-Kacheln (seit 0.65): ein Satz je Kachel; Status rechnet einstellungenSeite
+    ka: { satz: { allgemein: "Sprache, Standort, Zeitquelle und Wetter.", ha: "Adresse und Anleitung für Home Assistant.",
+                  benachrichtigung: "Nachricht per Telegram, E-Mail oder Home Assistant, wenn etwas ausfällt.",
+                  zugang: "Wer sich anmelden darf: Verwaltung, Durchsage-Pult, KI-Assistenten und Webhook.",
+                  ki: "Claude oder ein anderer KI-Assistent verwaltet die Inhalte direkt.", speicherorte: "NAS- und Cloud-Ordner für Bilder und Dateien.",
+                  pult: "Eigene Seite für Durchsagen, z. B. an der Rezeption: Stimme und Vorlagen.",
+                  automatik: "Nachtsuche, Minuten je Stream, Tageslicht, Sperrwörter und YouTube-API.",
+                  fern: "Geräte an anderen Orten über Tailscale oder Headscale.", system: "Zustand, Updates, Sicherung und Protokoll." },
+          verbunden: "verbunden", getrennt: "keine Verbindung", aus: "aus", nichtEingerichtet: "nicht eingerichtet", zugaenge: (n) => n === 1 ? "1 Zugang" : `${n} Zugänge`,
+          computer: (n) => n === 1 ? "1 Computer" : `${n} Computer`, orte: (n) => n === 1 ? "1 Speicherort" : `${n} Speicherorte`,
+          suche: (u) => `Nachtsuche um ${u}`, sucheAus: "Nachtsuche aus", stimme: "Stimme geladen", keineStimme: "ohne Stimme",
+          update: (v) => `Update auf ${v} bereit`, version: (v) => `Version ${v}`, zurueck: "← Einstellungen" },
+    zg: { verwaltung: "Anmeldung an der Verwaltung", cockpit: "Du meldest dich mit einem Linux-Benutzer dieses Servers an (bei der Installation tvadmin). Das Passwort änderst du oben rechts im Menü unter Konten oder mit „passwd“.",
+          vergessen: "Passwort vergessen?", andere: "Zugangsdaten zu anderen Diensten",
+          andereText: "Diese Schlüssel gehören zu ihrer Verbindung und stehen dort:", ki: "KI-Assistenten: verbundene Computer",
+          kiVerweis: (n) => `Verbundene Computer (${n}) verwaltest du unter Einstellungen → Konten & Zugang.`,
+          pultVerweis: "Zugänge zum Pult (Namen, Passwörter, Rechte) stehen unter Einstellungen → Konten & Zugang.",
+          dienste: { ha: "Home Assistant: Zugangs-Token", benachrichtigung: "Benachrichtigungen: Telegram-Bot und E-Mail-Passwort",
+                     speicherorte: "Speicherorte: Passwörter für SMB und WebDAV", automatik: "Live-Videos: YouTube-API-Schlüssel",
+                     fern: "Fernstandorte: Schlüssel für Tailscale oder Headscale" } },
     fernseherText: "Ein Kanal ist das, was ein Fernseher zeigt: Layout, Zeitplan, Live-Videos und Ton. Jeder Kanal hat eine eigene Adresse – ein Gerät oder der Browser des Fernsehers öffnet sie.",
     adresse: "Adresse des Kanals", ton: "Ton", tonArt: { aus: "aus", radio: "Radio", tiere: "Originalton der Tiervideos" },
     sender: "Sender", keinSender: "– Sender wählen –", lautstaerke: "Lautstärke", videoZeigen: "Live-Videos zeigen",
@@ -355,7 +376,7 @@ const TEXTE = {
     neueVersion: (v) => `Neue Version ${v} verfügbar`, updateText: "Zum Aktualisieren den Befehl als root im Container ausführen (Einstellungen und Daten bleiben).",
     updateTextContainer: "Zum Aktualisieren das neue Image holen und den Container neu erstellen (Einstellungen und Daten im Volume bleiben):",
     systemSeitenContainer: "Protokolle: docker logs signagecast (bzw. podman logs). Neustart und Update über Docker/Podman.",
-    passwortHinweisContainer: "Hinweis: Du meldest dich noch mit dem Startpasswort aus dem Protokoll an – bitte unter Einstellungen → Zugang ein eigenes festlegen.",
+    passwortHinweisContainer: "Hinweis: Du meldest dich noch mit dem Startpasswort aus dem Protokoll an – bitte unter Einstellungen → Konten & Zugang ein eigenes festlegen.",
     verwaltungTitel: "Anmeldung an der Verwaltung", pwAlt: "Bisheriges Passwort", pwNeu: "Neues Passwort (mind. 8 Zeichen)",
     pwAendern: "Passwort ändern", pwGeaendert: "Passwort geändert", abmelden: "Abmelden",
     kodierungKarte: "Videokodierung", kodierungArt: { vaapi: "Grafikeinheit (VAAPI)", software: "Software (CPU)" },
@@ -389,7 +410,7 @@ const TEXTE = {
     sonne: "Mindest-Sonnenhöhe (Grad)", mindeststufe: "Mindestqualität", schlecht: "so lange darunter, dann weiter (s)",
     grenze: "Strikes bis ein Stream nicht mehr läuft", sperre: "nach Strike überspringen für (Stunden)",
     kod: { titel: "Kodierung (für Fortgeschrittene)", encoder: "Encoder", preset: "Preset", tune: "Tune", bframes: "B-Frames",
-      text: "Normalerweise passt „Automatisch“. Eine Änderung startet den Stream dieses Kanals neu (ein paar Sekunden schwarz); SignageCast probiert sie vorher kurz aus und bleibt bei „Automatisch“, wenn sie hier nicht läuft. Danach unter System → Zustand prüfen, ob die Kodierung mithält.",
+      text: "Normalerweise passt „Automatisch“. Eine Änderung startet den Stream dieses Kanals neu (ein paar Sekunden schwarz); SignageCast probiert sie vorher kurz aus und bleibt bei „Automatisch“, wenn sie hier nicht läuft. Danach unter Einstellungen → System → Zustand prüfen, ob die Kodierung mithält.",
       art: { auto: "Automatisch (empfohlen)", vaapi: "Intel/AMD-Grafik (VAAPI)", qsv: "Intel Quick Sync (QSV)", nvenc: "NVIDIA NVENC (experimentell)", software: "Software (libx264)" },
       info: { auto: "Nimmt die Grafikeinheit per VAAPI, ohne nutzbare Grafik Software.",
         vaapi: "Video-Einheit der Intel- oder AMD-Grafik über die offene Schnittstelle VAAPI – sparsam, 4K, H.264 und H.265. Kennt kein Preset und kein Tune.",
@@ -498,9 +519,9 @@ const TEXTE = {
     aufgabe: { streamliste: "Streamliste prüfen", suche: "Neue Streams suchen", wache: "Qualität messen" },
   },
   en: {
-    reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", live: "Overview", streams: "Collection", kategorien: "Topics", automatik: "Automation", radio: "Radio", einspieler: "Clips", anzeige: "Display",
-              video: "Rules", suche: "Stream search", verbindung: "Connection", medien: "Media library", updates: "Updates", sicherung: "Backup",
-              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Gallery", speicher: "Storage", speicherorte: "Storage locations" },
+    reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", live: "Overview", streams: "Collection", kategorien: "Topics", automatik: "Live videos", radio: "Radio stations", einspieler: "Clips", anzeige: "Display",
+              video: "Rules", suche: "Stream search", verbindung: "Connection", medien: "Pictures & videos", updates: "Updates", sicherung: "Backup",
+              allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Accounts & access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", notfall: "Emergency", einstellungen: "Settings", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Galleries", speicher: "Storage", speicherorte: "Storage locations" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen channels – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
@@ -510,10 +531,10 @@ const TEXTE = {
           art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "Channels with a panel account record real sound (for reading aloud).",
           darfAlarm: "may trigger the emergency screen",
           recht: { meldung: "may send ticker messages", layout: "may switch the layout for a while", schalten: "may switch TVs on and off (HA)" } },
-    al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (Displays → Channels → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
+    al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (Channels → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
           vorlagen: "Templates (one per line)", ton: "Warning tone every 10 seconds (audible on channels with sound or panel read-aloud)", an: "Trigger now", aus: "End", alle: "all channels",
           wirklich: "Really show the emergency screen on the TVs now?", laeuft: (z, v) => `Emergency screen showing since ${z} (${v === "Verwaltung" ? "admin" : v})`,
-          webhook: "Via webhook (key from “Message via webhook”):", beendet: "Emergency screen ended", ausgeloest: "Emergency screen triggered", ausloesenWo: "📢 Trigger under “Announcement”" },
+          webhook: "Via webhook (key from “Message via webhook” under Accounts & access):", beendet: "Emergency screen ended", ausgeloest: "Emergency screen triggered", ausloesenWo: "⚠ Trigger with “Emergency” at the top right" },
     mediathek: { medien: "Media for the video window", galerie: "Galleries for layouts", orte: "Fetch files from a NAS or cloud:" },
     kanalTeil: { anzeige: "Display & schedule", video: "Live video", ton: "Sound", schalten: "On/off (HA)", stream: "Video stream" },
     kanalListe: { alle: "All channels", layout: "Layout", bearbeiten: "Edit", keinGeraet: "none – open the address in the TV's browser",
@@ -559,7 +580,7 @@ const TEXTE = {
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the channel to codec “H.264” and resolution “Full HD”.",
           ram: "Memory: 1 GB is enough for the stream (Zero 2 W: 512 MB). Direct mode needs at least 2 GB, better 4 GB – especially with videos, cameras, web pages or 4K output; with write protection everything the browser stores is kept in memory too. Estimates, not yet measured on real Pis.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
-          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Displays → Devices → the Pi's card → Display).",
+          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Devices → the Pi's card → Display).",
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisAlt: (s) => `outdated – please reload (SignageCast ${s})`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
@@ -687,7 +708,7 @@ const TEXTE = {
           boxText: (ip) => `On its first start the player joins the tailnet with a one-time key (valid 7 days) and talks to SignageCast at ${ip}. Only with the image for exactly this device.`,
           boxLink: "On its first start the player logs in by link: while it is still here, its card shows “Approve player”; at the other site the TV shows a QR code. Only with the image for exactly this device.",
           freigeben: "Approve player (Tailscale)", freigebenText: "Opens Tailscale – log in and confirm. The player then connects by itself.",
-          ohneTag: "Logged in without tag: the access rule is missing – this player can reach all devices in your tailnet, and its login expires after 180 days. Add the rule (Displays → Remote sites), then a new image.",
+          ohneTag: "Logged in without tag: the access rule is missing – this player can reach all devices in your tailnet, and its login expires after 180 days. Add the rule (Settings → Remote sites), then a new image.",
           zeile: "Other site", wartet: "Image created – not joined yet", direkt: "direct", relay: (r) => `through relay ${r}`,
           fehler: { fehlt: "Image before 0.41 without Tailscale – create a new image", abgemeldet: "logged out of the tailnet – create a new image", startet: "starting …" },
           entfernt: "Player removed – also from the tailnet", nichtGefunden: "Player removed – not (or no longer) found in the tailnet",
@@ -747,7 +768,7 @@ const TEXTE = {
     todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
     todoEin: "Show again", todoAusgeblendet: "hidden",
     todo: { speicherort: (n) => `Storage location “${n}” was not reachable on last access`,
-            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under Displays → + New device so new devices get all fixes (e.g. Wi-Fi on first start)`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under Devices → + New device so new devices get all fixes (e.g. Wi-Fi on first start)`,
             internet: (s) => `Internet not reachable since ${s} – the channels show own media or a fallback picture`,
             bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
             player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
@@ -759,7 +780,27 @@ const TEXTE = {
             doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test`,
             speicher: (st, f) => st === "rot" ? `Storage full (${f} GB free) – uploads blocked, please clean up` : `Storage getting low (${f} GB free) – please clean up` },
     erweitert: "Advanced", ungespeichert: "not saved", ungespeichertFrage: "There are unsaved changes. Continue anyway?",
-    bereiche: { uebersicht: "Overview", displays: "Displays", inhalte: "Content", videoton: "Live videos", einstellungen: "Settings", system: "System" },
+    bereiche: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", layout: "Layouts", quellen: "Data sources", medien: "Media", live: "Live videos",
+                radio: "Radio stations", einstellungen: "Settings", system: "System" },
+    ka: { satz: { allgemein: "Language, location, time source and weather.", ha: "Address and guide for Home Assistant.",
+                  benachrichtigung: "A message via Telegram, e-mail or Home Assistant when something fails.",
+                  zugang: "Who may log in: admin page, announcement panel, AI assistants and webhook.",
+                  ki: "Claude or another AI assistant manages the content directly.", speicherorte: "NAS and cloud folders for pictures and files.",
+                  pult: "A separate page for announcements, e.g. at the reception: voice and templates.",
+                  automatik: "Nightly search, minutes per stream, daylight, blocked words and YouTube API.",
+                  fern: "Devices at other places via Tailscale or Headscale.", system: "Health, updates, backup and log." },
+          verbunden: "connected", getrennt: "no connection", aus: "off", nichtEingerichtet: "not set up", zugaenge: (n) => n === 1 ? "1 access" : `${n} accesses`,
+          computer: (n) => n === 1 ? "1 computer" : `${n} computers`, orte: (n) => n === 1 ? "1 location" : `${n} locations`,
+          suche: (u) => `nightly search at ${u}`, sucheAus: "nightly search off", stimme: "voice loaded", keineStimme: "no voice",
+          update: (v) => `update to ${v} ready`, version: (v) => `version ${v}`, zurueck: "← Settings" },
+    zg: { verwaltung: "Admin login", cockpit: "You log in with a Linux user of this server (tvadmin from the installation). Change the password in the menu at the top right under Accounts or with “passwd”.",
+          vergessen: "Forgot the password?", andere: "Credentials for other services",
+          andereText: "These keys belong to their connection and are kept there:", ki: "AI assistants: connected computers",
+          kiVerweis: (n) => `Connected computers (${n}) are managed under Settings → Accounts & access.`,
+          pultVerweis: "Accesses to the panel (names, passwords, rights) are under Settings → Accounts & access.",
+          dienste: { ha: "Home Assistant: access token", benachrichtigung: "Notifications: Telegram bot and e-mail password",
+                     speicherorte: "Storage locations: passwords for SMB and WebDAV", automatik: "Live videos: YouTube API key",
+                     fern: "Remote sites: keys for Tailscale or Headscale" } },
     fernseherText: "A channel is what a TV shows: layout, schedule, live videos and sound. Each channel has its own address – a device or the TV's browser opens it.",
     adresse: "Channel address", ton: "Sound", tonArt: { aus: "off", radio: "Radio", tiere: "Original sound of the animal videos" },
     sender: "Station", keinSender: "– choose station –", lautstaerke: "Volume", videoZeigen: "Show live videos",
@@ -891,7 +932,7 @@ const TEXTE = {
       fn_tag: "Tag as tag:name (lower-case letters, digits, hyphen)", fn_zugang: "Access data incomplete",
       fn_benutzer: "Headscale user: the number (ID) from “headscale users list” – or leave empty",
       fn_api: "Tailscale/Headscale refuses: {d}", fn_nicht_erreichbar: "Tailscale/Headscale not reachable: {d}",
-      fn_aus: "Remote sites are not set up (Displays → Remote sites)",
+      fn_aus: "Remote sites are not set up (Settings → Remote sites)",
       fn_server_fehlt: "SignageCast ({d}) is not in this tailnet – check the address or set up Tailscale on this server",
       fn_userspace: "Tailscale runs in userspace mode on this server – then the admin is reachable from the tailnet without login. Please set up /dev/net/tun (guide REMOTE.md) and switch userspace mode off",
       fn_kein_tailscale: "Tailscale is not set up on this server – first “Set up Tailscale”",
@@ -908,13 +949,13 @@ const TEXTE = {
       d_text_tv: "Text and at least one channel required", d_stimme_fehlt: "Voice not loaded yet (Admin → Settings → Announcement panel)",
       d_stimme: "unknown voice", bn_kanal: "unknown channel",
       l_pdf: "invalid PDF", l_zeitraum: "Period: date as YYYY-MM-DD, optionally with time",
-      sp_voll: "Not enough storage: {frei} GB free, {reserve} GB stay free as a reserve for operation (about {bedarf} GB needed) – clean up under System → Health",
+      sp_voll: "Not enough storage: {frei} GB free, {reserve} GB stay free as a reserve for operation (about {bedarf} GB needed) – clean up under Settings → System → Health",
       gal_ordner: "Unknown gallery folder", gal_ordner_viele: "At most 50 gallery folders",
       gal_benutzt: "The folder is still shown – change these layouts first: {layouts}", gal_art: "Only pictures (JPG, PNG, WebP, GIF) and PDFs",
       gal_heic: "HEIC photos (iPhone) please as JPG: upload via the phone's photo picker (converts by itself) or on the iPhone Settings → Camera → Formats → “Most Compatible”",
       gal_gross: "File larger than {mb} MB", gal_pixel: "Picture too large ({mp} megapixels, at most 100)", gal_kaputt: "Picture not readable: {d}",
       gal_zeit: "Converting takes longer than {s} s", gal_viele: "At most {n} files per folder",
-      gal_voll: "The gallery is full ({gb} GB) – delete pictures or raise the limit under Content → Media library → Galleries",
+      gal_voll: "The gallery is full ({gb} GB) – delete pictures or raise the limit under Media → Galleries",
       so_unbekannt: "This storage location does not exist (any more) – add it under Settings → Storage locations",
       so_viele: "At most {n} storage locations", so_art: "Type: folder on the server, WebDAV or SMB",
       so_adresse: "WebDAV address like https://cloud.example.org/remote.php/dav/files/name/ (without user and password in it)",
@@ -971,7 +1012,7 @@ const TEXTE = {
     neueVersion: (v) => `New version ${v} available`, updateText: "To update, run this command as root inside the container (settings and data are kept).",
     updateTextContainer: "To update, pull the new image and recreate the container (settings and data in the volume are kept):",
     systemSeitenContainer: "Logs: docker logs signagecast (or podman logs). Restart and update via Docker/Podman.",
-    passwortHinweisContainer: "Note: you are still using the initial password from the log – please set your own under Settings → Access.",
+    passwortHinweisContainer: "Note: you are still using the initial password from the log – please set your own under Settings → Accounts & access.",
     verwaltungTitel: "Admin login", pwAlt: "Current password", pwNeu: "New password (min. 8 characters)",
     pwAendern: "Change password", pwGeaendert: "Password changed", abmelden: "Log out",
     kodierungKarte: "Video encoding", kodierungArt: { vaapi: "Graphics unit (VAAPI)", software: "Software (CPU)" },
@@ -1004,7 +1045,7 @@ const TEXTE = {
     sonne: "Minimum sun elevation (degrees)", mindeststufe: "Minimum quality", schlecht: "below it for this long, then skip (s)",
     grenze: "Strikes until a stream stops playing", sperre: "after a strike skip for (hours)",
     kod: { titel: "Encoding (advanced)", encoder: "Encoder", preset: "Preset", tune: "Tune", bframes: "B-frames",
-      text: "“Automatic” is normally right. A change restarts this channel's stream (black for a few seconds); SignageCast tries it briefly first and stays with “Automatic” if it does not work here. Afterwards check under System → Health whether encoding keeps up.",
+      text: "“Automatic” is normally right. A change restarts this channel's stream (black for a few seconds); SignageCast tries it briefly first and stays with “Automatic” if it does not work here. Afterwards check under Settings → System → Health whether encoding keeps up.",
       art: { auto: "Automatic (recommended)", vaapi: "Intel/AMD graphics (VAAPI)", qsv: "Intel Quick Sync (QSV)", nvenc: "NVIDIA NVENC (experimental)", software: "Software (libx264)" },
       info: { auto: "Uses the graphics unit via VAAPI, software without usable graphics.",
         vaapi: "Video unit of Intel or AMD graphics via the open VAAPI interface – efficient, 4K, H.264 and H.265. Has no preset and no tune.",
@@ -1197,72 +1238,97 @@ const teile = (...fs) => async (i) => {
   i.innerHTML = fs.map((_, n) => `<div id="teil${n}"></div>`).join("");
   for (let n = 0; n < fs.length; n++) await fs[n]($("#teil" + n));
 };
-// Mediathek (seit 0.50): Medien und Galerie als zwei Reiter einer Seite; Adressen #medien und #galerie bleiben
-const mediathek = (art, f) => async (i) => {
-  i.innerHTML = `<nav class="kanal-reiter">${["medien", "galerie"].map((x) =>
-      `<button type="button" data-zu="${x}" class="${x === art ? "an" : ""}">${esc(T.mediathek[x])}</button>`).join("")}</nav><div id="mtInhalt"></div>
+// Medien (seit 0.65 Hauptpunkt: Bilder & Videos, Galerien, Einspieler) – unter Bildern und Galerien der Weg zu den Speicherorten
+const mitOrte = (f) => async (i) => {
+  i.innerHTML = `<div id="mtInhalt"></div>
     <p class="leise">${esc(T.mediathek.orte)} <a href="#speicherorte">${esc(T.bereiche.einstellungen)} → ${esc(T.reiter.speicherorte)}</a></p>`;
-  i.querySelectorAll("[data-zu]").forEach((b) => { b.onclick = () => zeigeSeite(b.dataset.zu); });
   await f($("#mtInhalt"));
 };
-const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite, medien: mediathek("medien", medienSeite), einspieler: einspielerSeite,
-                 galerie: mediathek("galerie", galerieSeite),
-                 live: liveSeite, streams: streamsSeite, kategorien: kategorienSeite, automatik: automatikSeite, radio: radioSeite,
+const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSeite(i, false), einrichten: (i) => playerSeite(i, true), layout: layoutSeite, quellen: quellenSeite,
+                 medien: mitOrte(medienSeite), galerie: mitOrte(galerieSeite), einspieler: einspielerSeite,
+                 streams: teile(liveKopf, streamsSeite), kategorien: kategorienSeite, automatik: automatikSeite, radio: radioSeite,
+                 einstellungen: einstellungenSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
-                 pult: teile(pultSeite, webhookKarte), durchsage: durchsageSeite,
-                 updates: updatesSeite, sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: (i) => verbindung(i, "zugang"),
-                 protokoll: protokollSeite, ki: kiSeite, fern: fernSeite, speicherorte: speicherorteSeite };
-// Bereiche (seit 0.17) – je Bereich seine Unterseiten; Adresse je Seite als #<seite>
-// Seit 0.49 neu geordnet: Displays (Kanäle = was ein Fernseher zeigt, Geräte = Hardware), Inhalte, Live-Videos (seit 0.56),
-// Einstellungen (Grundlagen, Verbindungen, Pult), System (Betrieb); Durchsage als Knopf im Kopf.
-// Die Kennungen der Seiten (#fernseher = Kanäle, #video = Regeln …) bleiben gleich, alte leitet ALT weiter.
-const BEREICHE = [["uebersicht", ["uebersicht"]], ["displays", ["fernseher", "player", "fern", "einrichten"]],
-                  ["inhalte", ["layout", "quellen", "medien", "radio"]],
-                  // seit 0.56 „Live-Videos“: Übersicht, Sammlung (#streams), Themen (#kategorien), Automatik, Einspieler
-                  ["videoton", ["live", "streams", "kategorien", "automatik", "einspieler"]],
-                  ["einstellungen", ["allgemein", "ha", "speicherorte", "ki", "benachrichtigung", "pult"].concat(CONTAINER ? ["zugang"] : [])],
-                  ["system", ["zustand", "updates", "sicherung", "protokoll"]]];
-const NEBEN = ["durchsage"];                                           // Seiten ohne Reiter (Knopf im Kopf)
-const UNTER = { galerie: "medien" };                                   // Seiten als Reiter einer anderen (seit 0.50: Mediathek)
-const ALT = { anzeige: "allgemein", verbindung: "ha", leistung: "zustand", speicher: "zustand", suche: "automatik", video: "automatik" };  // … bzw. 0.56  // gemerkte Reiter bis 0.16 bzw. 0.48
+                 pult: (i) => pultSeite(i, "einstellung"), durchsage: (i) => durchsageSeite(i, "durchsage"), notfall: (i) => durchsageSeite(i, "notfall"),
+                 updates: updatesSeite, sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: zugangSeite,
+                 protokoll: protokollSeite, ki: (i) => kiSeite(i, "einrichten"), fern: fernSeite, speicherorte: speicherorteSeite };
+// Bereiche (seit 0.17; seit 0.65 nach docs/UI-RULES.md): Hauptpunkte sind Dinge, höchstens zwei Ebenen, Adresse je Seite als #<seite>.
+// Die Einstellungen stehen getrennt am Ende und öffnen eine Kachelseite (KACHELN); Durchsage und Notfall sind Knöpfe im Kopf.
+// Die Kennungen der Seiten (#fernseher = Kanäle, #automatik = Einstellungen → Live-Videos …) bleiben gleich, alte leitet ALT weiter.
+const BEREICHE = [["uebersicht", ["uebersicht"]], ["fernseher", ["fernseher"]], ["player", ["player"]], ["layout", ["layout"]],
+                  ["quellen", ["quellen"]], ["medien", ["medien", "galerie", "einspieler"]], ["live", ["streams", "kategorien"]],
+                  ["radio", ["radio"]], ["einstellungen", ["einstellungen"]]];
+const NEBEN = ["durchsage", "notfall"];                                // Seiten ohne Menüpunkt (Knöpfe im Kopf)
+const UNTER = { einrichten: "player" };                               // Seiten unter einer anderen (seit 0.65: „+ Neues Gerät“ unter Geräte)
+const ALT = { anzeige: "allgemein", verbindung: "ha", leistung: "zustand", speicher: "zustand", suche: "automatik", video: "automatik", live: "streams" };  // gemerkte Reiter bis 0.16, 0.48, 0.56 bzw. 0.64
+// Einstellungs-Kacheln (seit 0.65): Kachel → ihre Seiten (System mit vier Reitern), dazu das Symbol
+const KACHELN = [["allgemein", ["allgemein"]], ["ha", ["ha"]], ["benachrichtigung", ["benachrichtigung"]], ["zugang", ["zugang"]],
+                 ["ki", ["ki"]], ["speicherorte", ["speicherorte"]], ["pult", ["pult"]], ["automatik", ["automatik"]], ["fern", ["fern"]],
+                 ["system", ["zustand", "updates", "sicherung", "protokoll"]]];
+const SYMBOL = { allgemein: "mdi-tune", ha: "mdi-home-assistant", benachrichtigung: "mdi-bell-outline", zugang: "mdi-account-key-outline",
+                 ki: "mdi-robot-outline", speicherorte: "mdi-folder-network-outline", pult: "mdi-bullhorn-outline",
+                 automatik: "mdi-play-box-multiple-outline", fern: "mdi-earth", system: "mdi-server" };
+const kachelName = (k) => k === "system" ? T.bereiche.system : T.reiter[k];
 let aktiv = "uebersicht", timer = null;
-const bereichVon = (k) => BEREICHE.find(([, s]) => s.includes(UNTER[k] || k)) || (NEBEN.includes(k) ? ["", []] : BEREICHE[0]);
+const kachelVon = (k) => KACHELN.find(([, s]) => s.includes(k));
+const bereichVon = (k) => kachelVon(k) ? BEREICHE.find(([b]) => b === "einstellungen")
+  : BEREICHE.find(([, s]) => s.includes(UNTER[k] || k)) || (NEBEN.includes(k) ? ["", []] : BEREICHE[0]);
 function reiterZeichnen() {
   const [bereich, unter] = bereichVon(aktiv);
   const nav = $("#reiter"), sub = $("#unter"), menue = $("#menue");
   nav.innerHTML = ""; sub.innerHTML = "";
   for (const [b, seiten] of BEREICHE) {
-    const k = el(`<button class="${b === bereich ? "an" : ""}">${esc(T.bereiche[b])}</button>`);
-    k.onclick = () => zeigeSeite(b === bereich ? aktiv : merk[b] || seiten[0]);
+    const k = el(`<button class="${[b === bereich ? "an" : "", b === "einstellungen" ? "getrennt" : ""].join(" ").trim()}">${esc(T.bereiche[b])}</button>`);
+    k.onclick = () => zeigeSeite(b === "einstellungen" ? "einstellungen" : b === bereich ? aktiv : merk[b] || seiten[0]);
     nav.appendChild(k);
   }
   const anker = { benachrichtigung: "#get-notified-when-something-breaks", medien: "#own-pictures-and-videos-instead-of-or-between-live-cams",
                   fernseher: "#show-something-different-at-night", pult: "#announcements-from-the-reception",
-                  durchsage: "#announcements-from-the-reception", galerie: "#show-a-folder-of-pictures-gallery-since-045",
+                  durchsage: "#announcements-from-the-reception", notfall: "#announcements-from-the-reception", galerie: "#show-a-folder-of-pictures-gallery-since-045",
                   speicherorte: "#pictures-and-files-from-a-nas-or-cloud-storage-locations-since-048",
-                  live: "#live-videos-overview-collection-automation-since-056", streams: "#live-videos-overview-collection-automation-since-056",
+                  streams: "#live-videos-overview-collection-automation-since-056",
                   automatik: "#live-videos-overview-collection-automation-since-056", kategorien: "#edit-topics-or-create-your-own-since-037",
                   quellen: "#data-sources-list-assistant-values-since-057",
                   layout: "#elements-bar-several-elements-at-once-shortcuts-and-notes-in-the-layout-editor-since-058" }[aktiv] || "";
   const doku = aktiv === "player" || aktiv === "einrichten" ? "PLAYER.md" + (E && E.sprache === "de" ? "#deutsch-raspberry-pi-als-player" : "")
     : aktiv === "fern" ? "REMOTE.md" : "MANUAL.md" + anker;
   nav.appendChild(el(`<a class="hilfe" title="?" target="_blank" rel="noopener" href="https://github.com/thefrozn/signagecast/blob/main/docs/${doku}">?</a>`));
-  sub.hidden = unter.length < 2;
-  for (const s of unter) {
-    const k = el(`<button class="${[s === (UNTER[aktiv] || aktiv) ? "an" : "", s === "einrichten" ? "neu" : ""].join(" ").trim()}">${esc(T.reiter[s])}</button>`);
+  // zweite Ebene: Unterseiten des Bereichs; in den Einstellungen der Weg zurück zu den Kacheln und die Reiter der Kachel
+  const kachel = kachelVon(aktiv);
+  const reiter = kachel ? kachel[1] : unter.length > 1 ? unter : [];
+  sub.hidden = !reiter.length;
+  if (kachel) {
+    const z = el(`<button>${esc(T.ka.zurueck)}</button>`);
+    z.onclick = () => zeigeSeite("einstellungen");
+    sub.appendChild(z);
+  }
+  for (const s of reiter) {
+    const k = el(`<button class="${s === (UNTER[aktiv] || aktiv) ? "an" : ""}">${esc(kachel && kachel[1].length === 1 ? kachelName(kachel[0]) : T.reiter[s])}</button>`);
     k.onclick = () => zeigeSeite(s);
     sub.appendChild(k);
   }
-  menue.innerHTML = BEREICHE.map(([b, seiten]) => seiten.length < 2
-    ? `<option value="${seiten[0]}">${esc(T.bereiche[b])}</option>`
-    : `<optgroup label="${esc(T.bereiche[b])}">${seiten.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("")}</optgroup>`).join("")
-    + NEBEN.map((s) => `<option value="${s}">${esc(T.reiter[s])}</option>`).join("");
+  const opt = (s, name) => `<option value="${s}">${esc(name || T.reiter[s])}</option>`;
+  menue.innerHTML = BEREICHE.filter(([b]) => b !== "einstellungen").map(([b, seiten]) => seiten.length < 2 ? opt(seiten[0], T.bereiche[b])
+    : `<optgroup label="${esc(T.bereiche[b])}">${seiten.map((s) => opt(s)).join("")}</optgroup>`).join("")
+    + `<optgroup label="${esc(T.bereiche.einstellungen)}">${opt("einstellungen")}${KACHELN.map(([k, seiten]) => seiten.length < 2 ? opt(seiten[0], kachelName(k))
+      : seiten.map((s) => opt(s, kachelName(k) + " · " + T.reiter[s])).join("")).join("")}</optgroup>`
+    + NEBEN.map((s) => opt(s)).join("");
   menue.value = UNTER[aktiv] || aktiv;
   menue.onchange = () => zeigeSeite(menue.value);
   const ds = $("#durchsageKnopf");                                     // Durchsage als Knopf im Kopf (seit 0.49)
   ds.textContent = "📢 " + T.reiter.durchsage;
   ds.classList.toggle("an", aktiv === "durchsage");
   ds.onclick = () => zeigeSeite("durchsage");
+  const nf = $("#notfallKnopf");                                       // Notfall als eigener Knopf (seit 0.65), rot solange er läuft
+  nf.textContent = "⚠ " + T.reiter.notfall;
+  nf.classList.toggle("an", aktiv === "notfall");
+  nf.onclick = () => zeigeSeite("notfall");
+}
+// Notfall-Knopf: zeigt, ob gerade ein Notfall-Vollbild läuft (bei jedem Seitenwechsel und nach dem Auslösen/Beenden)
+function notfallStand(jetzt) {
+  const nf = $("#notfallKnopf");
+  if (jetzt !== undefined) { nf.classList.toggle("aktiv", !!jetzt); return; }
+  holen("/api/alarm").then((a) => nf.classList.toggle("aktiv", !!a.jetzt)).catch(() => {});
 }
 const merk = {};                                                       // zuletzt offene Unterseite je Bereich
 function zeigeSeite(k) {
@@ -1276,7 +1342,7 @@ function zeigeSeite(k) {
   merk[bereichVon(k)[0]] = k;
   if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k);
   clearInterval(timer); timer = null;
-  reiterZeichnen();
+  reiterZeichnen(); notfallStand();
   const inhalt = $("#inhalt");
   inhalt.innerHTML = `<p class="leise">${esc(T.laedt)}</p>`;
   SEITEN[k](inhalt).catch((e) => { inhalt.innerHTML = `<div class="karte schlecht">${esc(e.message || e)}</div>`; });
@@ -1416,13 +1482,23 @@ async function assistent(inhalt, n = 1) {
 }
 
 // ---------- Durchsage-Pult (seit 0.19) ----------
-async function pultSeite(inhalt) {
+// seit 0.65 zwei Teile: "einstellung" (Einstellungen → Durchsage-Pult) und "zugaenge" (Einstellungen → Konten & Zugang)
+async function pultSeite(inhalt, teil = "einstellung") {
   const [info, al] = await Promise.all([holen("/api/pult"), holen("/api/alarm")]);
   const P = JSON.parse(JSON.stringify(E.pult)), A = JSON.parse(JSON.stringify(E.alarm));
   const adresse = `http://${info.eigene_ip || location.hostname}:${info.port}/pult`;
+  const zugaengeHtml = () => `<div class="karte"><h2>${esc(T.reiter.pult)}: ${esc(T.pu.zugaenge)}</h2><p class="leise">${esc(T.pu.zugangText)}</p><pre>${esc(adresse)}</pre>
+        ${P.zugaenge.map((z, i) => `<div class="eintrag" data-i="${i}">
+          <div class="zeile"><label>${esc(T.pu.name)}</label><input type="text" name="zName" value="${esc(z.name)}"></div>
+          <div class="zeile">${E.fernseher.map((t) => `<label><input type="checkbox" name="zTv" value="${esc(t.id)}" ${z.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join(" ")}</div>
+          <div class="zeile"><label><input type="checkbox" name="zAlarm" ${z.alarm ? "checked" : ""}> ${esc(T.pu.darfAlarm)}</label></div>
+          <div class="zeile">${["meldung", "layout", "schalten"].map((r) => `<label><input type="checkbox" name="zRecht" value="${r}" ${z[r] ? "checked" : ""}> ${esc(T.pu.recht[r])}</label>`).join(" ")}</div>
+          <div class="zeile"><input type="password" name="zPw" placeholder="${esc(T.pu.pwNeu)}" autocomplete="new-password">
+            <span class="leise">${esc(z.passwort ? T.pu.pwGesetzt : T.pu.pwFehlt)}</span><button class="knopf gefahr" name="zWeg">${esc(T.pu.entfernen)}</button></div></div>`).join("")}
+        <div class="zeile"><button class="knopf" id="zNeu">${esc(T.pu.zugangNeu)}</button><button class="knopf haupt" id="zOk">${esc(T.speichern)}</button></div></div>`;
   const zeichnen = () => {
-    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pu.titel)}</h2><p class="leise">${esc(T.pu.text)}</p><pre>${esc(adresse)}</pre>
-        <p class="leise">${esc(T.pu.tonHinweis)}</p></div>
+    inhalt.innerHTML = teil === "zugaenge" ? zugaengeHtml() : `<div class="karte"><h2>${esc(T.pu.titel)}</h2><p class="leise">${esc(T.pu.text)}</p><pre>${esc(adresse)}</pre>
+        <p class="leise">${esc(T.pu.tonHinweis)}</p><p class="leise"><a href="#zugang">${esc(T.zg.pultVerweis)}</a></p></div>
       <div class="karte"><h2>${esc(T.pu.stimme)}</h2><p class="leise">${esc(T.pu.stimmeText)}</p>
         ${Object.entries(info.stimmen).map(([k, v]) => `<div class="zeile"><label><input type="radio" name="stimme" value="${k}" ${P.stimme === k ? "checked" : ""}>
           ${esc(v.name)} (${esc(T.pu.art[v.art] || v.art)})</label><span class="${v.bereit ? "gut" : "leise"}">${esc(v.bereit ? T.pu.geladen : T.pu.nichtGeladen)}</span>
@@ -1431,15 +1507,6 @@ async function pultSeite(inhalt) {
         <div class="zeile"><label><input type="checkbox" id="puVorlesen" ${P.vorlesen ? "checked" : ""}> ${esc(T.pu.vorlesen)}</label></div>
         <div class="zeile"><label><input type="checkbox" id="puGong" ${P.gong ? "checked" : ""}> ${esc(T.pu.gong)}</label></div>
         <div class="zeile"><label>${esc(T.pu.dauer)}</label><input type="number" id="puDauer" min="10" max="3600" value="${P.dauer_s}"></div></div>
-      <div class="karte"><h2>${esc(T.pu.zugaenge)}</h2><p class="leise">${esc(T.pu.zugangText)}</p>
-        ${P.zugaenge.map((z, i) => `<div class="eintrag" data-i="${i}">
-          <div class="zeile"><label>${esc(T.pu.name)}</label><input type="text" name="zName" value="${esc(z.name)}"></div>
-          <div class="zeile">${E.fernseher.map((t) => `<label><input type="checkbox" name="zTv" value="${esc(t.id)}" ${z.fernseher.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join(" ")}</div>
-          <div class="zeile"><label><input type="checkbox" name="zAlarm" ${z.alarm ? "checked" : ""}> ${esc(T.pu.darfAlarm)}</label></div>
-          <div class="zeile">${["meldung", "layout", "schalten"].map((r) => `<label><input type="checkbox" name="zRecht" value="${r}" ${z[r] ? "checked" : ""}> ${esc(T.pu.recht[r])}</label>`).join(" ")}</div>
-          <div class="zeile"><input type="password" name="zPw" placeholder="${esc(T.pu.pwNeu)}" autocomplete="new-password">
-            <span class="leise">${esc(z.passwort ? T.pu.pwGesetzt : T.pu.pwFehlt)}</span><button class="knopf gefahr" name="zWeg">${esc(T.pu.entfernen)}</button></div></div>`).join("")}
-        <div class="zeile"><button class="knopf" id="zNeu">${esc(T.pu.zugangNeu)}</button></div></div>
       <div class="karte"><h2>${esc(T.pu.vorlagen)}</h2><p class="leise">${esc(T.pu.vorlagenText)}</p>
         <textarea id="puVorlagen" rows="5" class="breit">${esc(P.vorlagen.join("\n"))}</textarea>
         <div class="zeile"><button class="knopf haupt" id="puOk">${esc(T.speichern)}</button>
@@ -1450,14 +1517,16 @@ async function pultSeite(inhalt) {
         <label>${esc(T.al.vorlagen)}</label><textarea id="alVorlagen" rows="3" class="breit">${esc(A.vorlagen.join("\n"))}</textarea>
         <div class="zeile"><label><input type="checkbox" id="alTon" ${A.ton ? "checked" : ""}> ${esc(T.al.ton)}</label></div>
         <div class="zeile"><button class="knopf haupt" id="alOk">${esc(T.speichern)}</button>
-          <a class="knopf" href="#durchsage">${esc(T.al.ausloesenWo)}</a></div>
+          <a class="knopf" href="#notfall">${esc(T.al.ausloesenWo)}</a></div>
         <p class="leise">${esc(T.al.webhook)}</p><pre>curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)}/alarm -H "Authorization: Bearer …" -d '{"text": "…"}'
 curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)}/alarm -H "Authorization: Bearer …" -d '{"aus": true}'</pre></div>`;
     const lesen = () => {                       // Eingaben in P übernehmen (vor Neuzeichnen und Speichern)
-      P.stimme = (inhalt.querySelector("[name=stimme]:checked") || {}).value || P.stimme;
-      P.vorlesen = $("#puVorlesen").checked; P.gong = $("#puGong").checked; P.dauer_s = Number($("#puDauer").value) || 60;
-      P.vorlagen = $("#puVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean);
-      A.vorlagen = $("#alVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean); A.ton = $("#alTon").checked;
+      if (teil === "einstellung") {
+        P.stimme = (inhalt.querySelector("[name=stimme]:checked") || {}).value || P.stimme;
+        P.vorlesen = $("#puVorlesen").checked; P.gong = $("#puGong").checked; P.dauer_s = Number($("#puDauer").value) || 60;
+        P.vorlagen = $("#puVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean);
+        A.vorlagen = $("#alVorlagen").value.split("\n").map((x) => x.trim()).filter(Boolean); A.ton = $("#alTon").checked;
+      }
       inhalt.querySelectorAll("[data-i]").forEach((el) => {
         const z = P.zugaenge[Number(el.dataset.i)];
         z.name = el.querySelector("[name=zName]").value.trim() || "Pult";
@@ -1468,8 +1537,14 @@ curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)
         if (pw) z.passwort_neu = pw;
       });
     };
-    inhalt.querySelectorAll("[name=zWeg]").forEach((b) => { b.onclick = () => { lesen(); P.zugaenge.splice(Number(b.closest("[data-i]").dataset.i), 1); zeichnen(); }; });
-    $("#zNeu").onclick = () => { lesen(); P.zugaenge.push({ id: Math.random().toString(36).slice(2, 10).padEnd(8, "0"), name: "Rezeption", passwort: "", fernseher: [] }); zeichnen(); };
+    if (teil === "zugaenge") {
+      inhalt.querySelectorAll("[name=zWeg]").forEach((b) => { b.onclick = () => { lesen(); P.zugaenge.splice(Number(b.closest("[data-i]").dataset.i), 1); zeichnen(); }; });
+      $("#zNeu").onclick = () => { lesen(); P.zugaenge.push({ id: Math.random().toString(36).slice(2, 10).padEnd(8, "0"), name: "Rezeption", passwort: "", fernseher: [] }); zeichnen(); };
+      // nur die Zugänge übernehmen – Stimme und Vorlagen bleiben, wie sie beim Dienst stehen
+      $("#zOk").onclick = (e) => { lesen(); speichernE({ pult: Object.assign(JSON.parse(JSON.stringify(E.pult)), { zugaenge: P.zugaenge }) }, e.target)
+        .then(() => { Object.assign(P, JSON.parse(JSON.stringify(E.pult))); zeichnen(); }); };
+      return;
+    }
     $("#puOk").onclick = (e) => { lesen(); speichernE({ pult: P, alarm: A }, e.target).then(() => { Object.assign(P, JSON.parse(JSON.stringify(E.pult))); zeichnen(); }); };
     $("#alOk").onclick = $("#puOk").onclick;
     $("#puProbe").onclick = (e) => aktion(e.target, () => senden("/api/pult/probe", { tv: $("#puProbeTv").value }), T.pu.probeOk);
@@ -1485,7 +1560,7 @@ curl -X POST http://${esc(info.eigene_ip || location.hostname)}:${esc(info.port)
 // ---------- Durchsage (Knopf im Kopf, seit 0.49) ----------
 // Senden wie am Pult, aber mit den Rechten der Verwaltung: Durchsage in der Bildmitte, Laufschrift, Notfall-Vollbild.
 // Stimme, Vorlagen und Zugänge stehen unter Einstellungen → Durchsage-Pult.
-async function durchsageSeite(inhalt) {
+async function durchsageSeite(inhalt, teil = "durchsage") {        // seit 0.65: teil "durchsage" (mit Laufschrift) oder "notfall"
   const [info, al] = await Promise.all([holen("/api/pult"), holen("/api/alarm")]);
   const P = E.pult, A = E.alarm, D = T.ds;
   const stimme = !!(info.stimmen[P.stimme] || {}).bereit;
@@ -1493,7 +1568,7 @@ async function durchsageSeite(inhalt) {
       <p class="leise">${esc(D.keinerAlle)}</p>`;
   const gewaehlt = (name) => [...inhalt.querySelectorAll(`[name=${name}]:checked`)].map((c) => c.value);
   const zeichnen = () => {
-    inhalt.innerHTML = `<div class="karte"><h2>${esc(D.durchsage)}</h2><p class="leise">${esc(D.durchsageText)}</p>
+    inhalt.innerHTML = teil === "notfall" ? notfallHtml() : `<div class="karte"><h2>${esc(D.durchsage)}</h2><p class="leise">${esc(D.durchsageText)}</p>
         ${P.vorlagen.length ? `<div class="zeile"><select id="dsVorlage" class="breit"><option value="">${esc(D.vorlage)}</option>
           ${P.vorlagen.map((v, i) => `<option value="${i}">${esc(v)}</option>`).join("")}</select></div>` : ""}
         <textarea id="dsText" rows="2" class="voll640 fliess" maxlength="200" placeholder="${esc(D.textPlatz)}"></textarea>
@@ -1509,13 +1584,17 @@ async function durchsageSeite(inhalt) {
           `<option value="${x}" ${x === 3600 ? "selected" : ""}>${x < 3600 ? D.min(x / 60) : D.std(x / 3600)}</option>`).join("")}</select>
           <label><input type="checkbox" id="lfWarn"> ${esc(D.warnung)}</label></div>
         <div class="zeile"><button class="knopf haupt" id="lfSenden">${esc(D.laufSenden)}</button><button class="knopf" id="lfAus">${esc(D.laufAus)}</button></div></div>
-      <div class="karte"><h2>⚠ ${esc(T.al.titel)}</h2><p class="leise">${esc(T.al.text)}</p>
+      <p class="leise">${esc(D.einstellungen)} <a href="#pult">${esc(T.bereiche.einstellungen)} → ${esc(T.reiter.pult)}</a></p>`;
+    if (teil === "durchsage") durchsageKnoepfe(); else notfallKnoepfe();
+  };
+  const notfallHtml = () => `<div class="karte"><h2>⚠ ${esc(T.al.titel)}</h2><p class="leise">${esc(T.al.text)}</p>
         ${al.jetzt ? `<p class="schlecht"><b>${esc(T.al.laeuft(al.jetzt.zeit, al.jetzt.von))}:</b> ${esc(al.jetzt.text)}</p>` : ""}
         ${A.vorlagen.length ? `<div class="zeile"><select id="alVorlage" class="breit">${A.vorlagen.map((v, i) => `<option value="${i}">${esc(v)}</option>`).join("")}</select></div>` : ""}
         <input type="text" id="alEigen" class="voll640" maxlength="200" placeholder="${esc(D.eigenerText)}">
         <div class="zeile"><select id="alTv"><option value="">${esc(T.al.alle)}</option>${E.fernseher.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select>
           <button class="knopf gefahr" id="alAn">${esc(T.al.an)}</button><button class="knopf" id="alAus" ${al.jetzt ? "" : "disabled"}>${esc(T.al.aus)}</button></div></div>
       <p class="leise">${esc(D.einstellungen)} <a href="#pult">${esc(T.bereiche.einstellungen)} → ${esc(T.reiter.pult)}</a></p>`;
+  const durchsageKnoepfe = () => {
     if ($("#dsVorlage")) $("#dsVorlage").onchange = () => { const v = P.vorlagen[Number($("#dsVorlage").value)]; if (v !== undefined && $("#dsVorlage").value !== "") $("#dsText").value = v; };
     $("#dsSenden").onclick = (e) => {
       const text = $("#dsText").value.trim();
@@ -1530,14 +1609,16 @@ async function durchsageSeite(inhalt) {
                                                      stil: $("#lfWarn").checked ? "warnung" : "info" }), D.laufAn);
     };
     $("#lfAus").onclick = (e) => aktion(e.target, () => senden("/api/meldung", { aus: true, fernseher: gewaehlt("lfTv") }), D.laufBeendet);
+  };
+  const notfallKnoepfe = () => {
     $("#alAn").onclick = (e) => {
       const text = $("#alEigen").value.trim() || ($("#alVorlage") ? A.vorlagen[Number($("#alVorlage").value)] : "") || "";
       if (!text) { melden(D.keinText, true); return; }
       if (!confirm(T.al.wirklich + "\n\n" + text)) return;
       aktion(e.target, async () => { const r = await senden("/api/alarm", { text, fernseher: $("#alTv").value ? [$("#alTv").value] : [] });
-        al.jetzt = r.jetzt; zeichnen(); }, T.al.ausgeloest);
+        al.jetzt = r.jetzt; notfallStand(al.jetzt); zeichnen(); }, T.al.ausgeloest);
     };
-    $("#alAus").onclick = (e) => aktion(e.target, async () => { await senden("/api/alarm", { aus: true }); al.jetzt = null; zeichnen(); }, T.al.beendet);
+    $("#alAus").onclick = (e) => aktion(e.target, async () => { await senden("/api/alarm", { aus: true }); al.jetzt = null; notfallStand(null); zeichnen(); }, T.al.beendet);
   };
   zeichnen();
 }
@@ -2252,7 +2333,7 @@ async function uebersicht(inhalt) {
       z.innerHTML = a.jetzt ? `<div class="karte warn"><b>⚠ ${esc(T.al.laeuft(a.jetzt.zeit, a.jetzt.von))}</b><p>${esc(a.jetzt.text)}</p>
         <button class="knopf gefahr" id="alarmBeenden">${esc(T.al.aus)}</button></div>` : "";
       const k2 = $("#alarmBeenden");
-      if (k2) k2.onclick = (ev) => aktion(ev.target, async () => { await senden("/api/alarm", { aus: true }); z.innerHTML = ""; }, T.al.beendet);
+      if (k2) k2.onclick = (ev) => aktion(ev.target, async () => { await senden("/api/alarm", { aus: true }); z.innerHTML = ""; notfallStand(null); }, T.al.beendet);
     }).catch(() => {});
     $("#kacheln").innerHTML = k.map(([t, w2, u]) => `<div class="karte"><div class="leise">${esc(t)}</div><div class="wert">${w2}</div><div class="leise">${u}</div></div>`).join("");
     $("#aufgaben").innerHTML = s.aufgaben.map((a) => `<div class="zeile"><b>${esc(T.aufgabe[a.name] || a.name)}</b>
@@ -2318,7 +2399,7 @@ async function webhookKarte(inhalt) {
   };
 }
 
-// „Abschalten ohne Zuschauer“ (seit 0.31.1 unter System → Leistung)
+// „Abschalten ohne Zuschauer“ (seit 0.31.1 unter Einstellungen → System → Leistung)
 function abschaltenKarte(inhalt) {
   inhalt.innerHTML = `<div class="karte"><h2>${esc(T.abschaltenTitel)}</h2>
       <div class="zeile"><label>${esc(T.abschalten)}</label><input type="number" id="abschalten" value="${E.stream.abschalten_s}" min="10" max="3600"></div>
@@ -3004,7 +3085,8 @@ async function fernSeite(inhalt) {
   if ((d.einrichtung || {}).phase === "laeuft") beobachten((x) => x.hier || (x.einrichtung && x.einrichtung.phase !== "laeuft"));
 }
 
-async function kiSeite(inhalt) {
+// seit 0.65 zwei Teile: "einrichten" (Einstellungen → KI-Assistenten) und "zugaenge" (Liste unter Konten & Zugang)
+async function kiSeite(inhalt, teil = "einrichten") {
   const K = T.ki;
   let d = await holen("/api/ki"), ergebnis = null;
   const lokal = /^(localhost|127\.|\[?::1)/.test(location.hostname);
@@ -3039,16 +3121,17 @@ async function kiSeite(inhalt) {
   };
   const zeichnen = () => {
     const c = d.computer;
-    inhalt.innerHTML = `<div class="karte"><h2>${esc(K.titel)}</h2><p class="leise">${esc(K.text)}</p>
-        <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/MCP.md" target="_blank" rel="noopener">${esc(K.anleitung)}</a></p></div>
-      ${ergebnisHtml(ergebnis)}
-      <div class="karte"><h2>${esc(K.liste)}</h2>
+    const liste = `<div class="karte"><h2>${esc(teil === "zugaenge" ? T.zg.ki : K.liste)}</h2>
         ${c.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(K.name)}</th><th>${esc(K.programm)}</th><th>${esc(K.zuletzt)}</th><th></th></tr></thead><tbody>
           ${c.map((x) => `<tr><td><b>${esc(x.name)}</b><br><span class="leise">${esc(x.erstellt)}</span></td><td>${esc(K.arten[x.art] || x.art)}<br><span class="leise">${esc(K.rechte[x.recht])}</span></td>
             <td>${x.wartet ? `<span class="leise">${esc(K.wartet)}</span>` : x.abgelaufen ? `<span class="schlecht">${esc(K.abgelaufen)}</span>`
               : `${esc(x.zuletzt || K.nie)}${x.ip ? `<br><span class="leise">${esc(x.ip)}</span>` : ""}`}</td>
             <td><button class="knopf gefahr" data-weg="${esc(x.id)}">${esc(K.entfernen)}</button></td></tr>`).join("")}</tbody></table></div>`
-          : `<p class="leise">${esc(K.keine)}</p>`}</div>
+          : `<p class="leise">${esc(K.keine)}</p>`}</div>`;
+    inhalt.innerHTML = teil === "zugaenge" ? liste : `<div class="karte"><h2>${esc(K.titel)}</h2><p class="leise">${esc(K.text)}</p>
+        <p><a href="https://github.com/thefrozn/signagecast/blob/main/docs/MCP.md" target="_blank" rel="noopener">${esc(K.anleitung)}</a></p>
+        <p class="leise"><a href="#zugang">${esc(T.zg.kiVerweis(c.length))}</a></p></div>
+      ${ergebnisHtml(ergebnis)}
       <div class="karte"><h2>${esc(K.neu)}</h2>
         <div class="zeile"><label for="kiName">${esc(K.name)}</label><input type="text" id="kiName" maxlength="30" placeholder="${esc(K.namePlatz)}"></div>
         <div class="zeile"><label for="kiArt">${esc(K.programm)}</label><select id="kiArt">
@@ -3059,7 +3142,7 @@ async function kiSeite(inhalt) {
         <div class="zeile"><label for="kiAdresse">${esc(K.adresse)}</label><input type="text" id="kiAdresse" value="${esc(adresse)}"></div>
         <p class="leise">${esc(K.adresseText)}</p>
         <div class="zeile"><button class="knopf haupt" id="kiVerbinden">${esc(K.verbinden)}</button></div></div>`;
-    if (!d.https) $("#kiArt").value = "code";
+    if (!d.https && $("#kiArt")) $("#kiArt").value = "code";
     inhalt.querySelectorAll("[data-kopieren]").forEach((k) => {
       k.onclick = async () => {
         const f = k.parentElement.querySelector("textarea");
@@ -3081,6 +3164,7 @@ async function kiSeite(inhalt) {
         }, K.entfernt);
       };
     });
+    if (teil === "zugaenge") return;
     $("#kiVerbinden").onclick = (e) => aktion(e.target, async () => {
       const name = $("#kiName").value.trim(), art = $("#kiArt").value;
       adresse = $("#kiAdresse").value.trim();
@@ -3093,6 +3177,49 @@ async function kiSeite(inhalt) {
     }, null);
   };
   zeichnen();
+}
+
+// ---------- Einstellungen als Kacheln (seit 0.65, docs/UI-RULES.md Punkt 3) ----------
+// Jede Kachel: Symbol, Name, ein Satz, Status in Klartext. Fällt eine Abfrage aus, fehlt nur ihr Status.
+async function einstellungenSeite(inhalt) {
+  const K = T.ka;
+  const [st, ki, pu, so, fe] = (await Promise.allSettled([holen("/api/status"), holen("/api/ki"), holen("/api/pult"), holen("/api/speicherorte"), holen("/api/fernnetz")]))
+    .map((r) => r.status === "fulfilled" ? r.value : null);
+  const B = E.benachrichtigung;
+  const wege = [B.telegram.aktiv && "Telegram", B.email.aktiv && "E-Mail", B.ha.aktiv && "Home Assistant"].filter(Boolean);
+  const zugaenge = 1 + (E.pult.zugaenge || []).length + (ki ? ki.computer.length : 0) + (E.webhook.token ? 1 : 0);   // 1 = Anmeldung an der Verwaltung
+  const status = {
+    allgemein: [(E.standort || {}).name || "", ""],
+    ha: st ? [st.ha.ok ? K.verbunden : K.getrennt, st.ha.ok ? "gut" : "schlecht"] : null,
+    benachrichtigung: [wege.length ? wege.join(", ") : K.aus, wege.length ? "gut" : ""],
+    zugang: [K.zugaenge(zugaenge), ""],
+    ki: ki ? [K.computer(ki.computer.length), ""] : null,
+    speicherorte: so ? [K.orte(so.orte.length), ""] : null,
+    pult: pu ? [(pu.stimmen[E.pult.stimme] || {}).bereit ? K.stimme : K.keineStimme, ""] : null,
+    automatik: [E.suche.aktiv ? K.suche(E.suche.uhrzeit) : K.sucheAus, ""],
+    fern: fe ? (fe.tailnet_ip ? [K.verbunden + " · " + fe.tailnet_ip, "gut"] : [K.nichtEingerichtet, ""]) : null,
+    system: st ? (st.neue_version ? [K.update(st.neue_version), "warn"] : [K.version(st.version), ""]) : null,
+  };
+  inhalt.innerHTML = `<div class="einst-kacheln">${KACHELN.map(([k, seiten]) => {
+    const [text, stil] = status[k] || ["", ""];
+    return `<a class="einst-kachel" href="#${seiten[0]}"><i class="mdi ${SYMBOL[k]}" aria-hidden="true"></i>
+      <b>${esc(kachelName(k))}</b><span class="leise">${esc(K.satz[k])}</span>${text ? `<span class="stand ${stil}">${esc(text)}</span>` : ""}</a>`;
+  }).join("")}</div>`;
+}
+
+// ---------- Konten & Zugang (seit 0.65): alle Anmeldungen bei SignageCast an einer Stelle ----------
+// Zugangsdaten zu fremden Diensten (HA-Token, Telegram, SMB, YouTube-API, Tailscale) bleiben bei ihrer Verbindung; hier nur der Weg dorthin.
+async function zugangSeite(inhalt) {
+  const Z = T.zg;
+  inhalt.innerHTML = `<div id="zgVerw"></div><div id="zgPult"></div><div id="zgKi"></div><div id="zgWh"></div>
+    <div class="karte"><h2>${esc(Z.andere)}</h2><p class="leise">${esc(Z.andereText)}</p>
+      <ul>${Object.entries(Z.dienste).map(([k, t]) => `<li><a href="#${k}">${esc(t)}</a></li>`).join("")}</ul></div>`;
+  if (CONTAINER) await verbindung($("#zgVerw"), "zugang");
+  else $("#zgVerw").innerHTML = `<div class="karte"><h2>${esc(Z.verwaltung)}</h2><p>${esc(Z.cockpit)}</p>
+      <p class="leise"><a href="https://github.com/thefrozn/signagecast/blob/main/docs/INSTALL.md#forgot-the-password-reset" target="_blank" rel="noopener">${esc(Z.vergessen)}</a></p></div>`;
+  await pultSeite($("#zgPult"), "zugaenge");
+  await kiSeite($("#zgKi"), "zugaenge");
+  await webhookKarte($("#zgWh"));
 }
 
 async function sicherungSeite(inhalt) {

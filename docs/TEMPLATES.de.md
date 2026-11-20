@@ -2,7 +2,7 @@
 
 *[English](TEMPLATES.md)*
 
-Jedes neue Layout kann mit einer Vorlage beginnen: **Inhalte → Layouts → + Neues Layout → Ausgangspunkt**. Alle Vorlagen gibt es auf Deutsch und Englisch (je nach Sprache der Verwaltung). Die Texte sind Beispiele – im Editor ersetzen, Logo hochladen, wo vorhanden Galerie-Ordner oder Datenquelle wählen. Telefonnummern, Zeiten und Preise vor dem Einsatz prüfen.
+Jedes neue Layout kann mit einer Vorlage beginnen: **Layouts → + Neues Layout → Ausgangspunkt**. Alle Vorlagen gibt es auf Deutsch und Englisch (je nach Sprache der Verwaltung). Die Texte sind Beispiele – im Editor ersetzen, Logo hochladen, wo vorhanden Galerie-Ordner oder Datenquelle wählen. Telefonnummern, Zeiten und Preise vor dem Einsatz prüfen.
 
 **Klick auf ein Bild** öffnet die Seite der Vorlage mit bewegtem Bild, allen verwendeten Elementen und Tipps zum Anpassen.
 

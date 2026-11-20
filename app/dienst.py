@@ -2922,7 +2922,7 @@ def sicherung_ins_ziel(name, si):
 
 
 def speicher_bericht():
-    """System → Speicher (seit 0.45): Lage des Datenverzeichnisses und Belegung je Bereich (höchstens einmal je Minute gezählt)."""
+    """Einstellungen → System → Speicher (seit 0.45): Lage des Datenverzeichnisses und Belegung je Bereich (höchstens einmal je Minute gezählt)."""
     bereiche = {"galerie": os.path.join(DATEN, "galerie"), "medien": MEDIEN, "pdf": PDF_ORDNER, "bilder": BILDER,
                 "sicherungen": SICHERUNGEN, "einspieler": EINSPIELER, "quelldateien": Q.DATEIEN,
                 "player": PL.ORDNER, "protokolle": [os.path.join(DATEN, "wache"), os.path.join(DATEN, "protokoll.json")]}
@@ -3419,7 +3419,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
                 return self.antwort(404, {"ok": False})
             return self.antwort(200, {"ok": True, "eintraege": GALERIE.liste(oid)})
-        if pfad == "/api/speicher":                    # seit 0.45: System → Speicher
+        if pfad == "/api/speicher":                    # seit 0.45: Einstellungen → System → Speicher
             return self.antwort(200, dict(speicher_bericht(), ok=True))
         if pfad == "/api/protokoll":                   # seit 0.38
             return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste()})

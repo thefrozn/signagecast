@@ -243,6 +243,11 @@ Three goals rank equally – none is traded for another:
 - **Secure** – signed releases, secrets stay on the server, nothing listens that does not have to, no cloud needed.
 - **Light** – runs on a small mini PC; every release is measured (CPU, memory, lost frames) before it is published.
 
+## Contributing
+
+Ideas and pull requests are welcome – see [CONTRIBUTING.md](CONTRIBUTING.md). Every new feature in the admin
+page follows the [UI rules](docs/UI-RULES.md); the words come from the [glossary](docs/GLOSSARY.md).
+
 ## Thanks
 
 Special thanks to **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** by boschkundendienst – the
@@ -265,7 +270,7 @@ use** only. If you run SignageCast in a practice, shop, restaurant, hotel, club 
 showing YouTube streams there is your responsibility: check YouTube's terms, the camera operator's conditions and – for
 sound – music licensing (e.g. GEMA in Germany). The simple way: show **own media only**. The templates for businesses
 do this from 0.61 on (video window → *What to show* → “own media only”); for other layouts set it there or per channel
-(Displays → Channels → *Video window shows*). In **stream mode** the server records the picture and passes it on to
+(Channels → *Video window shows*). In **stream mode** the server records the picture and passes it on to
 the TVs; that is fine for private use at home – for business or public use prefer **direct mode**, where every TV
 plays the official player itself, or switch off *Show YouTube in stream mode too* for the channel (since 0.63; the
 stream then shows own media, TVs and players in direct mode keep YouTube).

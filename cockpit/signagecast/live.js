@@ -202,36 +202,20 @@ function ortSuche(fertig) {
   return w;
 }
 
-// ---------- Übersicht ----------
+// ---------- Kopf der Sammlung (seit 0.65 statt eigener Übersicht) ----------
+// Zahlen und Filter stehen in der Sammlung, was auf jedem Kanal läuft auf der Startseite; hier nur Suche und Rechtshinweise.
 const PROBLEME = ["nicht_live", "qualitaet", "pause", "gesperrt", "ohne_ort"];
-async function liveSeite(inhalt) {
+async function liveKopf(inhalt) {
   const L = LT();
   const [st, status] = await Promise.all([holen("/api/streams"), holen("/api/status")]);
   STREAMS = st;
-  const z = (f) => st.streams.filter(f).length;
-  const probleme = PROBLEME.map((p) => [p, z((s) => s.zustand === p)]).filter(([, n]) => n);
   const letzte = status.liste && status.liste.suche;
-  inhalt.innerHTML = `<div class="karte"><h2>${esc(L.uTitel)}</h2><p class="leise">${esc(L.uText)}</p>${rechtHinweis("youtube", L.recht)}${rechtHinweis("musik", L.musik)}
-      <div class="kennzahlen">
-        ${[["rotation", z((s) => s.in_rotation)], ["bereit", z((s) => s.zustand === "bereit")], ["nacht", z((s) => s.zustand === "nacht")],
-          ["probleme", z((s) => PROBLEME.includes(s.zustand))]].map(([k, n]) =>
-          `<button type="button" class="kennzahl ${k === "probleme" && n ? "warn" : ""}" data-gruppe="${k}"><b>${n}</b><span>${esc(L.zahlen[k])}</span></button>`).join("")}
-      </div></div>
-    <div class="karte"><h3>${esc(L.laeuftAuf)}</h3>
-      ${status.fernseher.map((t) => `<div class="zeile"><b class="lv-kanal">${esc(t.name)}</b>
-        <span>${t.aktuell ? esc(t.aktuell.name) : t.laeuft ? esc(L.nichts) : `<span class="leise">${esc(L.kanalAus)}</span>`}</span></div>`).join("")}</div>
-    <div class="karte"><h3>${esc(L.probleme)}</h3>
-      ${probleme.length ? probleme.map(([p, n]) => `<div class="zeile"><span>${esc(L.streams(n))}: ${esc(L.status[p])}</span>
-        <button type="button" class="knopf klein" data-gruppe="probleme" data-zustand="${p}">${esc(L.ansehen)}</button></div>`).join("")
-        : `<p class="gut">${esc(L.keineProbleme)}</p>`}</div>
+  inhalt.innerHTML = `${rechtHinweis("youtube", L.recht)}${rechtHinweis("musik", L.musik)}
     <div class="karte"><h3>${esc(L.suche)}</h3>
       <p>${esc(E.suche.aktiv ? L.sucheAn(E.suche.uhrzeit) : L.sucheAus)}${letzte ? ` · ${esc(L.letzte)}: ${esc(letzte.zeit || "")}${letzte.neu ? " – " + esc(L.ergebnis(letzte.neu.length, letzte.gefunden ?? "?")) : ""}` : ""}</p>
       ${pauseText(st.abruf) ? `<p class="warn">${esc(pauseText(st.abruf))}</p>` : ""}
       <div class="zeile"><button type="button" class="knopf" id="lvSuchen">${esc(L.jetztSuchen)}</button>
         <a class="knopf" href="#automatik">${esc(L.einstellen)}</a><span class="leise" id="lvErg"></span></div></div>`;
-  inhalt.querySelectorAll("[data-gruppe]").forEach((b) => {
-    b.onclick = () => { SF = Object.assign(SF, { gruppe: b.dataset.gruppe, zustand: b.dataset.zustand || "", kat: "", text: "" }); sfMerken(); zeigeSeite("streams"); };
-  });
   $("#lvSuchen").onclick = (e) => aktion(e.target, () => sucheStarten($("#lvErg")), null);
 }
 

@@ -1113,7 +1113,7 @@ class Streams:
         return self.status["suche"]
 
     def _melden(self, anlass, weg, auftraege, gefunden, neu, fehler, uebersprungen=0):
-        """Eintrag im allgemeinen Protokoll (System → Protokoll): wonach gesucht wurde und was herauskam."""
+        """Eintrag im allgemeinen Protokoll (Einstellungen → System → Protokoll): wonach gesucht wurde und was herauskam."""
         if not self.melden:
             return
         art = {"nacht": "nächtlich", "hand": "von Hand", "mcp": "per KI-Assistent"}.get(anlass, anlass)

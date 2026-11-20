@@ -130,11 +130,11 @@ _icon.art = 'Material Design Icon name "mdi-…" (e.g. "mdi-thermometer")'
 _icon_leer.art = 'Material Design Icon name "mdi-…" or "" for none'
 _farbe.art = 'colour "#rrggbb" or "" for the default'
 _bild.art = 'file name of an uploaded picture ("" = none; the user uploads it later in the editor)'
-_qid.art = "id of one of your own data sources (Content → Data sources), \"\" = none"
+_qid.art = "id of one of your own data sources (Data sources), \"\" = none"
 _pfad.art = 'path into the data source answer, e.g. "current.temp" or "items.0.title"'
 _url.art = "web address starting with http:// or https://"
 _pdf.art = '16 hex characters of an uploaded PDF ("" = none; the user uploads it later)'
-_gid.art = 'id of a gallery folder (Content → Media library → Galleries), "" = none; the user picks it later in the editor'
+_gid.art = 'id of a gallery folder (Media → Galleries), "" = none; the user picks it later in the editor'
 _symbole.art = 'list of rules {"text": "word in the title", "icon": "mdi-…", "farbe": "#rrggbb"} (max 12)'
 _zeilen.art = 'list of rows {"text": "Currywurst", "info": "small line below, e.g. allergens", "wert": "4,50 €", "icon": "mdi-…" or "", "hervor": true/false = highlight} (max 20)'
 _raeume.art = 'list of {"name": "Living room", "entity": "sensor.living_room_temperature"} (max 8)'
@@ -186,7 +186,7 @@ TYPEN = {
                    "versatz_x": (_zahl(0, 10000), 0), "versatz_y": (_zahl(0, 10000), 0)},
     # seit 0.21: PDF Seite für Seite (app/pdf.py wandelt beim Hochladen in Bilder um)
     "pdf":        {"datei": (_pdf, ""), "sekunden": (_zahl(3, 3600), 15), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen")},
-    # seit 0.45: Ordner mit Bildern/PDFs (Inhalte → Mediathek → Galerien), Folie für Folie nach der Uhr
+    # seit 0.45: Ordner mit Bildern/PDFs (Medien → Galerien), Folie für Folie nach der Uhr
     "galerie":    {"ordner": (_gid, ""), "sekunden": (_zahl(3, 3600), 10), "anpassung": (_wahl("einpassen", "fuellen"), "einpassen"),
                    "rand": (_wahl("schwarz", "unscharf"), "schwarz"), "reihenfolge": (_wahl("eigene", "name", "neu", "zufall"), "eigene"),
                    "uebergang": (_wahl("blenden", "hart"), "blenden")},
@@ -458,7 +458,7 @@ TYP_TEXT = {
     "pdf": "PDF shown page by page",
     "liste": "fixed list with text left, small info line and value right (menu with prices, opening hours, directory); "
     "with quelle the rows come from a data source (CSV: columns text, info, wert – or own placeholders in spalte_*)",
-    "galerie": "slideshow of a gallery folder (pictures and PDF pages uploaded under Content → Media library → Galleries); the user picks the folder",
+    "galerie": "slideshow of a gallery folder (pictures and PDF pages uploaded under Media → Galleries); the user picks the folder",
 }
 
 

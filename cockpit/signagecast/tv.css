@@ -59,6 +59,17 @@ textarea.fliess { min-height: 60px; font: inherit; }   /* Fließtext statt Code 
 h1 button.kopf-knopf { margin-left: auto; font-size: 14px; font-weight: 500; }   /* Durchsage (seit 0.49) */
 h1 button.kopf-knopf.an { border-color: var(--akzent); color: var(--akzent); }
 #unter button.neu { color: var(--akzent); }
+/* seit 0.65 (docs/UI-RULES.md): Einstellungen getrennt am Ende des Menüs, Notfall als eigener Knopf im Kopf, Einstellungen als Kacheln */
+nav button.getrennt { margin-left: auto; border-left: 1px solid var(--linie); }
+nav button.getrennt ~ a.hilfe { margin-left: 8px; }
+h1 button.kopf-knopf.notfall { margin-left: 0; color: var(--schlecht); }
+h1 button.kopf-knopf.notfall.aktiv { background: var(--schlecht); border-color: var(--schlecht); color: #fff; }
+.einst-kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.einst-kachel { display: flex; flex-direction: column; gap: 4px; padding: 14px; background: var(--karte); border: 1px solid var(--linie);
+  border-radius: 12px; color: inherit; text-decoration: none; }
+.einst-kachel:hover, .einst-kachel:focus-visible { border-color: var(--akzent); outline: none; }
+.einst-kachel .mdi { font-size: 26px; line-height: 1; color: var(--akzent); }
+.einst-kachel .stand { font-size: 13px; margin-top: auto; padding-top: 4px; }
 nav button.an { color: var(--text); border-bottom-color: var(--akzent); font-weight: 600; }
 main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }

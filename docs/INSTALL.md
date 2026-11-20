@@ -62,7 +62,7 @@ is the way in. Security updates install themselves.
 
 **Picture via HDMI:** the computer shows a channel itself (Chromium in the kiosk frame cage, like a player in direct
 mode). Until the setup assistant is finished, the screen shows the console with the admin address. Switch it on or
-off later under *Displays → + New device → This computer via HDMI* or by removing that device. On an existing
+off later under *Devices → + New device → This computer via HDMI* or by removing that device. On an existing
 Debian installation (not a container): `SC_HDMI=1 sh installieren.sh`.
 
 Tested in a virtual machine (UEFI, Secure Boot, German and English); **not yet tested on a real mini PC** –
@@ -93,7 +93,7 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
   ```
   The ports are then 8888 (TVs), 19090 (admin) and 8890 (webhook, panel, Pi players) directly on the host.
 - **Admin:** http://&lt;host&gt;:**19090** – the initial password is printed in the log: `docker logs signagecast`
-  (line “Startpasswort der Verwaltung / initial admin password”, or set your own with `-e SC_PASSWORT=…`). Change it under **Settings → Access**.
+  (line “Startpasswort der Verwaltung / initial admin password”, or set your own with `-e SC_PASSWORT=…`). Change it under **Settings → Accounts & access**.
   No Cockpit inside the container.
 - `SC_HOST_IP` = the IP of the Docker host; the Home Assistant guide in the admin shows it (HA sees the host's IP).
 - All settings and data are in the volume `/data`. **Update:** `docker pull ghcr.io/thefrozn/signagecast:latest`, then
@@ -125,13 +125,13 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
 ## First steps
 
 1. Open the admin (see the table above; accept the certificate warning on port 9090) and log in. Then change the
-   initial password (Cockpit: top right → Accounts → tvadmin → Set password; Docker/NAS: **Settings → Access**).
+   initial password (Cockpit: top right → Accounts → tvadmin → Set password; Docker/NAS: **Settings → Accounts & access**).
 2. On a new installation a short **assistant** asks for language, location and (optionally) Home Assistant and shows
    the TV address. Later: **Settings → Home Assistant** – enter the address and follow the guide shown there. Home
    Assistant trusts the container via `trusted_networks` – no password or token is stored.
 3. **Settings → General**: weather comes from MET Norway – worldwide (or choose a Home Assistant weather entity).
    Official **severe weather warnings** come from the DWD and exist **for Germany only**.
-   **Content → Layouts**: adapt the standard layout or start from a template.
+   **Layouts**: adapt the standard layout or start from a template.
 4. On the TV open **http://&lt;IP&gt;:8888/tv** in the browser and set it as start page.
 5. Optional: **Radio**, **Clips**, more **TVs**, schedules – see the [manual](MANUAL.md).
 
@@ -174,7 +174,7 @@ Settings, layouts and data are not touched by a reset.
 - **Ports:** 9090 (Cockpit), 8888 (stream, `SC_STREAM_PORT`), 8890 (players, webhook, panel – only answers signed or
   keyed requests). No firewall rules are changed, no SSH server is installed, no sudo rights are given.
 - **Only when you ask for it in the admin:** Tailscale for remote sites (package source `pkgs.tailscale.com`, key
-  checked) and package upgrades via **System → Updates**.
+  checked) and package upgrades via **Settings → Einstellungen → System → Updates**.
 
 **Docker / Podman / NAS / Windows:** nothing on the host except the image `ghcr.io/thefrozn/signagecast`, the
 container `signagecast` and its volume (`/data`). Windows additionally: the folder `%USERPROFILE%\SignageCast`
@@ -183,7 +183,7 @@ container `signagecast` and its volume (`/data`). Windows additionally: the fold
 ## Uninstall
 
 All ways keep a backup unless you delete the data on purpose. Export a backup first if you might come back:
-**System → Backup**.
+**Settings → System → Backup**.
 
 - **Debian / installation ISO / inside a container** (since 0.62): `sh /opt/signagecast/werkzeug/deinstallieren.sh` –
   removes services and program; settings and data stay in `/etc/signagecast` and `/var/lib/signagecast` (a new
@@ -206,11 +206,11 @@ All ways keep a backup unless you delete the data on purpose. Export a backup fi
   itself only if you do not need it any more: `winget uninstall Docker.DockerDesktop`.
 - **Windows (WSL):** inside Debian as above (`deinstallieren.sh`), or remove the whole Debian: `wsl --unregister Debian`
   (deletes everything in it).
-- **Raspberry Pi players:** remove the device in the admin (**Displays → Devices**), then reflash the SD card.
+- **Raspberry Pi players:** remove the device in the admin (**Devices**), then reflash the SD card.
 
 ## Updates
 
-- **Proxmox / Debian:** in the admin under **System → Updates** (signed packages, automatic return to the previous
+- **Proxmox / Debian:** in the admin under **Settings → Einstellungen → System → Updates** (signed packages, automatic return to the previous
   version on errors) or by running the install command again – see [how it works](HOW-IT-WORKS.md#updates-and-backups).
 - **Docker / Podman / NAS:** pull the new image and recreate the container; the data in `/data` stays.
 
@@ -221,7 +221,7 @@ All ways keep a backup unless you delete the data on purpose. Export a backup fi
 Wege: **Proxmox** (Einzeiler oben in der Shell des Proxmox-Hosts), **eigener Rechner** (seit 0.52: Installations-ISO
 `signagecast-server-vX.Y.Z.iso` aus dem Release auf einen USB-Stick, nur UEFI; der Debian-Installer fragt Passwort für
 `tvadmin`, bestätigt das Löschen der Platte und fragt „Bild auch an diesem Rechner per HDMI zeigen?“ – änderbar unter
-*Displays → + Neues Gerät → Dieser Rechner per HDMI*; in einer VM getestet, noch nicht auf echtem Mini-PC), **Debian 13** (`install.sh` als root, erneut
+*Geräte → + Neues Gerät → Dieser Rechner per HDMI*; in einer VM getestet, noch nicht auf echtem Mini-PC), **Debian 13** (`install.sh` als root, erneut
 ausführen = Update; Bild per HDMI mit `SC_HDMI=1`), **Docker/Podman** (`docker run …` oder `compose.yaml`), **Windows** ([Anleitung](install/WINDOWS.md): Docker Desktop mit einem PowerShell-Befehl oder WSL, nur Full HD – noch nicht auf echtem Windows getestet), **QNAP** ([Anleitung](install/QNAP.md))
 und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der Container-App des NAS. Nötig ist ein
 x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
@@ -247,7 +247,7 @@ Norway, amtliche Unwetterwarnungen (DWD) gibt es nur für Deutschland.
 
 Danach: Verwaltung öffnen, Startpasswort ändern, der Assistent führt durch Sprache, Ort und Home Assistant; am
 Fernseher **http://&lt;IP&gt;:8888/tv** als Startseite öffnen. Updates: Proxmox/Debian in der Verwaltung unter
-**System → Updates**, Docker/NAS durch neues Image und Neuerstellen des Containers (Daten in `/data` bleiben).
+**Settings → Einstellungen → System → Updates**, Docker/NAS durch neues Image und Neuerstellen des Containers (Daten in `/data` bleiben).
 
 Eigenes Passwort gleich bei der Installation: `SC_PASSWORT='…'` vor den Befehl setzen (mindestens 8 Zeichen; bei
 Docker `-e SC_PASSWORT=…`).

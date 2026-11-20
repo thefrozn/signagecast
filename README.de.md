@@ -253,6 +253,11 @@ Drei Ziele sind gleich wichtig – keins wird für ein anderes geopfert:
 - **Sicher** – signierte Versionen, Geheimnisse bleiben auf dem Server, nichts lauscht ohne Grund, keine Cloud nötig.
 - **Sparsam** – läuft auf einem kleinen Mini-PC; jede Version wird vor dem Veröffentlichen gemessen (CPU, Speicher, verlorene Bilder).
 
+## Mitmachen
+
+Ideen und Pull Requests sind willkommen – siehe [CONTRIBUTING.md](CONTRIBUTING.md). Jede neue Funktion in der
+Verwaltung folgt der [UI-Regel](docs/UI-RULES.de.md); die Begriffe stehen im [Glossar](docs/GLOSSARY.md).
+
 ## Danke
 
 Besonderer Dank an **[RaspiSignage](https://github.com/boschkundendienst/raspisignage)** von boschkundendienst – das
@@ -275,7 +280,7 @@ private, nicht-gewerbliche Nutzung**. Wer SignageCast in Praxis, Laden, Gaststä
 öffentlichen oder gewerblichen Ort betreibt, ist für das Zeigen von YouTube-Streams dort selbst verantwortlich: YouTube-
 Bedingungen, Bedingungen des Kamera-Betreibers und – bei Ton – GEMA prüfen. Der einfache Weg: **nur eigene Medien**
 zeigen. Die Geschäftsvorlagen tun das ab 0.61 (Videofenster → *Was zeigen* → „nur eigene Medien“); bei anderen Layouts
-dort einstellen oder je Kanal (Displays → Kanäle → *Videofenster zeigt*). Im **Stream-Modus** nimmt der Server das Bild
+dort einstellen oder je Kanal (Kanäle → *Videofenster zeigt*). Im **Stream-Modus** nimmt der Server das Bild
 auf und gibt es an die Fernseher weiter; für den privaten Gebrauch zu Hause ist das in Ordnung – gewerblich oder
 öffentlich besser den **Direktmodus** nehmen, dann spielt jeder Fernseher den offiziellen Player selbst, oder beim Kanal
 *YouTube auch im Stream-Modus zeigen* ausschalten (seit 0.63; der Stream zeigt dann eigene Medien, Fernseher und Player

@@ -13,10 +13,10 @@ TEXTE = {
         "update": ("SignageCast: Update fehlgeschlagen", "{aktion}: {meldung} ({zeit})"),
         "sicherung": ("SignageCast: Sicherung fehlgeschlagen", "Die automatische Sicherung um {zeit} ist fehlgeschlagen: {fehler}"),
         "doppelt": ("SignageCast: „{tv}“ ruckelt", "Die Aufnahme für „{tv}“ verdoppelt seit 3 Minuten viele Bilder. "
-                    "Abhilfe: System → Zustand → „Ton und Stream neu starten“."),
+                    "Abhilfe: Einstellungen → System → Zustand → „Ton und Stream neu starten“."),
         "doppelt_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die Aufnahme für „{tv}“ läuft wieder ohne doppelte Bilder."),
         "leistung": ("SignageCast: „{tv}“ ruckelt", "Die TV-Seite für „{tv}“ erreicht seit 5 Minuten nur {fps} Bilder/s (Ziel 25). "
-                     "Leistungstest in der Verwaltung: System → Zustand."),
+                     "Leistungstest in der Verwaltung: Einstellungen → System → Zustand."),
         "leistung_vorbei": ("SignageCast: „{tv}“ läuft wieder flüssig", "Die TV-Seite für „{tv}“ erreicht wieder genug Bilder/s."),
         "ha": ("SignageCast: Home Assistant nicht erreichbar", "Seit {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder."),
@@ -34,9 +34,9 @@ TEXTE = {
                        "laufen müsste. Neu laden und Neustart haben nicht geholfen – bitte in der Verwaltung prüfen."),
         "bild_vorbei": ("SignageCast: „{tv}“ zeigt wieder ein Bild", "Der Kanal „{tv}“ zeigt wieder ein normales Bild."),
         "speicher_gelb": ("SignageCast: Speicher wird knapp", "Nur noch {frei} GB frei (Reserve {reserve} GB). Uploads gehen noch – "
-                          "bitte unter System → Zustand aufräumen (Galerie, Medien, Sicherungen)."),
+                          "bitte unter Einstellungen → System → Zustand aufräumen (Galerie, Medien, Sicherungen)."),
         "speicher_rot": ("SignageCast: Speicher voll – Uploads gesperrt", "Nur noch {frei} GB frei, die Reserve von {reserve} GB ist "
-                         "erreicht. Alles läuft weiter, aber Uploads sind gesperrt, bis unter System → Zustand Platz frei ist."),
+                         "erreicht. Alles läuft weiter, aber Uploads sind gesperrt, bis unter Einstellungen → System → Zustand Platz frei ist."),
         "speicher_vorbei": ("SignageCast: Speicher wieder in Ordnung", "Wieder {frei} GB frei."),
     },
     "en": {
@@ -45,10 +45,10 @@ TEXTE = {
         "update": ("SignageCast: update failed", "{aktion}: {meldung} ({zeit})"),
         "sicherung": ("SignageCast: backup failed", "The automatic backup at {zeit} failed: {fehler}"),
         "doppelt": ("SignageCast: “{tv}” is stuttering", "The capture for “{tv}” has been duplicating many frames for 3 minutes. "
-                    "Remedy: System → Health → “Restart sound and stream”."),
+                    "Remedy: Settings → System → Health → “Restart sound and stream”."),
         "doppelt_vorbei": ("SignageCast: “{tv}” is smooth again", "The capture for “{tv}” runs without duplicate frames again."),
         "leistung": ("SignageCast: “{tv}” is stuttering", "The TV page for “{tv}” has only reached {fps} frames/s for 5 minutes (target 25). "
-                     "Performance test in the admin: System → Health."),
+                     "Performance test in the admin: Settings → System → Health."),
         "leistung_vorbei": ("SignageCast: “{tv}” is smooth again", "The TV page for “{tv}” reaches enough frames/s again."),
         "ha": ("SignageCast: Home Assistant not reachable", "Since {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant connected again", "The connection to Home Assistant is back."),
@@ -66,9 +66,9 @@ TEXTE = {
                        "the clock should run. Reloading and restarting did not help – please check the admin."),
         "bild_vorbei": ("SignageCast: “{tv}” shows a picture again", "The channel “{tv}” shows a normal picture again."),
         "speicher_gelb": ("SignageCast: storage is getting low", "Only {frei} GB free (reserve {reserve} GB). Uploads still work – "
-                          "please clean up under System → Health (gallery, media, backups)."),
+                          "please clean up under Settings → System → Health (gallery, media, backups)."),
         "speicher_rot": ("SignageCast: storage full – uploads blocked", "Only {frei} GB free, the reserve of {reserve} GB is reached. "
-                         "Everything keeps running, but uploads are blocked until space is freed under System → Health."),
+                         "Everything keeps running, but uploads are blocked until space is freed under Settings → System → Health."),
         "speicher_vorbei": ("SignageCast: storage OK again", "{frei} GB free again."),
     },
 }

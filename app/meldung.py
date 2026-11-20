@@ -137,7 +137,7 @@ DE = {
     "fn_benutzer": "Headscale-Benutzer: die Nummer (ID) aus „headscale users list“ – oder leer lassen",
     "fn_api": "Tailscale/Headscale lehnt ab: {d}",
     "fn_nicht_erreichbar": "Tailscale/Headscale nicht erreichbar: {d}",
-    "fn_aus": "Fernstandorte sind nicht eingerichtet (Displays → Fernstandorte)",
+    "fn_aus": "Fernstandorte sind nicht eingerichtet (Einstellungen → Fernstandorte)",
     "fn_server_fehlt": "SignageCast ({d}) ist nicht in diesem Tailnet – Adresse prüfen oder Tailscale auf diesem Server einrichten",
     "fn_userspace": "Tailscale läuft auf diesem Server im Userspace-Modus – dann ist die Verwaltung aus dem Tailnet ohne Anmeldung erreichbar. Bitte /dev/net/tun einrichten (Anleitung REMOTE.md) und den Userspace-Modus abschalten",
     "fn_kein_tailscale": "Tailscale ist auf diesem Server nicht eingerichtet – erst „Tailscale einrichten“",
@@ -223,7 +223,7 @@ DE = {
     "q_speicherort": "{id}: Bitte eine Datei aus einem Speicherort wählen",
     "q_datei_fehlt": "Die hochgeladene Datei ist nicht mehr da – bitte erneut hochladen",
     # seit 0.45: Speicherwächter und Galerie
-    "sp_voll": "Nicht genug Speicher: {frei} GB frei, {reserve} GB bleiben als Reserve für den Betrieb frei (nötig etwa {bedarf} GB) – unter System → Zustand aufräumen",
+    "sp_voll": "Nicht genug Speicher: {frei} GB frei, {reserve} GB bleiben als Reserve für den Betrieb frei (nötig etwa {bedarf} GB) – unter Einstellungen → System → Zustand aufräumen",
     "gal_ordner": "Unbekannter Galerie-Ordner",
     "gal_ordner_viele": "Höchstens 50 Galerie-Ordner",
     "gal_benutzt": "Der Ordner wird noch gezeigt – erst in diesen Layouts ändern: {layouts}",
@@ -234,7 +234,7 @@ DE = {
     "gal_kaputt": "Bild nicht lesbar: {d}",
     "gal_zeit": "Umwandeln dauert länger als {s} s",
     "gal_viele": "Höchstens {n} Dateien je Ordner",
-    "gal_voll": "Die Galerie ist voll ({gb} GB) – Bilder löschen oder unter Inhalte → Mediathek → Galerien die Grenze erhöhen",
+    "gal_voll": "Die Galerie ist voll ({gb} GB) – Bilder löschen oder unter Medien → Galerien die Grenze erhöhen",
     # seit 0.48: Speicherorte (NAS, Cloud, Ordner auf dem Server)
     "so_unbekannt": "Diesen Speicherort gibt es nicht (mehr) – unter Einstellungen → Speicherorte eintragen",
     "so_viele": "Höchstens {n} Speicherorte",
