@@ -361,3 +361,6 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 #leinwandRahmen.gezoomt .lw-huelle { flex: none; }
 #leinwandRahmen { isolation: isolate; }   /* Bausteine (z-index je Ebene) bleiben unter der festen Kopfzeile */
 .nowrap { white-space: nowrap; }
+/* Gerüst je Ding (seit 0.66, UI-Regel Punkt 2): Löschen immer unten, mit Hinweis auf die Verwendung */
+.loeschen { border-top: 1px dashed var(--linie); margin-top: 16px; padding-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; }
+.loeschen p { margin: 0; }

@@ -14,6 +14,7 @@ MAX = 500
 VERSIONEN_MAX = 10
 GELOESCHT_MAX = 10
 WER = re.compile(r"[\w.@ -]{1,40}")
+DING = re.compile(r"(kanal|geraet|layout|quelle):[\w.-]{1,40}")
 
 
 def _laden(pfad, standard):
@@ -43,10 +44,14 @@ class Protokoll:
         d = _laden(pfad, {})
         self.eintraege = [x for x in (d.get("eintraege") or []) if isinstance(x, dict)][-MAX:]
 
-    def eintragen(self, wer, quelle, aktion, detail="", laenge=200):
-        """quelle: verwaltung | pult | webhook | system. aktion: Kennung (die Verwaltung übersetzt sie). detail: kurzer Text."""
+    def eintragen(self, wer, quelle, aktion, detail="", laenge=200, dinge=None):
+        """quelle: verwaltung | pult | webhook | system. aktion: Kennung (die Verwaltung übersetzt sie). detail: kurzer Text.
+        dinge (seit 0.66): betroffene Dinge als "art:kennung" (kanal, geraet, layout, quelle) – für den Verlauf je Ding."""
         x = {"zeit": time.strftime("%Y-%m-%d %H:%M:%S"), "wer": wer_pruefen(wer, "?"), "quelle": quelle,
              "aktion": str(aktion)[:60], "detail": " ".join(str(detail or "").split())[:laenge]}
+        d = sorted({str(k) for k in (dinge or []) if DING.fullmatch(str(k))})[:20]
+        if d:
+            x["dinge"] = d
         with self.sperre:
             self.eintraege.append(x)
             del self.eintraege[:-MAX]
@@ -55,9 +60,20 @@ class Protokoll:
             except OSError as f:                 # Protokoll darf nie eine Änderung verhindern
                 print("Protokoll:", f, flush=True)
 
-    def liste(self, n=MAX):
+    def liste(self, n=MAX, ding=None):
+        """Neueste zuerst; mit ding nur die Einträge zu diesem Ding (Verlauf, seit 0.66)."""
         with self.sperre:
-            return list(reversed(self.eintraege[-n:]))
+            l = list(reversed(self.eintraege))
+        return [x for x in l if ding in (x.get("dinge") or [])][:n] if ding else l[:n]
+
+    def zuletzt(self):
+        """Zeit der letzten Änderung je Ding ({"kanal:tv": "2026-11-20 10:00:00"}) – für die Spalte „Letzte Änderung“."""
+        z = {}
+        with self.sperre:
+            for x in self.eintraege:
+                for k in x.get("dinge") or []:
+                    z[k] = x["zeit"]
+        return z
 
     def als_bytes(self):
         with self.sperre:

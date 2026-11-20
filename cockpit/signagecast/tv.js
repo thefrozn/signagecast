@@ -229,7 +229,14 @@ const TEXTE = {
           unverschluesselt: "Diese Programme verbinden sich im Heimnetz unverschlüsselt (wie das Pult) – nur in einem vertrauenswürdigen Netz verwenden. Verschlüsselt: Claude Desktop oder SSH (siehe Anleitung).",
           vscodeWin: "Windows-PowerShell verschluckt Anführungszeichen – dort besser den Eintrag in die mcp.json kopieren:",
           kopieren: "Kopieren", kopiert: "Kopiert", anleitung: "Anleitung (auch Verbindung per SSH)" },
-    prot: { titel: "Änderungsprotokoll", text: "Wer hat wann was geändert – in der Verwaltung, am Pult, per Webhook oder durch SignageCast selbst. Festgehalten werden nur Art und Bereich, keine Werte (keine Passwörter, keine Texte von Durchsagen). Die letzten 500 Einträge; Teil der Sicherung.",
+    // Gerüst je Ding (seit 0.66, docs/UI-RULES.md Punkt 2): Liste, Detail mit Übersicht → Fachreitern → Verlauf, Löschen unten
+    ding: { uebersicht: "Übersicht", verlauf: "Verlauf", suchen: "Suchen …", name: "Name", status: "Status", verwendung: "Verwendung",
+            zuletzt: "Letzte Änderung", oeffnen: "Öffnen", keine: "Keine Treffer.", loeschen: "Löschen", erweitert: "Erweitert",
+            verwendetVon: (l) => `Wird noch verwendet: ${l}.`, nichtVerwendet: "Wird nirgends verwendet.", online: "online", offline: "offline",
+            offlineSeit: (z) => `offline seit ${z}`, nieGesehen: "noch nie gemeldet", geraete: (l) => `Geräte: ${l}`, pultZugang: (l) => `Pult-Zugang: ${l}`,
+            zeigt: (k) => `zeigt Kanal „${k}“`, keinKanal: "keinem Kanal zugeordnet", fernverwaltung: "Fernverwaltung", einstellungen: "Einstellungen",
+            alleGeraete: "Alle Geräte", schnell: "Schnellaktionen", images: "Player-Images", imagesText: "Grundlage für neue Geräte (Raspberry Pi und PC). Nach einem Update von SignageCast neu laden, damit neue Geräte alle Korrekturen haben; laufende Geräte holen sich Updates selbst.", laeuftMit: (l) => `läuft · Layout „${l}“`, ausMit: (l) => `aus (niemand schaut zu) · Layout „${l}“` },
+    prot: { titel: "Änderungsprotokoll", verlaufText: "Die letzten Änderungen und Ereignisse zu diesem Ding (seit 0.66 erfasst).", verlaufLeer: "Noch keine Einträge – erfasst werden Änderungen seit Version 0.66.", text: "Wer hat wann was geändert – in der Verwaltung, am Pult, per Webhook oder durch SignageCast selbst. Festgehalten werden nur Art und Bereich, keine Werte (keine Passwörter, keine Texte von Durchsagen). Die letzten 500 Einträge; Teil der Sicherung.",
             quelle: "Herkunft", alle: "alle", zeit: "Zeit", wer: "Wer", was: "Was", leer: "Noch keine Einträge.", mehr: "Ältere zeigen",
             quellen: { verwaltung: "Verwaltung", pult: "Pult", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "nur Schwarz", steht: "Bild stand still" },
             layouts: { neu: "neue Layouts", geaendert: "Layouts geändert", geloescht: "Layouts gelöscht" },
@@ -264,7 +271,7 @@ const TEXTE = {
     todoVersteckt: (n) => n === 1 ? "1 ausgeblendet – anzeigen" : `${n} ausgeblendet – anzeigen`, todoVerbergen: "Ausgeblendete verbergen",
     todoEin: "Wieder einblenden", todoAusgeblendet: "ausgeblendet",
     todo: { speicherort: (n) => `Speicherort „${n}“ war beim letzten Zugriff nicht erreichbar`,
-            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Geräte → + Neues Gerät neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Einstellungen → System → Updates neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
             internet: (s) => `Internet seit ${s} nicht erreichbar – die Kanäle zeigen eigene Medien bzw. ein Ersatzbild`,
             bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
             player: (n) => `Player „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
@@ -733,7 +740,13 @@ const TEXTE = {
           unverschluesselt: "These programs connect unencrypted in your home network (like the panel) – use them only in a trusted network. Encrypted: Claude Desktop or SSH (see guide).",
           vscodeWin: "Windows PowerShell swallows quotes – there, better copy the entry into mcp.json:",
           kopieren: "Copy", kopiert: "Copied", anleitung: "Guide (also connecting via SSH)" },
-    prot: { titel: "Change log", text: "Who changed what and when – in the admin, at the panel, via webhook or by SignageCast itself. Only the kind and area are recorded, no values (no passwords, no announcement texts). The last 500 entries; part of the backup.",
+    ding: { uebersicht: "Overview", verlauf: "History", suchen: "Search …", name: "Name", status: "State", verwendung: "Used by",
+            zuletzt: "Last change", oeffnen: "Open", keine: "No matches.", loeschen: "Delete", erweitert: "Advanced",
+            verwendetVon: (l) => `Still used: ${l}.`, nichtVerwendet: "Not used anywhere.", online: "online", offline: "offline",
+            offlineSeit: (z) => `offline since ${z}`, nieGesehen: "never reported", geraete: (l) => `Devices: ${l}`, pultZugang: (l) => `Panel access: ${l}`,
+            zeigt: (k) => `shows channel “${k}”`, keinKanal: "not assigned to a channel", fernverwaltung: "Remote management", einstellungen: "Settings",
+            alleGeraete: "All devices", schnell: "Quick actions", images: "Player images", imagesText: "The basis for new devices (Raspberry Pi and PC). Download again after a SignageCast update so new devices get all fixes; running devices update themselves.", laeuftMit: (l) => `running · layout “${l}”`, ausMit: (l) => `off (nobody watching) · layout “${l}”` },
+    prot: { titel: "Change log", verlaufText: "The latest changes and events of this thing (recorded since 0.66).", verlaufLeer: "No entries yet – changes are recorded since version 0.66.", text: "Who changed what and when – in the admin, at the panel, via webhook or by SignageCast itself. Only the kind and area are recorded, no values (no passwords, no announcement texts). The last 500 entries; part of the backup.",
             quelle: "Origin", alle: "all", zeit: "Time", wer: "Who", was: "What", leer: "No entries yet.", mehr: "Show older",
             quellen: { verwaltung: "Admin", pult: "Panel", webhook: "Webhook", system: "SignageCast" }, befund: { schwarz: "only black", steht: "picture frozen" },
             layouts: { neu: "new layouts", geaendert: "layouts changed", geloescht: "layouts deleted" },
@@ -768,7 +781,7 @@ const TEXTE = {
     todoVersteckt: (n) => `${n} hidden – show`, todoVerbergen: "Hide the hidden ones",
     todoEin: "Show again", todoAusgeblendet: "hidden",
     todo: { speicherort: (n) => `Storage location “${n}” was not reachable on last access`,
-            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – reload it under Devices → + New device so new devices get all fixes (e.g. Wi-Fi on first start)`,
+            playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – download it again under Settings → System → Updates so new devices get all fixes (e.g. Wi-Fi on first start)`,
             internet: (s) => `Internet not reachable since ${s} – the channels show own media or a fallback picture`,
             bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
             player: (n) => `Player “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
@@ -1250,7 +1263,7 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSei
                  einstellungen: einstellungenSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: (i) => pultSeite(i, "einstellung"), durchsage: (i) => durchsageSeite(i, "durchsage"), notfall: (i) => durchsageSeite(i, "notfall"),
-                 updates: updatesSeite, sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: zugangSeite,
+                 updates: teile(updatesSeite, playerImagesKarte), sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: zugangSeite,
                  protokoll: protokollSeite, ki: (i) => kiSeite(i, "einrichten"), fern: fernSeite, speicherorte: speicherorteSeite };
 // Bereiche (seit 0.17; seit 0.65 nach docs/UI-RULES.md): Hauptpunkte sind Dinge, höchstens zwei Ebenen, Adresse je Seite als #<seite>.
 // Die Einstellungen stehen getrennt am Ende und öffnen eine Kachelseite (KACHELN); Durchsage und Notfall sind Knöpfe im Kopf.
@@ -1338,6 +1351,7 @@ function zeigeSeite(k) {
   // Auch derselbe Reiter zeichnet neu (z. B. „Kanäle“ zurück zur Liste) – ungespeicherte Eingaben gingen dabei verloren
   if (ungespeichert() && !confirm(T.ungespeichertFrage)) { history.replaceState(null, "", "#" + aktiv); reiterZeichnen(); return; }
   if (k === "fernseher") kanalOffen = null;                            // seit 0.50: „Kanäle“ zeigt immer die Liste
+  if (k === "player") geraetOffen = null;                              // seit 0.66 ebenso „Geräte“
   aktiv = k;
   merk[bereichVon(k)[0]] = k;
   if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k);
@@ -1808,8 +1822,10 @@ async function playerSeite(inhalt, einrichten) {
   };
   const zeichnen = () => {
     if (!einrichten) {
-      inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.pl.liste)}</h2><button class="knopf" id="plZuEinrichten">+ ${esc(T.pl.neuGeraet)}</button></div><div id="plListe"></div>`;
-      $("#plZuEinrichten").onclick = () => zeigeSeite("einrichten");
+      inhalt.innerHTML = geraetOffen ? `<div class="zeile"><button class="knopf" id="plAlle">← ${esc(T.ding.alleGeraete)}</button></div><div id="plListe"></div>`
+        : `<div class="kopfzeile"><h2>${esc(T.pl.liste)}</h2><button class="knopf" id="plZuEinrichten">+ ${esc(T.pl.neuGeraet)}</button></div><div id="plListe"></div>`;
+      if (geraetOffen) $("#plAlle").onclick = () => { geraetOffen = null; zeichnen(); };
+      else $("#plZuEinrichten").onclick = () => zeigeSeite("einrichten");
       listeZeichnen();
       return;
     }
@@ -1925,18 +1941,18 @@ async function playerSeite(inhalt, einrichten) {
     const status = g.online ? `<span class="gut">● ${esc(T.pl.online)}</span>`
       : g.zuletzt ? `<span class="schlecht">● ${esc(T.pl.offline)}</span> <span class="leise">${esc(T.pl.zuletzt(zeit(g.zuletzt)))}</span>`
       : `<span class="leise">● ${esc(T.pl.nieGesehen)}</span>`;
-    return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
-      <p class="leise">${esc(g.hdmi ? T.pl.hd.titel : T.pl.br.titel)}</p>
+    return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>${geraetNav(g)}
+      <div class="g-teil" data-teil="uebersicht"><p class="leise">${esc(g.hdmi ? T.pl.hd.titel : T.pl.br.titel)}</p>
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
       ${g.hdmi ? `<p class="leise">${esc(T.pl.hd.karte)}</p>` : `<div class="zeile"><label>${esc(T.pl.br.link)}</label><input type="text" readonly data-link value="${esc(linkUrl(g))}">
         <button class="knopf" data-kopieren>${esc(T.pl.br.kopieren)}</button></div>
-      <p class="leise">${esc(T.pl.br.linkText)}</p>`}
-      <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
+      <p class="leise">${esc(T.pl.br.linkText)}</p>`}</div>
+      <div class="g-teil" data-teil="einst">
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
         <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div>
-        <div class="zeile"><button class="knopf" data-link-neu>${esc(T.pl.br.neu)}</button>
-          <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
+        <div class="zeile"><button class="knopf" data-link-neu>${esc(T.pl.br.neu)}</button></div></div>
+      ${geraetEnde(g)}</div>`;
   };
   const browserAnbinden = (k, g) => {
     if (k.querySelector("[data-kopieren]")) k.querySelector("[data-kopieren]").onclick = async (e) => {
@@ -1956,7 +1972,7 @@ async function playerSeite(inhalt, einrichten) {
     };
     k.querySelector("[data-entfernen]").onclick = (e) => {
       if (!confirm(T.pl.entfernenFrage(g.name))) return;
-      aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holenP(); listeZeichnen(); });
+      aktion(e.target, async () => { await senden(`/api/player/${g.id}/entfernen`); P = await holenP(); geraetOffen = null; zeichnen(); });
     };
   };
   // Fernverwaltung (seit 0.43): letzte Meldung live und was an den Player ging – gesendet → abgeholt → Ergebnis
@@ -2052,8 +2068,8 @@ async function playerSeite(inhalt, einrichten) {
       zeilen.push([T.fern.zeile, f.fehler ? "⚠ " + (T.fern.fehler[f.fehler] || f.fehler) : f.ip ? `${f.ip}${f.weg ? " · " + (f.weg === "direkt" ? T.fern.direkt : T.fern.relay(f.weg.replace(/^relay:/, ""))) : ""}`
         : g.fern.ip ? g.fern.ip : T.fern.wartet]);
     }
-    return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>
-      ${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
+    return `<div class="karte" data-g="${g.id}"><h2>${esc(g.name)} <small>${status}</small></h2>${geraetNav(g)}
+      <div class="g-teil" data-teil="uebersicht">${g.online ? `<p><b>${esc(T.pl.zustand[b.zustand] || b.zustand || "")}</b>${b.zustand === "stream_fehler" && b.zustand_text ? ` – ${esc(b.zustand_text)}` : ""}</p>` : ""}
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
       ${g.wlan_offen && !g.verlauf.some((e) => e.art === "wlan" && !e.fertig) ? `<p class="warn">${esc(T.pl.wlanOffen(g.wlan_offen))}</p>` : ""}
       ${g.fern && b.fern && b.fern.url && !b.fern.ip ? `<div class="zeile"><a class="knopf haupt" href="${esc(b.fern.url)}" target="_blank" rel="noopener">${esc(T.fern.freigeben)}</a></div><p class="leise">${esc(T.fern.freigebenText)}</p>` : ""}
@@ -2067,10 +2083,11 @@ async function playerSeite(inhalt, einrichten) {
       ${g.online ? (g.fernwartung ? `<div class="zeile"><button class="knopf haupt" data-terminal title="${esc(T.pl.fw.knopfText)}"><span class="mdi mdi-console"></span> ${esc(T.pl.fw.knopf)}</button>
         ${g.terminal ? `<span class="warn">${esc(T.pl.fw.laeuft(zeit(g.terminal.start), g.terminal.wer))}</span>` : ""}</div>`
         : `<p class="leise">${esc("fernwartung" in b ? T.pl.fw.aus : T.pl.fw.alt)}</p>`) : ""}
-      <details class="erweitert" data-fv="${g.id}" ${fvOffen.has(g.id) ? "open" : ""}><summary>${esc(T.pl.fv.titel)} <span data-fv-kopf>${fvKopf(g)}</span></summary>
+      </div><div class="g-teil" data-teil="fern">
+      <details class="erweitert" data-fv="${g.id}" open><summary>${esc(T.pl.fv.titel)} <span data-fv-kopf>${fvKopf(g)}</span></summary>
         <p class="leise">${esc(T.pl.fv.text)}</p><div data-fv-liste>${fvListe(g)}</div></details>
-      <pre data-log hidden class="pl-log"></pre>
-      <details class="erweitert"><summary>${esc(T.bereiche.einstellungen)}</summary>
+      <pre data-log hidden class="pl-log"></pre></div>
+      <div class="g-teil" data-teil="einst">
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
         <div class="zeile"><label>${esc(T.pl.modell)}</label><select name="modell">${opt(["pi45", "pi3", "pc"], g.modell, MT())}</select></div>${pc ? "" : `<p class="leise">${esc(T.pl.ram)}</p>`}
@@ -2083,12 +2100,44 @@ async function playerSeite(inhalt, einrichten) {
         <div class="zeile"><label>${esc(T.pl.hwdec)}</label><select name="hwdec">${opt(["auto", "aus"], g.hwdec, T.pl.hw)}</select></div>
         <div class="zeile" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}><label>${esc(T.pl.anzeige)}</label><select name="anzeige_modus">${opt(["stream", "direkt"], g.anzeige_modus || "stream", T.pl.am)}</select></div>
         <p class="leise" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}>${esc(T.pl.anzeigeText)}</p>
-        <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div></details>
+        <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div>
       <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
         ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
       <details class="erweitert" data-image><summary>${esc(T.pl.imageNeu)}</summary><p class="leise">${esc(T.pl.imageNeuText)}</p>
         ${plNetz("i" + g.id, P.wlan, true)}${fwBox("plIFw" + g.id, g.fernwartung)}${fernBox(P, "plIFern" + g.id, !!g.fern)}${pc ? formWahl("plIForm" + g.id) : ""}<div class="zeile"><button class="knopf" data-image-laden ${bereitFuer(g.modell) ? "" : "disabled"}>${esc(T.pl.erstellen)}</button>
-        <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div></details></div>`;
+        </div></details></div>
+      ${geraetEnde(g)}</div>`;
+  };
+  // seit 0.66 (UI-Regel Punkt 2): Reiter je Gerät und unten Verlauf + Entfernen mit Verwendung
+  const G_TEILE = (g) => g.modell === "browser" ? ["uebersicht", "einst", "verlauf"] : ["uebersicht", "fern", "einst", "verlauf"];
+  const geraetNav = (g) => `<nav class="kanal-reiter">${G_TEILE(g).map((x) => `<button type="button" data-gzu="${x}">${esc(
+    { uebersicht: T.ding.uebersicht, fern: T.ding.fernverwaltung, einst: T.ding.einstellungen, verlauf: T.ding.verlauf }[x])}</button>`).join("")}</nav>`;
+  const kanalName = (id) => (E.fernseher.find((t) => t.id === id) || {}).name || id;
+  const geraetEnde = (g) => `<div class="g-teil" data-teil="verlauf"><div data-verlauf></div></div>
+      <div class="loeschen"><p class="leise">${esc(g.tv ? T.ding.verwendetVon(T.ding.zeigt(kanalName(g.tv))) : T.ding.nichtVerwendet)}</p>
+        <button class="knopf gefahr" data-entfernen>${esc(T.pl.entfernen)}</button></div>`;
+  const statusKlar = (g) => g.online ? T.ding.online : g.zuletzt
+    ? T.ding.offlineSeit(new Date(g.zuletzt * 1000).toLocaleString(ORT(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) : T.ding.nieGesehen;
+  let suche = "", PZ = {};
+  holen("/api/protokoll").then((d) => { PZ = d.zuletzt || {}; if (!geraetOffen && aktiv === "player") listeZeichnen(); }).catch(() => {});
+  const tabelleZeichnen = (ziel) => {
+    const l = P.geraete.filter((g) => !suche || (g.name + " " + kanalName(g.tv)).toLowerCase().includes(suche.toLowerCase()));
+    ziel.innerHTML = !P.geraete.length ? `<p class="leise">${esc(T.pl.keine)}</p>` : `<div class="zeile"><input type="search" id="plSuche" placeholder="${esc(T.ding.suchen)}" aria-label="${esc(T.ding.suchen)}" value="${esc(suche)}"></div>
+      ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(T.ding.name)}</th><th>${esc(T.ding.status)}</th><th>${esc(T.ding.verwendung)}</th>
+        <th>${esc(T.ding.zuletzt)}</th><th></th></tr></thead><tbody>${l.map((g) => `<tr><td><b>${esc(g.name)}</b><br><span class="leise">${esc(MT()[g.modell] || g.modell)}</span></td>
+          <td class="${g.online ? "gut" : g.zuletzt ? "schlecht" : "leise"}">${esc(statusKlar(g))}${g.hinweise.length ? `<br><span class="warn">⚠ ${esc(T.pl.h[g.hinweise[0]] || g.hinweise[0])}</span>` : ""}</td>
+          <td>${esc(g.tv ? kanalName(g.tv) : T.ding.keinKanal)}</td><td class="leise">${esc(zuletztText(PZ, "geraet:" + g.id))}</td>
+          <td><button class="knopf" data-goeffnen="${g.id}">${esc(T.ding.oeffnen)}</button></td></tr>`).join("")}</tbody></table></div>`
+        : `<p class="leise">${esc(T.ding.keine)}</p>`}`;
+    const f = ziel.querySelector("#plSuche");
+    if (f) f.oninput = () => { suche = f.value; tabelleZeichnen(ziel); const n = ziel.querySelector("#plSuche"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
+    ziel.querySelectorAll("[data-goeffnen]").forEach((b) => { b.onclick = () => { geraetOffen = b.dataset.goeffnen; geraetTeil = "uebersicht"; zeichnen(); }; });
+  };
+  const reiterSetzen = (k, g) => {
+    if (!G_TEILE(g).includes(geraetTeil)) geraetTeil = "uebersicht";
+    k.querySelectorAll(".g-teil").forEach((d) => { d.hidden = d.dataset.teil !== geraetTeil; });
+    k.querySelectorAll("[data-gzu]").forEach((b) => b.classList.toggle("an", b.dataset.gzu === geraetTeil));
+    if (geraetTeil === "verlauf") verlaufZeichnen(k.querySelector("[data-verlauf]"), "geraet:" + g.id).catch(() => {});
   };
   const bilderLaden = () => inhalt.querySelectorAll("img[data-bild]").forEach(async (i) => {
     try {
@@ -2101,11 +2150,15 @@ async function playerSeite(inhalt, einrichten) {
   const listeZeichnen = () => {
     const ziel = $("#plListe");
     if (!ziel) return;
-    ziel.innerHTML = P.geraete.length ? P.geraete.map(karte).join("") : `<p class="leise">${esc(T.pl.keine)}</p>`;
+    const offen = P.geraete.find((g) => g.id === geraetOffen);
+    if (!offen) { geraetOffen = null; tabelleZeichnen(ziel); return; }
+    ziel.innerHTML = karte(offen);
     ziel.querySelectorAll("details[data-fv]").forEach((d) => { d.ontoggle = () => { if (d.open) fvOffen.add(d.dataset.fv); else fvOffen.delete(d.dataset.fv); }; });
     bilderLaden();
-    for (const g of P.geraete) {
+    for (const g of [offen]) {
       const k = ziel.querySelector(`[data-g="${g.id}"]`);
+      k.querySelectorAll("[data-gzu]").forEach((b) => { b.onclick = () => { geraetTeil = b.dataset.gzu; reiterSetzen(k, g); }; });
+      reiterSetzen(k, g);
       if (g.modell === "browser") { browserAnbinden(k, g); continue; }
       const wlanLesen = plNetzAnbinden(k, "w" + g.id), imageLesen = plNetzAnbinden(k, "i" + g.id);
       k.querySelectorAll("[data-befehl]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => {
@@ -2133,7 +2186,7 @@ async function playerSeite(inhalt, einrichten) {
         plHerunterladen(d.kennung, d.datei); }, T.pl.laedtHerunter);
       k.querySelector("[data-entfernen]").onclick = (e) => {
         if (!confirm(T.pl.entfernenFrage(g.name))) return;
-        aktion(e.target, async () => { const r = await senden(`/api/player/${g.id}/entfernen`); P = await holenP(); listeZeichnen(); fernAntwort(r); }, g.fern ? null : undefined);
+        aktion(e.target, async () => { const r = await senden(`/api/player/${g.id}/entfernen`); P = await holenP(); geraetOffen = null; zeichnen(); fernAntwort(r); }, g.fern ? null : undefined);
       };
     }
   };
@@ -2157,7 +2210,7 @@ async function playerSeite(inhalt, einrichten) {
       }
       const w = $("#plWartend");
       if (w) w.textContent = wartendText();
-      if (!inhalt.querySelector("#plListe :focus, #plListe details[open]:not([data-fv]), #plListe pre:not([hidden]), #plListe .geaendert")) listeZeichnen();
+      if (!inhalt.querySelector("#plListe :focus, #plListe details[open]:not([data-fv]), #plListe pre:not([hidden]), #plListe .geaendert, #plListe .g-teil[data-teil=einst]:not([hidden]), #plListe .g-teil[data-teil=verlauf]:not([hidden])")) listeZeichnen();
       else fvTicken();
     }, 1000);
   };
@@ -2218,7 +2271,7 @@ const TODO_WARN = {
   player: (w) => [T.todo.player(w.name), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
   bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
   internet: (w) => [T.todo.internet(w.seit), "uebersicht"], bild: (w) => [T.todo.bild(w.name, w.befund), "leistung"],
-  player_basis: (w) => [T.todo.playerBasis(w.art, w.alt, w.neu), "einrichten"],
+  player_basis: (w) => [T.todo.playerBasis(w.art, w.alt, w.neu), "updates"],
   speicherort: (w) => [T.todo.speicherort(w.name), "speicherorte"],
   speicher: (w) => [T.todo.speicher(w.stufe, String(w.frei).replace(".", E.sprache === "en" ? "." : ",")), "speicher"],
 };
@@ -2607,39 +2660,75 @@ function nachText(sta, t) {
   return n ? T.nachZuletzt(n) : "";
 }
 // Seit 0.50: Liste aller Kanäle; ein Klick öffnet einen Kanal mit Reitern, gespeichert wird je Kanal
-const KANAL_TEILE = ["anzeige", "video", "ton", "schalten", "stream"];
-let kanalOffen = null, kanalTeil = "anzeige";                         // offener Kanal (Kennung, "+" = neu) und Reiter
+const KANAL_TEILE = ["uebersicht", "anzeige", "video", "ton", "stream", "verlauf"];   // seit 0.66: Übersicht und Verlauf, Ein/Aus (HA) unter Anzeige & Zeitplan
+let geraetOffen = null, geraetTeil = "uebersicht";                    // seit 0.66: offenes Gerät und sein Reiter
+let kanalOffen = null, kanalTeil = "uebersicht";                         // offener Kanal (Kennung, "+" = neu) und Reiter
 async function fernseherSeite(inhalt) {
   const [st, pl] = await Promise.all([holen("/api/ha/einrichtung"), holen("/api/player").catch(() => ({ geraete: [] }))]);
   let sta = await holen("/api/status").catch(() => ({}));
   const ip = st.eigene_ip || location.hostname;
   const adresse = (t) => `http://${ip}:${st.stream_port || 8888}/${t.id}`;
   let neu = null;                                                      // neuer, noch nicht gespeicherter Kanal
+  let suche = "", PZ = {};
+  holen("/api/protokoll").then((d) => { PZ = d.zuletzt || {}; if (!kanalOffen && aktiv === "fernseher") zeichnen(); }).catch(() => {});
+  const geraeteVon = (id) => (pl.geraete || []).filter((g) => g.tv === id);
+  const geraetKlar = (g) => `${g.name} (${g.online ? T.ding.online : T.ding.offline})`;
+  const layoutName = (id) => (E.layouts.find((l) => l.id === id) || {}).name || id || "–";
+  // Liste (seit 0.66 als Tabelle nach UI-Regel Punkt 2): Name, Status in Klartext, Geräte, letzte Änderung; „+ Neu“ oben rechts
   const listeZeichnen = () => {
     const K = T.kanalListe;
-    inhalt.innerHTML = `<p class="leise">${esc(T.fernseherText)} ${esc(T.tvHinweis)}</p>
-      <div class="raster kanalliste">${E.fernseher.map((t) => {
+    const l = E.fernseher.filter((t) => !suche || (t.name + " " + t.id + " " + layoutName(t.layout)).toLowerCase().includes(suche.toLowerCase()));
+    inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.bereiche.fernseher)}</h2><button class="knopf" id="tvPlus">+ ${esc(T.fernseherNeu)}</button></div>
+      <p class="leise">${esc(T.fernseherText)} ${esc(T.tvHinweis)}</p>
+      <div class="zeile"><input type="search" id="tvSuche" placeholder="${esc(T.ding.suchen)}" aria-label="${esc(T.ding.suchen)}" value="${esc(suche)}"></div>
+      ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(T.ding.name)}</th><th>${esc(T.ding.status)}</th><th>${esc(T.reiter.player)}</th>
+        <th>${esc(T.ding.zuletzt)}</th><th></th></tr></thead><tbody>${l.map((t) => {
         const z = (sta.fernseher || []).find((x) => x.id === t.id) || {};
-        const ger = (pl.geraete || []).filter((g) => g.tv === t.id);
-        const lay = (E.layouts.find((l) => l.id === t.layout) || {}).name || t.layout || "–";
+        const ger = geraeteVon(t.id);
         const merk = [(t.zeitplan || []).length ? K.zeitplan((t.zeitplan || []).length) : "", (t.karussell || {}).aktiv ? K.karussell : "",
                       t.ha_schalten ? K.ha : "", t.video ? "" : K.ohneVideo].filter(Boolean);
-        return `<div class="karte kanal"><h2>${esc(t.name)} <span class="leise">/${esc(t.id)}</span></h2>
-          <div>${esc(K.layout)}: <b>${esc(lay)}</b> · ${z.laeuft ? `<span class="gut">${esc(T.laeuft)}</span>` : `<span class="leise">${esc(T.aus)}</span>`}</div>
-          ${merk.length ? `<div class="leise">${esc(merk.join(" · "))}</div>` : ""}
-          <div class="leise">${esc(T.reiter.player)}: ${ger.length ? ger.map((g) => `<span class="${g.online ? "gut" : "schlecht"}">●</span> ${esc(g.name)}`).join(", ") : esc(K.keinGeraet)}</div>
-          <div class="zeile"><code>${esc(adresse(t))}</code></div>
-          <div class="zeile"><button class="knopf haupt" data-oeffnen="${esc(t.id)}">${esc(K.bearbeiten)}</button></div></div>`;
-      }).join("")}</div>
-      <div class="zeile"><button class="knopf" id="tvPlus">+ ${esc(T.fernseherNeu)}</button></div>`;
-    inhalt.querySelectorAll("[data-oeffnen]").forEach((b) => { b.onclick = () => { kanalOffen = b.dataset.oeffnen; zeichnen(); }; });
+        return `<tr><td><b>${esc(t.name)}</b> <span class="leise">/${esc(t.id)}</span>${merk.length ? `<br><span class="leise">${esc(merk.join(" · "))}</span>` : ""}</td>
+          <td class="${z.laeuft ? "gut" : ""}">${esc(z.laeuft ? T.ding.laeuftMit(layoutName(t.layout)) : T.ding.ausMit(layoutName(t.layout)))}</td>
+          <td>${ger.length ? ger.map((g) => `<span class="${g.online ? "gut" : "schlecht"}">${esc(geraetKlar(g))}</span>`).join("<br>") : `<span class="leise">${esc(K.keinGeraet)}</span>`}</td>
+          <td class="leise">${esc(zuletztText(PZ, "kanal:" + t.id))}</td>
+          <td><button class="knopf haupt" data-oeffnen="${esc(t.id)}">${esc(T.ding.oeffnen)}</button></td></tr>`;
+      }).join("")}</tbody></table></div>` : `<p class="leise">${esc(T.ding.keine)}</p>`}`;
+    inhalt.querySelectorAll("[data-oeffnen]").forEach((b) => { b.onclick = () => { kanalOffen = b.dataset.oeffnen; kanalTeil = "uebersicht"; zeichnen(); }; });
+    const f = $("#tvSuche");
+    f.oninput = () => { suche = f.value; listeZeichnen(); const n = $("#tvSuche"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
     $("#tvPlus").onclick = () => {
       let n = 2; while (E.fernseher.some((t) => t.id === "tv" + n)) n++;
       neu = { id: "tv" + n, name: T.weitererTv + " " + n, video: true, ton: "aus", radio_sender: "", lautstaerke: 70,
               kategorien_aus: [], aufloesung: 1080, aufnahme: 1080, bitrate_mbit: 8, codec: "auto",
               encoder: "auto", preset: "veryfast", tune: "zerolatency", bframes: 0 };
-      kanalOffen = "+"; zeichnen();
+      kanalOffen = "+"; kanalTeil = "anzeige"; zeichnen();
     };
+  };
+  // Reiter „Übersicht“ (seit 0.66): Status in Klartext, Geräte, Ton, Schnellaktionen
+  const kanalUebersicht = (t) => {
+    const z = (sta.fernseher || []).find((x) => x.id === t.id) || {};
+    const ger = geraeteVon(t.id);
+    const ha = haZustandText(sta, t);
+    return `<div class="tabelle-rahmen"><table class="tabelle">
+      <tr><td class="leise">${esc(T.ding.status)}</td><td class="${z.laeuft ? "gut" : ""}">${esc(z.laeuft ? T.ding.laeuftMit(layoutName(t.layout)) : T.ding.ausMit(layoutName(t.layout)))}</td></tr>
+      ${z.aktuell ? `<tr><td class="leise">${esc(T.kanalTeil.video)}</td><td>${esc(z.aktuell.name)}</td></tr>` : ""}
+      <tr><td class="leise">${esc(T.tonAnzeige)}</td><td>${esc(T.tonArt[t.ton] || t.ton)}${z.sender ? " · ♪ " + esc(z.sender) : ""}</td></tr>
+      <tr><td class="leise">${esc(T.reiter.player)}</td><td>${ger.length ? ger.map((g) => `<span class="${g.online ? "gut" : "schlecht"}">${esc(geraetKlar(g))}</span>`).join(", ") : esc(T.kanalListe.keinGeraet)}</td></tr>
+      ${ha ? `<tr><td class="leise">${esc(T.geraetHa)}</td><td>${esc(ha)}</td></tr>` : ""}</table></div>
+      <h3>${esc(T.ding.schnell)}</h3>
+      <div class="zeile"><button class="knopf" data-schnell="/api/aktion/seite-neu-laden">${esc(T.seiteNeu)}</button>
+        <button class="knopf" data-schnell="/api/aktion/kette-neu-starten">${esc(T.ketteNeu)}</button>
+        <button class="knopf" name="kVorschau">${esc(T.vorschauNeu)}</button></div>
+      <p><img name="kBild" class="vorschau" alt="" hidden></p>`;
+  };
+  // Hinweis beim Löschen (UI-Regel Punkt 2): wo der Kanal noch verwendet wird
+  const kanalVerwendung = (t) => {
+    const teile = [];
+    const ger = geraeteVon(t.id);
+    if (ger.length) teile.push(T.ding.geraete(ger.map((g) => g.name).join(", ")));
+    const zug = (E.pult.zugaenge || []).filter((z) => (z.fernseher || []).includes(t.id));
+    if (zug.length) teile.push(T.ding.pultZugang(zug.map((z) => z.name).join(", ")));
+    return teile.length ? T.ding.verwendetVon(teile.join("; ")) : T.ding.nichtVerwendet;
   };
   const zeichnen = () => {
     const i = E.fernseher.findIndex((x) => x.id === kanalOffen);
@@ -2654,10 +2743,13 @@ async function fernseherSeite(inhalt) {
     [t].forEach((t) => {
       const k = el(`<div class="karte">
         <h2>${esc(t.name)} <span class="leise">/${esc(t.id)}</span></h2>
+        <nav class="kanal-reiter">${KANAL_TEILE.filter((x) => !neu || !["uebersicht", "verlauf"].includes(x)).map((x) =>
+          `<button type="button" data-zu="${x}">${esc(T.kanalTeil[x] || T.ding[x])}</button>`).join("")}</nav>
+        <div class="kanal-teil" data-teil="uebersicht">${neu ? "" : kanalUebersicht(t)}
         <div class="zeile"><label>${esc(T.senderName)}</label><input type="text" name="name" value="${esc(t.name)}"></div>
-        <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" class="b140"></div>
         <div class="zeile"><label>${esc(T.adresse)}</label><code>http://${esc(ip)}:${esc(st.stream_port || 8888)}/${esc(t.id)}</code></div>
-        <nav class="kanal-reiter">${KANAL_TEILE.map((x) => `<button type="button" data-zu="${x}">${esc(T.kanalTeil[x])}</button>`).join("")}</nav>
+        <details class="erweitert" ${neu ? "open" : ""}><summary>${esc(T.ding.erweitert)}</summary>
+          <div class="zeile"><label>${esc(T.kennung)}</label><input type="text" name="id" value="${esc(t.id)}" pattern="[a-z][a-z0-9]{0,11}" class="b140"></div></details></div>
         <div class="kanal-teil" data-teil="anzeige">
         <div class="zeile"><label>${esc(T.layoutWahl)}</label><select name="layout">${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === t.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
         <details ${(t.zeitplan || []).length ? "open" : ""}><summary>${esc(T.zeitplan)} (${(t.zeitplan || []).length})</summary>
@@ -2668,7 +2760,7 @@ async function fernseherSeite(inhalt) {
           <div class="zeile"><label>${esc(T.karussellAn)}</label>${schalter("k_aktiv", (t.karussell || {}).aktiv)}
             <label>${esc(T.karussellMin)}</label><input type="number" name="k_min" min="1" max="1440" value="${(t.karussell || {}).minuten || 5}" class="b80"></div>
           ${E.layouts.map((l) => `<label class="abstand-r"><input type="checkbox" name="k_l" value="${esc(l.id)}" ${((t.karussell || {}).layouts || []).includes(l.id) ? "checked" : ""}> ${esc(l.name)}</label>`).join("")}</details>
-        </div><div class="kanal-teil" data-teil="schalten"><h3>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}${haZustandText(sta, t) ? " · " + esc(haZustandText(sta, t)) : ""}</h3><p class="leise">${esc(T.schaltenText)}</p>
+        <h3>${esc(T.schalten)}${t.ha_schalten ? " ✓" : ""}${haZustandText(sta, t) ? " · " + esc(haZustandText(sta, t)) : ""}</h3><p class="leise">${esc(T.schaltenText)}</p>
           <div class="zeile"><input type="text" name="ha_schalten" value="${esc(t.ha_schalten || "")}" placeholder="media_player.tv_wohnzimmer" spellcheck="false" class="breit">
             <button class="knopf" name="schAus">${esc(T.schaltenAus)}</button><button class="knopf" name="schAn">${esc(T.schaltenAn)}</button></div>
           <p class="leise" name="haZustand">${esc(haZustandText(sta, t, true))}</p>
@@ -2710,8 +2802,10 @@ async function fernseherSeite(inhalt) {
         <div class="zeile"><label>${esc(T.codec)}</label><select name="codec">${Object.keys(T.codecArt).map((k) =>
           `<option value="${k}" ${k === (t.codec || "auto") ? "selected" : ""}>${esc(T.codecArt[k])}</option>`).join("")}</select></div>
         <p class="leise">${esc(T.codecText)}</p>${kodierungTeil(t, sta)}</div>
-        <div class="zeile"><button class="knopf haupt" name="ok">${esc(T.speichern)}</button>
-          ${E.fernseher.length > 1 && !neu ? `<button class="knopf gefahr" name="weg">${esc(T.fernseherWeg)}</button>` : ""}</div></div>`);
+        <div class="kanal-teil" data-teil="verlauf"><div name="verlauf"></div></div>
+        <div class="zeile" name="speichernZeile"><button class="knopf haupt" name="ok">${esc(T.speichern)}</button></div>
+        ${neu ? "" : `<div class="loeschen"><p class="leise">${esc(kanalVerwendung(t))}</p>
+          ${E.fernseher.length > 1 ? `<button class="knopf gefahr" name="weg">${esc(T.fernseherWeg)}</button>` : ""}</div>`}</div>`);
       const zeitenAnbinden = () => k.querySelectorAll("[name=zweg]").forEach((b) => { b.onclick = () => b.closest(".zeile").remove(); });
       zeitenAnbinden();
       k.querySelector("[name=zeitPlus]").onclick = () => { k.querySelector("[name=zeiten]").insertAdjacentHTML("beforeend", zeitZeile({ von: "23:00", bis: "06:00", layout: "schwarz" })); zeitenAnbinden(); };
@@ -2743,7 +2837,7 @@ async function fernseherSeite(inhalt) {
         k.querySelector(`[name=${n}]`).onclick = (ev) => aktion(ev.target, () => senden("/api/fernseher/schalten", { tv: t.id, an }), T.schaltenOk);
       const weg = k.querySelector("[name=weg]");
       if (weg) weg.onclick = (ev) => {
-        if (!confirm(T.wirklichTvWeg)) return;
+        if (!confirm(T.wirklichTvWeg + "\n\n" + kanalVerwendung(t))) return;
         const vorher = E;
         speichernE({ fernseher: E.fernseher.filter((_, j) => j !== i) }, ev.target).then(() => { if (E !== vorher) { kanalOffen = null; zeichnen(); } });
       };
@@ -2756,10 +2850,18 @@ async function fernseherSeite(inhalt) {
         zeichnen();
       };
       const reiter = (x) => {
-        kanalTeil = KANAL_TEILE.includes(x) ? x : "anzeige";
+        kanalTeil = KANAL_TEILE.includes(x) && !(neu && ["uebersicht", "verlauf"].includes(x)) ? x : neu ? "anzeige" : "uebersicht";
         k.querySelectorAll(".kanal-teil").forEach((d) => { d.hidden = d.dataset.teil !== kanalTeil; });
         k.querySelectorAll("[data-zu]").forEach((b) => b.classList.toggle("an", b.dataset.zu === kanalTeil));
+        k.querySelector("[name=speichernZeile]").hidden = kanalTeil === "verlauf";
+        if (kanalTeil === "verlauf") verlaufZeichnen(k.querySelector("[name=verlauf]"), "kanal:" + t.id).catch(() => {});
       };
+      k.querySelectorAll("[data-schnell]").forEach((b) => { b.onclick = (ev) => aktion(ev.target, () => senden(b.dataset.schnell, { tv: t.id }), T.erledigt); });
+      const vb = k.querySelector("[name=kVorschau]");
+      if (vb) vb.onclick = (ev) => aktion(ev.target, async () => {
+        const daten = await dienstBinaer.get("/api/vorschau.jpg", { tv: t.id }, { "X-SignageCast": "1" });
+        const img = k.querySelector("[name=kBild]"); img.src = URL.createObjectURL(new Blob([daten], { type: "image/jpeg" })); img.hidden = false;
+      }, null);
       k.querySelectorAll("[data-zu]").forEach((b) => { b.onclick = () => reiter(b.dataset.zu); });
       reiter(kanalTeil);
       liste.appendChild(k);
@@ -2953,32 +3055,48 @@ async function einspielerSeite(inhalt) {
 
 // ---------- Sicherung ----------
 // Änderungsprotokoll (seit 0.38): wer hat wann was geändert – Verwaltung, Pult, Webhook, System. Nur Art und Bereich.
+// Protokoll-Zeilen (seit 0.66 gemeinsam für Einstellungen → System → Protokoll und den Reiter „Verlauf“ jedes Dings)
+function protAktion(x) {
+  const P = T.prot, k = x.aktion, m = k.match(/^(stream|radio|player|terminal)_(.+)$/);
+  return P.aktion[k] || (m && P.aktion[m[1] + "_*"] ? P.aktion[m[1] + "_*"](m[2]) : k);
+}
+const protWer = (x) => x.wer === "Verwaltung" ? T.prot.quellen.verwaltung : x.wer;
+function protDetail(x) {
+  const P = T.prot;
+  if (/^bild_/.test(x.aktion)) return x.detail.replace(/: (schwarz|steht)$/, (_, b) => ": " + P.befund[b]);
+  if (x.aktion !== "einstellungen") return x.detail;
+  return x.detail.split("; ").map((teil) => {
+    const m = teil.match(/^layouts\.(neu|geaendert|geloescht): (.*)$/);
+    if (m) return `${P.layouts[m[1]]}: ${m[2]}`;
+    return teil.split(", ").map((b) => P.bereich[b] || b).join(", ");
+  }).join(" · ");
+}
+function protTabelle(l) {
+  const P = T.prot;
+  return `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(P.zeit)}</th><th>${esc(P.wer)}</th><th>${esc(P.was)}</th></tr></thead><tbody>
+    ${l.map((x) => `<tr><td class="leise">${esc(x.zeit.slice(0, 16))}</td><td>${esc(protWer(x))}${(P.quellen[x.quelle] || x.quelle) !== protWer(x) ? `<br><span class="leise">${esc(P.quellen[x.quelle] || x.quelle)}</span>` : ""}</td>
+      <td>${esc(protAktion(x))}${x.detail ? `<br><span class="leise">${esc(protDetail(x))}</span>` : ""}</td></tr>`).join("")}</tbody></table></div>`;
+}
+// Reiter „Verlauf“ (seit 0.66): Protokoll eines Dings ("kanal:tv", "geraet:…")
+async function verlaufZeichnen(ziel, ding) {
+  ziel.innerHTML = `<p class="leise">${esc(T.laedt)}</p>`;
+  const d = await holen("/api/protokoll?ding=" + encodeURIComponent(ding));
+  ziel.innerHTML = d.eintraege.length ? `<p class="leise">${esc(T.prot.verlaufText)}</p>` + protTabelle(d.eintraege.slice(0, 100))
+    : `<p class="leise">${esc(T.prot.verlaufLeer)}</p>`;
+}
+// „Letzte Änderung“ in Listen (seit 0.66): Zeit aus dem Protokoll, Datum kurz
+const zuletztText = (z, ding) => z && z[ding] ? new Date(z[ding].replace(" ", "T")).toLocaleString(ORT(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
+
 async function protokollSeite(inhalt) {
   const d = await holen("/api/protokoll"), P = T.prot;
   let filter = "", n = 100;
-  const aktionText = (x) => {
-    const k = x.aktion, m = k.match(/^(stream|radio|player|terminal)_(.+)$/);
-    return P.aktion[k] || (m && P.aktion[m[1] + "_*"] ? P.aktion[m[1] + "_*"](m[2]) : k);
-  };
-  const werText = (x) => x.wer === "Verwaltung" ? P.quellen.verwaltung : x.wer;
-  const detailText = (x) => {
-    if (/^bild_/.test(x.aktion)) return x.detail.replace(/: (schwarz|steht)$/, (_, b) => ": " + P.befund[b]);
-    if (x.aktion !== "einstellungen") return x.detail;
-    return x.detail.split("; ").map((teil) => {
-      const m = teil.match(/^layouts\.(neu|geaendert|geloescht): (.*)$/);
-      if (m) return `${P.layouts[m[1]]}: ${m[2]}`;
-      return teil.split(", ").map((b) => P.bereich[b] || b).join(", ");
-    }).join(" · ");
-  };
   const zeichnen = () => {
     const l = d.eintraege.filter((x) => !filter || x.quelle === filter);
     inhalt.innerHTML = `<div class="karte"><h2>${esc(P.titel)}</h2><p class="leise">${esc(P.text)}</p>
       <div class="zeile"><label for="prFilter">${esc(P.quelle)}</label><select id="prFilter"><option value="">${esc(P.alle)}</option>
         ${["verwaltung", "pult", "webhook", "system"].map((q) => `<option value="${q}" ${q === filter ? "selected" : ""}>${esc(P.quellen[q])}</option>`).join("")}</select></div>
-      ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(P.zeit)}</th><th>${esc(P.wer)}</th><th>${esc(P.was)}</th></tr></thead><tbody>
-        ${l.slice(0, n).map((x) => `<tr><td class="leise">${esc(x.zeit.slice(0, 16))}</td><td>${esc(werText(x))}${(P.quellen[x.quelle] || x.quelle) !== werText(x) ? `<br><span class="leise">${esc(P.quellen[x.quelle] || x.quelle)}</span>` : ""}</td>
-          <td>${esc(aktionText(x))}${x.detail ? `<br><span class="leise">${esc(detailText(x))}</span>` : ""}</td></tr>`).join("")}</tbody></table></div>
-        ${l.length > n ? `<div class="zeile"><button class="knopf" id="prMehr">${esc(P.mehr)}</button></div>` : ""}` : `<p class="leise">${esc(P.leer)}</p>`}</div>`;
+      ${l.length ? protTabelle(l.slice(0, n)) + (l.length > n ? `<div class="zeile"><button class="knopf" id="prMehr">${esc(P.mehr)}</button></div>` : "")
+        : `<p class="leise">${esc(P.leer)}</p>`}</div>`;
     $("#prFilter").onchange = (e) => { filter = e.target.value; n = 100; zeichnen(); };
     if ($("#prMehr")) $("#prMehr").onclick = () => { n += 200; zeichnen(); };
   };
@@ -3177,6 +3295,34 @@ async function kiSeite(inhalt, teil = "einrichten") {
     }, null);
   };
   zeichnen();
+}
+
+// ---------- Player-Images unter Einstellungen → System → Updates (seit 0.66, UI-Regel 5.5: Wartung) ----------
+async function playerImagesKarte(inhalt) {
+  let P = await holen("/api/player");
+  const mb = (b) => Math.round(b / 1e6);
+  const text = (b, pc) => b.phase === "laedt" ? `<span class="warn">${esc(T.pl.basisLaedt(mb(b.geladen), mb(b.gesamt) || "…"))}</span>`
+    : (b.phase === "fehler" ? `<span class="schlecht">${esc(T.pl.basisFehler)}: ${esc(meldungText(b, b.fehler))}</span> ` : "")
+      + (b.vorhanden ? `<span class="gut">${esc(T.pl.basisBereit(b.vorhanden.version, b.vorhanden.erstellt || ""))}</span>`
+        + (b.veraltet ? ` <span class="warn">⚠ ${esc(T.pl.basisAlt(b.server))}</span>` : "") : esc(pc ? T.pl.pc.basisFehlt : T.pl.basisFehlt));
+  const laedt = () => P.basis.phase === "laedt" || P.basis_pc.phase === "laedt";
+  const zeichnen = () => {
+    inhalt.innerHTML = `<div class="karte"><h2>${esc(T.ding.images)}</h2><p class="leise">${esc(T.ding.imagesText)}</p>
+      ${[["pi", "Raspberry Pi", P.basis], ["pc", "PC", P.basis_pc]].map(([art, name, b]) => `<div class="zeile"><label>${esc(name)}</label><span>${text(b, art === "pc")}</span>
+        <button class="knopf${b.veraltet ? " haupt" : ""}" data-basis="${art}" ${laedt() ? "disabled" : ""}>${esc(b.vorhanden ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>`).join("")}</div>`;
+    inhalt.querySelectorAll("[data-basis]").forEach((k) => { k.onclick = (e) => aktion(e.target, async () => {
+      await senden("/api/player/basis-laden", { art: k.dataset.basis }); P = await holen("/api/player"); zeichnen(); folgen(); }, null); });
+  };
+  const folgen = () => {                      // während des Ladens alle 3 s nachführen, nur solange die Seite offen ist
+    const t = setInterval(async () => {
+      if (aktiv !== "updates" || !document.body.contains(inhalt)) { clearInterval(t); return; }
+      try { P = await holen("/api/player"); } catch (_) { return; }
+      zeichnen();
+      if (!laedt()) clearInterval(t);
+    }, 3000);
+  };
+  zeichnen();
+  if (laedt()) folgen();
 }
 
 // ---------- Einstellungen als Kacheln (seit 0.65, docs/UI-RULES.md Punkt 3) ----------

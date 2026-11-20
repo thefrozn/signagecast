@@ -27,7 +27,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 
 ## Step by step
 
-1. Admin → **Devices → + New device** → **Download player image** (once, about 850 MB; checked with the project's
+1. Admin → **Devices → + New device** → **Download player image** (also under Settings → System → Updates, where you download it again after an update; once, about 850 MB; checked with the project's
    signature). After a SignageCast update, *To do* reminds you to download it again – new images then get all fixes.
 2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
@@ -181,7 +181,7 @@ fallback to the stream.
 | USB stick | 4 GB or more |
 | Network | LAN cable (nothing to set up) or Wi-Fi (hotspot setup as with the Pi, if the Wi-Fi card can do it) |
 
-1. Admin → **Devices → + New device** → **PC image: Download** (once, about 750 MB; checked with the project's signature).
+1. Admin → **Devices → + New device** → **PC image: Download** (also under Settings → System → Updates; once, about 750 MB; checked with the project's signature).
 2. **Add player** → model **PC** → choose the format:
    - **USB stick (.img.gz)** – write with balenaEtcher, Raspberry Pi Imager (*Use custom*) or Rufus (choose *DD image*).
      The PC keeps pairing, Wi-Fi and player updates on the stick.
@@ -277,7 +277,7 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 
 ## Schritt für Schritt
 
-1. Verwaltung → **Geräte → + Neues Gerät** → **Player-Image laden** (einmalig, etwa 850 MB; mit der Signatur
+1. Verwaltung → **Geräte → + Neues Gerät** → **Player-Image laden** (auch unter Einstellungen → System → Updates, dort nach einem Update neu laden; einmalig, etwa 850 MB; mit der Signatur
    des Projekts geprüft). Nach einem SignageCast-Update erinnert „Zu erledigen“ daran, es neu zu laden – neue Images
    bekommen dann alle Korrekturen.
 2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
@@ -435,7 +435,7 @@ Fernwartung, Kopplungscode, Rückfall auf den Stream.
 | USB-Stick | ab 4 GB |
 | Netz | LAN-Kabel (nichts einzurichten) oder WLAN (Hotspot-Einrichtung wie beim Pi, wenn die WLAN-Karte das kann) |
 
-1. Verwaltung → **Geräte → + Neues Gerät** → **PC-Image laden** (einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
+1. Verwaltung → **Geräte → + Neues Gerät** → **PC-Image laden** (auch unter Einstellungen → System → Updates; einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
 2. **Player hinzufügen** → Modell **PC** → Format wählen:
    - **USB-Stick (.img.gz)** – mit balenaEtcher, Raspberry Pi Imager („Eigenes Image“) oder Rufus („DD-Image“) schreiben.
      Der PC merkt sich Kopplung, WLAN und Updates des Players auf dem Stick.

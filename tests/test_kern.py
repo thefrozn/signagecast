@@ -4543,3 +4543,41 @@ class Vorlagen053(unittest.TestCase):
         self.assertIn("zlListe", lj)
         self.assertIn('case "liste":', sj)
         self.assertIn(".typ-liste", css)
+
+
+class Verlauf066(unittest.TestCase):
+    """Seit 0.66 (UI-Regel Punkt 2): Protokolleinträge nennen die betroffenen Dinge – für den Reiter „Verlauf“ und
+    die Spalte „Letzte Änderung“; nur gültige Kennungen, Liste je Ding, neueste Zeit je Ding."""
+
+    def test_dinge_liste_und_zuletzt(self):
+        import protokoll as PR
+        with tempfile.TemporaryDirectory() as d:
+            p = PR.Protokoll(os.path.join(d, "p.json"))
+            p.eintragen("Verwaltung", "verwaltung", "einstellungen", "fernseher", dinge=["kanal:tv", "kanal:tv", "layout:ab"])
+            p.eintragen("Empfang", "pult", "durchsage", "Flur", dinge=["kanal:tv2", "boese:x", "kanal:../../etc"])
+            p.eintragen("SignageCast", "system", "update_ergebnis", "ok")
+            self.assertEqual(p.eintraege[0]["dinge"], ["kanal:tv", "layout:ab"])
+            self.assertEqual(p.eintraege[1]["dinge"], ["kanal:tv2"])           # ungültige Kennungen fallen weg
+            self.assertNotIn("dinge", p.eintraege[2])
+            self.assertEqual([x["aktion"] for x in p.liste(ding="kanal:tv")], ["einstellungen"])
+            self.assertEqual(len(p.liste()), 3)
+            self.assertEqual(set(p.zuletzt()), {"kanal:tv", "layout:ab", "kanal:tv2"})
+            self.assertEqual(PR.Protokoll(os.path.join(d, "p.json")).liste(ding="kanal:tv2")[0]["wer"], "Empfang")   # übersteht Neustart
+
+    def test_geaenderte_dinge(self):
+        import dienst as D
+        alt = [{"id": "tv", "name": "A"}, {"id": "flur", "name": "B"}, {"id": "weg", "name": "C"}]
+        neu = [{"id": "tv", "name": "A"}, {"id": "flur", "name": "B2"}, {"id": "neu", "name": "D"}]
+        self.assertEqual(D.geaenderte_dinge("kanal", alt, neu), ["kanal:flur", "kanal:neu", "kanal:weg"])
+        self.assertEqual(D.geaenderte_dinge("layout", alt, alt), [])
+
+    def test_verwaltung_kennt_verlauf(self):
+        js = open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", "tv.js"), encoding="utf-8").read()
+        for f in ("verlaufZeichnen", "protTabelle", "zuletztText", "playerImagesKarte"):
+            self.assertIn(f"{f}", js)
+        self.assertIn('const KANAL_TEILE = ["uebersicht", "anzeige", "video", "ton", "stream", "verlauf"]', js)
+        self.assertIn('verlaufZeichnen(k.querySelector("[data-verlauf]"), "geraet:" + g.id)', js)
+        self.assertIn("updates: teile(updatesSeite, playerImagesKarte)", js)
+        for sprache in ("  de: {", "  en: {"):
+            t = js[js.index(sprache):]
+            self.assertIn("verlaufLeer:", t[:t.index("prot: {") + 600])

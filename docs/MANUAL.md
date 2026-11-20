@@ -28,14 +28,14 @@ Since 0.65 the admin page follows four simple ideas (details for developers: [UI
 | Menu item | Second level | What you do there |
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every channel and what it plays, viewers, CPU/RAM, time check, Home Assistant |
-| **Channels** | – | A **channel** is what a TV shows. The list shows every channel with layout, state, devices and address; *Edit* opens it with tabs *Display & schedule*, *Live video*, *Sound*, *On/off (HA)* and *Video stream* – saved per channel |
-| **Devices** | – | The players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)); *+ New device* creates images and pairs players |
+| **Channels** | – | A **channel** is what a TV shows. The list is a table with state in plain words, its devices (online/offline) and the last change; *Open* shows the channel with tabs *Overview* (state, devices, quick actions such as *Reload TV page*, *Restart stream*, a fresh picture), *Display & schedule* (with *On/off via Home Assistant*), *Live video*, *Sound*, *Video stream* (technical options) and *History*. *Delete* is at the bottom and says where the channel is still used |
+| **Devices** | – | The players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)). The list shows state in plain words, the channel and the last change; *Open* shows tabs *Overview* (status, picture, commands), *Remote management*, *Settings* and *History*; *Remove* at the bottom. *+ New device* creates images and pairs players |
 | **Layouts** | – | Layout editor and templates |
 | **Data sources** | – | Every source as a row with state and last value; an assistant for JSON APIs, feeds, iCal, CSV (also as uploaded file) and cameras |
 | **Media** | Pictures & videos · Galleries · Clips | Own pictures and videos for the video window; gallery folders (pictures/PDFs for slideshows); clips played at set times |
 | **Live videos** | Collection · Topics | Search state and *Search now* above the list of all live streams – click one for details on the right; topics (edit, create, switch on/off, search terms) |
 | **Radio stations** | – | Your stations, suggestions for your location, search by name |
-| **Settings** | tiles | General · Home Assistant · Notifications · **Accounts & access** · AI assistants · Storage locations · Announcement panel · Live videos (nightly search, minutes per stream, daylight, blocked words, YouTube API) · Remote sites · **System** (health, updates, backup, log) |
+| **Settings** | tiles | General · Home Assistant · Notifications · **Accounts & access** · AI assistants · Storage locations · Announcement panel · Live videos (nightly search, minutes per stream, daylight, blocked words, YouTube API) · Remote sites · **System** (health, updates incl. the player images for new devices, backup, log) |
 
 **Accounts & access** collects every way to log in to SignageCast: the admin login, the accesses of the announcement
 panel, the computers of AI assistants and the webhook key. Keys for other services (Home Assistant token, Telegram,
@@ -475,6 +475,11 @@ Speicherorte, Durchsage-Pult, Live-Videos (Nachtsuche, Minuten je Stream, YouTub
 (Zustand, Updates, Sicherung, Protokoll). Jede Kachel zeigt einen Satz und ihren Zustand. **📢 Durchsage** und
 **⚠ Notfall** sind feste Knöpfe oben rechts; der Notfall-Knopf wird rot, solange ein Notfall-Vollbild läuft. Seltenes
 liegt unter „Erweitert“. Alte Adressen (z. B. `#live`) leiten weiter.
+
+**Seit 0.66:** Kanäle und Geräte zeigen eine Tabelle (Status in Klartext, Verwendung, letzte Änderung, Suche); *Öffnen*
+zeigt Reiter von *Übersicht* (Status, Schnellaktionen) bis *Verlauf* (was mit genau diesem Kanal oder Gerät passiert ist).
+Löschen steht unten, mit dem Hinweis, wo das Ding noch verwendet wird. Die Player-Images für neue Geräte lädst du unter
+Einstellungen → System → Updates.
 Ein **Kanal** ist das, was ein Fernseher zeigt (früher hieß er selbst „Fernseher“). Seit 0.50 zeigt „Kanäle“ eine Liste;
 *Bearbeiten* öffnet einen Kanal mit den Reitern Anzeige & Zeitplan, Live-Video, Ton, Ein/Aus (HA) und Videostream – gespeichert
 wird je Kanal.

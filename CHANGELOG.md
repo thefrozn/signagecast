@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.66.0 (2026-11-20)
+- **Channels and devices follow the same frame** (UI rules, section 2): a table with state in plain words, where it is
+  used and the last change, with a search field and *+ New* at the top right. *Open* shows tabs from **Overview** to
+  **History**; *Delete*/*Remove* is always at the bottom and says where the thing is still used.
+- **Channel:** new *Overview* tab with state, current live video, sound, devices (online/offline in words) and quick
+  actions (*Reload TV page*, *Restart stream*, fresh picture) for this channel only. *On/off via Home Assistant* moved
+  into *Display & schedule*, so a channel has four topic tabs; the channel ID is under *Advanced*.
+- **Device:** tabs *Overview* (status, picture, commands), *Remote management*, *Settings* (incl. Wi-Fi and new
+  image) and *History*. The open tab survives the automatic refresh.
+- **History per thing:** the log now records which channels, devices and layouts an entry concerns (admin changes,
+  device commands, panel actions, emergency screen, picture check). `GET /api/protokoll?ding=kanal:<id>` returns the
+  history of one thing; entries before 0.66 have no assignment.
+- **Player images** for new devices can now be downloaded again under Settings → System → Updates; the to-do entry
+  “player image outdated” leads there.
+
 ## v0.65.0 (2026-11-20)
 - **Admin page reorganised after fixed UI rules** ([docs/UI-RULES.md](docs/UI-RULES.md), German
   [UI-RULES.de.md](docs/UI-RULES.de.md)): the menu now lists things – Overview · Channels · Devices · Layouts · Data

@@ -770,14 +770,14 @@ def alarm_ausloesen(text, tvs, von, quelle="pult"):
     ds_melden()
     schalten_neu.set()                           # ausgeschaltete Fernseher sofort einschalten
     print(f"Notfall-Vollbild ausgelöst von {a['von']}", flush=True)
-    PROTOKOLL.eintragen(a["von"], quelle, "alarm_an", text)
+    PROTOKOLL.eintragen(a["von"], quelle, "alarm_an", text, dinge=["kanal:" + x for x in (a["tvs"] or alle)])
     return a
 
 
 def alarm_beenden(von, quelle="pult"):
     if alarm["jetzt"]:
         print(f"Notfall-Vollbild beendet von {str(von)[:40]}", flush=True)
-        PROTOKOLL.eintragen(von, quelle, "alarm_aus")
+        PROTOKOLL.eintragen(von, quelle, "alarm_aus", dinge=["kanal:" + x for x in (alarm["jetzt"].get("tvs") or [t["id"] for t in einst()["fernseher"]])])
     alarm["jetzt"] = None
     ds_melden()
     try:
@@ -1033,7 +1033,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
                 dauer = max(10, min(3600, int(daten.get("dauer_s") or p["dauer_s"])))
                 did = durchsage_senden(daten.get("text", ""), tvs, bool(daten.get("vorlesen")) and p["vorlesen"],
                                        bool(daten.get("gong", p["gong"])), dauer, z["name"])
-                PROTOKOLL.eintragen(z["name"], "pult", "durchsage", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs))
+                PROTOKOLL.eintragen(z["name"], "pult", "durchsage", ", ".join(t["name"] for t in pult_fernseher(z) if t["id"] in tvs),
+                                    dinge=["kanal:" + x for x in (tvs or erlaubt)])
             except (ValueError, RuntimeError, subprocess.TimeoutExpired) as f:
                 return self.antwort(200, {"ok": False, "fehler": str(f)[:200], "code": getattr(f, "code", "")})
             return self.antwort(200, {"ok": True, "id": did})
@@ -1070,13 +1071,13 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
             if daten.get("aus"):
                 meldung_beenden(tvs or erlaubt)
-                PROTOKOLL.eintragen(z["name"], "pult", "meldung_aus", tv_namen(tvs or erlaubt))
+                PROTOKOLL.eintragen(z["name"], "pult", "meldung_aus", tv_namen(tvs or erlaubt), dinge=["kanal:" + x for x in (tvs or erlaubt)])
                 return self.antwort(200, {"ok": True})
             try:
                 meldung_setzen(tvs, daten.get("text", ""), daten.get("dauer_s"), daten.get("stil"), z["name"])
             except (M.Meldung, ValueError) as f:
                 return self.antwort(200, {"ok": False, "code": getattr(f, "code", "d_text_tv")})
-            PROTOKOLL.eintragen(z["name"], "pult", "meldung", tv_namen(tvs))
+            PROTOKOLL.eintragen(z["name"], "pult", "meldung", tv_namen(tvs), dinge=["kanal:" + x for x in (tvs or erlaubt)])
             return self.antwort(200, {"ok": True})
         if pfad == "/pult/layout" and self.command == "POST":
             if not z.get("layout"):
@@ -1084,13 +1085,14 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             tvs = [x for x in (daten.get("fernseher") or []) if x in erlaubt]
             if daten.get("aus"):
                 vorrang_beenden(tvs or erlaubt)
-                PROTOKOLL.eintragen(z["name"], "pult", "layout_aus", tv_namen(tvs or erlaubt))
+                PROTOKOLL.eintragen(z["name"], "pult", "layout_aus", tv_namen(tvs or erlaubt), dinge=["kanal:" + x for x in (tvs or erlaubt)])
                 return self.antwort(200, {"ok": True})
             try:
                 l, minuten = vorrang_setzen(tvs, daten.get("layout"), daten.get("minuten"), z["name"])
             except (M.Meldung, ValueError) as f:
                 return self.antwort(200, {"ok": False, "code": getattr(f, "code", "d_text_tv")})
-            PROTOKOLL.eintragen(z["name"], "pult", "layout", f"{l['name']} → {tv_namen(tvs)} ({minuten} min)")
+            PROTOKOLL.eintragen(z["name"], "pult", "layout", f"{l['name']} → {tv_namen(tvs)} ({minuten} min)",
+                                dinge=["kanal:" + x for x in (tvs or erlaubt)] + ["layout:" + l["id"]])
             return self.antwort(200, {"ok": True})
         if pfad == "/pult/schalten" and self.command == "POST":
             if not z.get("schalten"):
@@ -1103,7 +1105,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             except (HAFehler, M.Meldung) as f:
                 return self.antwort(200, {"ok": False, "fehler": str(f)[:200], "code": getattr(f, "code", "")})
             threading.Timer(8, zustand_abfragen).start()
-            PROTOKOLL.eintragen(z["name"], "pult", "schalten", f"{t['name']} – {'an' if daten.get('an') else 'aus'}")
+            PROTOKOLL.eintragen(z["name"], "pult", "schalten", f"{t['name']} – {'an' if daten.get('an') else 'aus'}", dinge=["kanal:" + t["id"]])
             return self.antwort(200, {"ok": True})
         if pfad == "/pult/abmelden" and self.command == "POST":
             for k in [k for k, v in pult_sitzungen.items() if v["zugang"] == z["id"] and k in (self.headers.get("Cookie") or "")]:
@@ -1620,6 +1622,14 @@ def protokoll_verwaltung(handler, p, d, antwort):
         return
     extra = handler.protokoll_detail or {}
     aktion = extra.get("aktion") or aktion
+    dinge = list(extra.get("dinge") or [])          # seit 0.66: betroffene Dinge für den Verlauf
+    if d.get("tv") and fernseher(str(d["tv"])):
+        dinge.append("kanal:" + str(d["tv"]))
+    m = re.search(r"/api/player/([0-9a-f]{8})", p)
+    if m:
+        dinge.append("geraet:" + m.group(1))
+    if isinstance(antwort, dict) and re.fullmatch(r"[0-9a-f]{8}", str(antwort.get("geraet") or "")):
+        dinge.append("geraet:" + antwort["geraet"])    # neu angelegt oder gekoppelt
     if aktion == "einstellungen":
         teile = sorted(k for k in d if k not in EINST_BEREICHE_STILL and k != "layouts")
         detail = ", ".join(teile)
@@ -1643,7 +1653,13 @@ def protokoll_verwaltung(handler, p, d, antwort):
         m = re.search(r"/api/player/([0-9a-f]{8})", p)
         g = next((g for g in PL.daten["geraete"] if m and g["id"] == m.group(1)), None)
         detail = g["name"] if g else ""
-    PROTOKOLL.eintragen(verwaltung_wer(handler), "verwaltung", aktion, detail)
+    PROTOKOLL.eintragen(verwaltung_wer(handler), "verwaltung", aktion, detail, dinge=dinge)
+
+
+def geaenderte_dinge(art, alt, neu):
+    """Kennungen der Dinge, die neu, geändert oder gelöscht sind (Listen von dicts mit "id") -> ["art:id", …]."""
+    a, n = {x["id"]: x for x in alt}, {x["id"]: x for x in neu}
+    return [f"{art}:{k}" for k in sorted(set(a) | set(n)) if a.get(k) != n.get(k)]
 
 
 # ---------- Bildprüfung (seit 0.38): schwarzes oder eingefrorenes Bild erkennen und selbst beheben ----------
@@ -1682,12 +1698,12 @@ def ausgabe_schleife():
                         except Exception:
                             pass
                         print(f"Bildprüfung {t['id']}: {befund} – TV-Seite neu geladen ({ok})", flush=True)
-                        PROTOKOLL.eintragen("SignageCast", "system", "bild_neu_laden", f"{t['name']}: {befund}")
+                        PROTOKOLL.eintragen("SignageCast", "system", "bild_neu_laden", f"{t['name']}: {befund}", dinge=["kanal:" + t["id"]])
                     else:
                         if n == 2:
                             kette_neu_starten(t["id"])
                             print(f"Bildprüfung {t['id']}: {befund} – Kette neu gestartet", flush=True)
-                            PROTOKOLL.eintragen("SignageCast", "system", "bild_kette_neu", f"{t['name']}: {befund}")
+                            PROTOKOLL.eintragen("SignageCast", "system", "bild_kette_neu", f"{t['name']}: {befund}", dinge=["kanal:" + t["id"]])
                         melder.melden("bild-" + t["id"], "ausfall", "bild_" + befund, tv=t["name"])
                 elif befund == "ok":
                     if ausgabe_massnahme.pop(t["id"], None):
@@ -3421,8 +3437,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             return self.antwort(200, {"ok": True, "eintraege": GALERIE.liste(oid)})
         if pfad == "/api/speicher":                    # seit 0.45: Einstellungen → System → Speicher
             return self.antwort(200, dict(speicher_bericht(), ok=True))
-        if pfad == "/api/protokoll":                   # seit 0.38
-            return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste()})
+        if pfad == "/api/protokoll":                   # seit 0.38; seit 0.66 ?ding=kanal:tv für den Verlauf eines Dings
+            ding = (q.get("ding") or [""])[0]
+            if ding and not PR.DING.fullmatch(ding):
+                return self.antwort(400, {"ok": False})
+            return self.antwort(200, {"ok": True, "eintraege": PROTOKOLL.liste(ding=ding or None), "zuletzt": PROTOKOLL.zuletzt()})
         if pfad == "/api/layouts/versionen":
             lid = (q.get("id") or [""])[0]
             return self.antwort(200, {"ok": True, "versionen": VERSIONEN.liste(lid), "geloescht": VERSIONEN.geloeschte()})
@@ -4022,11 +4041,13 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             neu_liste.set()
             return {"einstellungen": einst_aussen(), "verschoben": n}
         if p == "/api/einstellungen":
-            alt_layouts = einst()["layouts"]
+            alt_layouts, alt_tvs = einst()["layouts"], einst()["fernseher"]
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
+            self.protokoll_detail = {"dinge": geaenderte_dinge("kanal", alt_tvs, einst()["fernseher"])
+                                     + geaenderte_dinge("layout", alt_layouts, einst()["layouts"])}
             if "layouts" in d:                           # seit 0.38: alte Fassungen aufheben (Versionen)
                 g, w, n = VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
-                self.protokoll_detail = {"layouts": {"geaendert": g, "geloescht": w, "neu": n}}
+                self.protokoll_detail["layouts"] = {"geaendert": g, "geloescht": w, "neu": n}
             if "kategorien" in d:                        # Wörter geändert: gefundene Streams neu einsortieren
                 streams.einsortieren()
             for tv_id in render_schreiben(einst()):          # neue Kodierung: laufende Kette neu (kurz schwarz)
