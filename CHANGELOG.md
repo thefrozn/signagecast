@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.64.1 (2026-11-20)
+- **YouTube API: the daily unit count survives restarts and updates** – it is kept in `api-verbrauch.json` (per Pacific
+  day). Before, it started again at 0 after every restart although Google kept counting, so *used today* and the cost
+  question before *Search now* were wrong. When Google reports the daily quota used up, the display now shows 0 left.
+- Consumption unchanged (CT 104, paired): stream 100.2 % / 882 MB, 25 fps, 0 lost; direct 77.0 % / 565 MB, 60 fps.
+
 ## v0.64.0 (2026-11-20)
 - **YouTube requests made transparent:** Live videos → Automation has a new table *What was asked at YouTube* – every
   search with its **search term**, topic, hit count and the streams it found new, every check (which streams, how many

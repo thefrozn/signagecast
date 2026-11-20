@@ -2136,6 +2136,11 @@ class YoutubeApi063(unittest.TestCase):
         ST.schreib(ST.STRIKES, {})
         ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
         self.anfragen = []
+        ST._verbrauch_geladen = True                  # Zähler unabhängig von anderen Tests (seit 0.64.1 gespeichert)
+        with ST.api_sperre:
+            ST.api_verbrauch.update(tag=ST._pazifik_tag(), einheiten=0)
+        if os.path.exists(ST.VERBRAUCH):
+            os.remove(ST.VERBRAUCH)
 
     def fake(self, antworten):
         """urlopen-Ersatz: liefert je API-Art (videos/search) eine Antwort, merkt sich alle Adressen."""
@@ -2315,11 +2320,18 @@ class AbrufProtokoll064(unittest.TestCase):
         self.gemeldet = []
         self.s.melden = lambda a, d: self.gemeldet.append((a, d))
         ST.schreib(ST.STRIKES, {}); ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0}); ST.schreib(ST.ABRUF_LOG, {"eintraege": []})
+        ST._verbrauch_geladen = True
         with ST.api_sperre:
             ST.api_verbrauch.update(tag=ST._pazifik_tag(), einheiten=0)
 
     def fake(self, antw):
         return YoutubeApi063.fake(self, antw)
+
+    def tearDown(self):
+        with ST.api_sperre:
+            ST.api_verbrauch.update(tag="", einheiten=0)
+        if os.path.exists(ST.VERBRAUCH):
+            os.remove(ST.VERBRAUCH)
 
     def test_suchbegriffe_im_protokoll(self):
         self.anfragen = []
@@ -2345,6 +2357,18 @@ class AbrufProtokoll064(unittest.TestCase):
             r = self.s.suchen("nacht")
         self.assertIn("gefunden", r)
         self.assertEqual(self.gemeldet[-1][0], "suche_fertig")
+
+    def test_zaehler_uebersteht_neustart(self):
+        """Seit 0.64.1: der Tagesverbrauch steht in api-verbrauch.json und wird nach einem Neustart übernommen."""
+        ST._verbrauch_zaehlen(300)
+        self.assertEqual(ST.lies(ST.VERBRAUCH, {})["einheiten"], 300)
+        ST.api_verbrauch.update(tag="", einheiten=0); ST._verbrauch_geladen = False      # wie nach einem Neustart
+        self.assertEqual(ST.api_rest(), ST.API_KONTINGENT - 300)
+        ST.schreib(ST.VERBRAUCH, {"tag": "2000-01-01", "einheiten": 9000})                  # gestern: gilt nicht
+        ST.api_verbrauch.update(tag="", einheiten=0); ST._verbrauch_geladen = False
+        self.assertEqual(ST.api_rest(), ST.API_KONTINGENT)
+        ST._verbrauch_zaehlen(voll=True)                                                    # Google: Kontingent leer
+        self.assertEqual(ST.api_rest(), 0)
 
     def test_nie_doppelt(self):
         self.s.such_sperre.acquire()
@@ -2378,7 +2402,8 @@ class AbrufProtokoll064(unittest.TestCase):
         ST.schreib(ST.CACHE, {"quellen": {}, "pause_bis": 0})
         with self.fake({"videos": f("quotaExceeded")}):
             self.s._pruefen([("aaaaaaaaaaa", {"art": "video"})])
-        self.assertGreater(ST.lies(ST.CACHE, {})["pause_bis"] - time.time(), 15 * 60)
+        jetzt = time.time()                                    # bis Mitternacht Pazifikzeit (+5 min), egal wie spät es ist
+        self.assertAlmostEqual(ST.lies(ST.CACHE, {})["pause_bis"], (jetzt - 8 * 3600) // 86400 * 86400 + 86400 + 8 * 3600 + 300, delta=5)
         self.assertIn("quotaExceeded", ST.abruf_liste()[0]["fehler"])
         ab = self.s.uebersicht()["abruf"]
         self.assertEqual(ab["suche_kosten"], 200)

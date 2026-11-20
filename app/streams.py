@@ -135,6 +135,32 @@ class ApiFehler(Exception):
 
 api_verbrauch = {"tag": "", "einheiten": 0}       # grobe Zählung (Pazifik-Tag), für die Anzeige
 api_sperre = threading.Lock()
+VERBRAUCH = os.path.join(DATEN, "api-verbrauch.json")    # seit 0.64.1: Zählung übersteht Neustart und Update
+_verbrauch_geladen = False
+
+
+def _verbrauch_laden():
+    """Einmal nach dem Start den gespeicherten Tagesverbrauch übernehmen (unter api_sperre aufrufen)."""
+    global _verbrauch_geladen
+    if not _verbrauch_geladen:
+        _verbrauch_geladen = True
+        d = lies(VERBRAUCH, {})
+        if isinstance(d, dict) and d.get("tag") == _pazifik_tag() and isinstance(d.get("einheiten"), int):
+            api_verbrauch.update(tag=d["tag"], einheiten=d["einheiten"])
+
+
+def _verbrauch_zaehlen(einheiten=0, voll=False):
+    """Einheiten des laufenden Pazifik-Tags erhöhen (voll = Google meldet das Kontingent leer) und speichern."""
+    with api_sperre:
+        _verbrauch_laden()
+        tag = _pazifik_tag()
+        if api_verbrauch["tag"] != tag:
+            api_verbrauch.update(tag=tag, einheiten=0)
+        api_verbrauch["einheiten"] = API_KONTINGENT if voll else api_verbrauch["einheiten"] + einheiten
+        try:
+            schreib(VERBRAUCH, dict(api_verbrauch))
+        except OSError:
+            pass
 API_KONTINGENT = 10000                            # frei je Tag und Google-Projekt
 ABRUF_LOG = os.path.join(DATEN, "abruf-protokoll.json")   # seit 0.64: was bei YouTube gefragt wurde (ohne Schlüssel)
 ABRUF_MAX = 300
@@ -173,7 +199,8 @@ def abruf_liste(n=ABRUF_MAX):
 
 def api_rest():
     with api_sperre:
-        return API_KONTINGENT - (api_verbrauch["einheiten"] if api_verbrauch["tag"] == _pazifik_tag() else 0)
+        _verbrauch_laden()
+        return max(0, API_KONTINGENT - (api_verbrauch["einheiten"] if api_verbrauch["tag"] == _pazifik_tag() else 0))
 
 
 def _pazifik_tag(t=None):
@@ -198,11 +225,7 @@ def api(schluessel, art, **params):
         raise ApiFehler(grund, re.sub(r"key=[\w-]+", "key=…", text)[:200])
     except (urllib.error.URLError, OSError) as e:
         raise ApiFehler("netz", str(getattr(e, "reason", e))[:200])
-    with api_sperre:
-        tag = _pazifik_tag()
-        if api_verbrauch["tag"] != tag:
-            api_verbrauch.update(tag=tag, einheiten=0)
-        api_verbrauch["einheiten"] += API_KOSTEN.get(art, 1)
+    _verbrauch_zaehlen(API_KOSTEN.get(art, 1))
     return json.loads(roh)
 
 
@@ -719,6 +742,7 @@ class Streams:
             bis = jetzt + 15 * 60
         elif f.grund in TAG_SPERRE:
             bis = (jetzt - 8 * 3600) // 86400 * 86400 + 86400 + 8 * 3600 + 300
+            _verbrauch_zaehlen(voll=True)          # Google sagt „leer“ – auch die Anzeige soll das zeigen
         self.status["api"] = {"zeit": time.strftime("%Y-%m-%d %H:%M"), "fehler": f.grund, "pause_bis": bis}
         if bis:
             with cache_sperre:
