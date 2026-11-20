@@ -6,7 +6,7 @@
 const LTEXTE = {
   de: {
     alleLayouts: "Alle Layouts", ausgangspunkt: "Ausgangspunkt", leeresLayout: "leer", vorlagenGruppe: "Vorlagen", kopieVon: "Kopie von",
-    erstellen: "Erstellen", abbrechen: "Abbrechen", bearbeitenL: "Bearbeiten", mehr: "Mehr", nichtVerwendet: "nicht verwendet",
+    erstellen: "Erstellen", abbrechen: "Abbrechen", designer: "Designer", vwDirekt: "Kanal", vwZeitplan: "Zeitplan", vwKarussell: "Karussell", bausteine: "Bausteine", nichtGespeichert: "nicht gespeichert", bearbeitenL: "Bearbeiten", mehr: "Mehr", nichtVerwendet: "nicht verwendet",
     laeuftAuf: (n) => `läuft auf: ${n}`, laeuftHinweis: "Änderungen sind nach dem Speichern sofort auf dem Fernseher zu sehen.",
     nameFehlt: "Bitte einen Namen eingeben.", verwerfen: "Ungespeicherte Änderungen verwerfen?", hgFarben: "Hintergrund & Farben",
     layout: "Layout", neu: "Neues Layout", ausVorlage: "aus Vorlage", duplizieren: "Kopieren", loeschen: "Löschen",
@@ -102,7 +102,7 @@ const LTEXTE = {
   },
   en: {
     alleLayouts: "All layouts", ausgangspunkt: "Start from", leeresLayout: "empty", vorlagenGruppe: "Templates", kopieVon: "Copy of",
-    erstellen: "Create", abbrechen: "Cancel", bearbeitenL: "Edit", mehr: "More", nichtVerwendet: "not used",
+    erstellen: "Create", abbrechen: "Cancel", designer: "Designer", vwDirekt: "Channel", vwZeitplan: "Schedule", vwKarussell: "Carousel", bausteine: "Elements", nichtGespeichert: "not saved", bearbeitenL: "Edit", mehr: "More", nichtVerwendet: "not used",
     laeuftAuf: (n) => `shown on: ${n}`, laeuftHinweis: "Changes are visible on the TV right after saving.",
     nameFehlt: "Please enter a name.", verwerfen: "Discard unsaved changes?", hgFarben: "Background & colours",
     layout: "Layout", neu: "New layout", ausVorlage: "from template", duplizieren: "Copy", loeschen: "Delete",
@@ -454,7 +454,8 @@ function vorschauSenden(layout) {
     } catch (_) { /* Vorschau ist Komfort – Fehler nicht melden */ }
   }, 250);
 }
-let ANSICHT = "liste";    // seit 0.17.2: „liste“ (Kacheln aller Layouts) oder „editor“ (ein Layout)
+let ANSICHT = "liste";
+let LTEIL = "designer", LSUCHE = "";   // seit 0.66: Reiter des offenen Layouts (uebersicht | designer | verlauf) und Suche in der Liste    // seit 0.17.2: „liste“ (Kacheln aller Layouts) oder „editor“ (ein Layout)
 
 async function layoutSeite(inhalt) {
   const L = LTEXTE[E.sprache] || LTEXTE.de;
@@ -474,6 +475,7 @@ async function layoutSeite(inhalt) {
   const offen = () => {};     // seit 0.59 steht der Hintergrund im Reiter „Layout“ statt in einem zugeklappten Bereich
   const zeichnen = () => {
     const l = lay();
+    if (LTEIL !== "designer") return nebenZeichnen();
     inhalt.innerHTML = `<datalist id="ents">${ents.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</datalist>
       <div class="karte">
         <div class="zeile layoutkopf"><button class="knopf" id="lListe">← ${esc(L.alleLayouts)}</button>
@@ -482,6 +484,7 @@ async function layoutSeite(inhalt) {
           <button class="knopf" id="lZurueck" title="Strg+Z" ${VERLAUF.length ? "" : "disabled"}><i class="mdi mdi-undo"></i> ${esc(L.rueckgaengig)}</button>
           <button class="knopf" id="lVor" title="Strg+Y" ${VORWAERTS.length ? "" : "disabled"}><i class="mdi mdi-redo"></i> ${esc(B.wiederholen)}</button>
           <button class="knopf haupt" id="lSpeichern">${esc(L.speichern)}${GEAENDERT ? " *" : ""}</button></div>
+        ${lReiter()}
         ${nutzer(l.id).length ? `<p class="laeuft">● ${esc(L.laeuftAuf(nutzer(l.id).join(", ")))} – ${esc(L.laeuftHinweis)}</p>` : `<p class="leise">${esc(L.nichtVerwendet)}</p>`}
         <div class="zeile"><button class="knopf haupt" id="bPalette" aria-expanded="false" aria-controls="palette">${esc(B.baustein)}</button>
           ${handy() ? "" : `<span class="leer"></span><label for="lAnsicht">${esc(L.ansicht)}</label><select id="lAnsicht">${Object.keys(L.ansichtArt).map((k) => `<option value="${k}" ${(k === "vorschau") === VS.an ? "selected" : ""}>${esc(L.ansichtArt[k])}</option>`).join("")}</select>
@@ -531,6 +534,8 @@ async function layoutSeite(inhalt) {
             <label>${esc(L.akzent)}</label><input type="color" id="thAkzent" value="${esc(l.thema.akzent)}">
             <label>${esc(L.schrift)}</label><select id="thSchrift">${SCHRIFTEN.map((k) => `<option data-schrift="${esc(k)}" ${k === l.thema.schrift ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></div>
         </div></div></div>`;
+    inhalt.insertAdjacentHTML("beforeend", lLoeschenHtml(l));
+    lReiterAnbinden(); lLoeschenAnbinden(l);
     schriftVorschau(inhalt);
     if (handy()) listeZeichnen(); else leinwandZeichnen();
     eigenschaftenZeichnen();
@@ -696,9 +701,75 @@ async function layoutSeite(inhalt) {
   };
   VS.nachLaden = warnZeigen;
 
+  // ---------- Gerüst des offenen Layouts (seit 0.66, UI-Regel Punkt 2 und 8.7): Übersicht → Designer → Verlauf, Löschen unten ----------
+  const D = T.ding;
+  const lReiter = () => `<nav class="kanal-reiter">${["uebersicht", "designer", "verlauf"].map((x) =>
+    `<button type="button" data-lteil="${x}" class="${x === LTEIL ? "an" : ""}">${esc(x === "designer" ? L.designer : D[x])}</button>`).join("")}</nav>`;
+  const lReiterAnbinden = () => inhalt.querySelectorAll("[data-lteil]").forEach((b) => { b.onclick = () => { LTEIL = b.dataset.lteil; zeichnen(); }; });
+  const verwendung = (l) => {
+    const direkt = E.fernseher.filter((t) => t.layout === l.id).map((t) => t.name);
+    const zeit = E.fernseher.filter((t) => (t.zeitplan || []).some((z) => z.layout === l.id)).map((t) => t.name);
+    const kar = E.fernseher.filter((t) => ((t.karussell || {}).aktiv && ((t.karussell || {}).layouts || []).includes(l.id))).map((t) => t.name);
+    return [[L.vwDirekt, direkt], [L.vwZeitplan, zeit], [L.vwKarussell, kar]].filter(([, n]) => n.length);
+  };
+  const lLoeschenHtml = (l) => {
+    const v = verwendung(l);
+    return `<div class="karte"><div class="loeschen"><p class="leise">${esc(v.length ? D.verwendetVon(v.map(([k, n]) => k + ": " + n.join(", ")).join("; "))
+      : LS.length < 2 ? L.letztes : D.nichtVerwendet)}</p>
+      <button class="knopf gefahr" id="lLoeschen" ${v.length || LS.length < 2 ? "disabled" : ""}>${esc(L.loeschen)}</button></div></div>`;
+  };
+  const lLoeschenAnbinden = (l) => {
+    const b = $("#lLoeschen");
+    if (!b) return;
+    b.onclick = (ev) => {
+      if (GEAENDERT && !confirm(L.verwerfen)) return;
+      if (!confirm(L.wirklichLoeschen + " „" + l.name + "“")) return;
+      aktion(ev.target, async () => {
+        LS = JSON.parse(JSON.stringify(E.layouts)).filter((x) => x.id !== l.id); LI = 0;
+        await sofortSpeichern(); VORWAERTS = []; ANSICHT = "liste"; LTEIL = "designer"; listeAlle();
+      });
+    };
+  };
+  // Reiter „Übersicht“ und „Verlauf“ (der Designer zeichnet sich selbst)
+  const nebenZeichnen = () => {
+    const l = lay(), v = verwendung(l);
+    inhalt.innerHTML = `<div class="karte"><div class="zeile layoutkopf"><button class="knopf" id="lListe">← ${esc(L.alleLayouts)}</button>
+        <b class="layoutname">${esc(l.name)}</b>${GEAENDERT ? `<span class="warn">${esc(L.nichtGespeichert)}</span>` : ""}</div>
+      ${lReiter()}<div id="lTeil"></div></div>${lLoeschenHtml(l)}`;
+    const z = $("#lTeil");
+    if (LTEIL === "uebersicht") {
+      z.innerHTML = `<div class="raster"><div class="mini lk-gross"></div><div><div class="tabelle-rahmen"><table class="tabelle">
+          <tr><td class="leise">${esc(D.status)}</td><td class="${v.length ? "gut" : ""}">${esc(v.length ? L.laeuftAuf(v.map(([, n]) => n.join(", ")).join(", ")) : L.nichtVerwendet)}</td></tr>
+          ${v.map(([k, n]) => `<tr><td class="leise">${esc(k)}</td><td>${esc(n.join(", "))}</td></tr>`).join("")}
+          <tr><td class="leise">${esc(L.bausteine)}</td><td>${l.elemente.length}</td></tr>
+          <tr><td class="leise">${esc(D.zuletzt)}</td><td>${esc(zuletztText(LPZ, "layout:" + l.id))}</td></tr></table></div>
+        <h3>${esc(D.schnell)}</h3><div class="zeile"><button class="knopf haupt" data-lteil="designer">${esc(L.bearbeitenL)}</button>
+          <button class="knopf" id="lKopie">${esc(L.duplizieren)}</button><button class="knopf" id="lExport">${esc(L.exportieren)}</button>
+          <button class="knopf" id="lVers">${esc(L.versionen)}</button></div></div></div>`;
+      miniVorschau(z.querySelector(".mini"), l);
+      $("#lKopie").onclick = (ev) => aktion(ev.target, async () => {
+        if (GEAENDERT && !confirm(L.verwerfen)) return;
+        LS = JSON.parse(JSON.stringify(E.layouts)); const c = JSON.parse(JSON.stringify(LS.find((x) => x.id === l.id) || l));
+        c.id = neueId(); c.name += " (2)"; LS.push(c); await sofortSpeichern(); LI = LS.length - 1; zeichnen(); }, null);
+      $("#lExport").onclick = () => exportieren(l);
+      $("#lVers").onclick = () => aktion(null, () => versionenZeigen(l.id, l.name), null);
+    } else {
+      z.innerHTML = `<div data-verlauf></div><div class="zeile"><button class="knopf" id="lVers">${esc(L.versionen)}</button></div>`;
+      verlaufZeichnen(z.querySelector("[data-verlauf]"), "layout:" + l.id).catch(() => {});
+      $("#lVers").onclick = () => aktion(null, () => versionenZeigen(l.id, l.name), null);
+    }
+    lReiterAnbinden(); lLoeschenAnbinden(l);
+    $("#lListe").onclick = () => {
+      if (GEAENDERT && !confirm(L.verwerfen)) return;
+      LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; VORWAERTS = []; GEWAEHLT = null; AUSWAHL.clear(); ANSICHT = "liste"; LTEIL = "designer"; listeAlle();
+    };
+  };
+  let LPZ = {};
+  holen("/api/protokoll").then((d) => { LPZ = d.zuletzt || {}; if (ANSICHT === "liste" && aktiv === "layout" && document.body.contains(inhalt)) listeAlle(); }).catch(() => {});
+
   // ---------- Übersicht aller Layouts (seit 0.17.2) – Aktionen hier speichern sofort ----------
   const sofortSpeichern = async () => { await speichernE({ layouts: LS }); LS = JSON.parse(JSON.stringify(E.layouts)); GEAENDERT = false; VERLAUF = []; };
-  const oeffnen = (i) => { LI = i; GEWAEHLT = null; ANSICHT = "editor"; zeichnen(); window.scrollTo(0, 0); };
+  const oeffnen = (i) => { LI = i; GEWAEHLT = null; ANSICHT = "editor"; LTEIL = "designer"; zeichnen(); window.scrollTo(0, 0); };
   // Mini-Vorschau: Stile per JavaScript setzen – Cockpits CSP verbietet style-Attribute im HTML-Text
   const miniVorschau = (ziel, l) => {
     ziel.style.background = l.hintergrund.art === "farbe" ? l.hintergrund.farbe : "linear-gradient(160deg,#55606b,#2b3138)";
@@ -804,16 +875,20 @@ async function layoutSeite(inhalt) {
     $("#lxEinfuegen").onclick = einfuegenZeigen;
   };
   const listeAlle = () => {
-    inhalt.innerHTML = `<div id="lExtra"></div><div class="layoutkacheln">${LS.map((l, i) => {
+    const treffer = (l) => !LSUCHE || l.name.toLowerCase().includes(LSUCHE.toLowerCase());
+    inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.bereiche.layout)}</h2><button class="knopf" id="lNeuOben">+ ${esc(L.neu)}</button></div>
+      <div class="zeile"><input type="search" id="lSuche" placeholder="${esc(T.ding.suchen)}" aria-label="${esc(T.ding.suchen)}" value="${esc(LSUCHE)}"></div>
+      <div id="lExtra"></div><div class="layoutkacheln">${LS.map((l, i) => {
+      if (!treffer(l)) return "";
       const n = nutzer(l.id);
       return `<div class="karte layoutkachel" data-i="${i}"><div class="mini"></div>
         <b class="lk-name">${esc(l.name)}</b>
-        <span class="${n.length ? "laeuft" : "leise"}">${n.length ? "● " + esc(L.laeuftAuf(n.join(", "))) : esc(L.nichtVerwendet)}</span>
+        <span class="${n.length ? "laeuft" : "leise"}">${n.length ? esc(L.laeuftAuf(n.join(", "))) : esc(L.nichtVerwendet)}</span>
+        <span class="leise">${esc(T.ding.zuletzt)}: ${esc(zuletztText(LPZ, "layout:" + l.id))}</span>
         <div class="zeile"><button class="knopf haupt" data-a="b">${esc(L.bearbeitenL)}</button>
           <details class="mehr"><summary class="knopf">⋯</summary><div class="mehr-menue">
             <button class="knopf" data-a="k">${esc(L.duplizieren)}</button><button class="knopf" data-a="x">${esc(L.exportieren)}</button>
-            <button class="knopf" data-a="v">${esc(L.versionen)}</button>
-            <button class="knopf gefahr" data-a="l">${esc(L.loeschen)}</button></div></details></div></div>`;
+            <button class="knopf" data-a="v">${esc(L.versionen)}</button></div></details></div></div>`;
     }).join("")}
       <div class="karte layoutkachel neu" id="lNeuKachel"><button class="neu-knopf" id="lNeu"><i class="mdi mdi-plus-circle-outline"></i>${esc(L.neu)}</button>
         <label class="leise importlink">${esc(L.importieren)} …<input type="file" id="lImport" accept=".json,.txt" hidden></label>
@@ -831,14 +906,10 @@ async function layoutSeite(inhalt) {
         if (a === "v") return aktion(null, () => versionenZeigen(l.id, l.name), null);
         if (a === "k") return aktion(ev.target, async () => {
           const c = JSON.parse(JSON.stringify(l)); c.id = neueId(); c.name += " (2)"; LS.push(c); await sofortSpeichern(); listeAlle(); });
-        if (a === "l") {
-          if (LS.length < 2) return melden(L.letztes, true);
-          if (nutzer(l.id).length) return melden(L.nichtLoeschbar, true);
-          if (!confirm(L.wirklichLoeschen + " „" + l.name + "“")) return;
-          aktion(ev.target, async () => { LS.splice(i, 1); LI = 0; await sofortSpeichern(); listeAlle(); });
-        }
       }; });
     });
+    $("#lNeuOben").onclick = () => { $("#lNeu").click(); $("#lNeuKachel").scrollIntoView({ block: "center" }); };
+    $("#lSuche").oninput = (e) => { LSUCHE = e.target.value; listeAlle(); const f = $("#lSuche"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); };
     $("#lImport").onchange = (e) => { if (e.target.files[0]) importieren(e.target.files[0]); };
     $("#lEinfuegen").onclick = (e) => { e.preventDefault(); einfuegenZeigen(); };
     $("#lKi").onclick = (e) => { e.preventDefault(); aktion(null, kiZeigen, null); };

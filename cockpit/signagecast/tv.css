@@ -364,3 +364,5 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 /* Gerüst je Ding (seit 0.66, UI-Regel Punkt 2): Löschen immer unten, mit Hinweis auf die Verwendung */
 .loeschen { border-top: 1px dashed var(--linie); margin-top: 16px; padding-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; }
 .loeschen p { margin: 0; }
+.mini.lk-gross { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; }   /* Layout-Übersicht (seit 0.66) */
+.karte > .loeschen:first-child { border-top: 0; margin-top: 0; padding-top: 0; }

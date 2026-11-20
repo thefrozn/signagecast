@@ -14,7 +14,7 @@ MAX = 500
 VERSIONEN_MAX = 10
 GELOESCHT_MAX = 10
 WER = re.compile(r"[\w.@ -]{1,40}")
-DING = re.compile(r"(kanal|geraet|layout|quelle):[\w.-]{1,40}")
+DING = re.compile(r"(kanal|geraet|layout|quelle|galerie|einspieler):[\w.-]{1,40}")
 
 
 def _laden(pfad, standard):
@@ -46,7 +46,7 @@ class Protokoll:
 
     def eintragen(self, wer, quelle, aktion, detail="", laenge=200, dinge=None):
         """quelle: verwaltung | pult | webhook | system. aktion: Kennung (die Verwaltung übersetzt sie). detail: kurzer Text.
-        dinge (seit 0.66): betroffene Dinge als "art:kennung" (kanal, geraet, layout, quelle) – für den Verlauf je Ding."""
+        dinge (seit 0.66): betroffene Dinge als "art:kennung" (kanal, geraet, layout, quelle, galerie, einspieler) – für den Verlauf je Ding."""
         x = {"zeit": time.strftime("%Y-%m-%d %H:%M:%S"), "wer": wer_pruefen(wer, "?"), "quelle": quelle,
              "aktion": str(aktion)[:60], "detail": " ".join(str(detail or "").split())[:laenge]}
         d = sorted({str(k) for k in (dinge or []) if DING.fullmatch(str(k))})[:20]

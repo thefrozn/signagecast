@@ -4581,3 +4581,28 @@ class Verlauf066(unittest.TestCase):
         for sprache in ("  de: {", "  en: {"):
             t = js[js.index(sprache):]
             self.assertIn("verlaufLeer:", t[:t.index("prot: {") + 600])
+
+
+class Geruest067(unittest.TestCase):
+    """Seit 0.67 (UI-Regel Stufe 2b): Layouts, Galerien, Einspieler und Datenquellen mit Verlauf und Löschen unten."""
+
+    def lesen(self, n):
+        return open(os.path.join(os.path.dirname(__file__), "..", "cockpit", "signagecast", n), encoding="utf-8").read()
+
+    def test_verlauf_und_loeschen(self):
+        tv, lj, qj = self.lesen("tv.js"), self.lesen("layout.js"), self.lesen("quellen.js")
+        self.assertIn('verlaufZeichnen(z.querySelector("[data-verlauf]"), "layout:" + l.id)', lj)
+        self.assertIn('["uebersicht", "designer", "verlauf"]', lj)
+        self.assertNotIn('data-a="l"', lj)                                  # Löschen nicht mehr im ⋯-Menü der Kachel
+        self.assertIn('"galerie:" + o.id', tv)
+        self.assertIn('"einspieler:" + x.id', tv)
+        self.assertIn('"quelle:" + q.id', qj)
+        self.assertNotIn('id="qLoeschen"', qj)                              # Löschen unten statt im Formular
+        for f in ("galVerwendung", "EP_OFFEN"):
+            self.assertIn(f, tv)
+
+    def test_protokoll_kennt_neue_dinge(self):
+        import protokoll as PR
+        for k in ("galerie:ab12cd34", "einspieler:tagesx", "quelle:wetter"):
+            self.assertTrue(PR.DING.fullmatch(k), k)
+        self.assertFalse(PR.DING.fullmatch("medien:x"))

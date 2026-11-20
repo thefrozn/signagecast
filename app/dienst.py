@@ -1630,6 +1630,13 @@ def protokoll_verwaltung(handler, p, d, antwort):
         dinge.append("geraet:" + m.group(1))
     if isinstance(antwort, dict) and re.fullmatch(r"[0-9a-f]{8}", str(antwort.get("geraet") or "")):
         dinge.append("geraet:" + antwort["geraet"])    # neu angelegt oder gekoppelt
+    if aktion.startswith("galerie"):
+        gid = d.get("ordner") or d.get("id") or (antwort.get("id") if isinstance(antwort, dict) else "")
+        if gid:
+            dinge.append("galerie:" + str(gid))
+    m = re.fullmatch(r"/api/einspieler/([a-z0-9]{4,12})/jetzt", p)
+    if m:
+        dinge.append("einspieler:" + m.group(1))
     if aktion == "einstellungen":
         teile = sorted(k for k in d if k not in EINST_BEREICHE_STILL and k != "layouts")
         detail = ", ".join(teile)
@@ -4041,10 +4048,11 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             neu_liste.set()
             return {"einstellungen": einst_aussen(), "verschoben": n}
         if p == "/api/einstellungen":
-            alt_layouts, alt_tvs = einst()["layouts"], einst()["fernseher"]
+            alt = {k: einst()[k] for k in ("layouts", "fernseher", "einspieler", "quellen")}
+            alt_layouts = alt["layouts"]
             zustand["einstellungen"] = E.speichern(E.zusammenfuehren(einst(), d))
-            self.protokoll_detail = {"dinge": geaenderte_dinge("kanal", alt_tvs, einst()["fernseher"])
-                                     + geaenderte_dinge("layout", alt_layouts, einst()["layouts"])}
+            self.protokoll_detail = {"dinge": [x for k, art in (("fernseher", "kanal"), ("layouts", "layout"), ("einspieler", "einspieler"), ("quellen", "quelle"))
+                                               for x in geaenderte_dinge(art, alt[k], einst()[k])]}
             if "layouts" in d:                           # seit 0.38: alte Fassungen aufheben (Versionen)
                 g, w, n = VERSIONEN.merken(alt_layouts, einst()["layouts"], verwaltung_wer(self))
                 self.protokoll_detail["layouts"] = {"geaendert": g, "geloescht": w, "neu": n}

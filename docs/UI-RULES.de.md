@@ -100,3 +100,7 @@ Fälle, in denen die Regel nicht eindeutig war, und wie sie entschieden sind (se
 9. **„Videostream ohne Zuschauer“** gehört zum Betrieb: Einstellungen › System › Zustand.
 10. Ein **Detailfeld rechts** (Datenquellen, Live-Videos) ist erlaubt, wenn es dieselbe Reihenfolge hat; volle
     Detailseiten mit Reitern dort, wo mehrere Reiter nötig sind.
+11. **Dinge mit Bild** (Layouts) behalten Kacheln mit Vorschau statt einer Tabelle; jede Kachel zeigt dieselben Angaben
+    wie eine Tabellenzeile (Name, Status, Verwendung, letzte Änderung), darüber Suche und „+ Neu“ oben rechts.
+12. **Kleine Dinge ohne eigene Detailseite:** einzelne Bilder und Videos unter Medien sowie einzelne Radiosender bleiben
+    Listeneinträge mit Name, Verwendung und Löschen samt Hinweis, wo sie verwendet werden.

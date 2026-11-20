@@ -329,7 +329,7 @@ const TEXTE = {
     nachZuletzt: (n) => `Zuletzt ${n.zeit}: ${n.fehler ? "nicht ausgeführt – " + n.fehler : (n.schritte.length ? n.schritte.map((x) => x === "quelle" ? "Quelle gewählt" : "Seite geöffnet").join(", ") : "nichts nötig")}`,
     wirklichTvWeg: "Diesen Kanal entfernen? Seine Adresse funktioniert dann nicht mehr.", weitererTv: "Weiterer Kanal",
     tvHinweis: "Ton, Sender, Lautstärke und Videos wirken sofort; Ausgabe und Bitrate beim nächsten Start des Streams.",
-    meineSender: "Meine Sender", keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
+    meineSender: "Meine Sender", senderWegFrage: (n) => `Sender „${n}“ entfernen?`, keineSender: "Noch keine Sender – unten Vorschläge laden oder eine eigene Adresse eintragen.",
     radioRecht: "Musik in der Öffentlichkeit ist lizenzpflichtig: Wer Radio, Livestreams oder eigene Videos mit Ton in Praxis, Laden, Gaststätte, Hotel, Verein oder an einem anderen öffentlichen Ort abspielt, braucht dafür in fast allen Ländern eine Lizenz der zuständigen Verwertungsgesellschaft – auch für Internetradio. Bitte vorher klären; zu Hause gilt das nicht.",
     senderNutzung: "Welcher Kanal welchen Sender spielt, stellst du unter „Kanäle“ ein (Ton = Radio).",
     eigenerSender: "Eigenen Sender hinzufügen", senderAdresse: "Stream-Adresse (MP3/AAC, auch .m3u/.pls)", senderName: "Name",
@@ -348,7 +348,7 @@ const TEXTE = {
     epNeu: "Einspieler hinzufügen", epQuelle: "Quelle", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (immer die aktuelle Ausgabe)", video: "Video-Adresse (MP4)", youtube: "YouTube-Video oder Kanal (neuestes Video)" },
     epUrl: "Adresse / Link", epMinuten: "Minuten der Stunde", epAndere: "andere (z. B. 0,20,40)", epZeit: "nur zwischen", epTon: "mit Ton",
     epFernseher: "Kanäle (keiner gewählt = alle)", epAktiv: "aktiv", epJetzt: "Jetzt zeigen", epJetztOk: "Läuft in bis zu 15 s am Fernseher",
-    epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.",
+    epStand: "Stand", epFehler: "Fehler", epKeine: "Noch keine Einspieler.", epAn: (m, v, b) => `an · ${m} · ${v}–${b} Uhr`, epWegFrage: (n) => `Einspieler „${n}“ entfernen?`,
     wetterQuelle: "Wetterquelle", wetterQuelleArt: { met: "Eigenes Wetter (MET Norway, für den Standort)", ha: "Home Assistant (Wetter-Entität)" },
     metText: "Wetter, Wetterbild und Vorhersage kommen direkt von MET Norway (kostenlos, weltweit) für den Standort (unten auf dieser Seite) – Home Assistant ist dafür nicht nötig. Am Fernseher steht klein „Wetterdaten: MET Norway“ (Lizenzbedingung).",
     bnTitel: "Benachrichtigungen", bnText: "SignageCast meldet sich bei Ausfall eines Kanals, fehlgeschlagenem Update oder Sicherung und wenn Home Assistant länger als 5 Minuten nicht erreichbar ist – jeweils einmal, mit Entwarnung.",
@@ -474,9 +474,9 @@ const TEXTE = {
     // Galerie und Speicher (seit 0.45)
     galText: "Ordner mit Bildern (JPG, PNG, WebP, GIF) und PDFs für den Layout-Baustein „Galerie“ oder als Hintergrund-Diashow. Fotos werden beim Hochladen auf höchstens 4K verkleinert – nur diese Fassung wird gespeichert. Die Bilder liegen nur hier und kommen nicht in die Sicherung (die Ordnernamen schon).",
     galBelegt: (b, g) => `Galerie: ${b} von ${g} GB belegt`, galGrenzePlatz: (g) => `Die Grenze ist gerade ${g} GB: mehr ist über der Reserve nicht frei.`, galPlatzFuer: (n) => `Platz für etwa ${n} weitere Fotos`,
-    galGrenze: "Höchstens (GB, alle Ordner)", galOrdnerNeu: "Neuer Ordner", galOrdnerName: "Name des Ordners", galKeine: "Noch keine Ordner – „Neuer Ordner“ anlegen.",
+    galGrenze: "Höchstens (GB, alle Ordner)", galOrdnerNeu: "Neue Galerie", galBilder: "Bilder & Seiten", galOrdnerName: "Name der Galerie", galKeine: "Noch keine Galerie – mit „+ Neue Galerie“ anlegen.",
     galLeer: "Der Ordner ist leer. Bilder oder PDFs hierher ziehen oder auswählen.", galDateien: "Dateien wählen", galOrdnerWahl: "Ganzen Ordner wählen",
-    galZiehen: "Bilder und PDFs hierher ziehen", galUmbenennen: "Umbenennen", galOrdnerWeg: "Ordner löschen", galOrdnerWegFrage: (n) => `Ordner „${n}“ mit allen Bildern löschen?`,
+    galZiehen: "Bilder und PDFs hierher ziehen", galUmbenennen: "Umbenennen", galOrdnerWeg: "Galerie löschen", galOrdnerWegFrage: (n) => `Galerie „${n}“ mit allen Bildern löschen?`,
     galAlle: "Alle auswählen", galKeine2: "Auswahl aufheben", galAuswahlWeg: (n) => `${n} löschen`, galWegFrage: (n) => n === 1 ? "1 Datei löschen?" : `${n} Dateien löschen?`,
     galLaedt: (i, n, name, p) => `Datei ${i} von ${n}: ${name} – ${p} %`, galFertig: (ok, f) => `${ok} hochgeladen` + (f ? `, ${f} nicht übernommen` : ""),
     galAbbruch: "Abgebrochen:", galSeiten: (n) => `${n} Seiten`, galZiehenText: "Reihenfolge: Bilder mit der Maus verschieben (gilt für „wie im Ordner“).",
@@ -487,7 +487,7 @@ const TEXTE = {
                   quelldateien: "Dateien der Datenquellen", player: "Player-Images", protokolle: "Protokolle" },
     spSonst: "Sonstiges (System, Programme, Streams)", spOrt: "Datenverzeichnis", spAufraeumen: "aufräumen",
     medSicherung: "In die Sicherung kommen Bilder immer, Videos nur bis zusammen 200 MB – große Videos bitte zusätzlich selbst aufbewahren.",
-    medWeg: "Dieses Medium löschen?",
+    medWeg: "Dieses Medium löschen?", medLaeuft: (n) => `Eigene Medien laufen hier: ${n}.`, medUnbenutzt: "Noch kein Kanal und kein Layout zeigt eigene Medien – Videoquelle im Kanal (Reiter Live-Video) oder im Baustein „Videofenster“ wählen.",
     upSc: "SignageCast", upInstalliert: "installiert", upNeueste: "neueste", upAktuell: "aktuell", upJetzt: "Jetzt aktualisieren",
     upZurueck: (v) => `Zurück zu ${v}`, upZurueckFrage: "Zur vorigen Version zurückkehren? Einstellungen von vor dem letzten Update werden wiederhergestellt.",
     upScText: "Vor dem Update werden Einstellungen und Daten gesichert. Installiert wird nur ein Release mit gültiger Signatur. Läuft SignageCast danach nicht innerhalb einer Minute, geht es automatisch zurück. Der Fernseher kann dabei kurz neu verbinden.",
@@ -838,7 +838,7 @@ const TEXTE = {
     nachZuletzt: (n) => `Last ${n.zeit}: ${n.fehler ? "not done – " + n.fehler : (n.schritte.length ? n.schritte.map((x) => x === "quelle" ? "source selected" : "page opened").join(", ") : "nothing needed")}`,
     wirklichTvWeg: "Remove this channel? Its address will stop working.", weitererTv: "Another channel",
     tvHinweis: "Sound, station, volume and videos apply immediately; output and bitrate at the next stream start.",
-    meineSender: "My stations", keineSender: "No stations yet – load suggestions below or enter your own address.",
+    meineSender: "My stations", senderWegFrage: (n) => `Remove station “${n}”?`, keineSender: "No stations yet – load suggestions below or enter your own address.",
     radioRecht: "Playing music in public needs a licence: if you play radio, live streams or own videos with sound in a practice, shop, restaurant, hotel, club or other public place, you need a licence from the music rights organisation in your country in almost every country – internet radio included. Please check this first; at home it does not apply.",
     senderNutzung: "Which channel plays which station is set under “Channels” (sound = radio).",
     eigenerSender: "Add your own station", senderAdresse: "Stream address (MP3/AAC, also .m3u/.pls)", senderName: "Name",
@@ -857,7 +857,7 @@ const TEXTE = {
     epNeu: "Add clip", epQuelle: "Source", epQuelleArt: { tagesschau100: "tagesschau in 100 Sekunden (always the latest)", video: "Video address (MP4)", youtube: "YouTube video or channel (latest video)" },
     epUrl: "Address / link", epMinuten: "Minutes of the hour", epAndere: "other (e.g. 0,20,40)", epZeit: "only between", epTon: "with sound",
     epFernseher: "Channels (none selected = all)", epAktiv: "active", epJetzt: "Show now", epJetztOk: "Plays on the TV within 15 s",
-    epStand: "Version", epFehler: "Error", epKeine: "No clips yet.",
+    epStand: "Version", epFehler: "Error", epKeine: "No clips yet.", epAn: (m, v, b) => `on · ${m} · ${v}–${b}`, epWegFrage: (n) => `Remove clip “${n}”?`,
     wetterQuelle: "Weather source", wetterQuelleArt: { met: "Own weather (MET Norway, for the location)", ha: "Home Assistant (weather entity)" },
     metText: "Weather, weather picture and forecast come directly from MET Norway (free, worldwide) for the location (further down on this page) – Home Assistant is not needed for this. The TV shows a small “Weather data: MET Norway” (licence requirement).",
     bnTitel: "Notifications", bnText: "SignageCast reports when a channel fails, an update or backup fails, and when Home Assistant is unreachable for more than 5 minutes – once each, with an all-clear.",
@@ -1115,9 +1115,9 @@ const TEXTE = {
     // Gallery and storage (since 0.45)
     galText: "Folders with pictures (JPG, PNG, WebP, GIF) and PDFs for the layout element “Gallery” or as a background slideshow. Photos are scaled down to at most 4K when uploaded – only this version is stored. The pictures are kept only here and are not part of the backup (the folder names are).",
     galBelegt: (b, g) => `Gallery: ${b} of ${g} GB used`, galGrenzePlatz: (g) => `The limit is ${g} GB right now: no more is free above the reserve.`, galPlatzFuer: (n) => `room for about ${n} more photos`,
-    galGrenze: "At most (GB, all folders)", galOrdnerNeu: "New folder", galOrdnerName: "Folder name", galKeine: "No folders yet – create one with “New folder”.",
+    galGrenze: "At most (GB, all folders)", galOrdnerNeu: "New gallery", galBilder: "Pictures & pages", galOrdnerName: "Gallery name", galKeine: "No gallery yet – create one with “+ New gallery”.",
     galLeer: "The folder is empty. Drag pictures or PDFs here or choose them.", galDateien: "Choose files", galOrdnerWahl: "Choose a whole folder",
-    galZiehen: "Drag pictures and PDFs here", galUmbenennen: "Rename", galOrdnerWeg: "Delete folder", galOrdnerWegFrage: (n) => `Delete folder “${n}” with all pictures?`,
+    galZiehen: "Drag pictures and PDFs here", galUmbenennen: "Rename", galOrdnerWeg: "Delete gallery", galOrdnerWegFrage: (n) => `Delete gallery “${n}” with all pictures?`,
     galAlle: "Select all", galKeine2: "Clear selection", galAuswahlWeg: (n) => `Delete ${n}`, galWegFrage: (n) => n === 1 ? "Delete 1 file?" : `Delete ${n} files?`,
     galLaedt: (i, n, name, p) => `File ${i} of ${n}: ${name} – ${p} %`, galFertig: (ok, f) => `${ok} uploaded` + (f ? `, ${f} not taken` : ""),
     galAbbruch: "Stopped:", galSeiten: (n) => `${n} pages`, galZiehenText: "Order: drag pictures with the mouse (used by “as in the folder”).",
@@ -1128,7 +1128,7 @@ const TEXTE = {
                   quelldateien: "Data source files", player: "Player images", protokolle: "Logs" },
     spSonst: "Other (system, programs, streams)", spOrt: "Data directory", spAufraeumen: "clean up",
     medSicherung: "Backups always contain pictures, videos only up to 200 MB in total – please keep large videos yourself as well.",
-    medWeg: "Delete this medium?",
+    medWeg: "Delete this medium?", medLaeuft: (n) => `Own media play here: ${n}.`, medUnbenutzt: "No channel and no layout shows own media yet – choose it as video source in the channel (tab Live video) or in the “Video window” element.",
     upSc: "SignageCast", upInstalliert: "installed", upNeueste: "latest", upAktuell: "up to date", upJetzt: "Update now",
     upZurueck: (v) => `Back to ${v}`, upZurueckFrage: "Return to the previous version? Settings from before the last update are restored.",
     upScText: "Settings and data are backed up before the update. Only a release with a valid signature is installed. If SignageCast does not run within a minute afterwards, it returns to the previous version automatically. The TV may reconnect briefly.",
@@ -1352,6 +1352,8 @@ function zeigeSeite(k) {
   if (ungespeichert() && !confirm(T.ungespeichertFrage)) { history.replaceState(null, "", "#" + aktiv); reiterZeichnen(); return; }
   if (k === "fernseher") kanalOffen = null;                            // seit 0.50: „Kanäle“ zeigt immer die Liste
   if (k === "player") geraetOffen = null;                              // seit 0.66 ebenso „Geräte“
+  if (k === "galerie") GAL_ORDNER = null;                              // … und „Galerien“
+  if (k === "einspieler") EP_OFFEN = null;
   aktiv = k;
   merk[bereichVon(k)[0]] = k;
   if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k);
@@ -2914,9 +2916,10 @@ async function radioSeite(inhalt) {
       const z = el(`<div class="zeile eintrag"><b>${esc(x.name)}</b><span class="leise umbruch">${esc(x.url)}</span>
         ${nutzer.length ? `<span class="marke gut">♪ ${esc(nutzer.join(", "))}</span>` : ""}
         <button class="knopf" name="bearbeiten">${esc(T.bearbeiten)}</button><button class="knopf gefahr" name="weg">${esc(T.entfernen)}</button></div>`);
-      z.querySelector("[name=weg]").onclick = (e) => aktion(e.target, async () => {
-        const d = await senden(`/api/radio/sender/${encodeURIComponent(x.id)}/entfernen`); E = d.einstellungen; meineZeichnen();
-      });
+      z.querySelector("[name=weg]").onclick = (e) => {                // seit 0.66: Rückfrage mit Verwendung (UI-Regel 8.11)
+        if (!confirm(T.senderWegFrage(x.name) + (nutzer.length ? "\n\n" + T.ding.verwendetVon(nutzer.join(", ")) : ""))) return;
+        aktion(e.target, async () => { const d = await senden(`/api/radio/sender/${encodeURIComponent(x.id)}/entfernen`); E = d.einstellungen; meineZeichnen(); });
+      };
       z.querySelector("[name=bearbeiten]").onclick = () => {
         if (z.nextElementSibling && z.nextElementSibling.classList.contains("bearbeiten")) return z.nextElementSibling.remove();
         const f = el(`<div class="bearbeiten eintrag">
@@ -2983,12 +2986,49 @@ async function radioSeite(inhalt) {
 }
 
 // ---------- Einspieler ----------
+// seit 0.66 (UI-Regel Punkt 2): Liste aller Einspieler, ein Einspieler mit Übersicht → Einstellungen → Verlauf, Löschen unten
+let EP_OFFEN = null, EP_TEIL = "uebersicht";
 async function einspielerSeite(inhalt) {
+  let PZ = {};
+  holen("/api/protokoll").then((d) => { PZ = d.zuletzt || {}; if (!EP_OFFEN && aktiv === "einspieler") zeichnen().catch(() => {}); }).catch(() => {});
+  const D = T.ding;
+  const kanaele = (x) => x.fernseher.length ? x.fernseher.map((id) => (E.fernseher.find((t) => t.id === id) || {}).name || id).join(", ") : T.al.alle;
+  const stand = (st) => st.fehler ? [T.epFehler + ": " + meldungText(st.fehler_m, st.fehler), "schlecht"] : st.stand ? [T.epStand + ": " + st.stand.replace("T", " ").slice(0, 16), ""] : ["", ""];
   const zeichnen = async () => {
     const d = await holen("/api/einspieler");
     const liste = d.einspieler;
-    inhalt.innerHTML = `<p class="leise">${esc(T.epText)}</p><div id="epListe">${liste.length ? "" : `<p class="leise">${esc(T.epKeine)}</p>`}</div>
-      <div class="zeile"><button class="knopf" id="epPlus">${esc(T.epNeu)}</button><button class="knopf haupt" id="epOk">${esc(T.speichern)}</button></div>`;
+    if (!EP_OFFEN) {
+      inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.reiter.einspieler)}</h2><button class="knopf" id="epPlus">+ ${esc(T.epNeu)}</button></div>
+        <p class="leise">${esc(T.epText)}</p>
+        ${liste.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(D.name)}</th><th>${esc(D.status)}</th><th>${esc(D.verwendung)}</th><th>${esc(D.zuletzt)}</th><th></th></tr></thead><tbody>
+          ${liste.map((x) => { const [t, k] = stand(d.stand[x.id] || {}); return `<tr><td><b>${esc(x.name)}</b><br><span class="leise">${esc(T.epQuelleArt[x.quelle] || x.quelle)}</span></td>
+            <td class="${x.aktiv ? "gut" : ""}">${esc(x.aktiv ? T.epAn(x.minuten.map((m) => ":" + String(m).padStart(2, "0")).join(" "), x.von, x.bis) : T.ka.aus)}${t ? `<br><span class="${k || "leise"}">${esc(t)}</span>` : ""}</td>
+            <td>${esc(kanaele(x))}</td><td class="leise">${esc(zuletztText(PZ, "einspieler:" + x.id))}</td>
+            <td><button class="knopf" data-ep="${esc(x.id)}">${esc(D.oeffnen)}</button></td></tr>`; }).join("")}</tbody></table></div>`
+          : `<p class="leise">${esc(T.epKeine)}</p>`}`;
+      inhalt.querySelectorAll("[data-ep]").forEach((b) => { b.onclick = () => { EP_OFFEN = b.dataset.ep; EP_TEIL = "uebersicht"; zeichnen(); }; });
+      $("#epPlus").onclick = () => { EP_OFFEN = "+"; EP_TEIL = "einst"; zeichnen(); };
+      return;
+    }
+    const neuX = { id: Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, "a").padEnd(8, "x"), name: "tagesschau in 100 Sekunden",
+      quelle: "tagesschau100", url: "", minuten: [0, 30], von: "06:00", bis: "23:00", ton: true, fernseher: [], aktiv: true, puffer: "vorab", vorab_mb: 0, vorlauf_s: 10 };
+    const x = EP_OFFEN === "+" ? neuX : liste.find((y) => y.id === EP_OFFEN);
+    if (!x) { EP_OFFEN = null; return zeichnen(); }
+    const neu = EP_OFFEN === "+";
+    const [t, k] = stand(d.stand[x.id] || {});
+    inhalt.innerHTML = `<div class="zeile"><button class="knopf" id="epZurueck">← ${esc(T.reiter.einspieler)}</button></div>
+      <div class="karte"><h2>${esc(x.name)}</h2>
+        <nav class="kanal-reiter">${(neu ? ["einst"] : ["uebersicht", "einst", "verlauf"]).map((y) => `<button type="button" data-epzu="${y}">${esc(y === "einst" ? D.einstellungen : D[y])}</button>`).join("")}</nav>
+        <div class="g-teil" data-teil="uebersicht">${neu ? "" : `<div class="tabelle-rahmen"><table class="tabelle">
+          <tr><td class="leise">${esc(D.status)}</td><td class="${x.aktiv ? "gut" : ""}">${esc(x.aktiv ? T.epAn(x.minuten.map((m) => ":" + String(m).padStart(2, "0")).join(" "), x.von, x.bis) : T.ka.aus)}</td></tr>
+          <tr><td class="leise">${esc(T.epQuelle)}</td><td>${esc(T.epQuelleArt[x.quelle] || x.quelle)}</td></tr>
+          <tr><td class="leise">${esc(D.verwendung)}</td><td>${esc(kanaele(x))}</td></tr>
+          ${t ? `<tr><td class="leise">${esc(T.epStand)}</td><td class="${k}">${esc(t)}</td></tr>` : ""}
+          <tr><td class="leise">${esc(D.zuletzt)}</td><td>${esc(zuletztText(PZ, "einspieler:" + x.id))}</td></tr></table></div>
+          <h3>${esc(D.schnell)}</h3><div class="zeile"><button class="knopf" id="epJetzt">${esc(T.epJetzt)}</button></div>`}</div>
+        <div class="g-teil" data-teil="einst"><div id="epListe"></div><div class="zeile"><button class="knopf haupt" id="epOk">${esc(T.speichern)}</button></div></div>
+        <div class="g-teil" data-teil="verlauf"><div data-verlauf></div></div>
+        ${neu ? "" : `<div class="loeschen"><p class="leise">${esc(D.verwendetVon(kanaele(x)))}</p><button class="knopf gefahr" id="epWeg">${esc(T.entfernen)}</button></div>`}</div>`;
     const ziel = $("#epListe");
     const karte = (x) => {
       const st = d.stand[x.id] || {};
@@ -3011,7 +3051,7 @@ async function einspielerSeite(inhalt) {
         <div class="zeile"><span class="leise">${st.stand ? esc(T.epStand) + ": " + esc(st.stand.replace("T", " ")) : ""}${st.fehler ? ` <span class="schlecht">${esc(T.epFehler)}: ${esc(meldungText(st.fehler_m, st.fehler))}</span>` : ""}
           ${st.vorab ? " · " + esc(T.epVorab((st.vorab.groesse / 1048576).toFixed(1), st.vorab.komplett ? 0 : (st.vorab.gesamt / 1048576).toFixed(1), (st.vorab.stand || "").replace("T", " ").slice(0, 16))) : ""}
           ${st.vorab_fehler ? ` <span class="schlecht">${esc(T.vorabFehler ? T.vorabFehler + ": " + meldungText(st.vorab_fehler_m, st.vorab_fehler) : st.vorab_fehler)}</span>` : ""}</span>
-          <button class="knopf" name="jetzt">${esc(T.epJetzt)}</button><button class="knopf gefahr" name="weg">${esc(T.entfernen)}</button></div></div>`);
+          </div></div>`);
       const urlSicht = () => {
         const q = k.querySelector("[name=quelle]").value, p = k.querySelector("[name=puffer]").value;
         k.querySelector("[name=urlZeile]").style.display = q === "tagesschau100" ? "none" : "";
@@ -3024,19 +3064,25 @@ async function einspielerSeite(inhalt) {
       };
       for (const n of ["quelle", "puffer", "menge"]) k.querySelector(`[name=${n}]`).onchange = urlSicht;
       urlSicht();
-      k.querySelector("[name=weg]").onclick = () => k.remove();
-      k.querySelector("[name=jetzt]").onclick = (e) => aktion(e.target, () => senden(`/api/einspieler/${encodeURIComponent(x.id)}/jetzt`), T.epJetztOk);
       return k;
     };
-    liste.forEach((x) => ziel.appendChild(karte(x)));
-    $("#epPlus").onclick = () => {
-      const p = ziel.querySelector("p"); if (p) p.remove();
-      ziel.appendChild(karte({ id: Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, "a").padEnd(8, "x"), name: "tagesschau in 100 Sekunden",
-        quelle: "tagesschau100", url: "", minuten: [0, 30], von: "06:00", bis: "23:00", ton: true, fernseher: [], aktiv: true,
-        puffer: "vorab", vorab_mb: 0, vorlauf_s: 10 }));
+    ziel.appendChild(karte(x));
+    const teil = (y) => {
+      EP_TEIL = neu ? "einst" : y;
+      inhalt.querySelectorAll(".g-teil").forEach((dd) => { dd.hidden = dd.dataset.teil !== EP_TEIL; });
+      inhalt.querySelectorAll("[data-epzu]").forEach((b) => b.classList.toggle("an", b.dataset.epzu === EP_TEIL));
+      if (EP_TEIL === "verlauf") verlaufZeichnen(inhalt.querySelector("[data-verlauf]"), "einspieler:" + x.id).catch(() => {});
+    };
+    inhalt.querySelectorAll("[data-epzu]").forEach((b) => { b.onclick = () => teil(b.dataset.epzu); });
+    teil(EP_TEIL);
+    $("#epZurueck").onclick = () => { if (ungespeichert() && !confirm(T.ungespeichertFrage)) return; EP_OFFEN = null; zeichnen(); };
+    if ($("#epJetzt")) $("#epJetzt").onclick = (e) => aktion(e.target, () => senden(`/api/einspieler/${encodeURIComponent(x.id)}/jetzt`), T.epJetztOk);
+    if ($("#epWeg")) $("#epWeg").onclick = (e) => {
+      if (!confirm(T.epWegFrage(x.name))) return;
+      aktion(e.target, async () => { await speichernE({ einspieler: liste.filter((y) => y.id !== x.id) }); EP_OFFEN = null; await zeichnen(); }, null);
     };
     $("#epOk").onclick = async (e) => {
-      const neu = [...ziel.querySelectorAll(".ep")].map((k) => {
+      const gelesen = [...ziel.querySelectorAll(".ep")].map((k) => {
         const w = (n) => k.querySelector(`[name=${n}]`);
         const minuten = [0, 15, 30, 45].filter((m) => w("m" + m).checked)
           .concat(w("andere").value.split(",").map((x) => parseInt(x, 10)).filter((x) => x >= 0 && x <= 59));
@@ -3046,8 +3092,12 @@ async function einspielerSeite(inhalt) {
                  puffer: w("puffer").value, vorlauf_s: Number(w("vorlauf_s").value) || 0,
                  vorab_mb: w("menge").value === "mb" ? Math.max(1, Number(w("vorab_mb").value) || 20) : 0 };
       });
-      await speichernE({ einspieler: neu }, e.target);
-      setTimeout(() => zeichnen().catch(() => {}), 4000);         // Stand/Fehler der Quellen nachladen
+      const vorher = E;
+      await speichernE({ einspieler: neu ? [...liste, gelesen[0]] : liste.map((y) => y.id === x.id ? gelesen[0] : y) }, e.target);
+      if (E === vorher) return;                                    // Fehler: Eingaben bleiben stehen
+      EP_OFFEN = gelesen[0].id; EP_TEIL = "uebersicht";
+      await zeichnen();
+      setTimeout(() => { if (aktiv === "einspieler" && EP_OFFEN === gelesen[0].id) zeichnen().catch(() => {}); }, 4000);   // Stand/Fehler nachladen
     };
   };
   await zeichnen();
@@ -3483,6 +3533,12 @@ async function sicherungSeite(inhalt) {
 }
 
 // ---------- Eigene Medien (seit 0.15): hochladen in Stücken, Liste mit Name, Dauer, an/aus ----------
+// Wo eigene Medien laufen (seit 0.66): Kanäle mit Videoquelle „eigene Medien“/„gemischt“ und Layouts mit Videofenster aus eigenen Medien
+function medienVerwendung() {
+  const k = E.fernseher.filter((t) => ["medien", "gemischt"].includes(t.video_quelle)).map((t) => t.name);
+  const l = E.layouts.filter((x) => (x.elemente || []).some((el) => el.typ === "video" && el.sichtbar !== false && (el.optionen || {}).herkunft === "medien")).map((x) => x.name);
+  return [k.length ? T.reiter.fernseher + ": " + k.join(", ") : "", l.length ? T.bereiche.layout + ": " + l.join(", ") : ""].filter(Boolean).join("; ");
+}
 async function medienSeite(inhalt) {
   const STUECK = 3 * 1024 * 1024;               // 3 MB je Stück (als Base64 unter der Grenze des Dienstes)
   const zeichnen = () => {
@@ -3490,7 +3546,8 @@ async function medienSeite(inhalt) {
         <div class="zeile"><input type="file" id="medDatei" data-so="aus" multiple accept="image/jpeg,image/png,video/mp4,video/webm"><button class="knopf haupt" id="medHoch">${esc(T.medHoch)}</button>
           <button class="knopf" id="medOrt" hidden>📁 ${esc(SOT().wahl)}</button></div>
         <p class="leise" id="medStand"></p><p class="leise">${esc(T.medSicherung)}</p></div>
-      <div class="karte"><div id="medListe">${E.medien.length ? "" : `<p class="leise">${esc(T.medKeine)}</p>`}</div>
+      <div class="karte">${medienVerwendung() ? `<p class="leise">${esc(T.medLaeuft(medienVerwendung()))}</p>` : `<p class="leise">${esc(T.medUnbenutzt)}</p>`}
+        <div id="medListe">${E.medien.length ? "" : `<p class="leise">${esc(T.medKeine)}</p>`}</div>
         ${E.medien.length ? `<div class="zeile"><button class="knopf haupt" id="medOk">${esc(T.speichern)}</button></div>` : ""}</div>`;
     const liste = $("#medListe");
     E.medien.forEach((m) => {
@@ -3503,7 +3560,7 @@ async function medienSeite(inhalt) {
         const b = document.createElement("img"); b.src = URL.createObjectURL(new Blob([d])); b.style.cssText = "height:40px;border-radius:4px";
         z.querySelector(".medvorschau").replaceChildren(b);
       }).catch(() => {});
-      z.querySelector("[name=weg]").onclick = (e) => { if (confirm(T.medWeg)) aktion(e.target, async () => { const d = await senden("/api/medien/loeschen", { id: m.id }); E = d.einstellungen; zeichnen(); }); };
+      z.querySelector("[name=weg]").onclick = (e) => { if (confirm(T.medWeg + (medienVerwendung() ? "\n\n" + T.ding.verwendetVon(medienVerwendung()) : ""))) aktion(e.target, async () => { const d = await senden("/api/medien/loeschen", { id: m.id }); E = d.einstellungen; zeichnen(); }); };
       liste.appendChild(z);
     });
     const ok = $("#medOk");
@@ -3541,11 +3598,16 @@ async function medienSeite(inhalt) {
 }
 
 // ---------- Galerie (seit 0.45): Ordner mit Bildern/PDFs, hochladen in Stücken, Reihenfolge per Ziehen ----------
-let GAL_ORDNER = null;                          // zuletzt gewählter Ordner
+let GAL_ORDNER = null;                          // offene Galerie (seit 0.66: null = Liste aller Galerien)
+let GAL_TEIL = "uebersicht", GAL_SUCHE = "", GAL_PZ = {};
+// Wo eine Galerie verwendet wird: Bausteine „Galerie“ und Layout-Hintergründe (Namen der Layouts)
+const galVerwendung = (id) => E.layouts.filter((l) => (l.hintergrund || {}).art === "galerie" && l.hintergrund.galerie === id
+  || (l.elemente || []).some((x) => x.typ === "galerie" && (x.optionen || {}).ordner === id)).map((l) => l.name);
 const groesseText = (b) => b >= 1024 ** 3 ? (b / 1024 ** 3).toLocaleString(ORT(), { maximumFractionDigits: 1 }) + " GB"
   : Math.max(0.1, b / 1024 ** 2).toLocaleString(ORT(), { maximumFractionDigits: b < 10 * 1024 ** 2 ? 1 : 0 }) + " MB";
 const gbText = (b) => (b / 1024 ** 3).toLocaleString(ORT(), { maximumFractionDigits: 1 });
 async function galerieSeite(inhalt) {
+  holen("/api/protokoll").then((d) => { GAL_PZ = d.zuletzt || {}; }).catch(() => {});
   const STUECK = 3 * 1024 * 1024;
   const ERLAUBT = /\.(jpe?g|png|webp|gif|pdf|heic|heif)$/i;
   let g = await holen("/api/galerie"), eintraege = [], auswahl = new Set(), laeuft = false, bericht = "", urls = [], abTimer = null;
@@ -3617,7 +3679,7 @@ async function galerieSeite(inhalt) {
   };
   const zeichnen = async () => {
     urls.forEach((u) => URL.revokeObjectURL(u)); urls = [];
-    if (!g.ordner.some((o) => o.id === GAL_ORDNER)) GAL_ORDNER = g.ordner.length ? g.ordner[0].id : null;
+    if (!g.ordner.some((o) => o.id === GAL_ORDNER)) GAL_ORDNER = null;                 // seit 0.66: ohne Wahl die Liste aller Galerien
     eintraege = GAL_ORDNER ? (await holen(`/api/galerie/ordner?id=${encodeURIComponent(GAL_ORDNER)}`)).eintraege || [] : [];
     auswahl = new Set([...auswahl].filter((id) => eintraege.some((e) => e.id === id)));
     const o = g.ordner.find((x) => x.id === GAL_ORDNER), sp = g.speicher;
@@ -3625,17 +3687,38 @@ async function galerieSeite(inhalt) {
     const schnitt = anzahl && g.belegt ? g.belegt / anzahl : 1.2 * 1024 ** 2;          // so groß ist ein Foto hier im Schnitt
     const platz = Math.max(0, Math.floor((g.grenze - g.belegt) / schnitt));
     const pct = g.grenze ? Math.min(100, Math.round(g.belegt / g.grenze * 100)) : 100;
-    inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(T.galText)}</p>
+    const D = T.ding;
+    const speicherKarte = `<div class="karte"><p class="leise">${esc(T.galText)}</p>
         <div class="spbalken" role="img" aria-label="${esc(T.galBelegt(groesseText(g.belegt), gbText(g.grenze)))}"><div class="sp-galerie" data-breite="${pct}%"></div></div>
         <p>${esc(T.galBelegt(groesseText(g.belegt), gbText(g.grenze)))} · ${esc(T.galPlatzFuer(platz.toLocaleString(ORT())))}</p>
         ${g.grenze < g.grenze_gb * 1024 ** 3 - 1e8 ? `<p class="leise">${esc(T.galGrenzePlatz(gbText(g.grenze)))}</p>` : ""}
         ${sp.stufe !== "gruen" ? `<p class="${sp.stufe === "rot" ? "schlecht" : "warn"}"><a href="#zustand">${esc(T.galStufe[sp.stufe])}</a></p>` : ""}
+        <details class="erweitert"><summary>${esc(D.erweitert)}</summary>
         <div class="zeile"><label for="galGrenze">${esc(T.galGrenze)}</label><input type="number" id="galGrenze" class="schmal" min="1" max="2000" value="${g.grenze_gb}">
-          <button class="knopf" id="galGrenzeOk">${esc(T.speichern)}</button></div></div>
-      <div class="karte" id="galKarte"><div class="zeile galordner">${g.ordner.map((x) => `<button class="knopf ${x.id === GAL_ORDNER ? "haupt" : ""}" data-ordner="${esc(x.id)}">${esc(x.name)} <span class="leise">${x.anzahl}</span></button>`).join("")}
-          <button class="knopf" id="galNeu">+ ${esc(T.galOrdnerNeu)}</button></div>
-        ${o ? `<div class="zeile"><input type="text" id="galName" value="${esc(o.name)}" maxlength="40" aria-label="${esc(T.galOrdnerName)}">
-            <button class="knopf" id="galUmb">${esc(T.galUmbenennen)}</button><button class="knopf gefahr" id="galWeg">${esc(T.galOrdnerWeg)}</button></div>
+          <button class="knopf" id="galGrenzeOk">${esc(T.speichern)}</button></div></details></div>`;
+    if (!o) {                                 // Liste (seit 0.66 als Tabelle, UI-Regel Punkt 2)
+      const l = g.ordner.filter((x) => !GAL_SUCHE || x.name.toLowerCase().includes(GAL_SUCHE.toLowerCase()));
+      inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.reiter.galerie)}</h2><button class="knopf" id="galNeu">+ ${esc(T.galOrdnerNeu)}</button></div>${speicherKarte}
+        ${g.ordner.length ? `<div class="zeile"><input type="search" id="galSuche" placeholder="${esc(D.suchen)}" aria-label="${esc(D.suchen)}" value="${esc(GAL_SUCHE)}"></div>
+        ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(D.name)}</th><th>${esc(D.status)}</th><th>${esc(D.verwendung)}</th><th>${esc(D.zuletzt)}</th><th></th></tr></thead><tbody>
+          ${l.map((x) => { const v = galVerwendung(x.id); return `<tr><td><b>${esc(x.name)}</b></td>
+            <td>${esc(T.galAnzahl(x.anzahl))} · ${esc(groesseText(x.bytes || 0))}${x.quelle ? `<br><span class="leise">🔗 ${esc(x.ort_name || x.quelle.ort)}: ${esc(x.quelle.pfad)}</span>` : ""}</td>
+            <td>${v.length ? esc(v.join(", ")) : `<span class="leise">${esc(D.nichtVerwendet)}</span>`}</td><td class="leise">${esc(zuletztText(GAL_PZ, "galerie:" + x.id))}</td>
+            <td><button class="knopf" data-ordner="${esc(x.id)}">${esc(D.oeffnen)}</button></td></tr>`; }).join("")}</tbody></table></div>` : `<p class="leise">${esc(D.keine)}</p>`}`
+        : `<p class="leise">${esc(T.galKeine)}</p>`}`;
+    } else {                                  // offene Galerie: Übersicht → Bilder → Verlauf, Löschen unten
+      const v = galVerwendung(o.id);
+      inhalt.innerHTML = `<div class="zeile"><button class="knopf" id="galZurListe">← ${esc(T.reiter.galerie)}</button></div>
+      <div class="karte" id="galKarte"><h2>${esc(o.name)}</h2>
+        <nav class="kanal-reiter">${["uebersicht", "bilder", "verlauf"].map((x) => `<button type="button" data-galzu="${x}">${esc(x === "bilder" ? T.galBilder : D[x])}</button>`).join("")}</nav>
+        <div class="g-teil" data-teil="uebersicht"><div class="tabelle-rahmen"><table class="tabelle">
+          <tr><td class="leise">${esc(D.status)}</td><td>${esc(T.galAnzahl(o.anzahl))} · ${esc(groesseText(o.bytes || 0))}</td></tr>
+          <tr><td class="leise">${esc(D.verwendung)}</td><td>${v.length ? esc(v.join(", ")) : esc(D.nichtVerwendet)}</td></tr>
+          ${o.quelle ? `<tr><td class="leise">🔗</td><td>${esc(SOT().galVerknMit(o.ort_name || o.quelle.ort, o.quelle.pfad))}<br><span class="leise">${abText(o.abgleich)}</span></td></tr>` : ""}
+          <tr><td class="leise">${esc(D.zuletzt)}</td><td>${esc(zuletztText(GAL_PZ, "galerie:" + o.id))}</td></tr></table></div>
+          <div class="zeile"><label for="galName">${esc(T.galOrdnerName)}</label><input type="text" id="galName" value="${esc(o.name)}" maxlength="40">
+            <button class="knopf" id="galUmb">${esc(T.galUmbenennen)}</button></div></div>
+        <div class="g-teil" data-teil="bilder">
           ${galVerknHtml(o)}
           <div class="galablage" id="galAblage"><p>${esc(T.galZiehen)}</p>
             <div class="zeile"><label class="knopf haupt">${esc(T.galDateien)}<input type="file" id="galDatei" data-so="aus" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" hidden></label>
@@ -3648,16 +3731,31 @@ async function galerieSeite(inhalt) {
             <div class="galraster" id="galRaster">${eintraege.map((e) => `<div class="galbild ${auswahl.has(e.id) ? "gewaehlt" : ""}" draggable="true" data-id="${esc(e.id)}" title="${esc(e.name)}">
               <img alt="" draggable="false"><input type="checkbox" aria-label="${esc(e.name)}" ${auswahl.has(e.id) ? "checked" : ""}>
               <span class="galname">${esc(e.name)}${e.art === "pdf" ? " · " + esc(T.galSeiten(e.seiten)) : ""}</span></div>`).join("")}</div>`
-          : `<p class="leise">${esc(T.galLeer)}</p>`}` : `<p class="leise">${esc(T.galKeine)}</p>`}</div>`;
+          : `<p class="leise">${esc(T.galLeer)}</p>`}</div>
+        <div class="g-teil" data-teil="verlauf"><div data-verlauf></div></div>
+        <div class="loeschen"><p class="leise">${esc(v.length ? D.verwendetVon(v.join(", ")) : D.nichtVerwendet)}</p>
+          <button class="knopf gefahr" id="galWeg">${esc(T.galOrdnerWeg)}</button></div></div>`;
+      const teil = (x) => {
+        GAL_TEIL = x;
+        inhalt.querySelectorAll(".g-teil").forEach((d) => { d.hidden = d.dataset.teil !== x; });
+        inhalt.querySelectorAll("[data-galzu]").forEach((b) => b.classList.toggle("an", b.dataset.galzu === x));
+        if (x === "verlauf") verlaufZeichnen(inhalt.querySelector("[data-verlauf]"), "galerie:" + o.id).catch(() => {});
+      };
+      inhalt.querySelectorAll("[data-galzu]").forEach((b) => { b.onclick = () => teil(b.dataset.galzu); });
+      teil(GAL_TEIL);
+      $("#galZurListe").onclick = () => { GAL_ORDNER = null; auswahl.clear(); bericht = ""; zeichnen(); };
+    }
     breitenSetzen(inhalt);
     // Ordner wählen, anlegen, umbenennen, löschen
-    inhalt.querySelectorAll("[data-ordner]").forEach((k) => { k.onclick = () => { GAL_ORDNER = k.dataset.ordner; auswahl.clear(); bericht = ""; zeichnen(); }; });
-    $("#galNeu").onclick = (ev) => {
+    inhalt.querySelectorAll("[data-ordner]").forEach((k) => { k.onclick = () => { GAL_ORDNER = k.dataset.ordner; GAL_TEIL = "uebersicht"; auswahl.clear(); bericht = ""; zeichnen(); }; });
+    const gs = $("#galSuche");
+    if (gs) gs.oninput = () => { GAL_SUCHE = gs.value; zeichnen().then(() => { const f = $("#galSuche"); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }); };
+    if ($("#galNeu")) $("#galNeu").onclick = (ev) => {
       const name = prompt(T.galOrdnerName, "");
       if (name === null) return;
-      aktion(ev.target, async () => { const d = await senden("/api/galerie/ordner", { aktion: "neu", name }); E = d.einstellungen; g = d.galerie; GAL_ORDNER = d.id; await zeichnen(); });
+      aktion(ev.target, async () => { const d = await senden("/api/galerie/ordner", { aktion: "neu", name }); E = d.einstellungen; g = d.galerie; GAL_ORDNER = d.id; GAL_TEIL = "bilder"; await zeichnen(); });
     };
-    $("#galGrenzeOk").onclick = (ev) => aktion(ev.target, async () => {
+    if ($("#galGrenzeOk")) $("#galGrenzeOk").onclick = (ev) => aktion(ev.target, async () => {
       const d = await senden("/api/einstellungen", { galerie: { grenze_gb: Number($("#galGrenze").value) || 5 } }); E = d.einstellungen;
       g = await holen("/api/galerie"); await zeichnen();
     });

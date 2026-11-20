@@ -191,9 +191,11 @@ async function quellenSeite(inhalt) {
   $("#qKopfKnoepfe").appendChild(mehrMenue([[Q.mehrCurl, () => quelleAssistent("curl")]]));
   $("#qNeu").onclick = () => quelleAssistent();
   try { await soLaden(); } catch (_) { /* Namen der Speicherorte fehlen dann */ }
+  try { QPZ = (await holen("/api/protokoll")).zuletzt || {}; } catch (_) { /* „Letzte Änderung“ fehlt dann */ }
   await quellenLaden();
   timer = setInterval(() => { if (!document.querySelector(".seitenfeld")) quellenLaden().catch(() => {}); }, 15000);
 }
+let QPZ = {};                // letzte Änderung je Quelle aus dem Protokoll (seit 0.66)
 async function quellenLaden() {
   QSTATUS = (await holen("/api/quellen/status")).status || {};
   const ziel = $("#qListe"), Q = QT();
@@ -217,7 +219,8 @@ function quelleZeile(q) {
   const z = el(`<div class="lzeile" tabindex="0" role="button" data-id="${esc(q.id)}">
     <div class="lz-haupt"><div class="lz-name">${QSYMBOL[q.art] || ""} ${esc(q.name || q.id)}</div>
       <div class="lz-info">${esc(Q.artName[q.art])} · ${esc(herkunftKurz(q))}${q.art === "video" ? "" : " · " + esc(intervallText(q.intervall_s))}
-        · ${b.length ? esc(Q.benutztIn(b.join(", "))) : `<span class="warn">${esc(Q.unbenutzt)}</span>`}</div>
+        · ${b.length ? esc(Q.benutztIn(b.join(", "))) : `<span class="warn">${esc(Q.unbenutzt)}</span>`}
+        · ${esc(T.ding.zuletzt)}: ${esc(zuletztText(QPZ, "quelle:" + q.id))}</div>
       ${wert ? `<div class="lz-info qwert">${esc(wert)}</div>` : ""}</div>
     <div class="lz-status ${stil}">${stil ? "● " : ""}${esc(zt)}</div>
     <div class="lz-aktion">${schalter("aktiv", q.aktiv)}</div></div>`);
@@ -262,7 +265,13 @@ function quelleDetails(q) {
     ${kurzText(s) ? `<p>${esc(Q.wert)}: <b>${esc(kurzText(s))}</b></p>` : ""}
     <div class="feld"><label>${esc(Q.benutztLang)}</label>${b.length ? `<p>${esc(b.join(", "))}</p>` : `<p class="leise">${esc(Q.keinLayout)}</p>`}</div>
     ${q.art !== "video" && s.hat_daten ? `<details class="feld" id="qWerte"><summary>${esc(Q.werteAnsehen)}</summary><p class="leise">${esc(Q.werteText)}</p><div class="qDaten"></div></details>` : ""}
-    <div id="qForm"></div></div>`);
+    <div id="qForm"></div>
+    <details class="feld" id="qVerlauf"><summary>${esc(T.ding.verlauf)}</summary><div data-verlauf></div></details>
+    <div class="loeschen"><p class="leise">${esc(b.length ? T.ding.verwendetVon(b.join(", ")) : T.ding.nichtVerwendet)}</p>
+      <button type="button" class="knopf gefahr" id="qWeg">${esc(Q.loeschen)}</button></div></div>`);
+  const v = k.querySelector("#qVerlauf");
+  v.addEventListener("toggle", () => { if (v.open) verlaufZeichnen(v.querySelector("[data-verlauf]"), "quelle:" + q.id).catch(() => {}); });
+  k.querySelector("#qWeg").onclick = (ev) => quelleLoeschen(q, ev.target);     // seit 0.66 unten (UI-Regel Punkt 2)
   const w = k.querySelector("#qWerte");
   if (w) w.addEventListener("toggle", () => {
     if (w.open) aktion(null, () => pfadWaehlen(w.querySelector(".qDaten"), q.id, (p) => { pfadHinweis(w, q.id, p); }), null);
@@ -349,7 +358,7 @@ function quelleFormular(q0, altId, z, opt) {
       </details>
       ${opt.hinweise && opt.hinweise.length ? `<p class="warn">${esc(Q.hinweise)}: ${esc(opt.hinweise.join(" · "))}</p>` : ""}
       <div class="zeile"><button type="button" class="knopf" id="qTest">${esc(Q.weiterTesten)}</button><button type="button" class="knopf haupt" id="qOk">${esc(Q.speichern)}</button>
-        ${altId ? `<button type="button" class="knopf gefahr" id="qLoeschen">${esc(Q.loeschen)}</button>` : ""}</div>
+</div>
       <div id="qTestErg"></div>`;
     verdrahten();
   };
@@ -432,8 +441,6 @@ function quelleFormular(q0, altId, z, opt) {
       if (opt.gespeichert) opt.gespeichert(q);
       else seitenfeldZu();
     });
-    const weg = $("#qLoeschen");
-    if (weg) weg.onclick = (ev) => quelleLoeschen(E.quellen.find((x) => x.id === altId) || q, ev.target);
   };
   // CSV (seit 0.26): Spalten über den allgemeinen Import wählen (csvimport.js), danach die Spalten für Termine
   const kalZeichnen = (felder) => {

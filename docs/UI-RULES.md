@@ -99,3 +99,7 @@ Cases where the rules were not clear-cut, and how they are decided (since 0.65):
 9. **“Video stream without viewers”** is about operation: Settings › System › Health.
 10. A **detail panel on the right** (data sources, live videos) is allowed if it keeps the same order; full detail
     pages with tabs where several tabs are needed.
+11. **Things with a picture** (layouts) keep tiles with a preview instead of a table; every tile shows the same as a
+    table row (name, state, used by, last change), with search and “+ New” at the top right.
+12. **Small things without a detail page:** single pictures and videos under Media and single radio stations stay list
+    entries with name, where they are used and delete with that note.

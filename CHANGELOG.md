@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.67.0 (2026-11-20)
+- **Layouts, galleries, clips and data sources follow the same frame** (UI rules, stage 2b):
+  - **Layouts** keep their preview tiles, now with search, state, where used and last change, and *+ New layout* at
+    the top right. An open layout has the tabs *Overview* (preview, usage by channel/schedule/carousel, copy, export,
+    versions), *Designer* (opens first, as before) and *History*; *Delete* moved from the ⋯ menu to the bottom.
+  - **Galleries** are a table (pictures, size, linked folder, layouts using them); an open gallery has *Overview*
+    (incl. rename), *Pictures & pages* (upload, linked folder, pictures) and *History*; *Delete gallery* at the bottom.
+    The size limit for all galleries is under *Advanced*.
+  - **Clips** are a table (schedule, channels, last fetch); an open clip has *Overview* with *Show now*, *Settings* and
+    *History*; each clip is saved on its own.
+  - **Data sources** show the last change in the list; the panel on the right has *History* and *Delete* (with where
+    the source is used) at the bottom instead of inside the form.
+- Single pictures/videos and radio stations stay list entries; deleting them now names where they are used.
+- The log also assigns entries to galleries, clips and data sources (history per thing).
+- UI rules, section 8: two more agreed interpretations (preview tiles for layouts; small things without detail page).
+
 ## v0.66.0 (2026-11-20)
 - **Channels and devices follow the same frame** (UI rules, section 2): a table with state in plain words, where it is
   used and the last change, with a search field and *+ New* at the top right. *Open* shows tabs from **Overview** to
