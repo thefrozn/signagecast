@@ -21,9 +21,9 @@ TEXTE = {
         "ha": ("SignageCast: Home Assistant nicht erreichbar", "Seit {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant wieder verbunden", "Die Verbindung zu Home Assistant steht wieder."),
         "test": ("SignageCast: Test", "Testnachricht von SignageCast {version} ({host})."),
-        "player_aus": ("SignageCast: Player „{name}“ meldet sich nicht", "Der Raspberry-Pi-Player „{name}“ hat sich seit 5 Minuten "
+        "player_aus": ("SignageCast: Gerät „{name}“ meldet sich nicht", "Das Gerät „{name}“ hat sich seit 5 Minuten "
                        "nicht gemeldet (Strom, Netz oder WLAN?)."),
-        "player_wieder": ("SignageCast: Player „{name}“ wieder da", "Der Raspberry-Pi-Player „{name}“ meldet sich wieder."),
+        "player_wieder": ("SignageCast: Gerät „{name}“ wieder da", "Das Gerät „{name}“ meldet sich wieder."),
         "internet": ("SignageCast: Internet nicht erreichbar", "Seit {seit} ist das Internet nicht erreichbar. Die Kanäle zeigen "
                      "eigene Medien bzw. ein Ersatzbild statt der Live-Kameras."),
         "internet_vorbei": ("SignageCast: Internet wieder erreichbar", "Das Internet war von {seit} bis {bis} nicht erreichbar. "
@@ -53,9 +53,9 @@ TEXTE = {
         "ha": ("SignageCast: Home Assistant not reachable", "Since {seit}: {grund}"),
         "ha_vorbei": ("SignageCast: Home Assistant connected again", "The connection to Home Assistant is back."),
         "test": ("SignageCast: test", "Test message from SignageCast {version} ({host})."),
-        "player_aus": ("SignageCast: player “{name}” not responding", "The Raspberry Pi player “{name}” has not reported for "
+        "player_aus": ("SignageCast: device “{name}” not responding", "The device “{name}” has not reported for "
                        "5 minutes (power, network or Wi-Fi?)."),
-        "player_wieder": ("SignageCast: player “{name}” is back", "The Raspberry Pi player “{name}” reports again."),
+        "player_wieder": ("SignageCast: device “{name}” is back", "The device “{name}” reports again."),
         "internet": ("SignageCast: internet not reachable", "The internet has not been reachable since {seit}. The channels show own media "
                      "or a fallback picture instead of the live cams."),
         "internet_vorbei": ("SignageCast: internet reachable again", "The internet was not reachable from {seit} to {bis}. "

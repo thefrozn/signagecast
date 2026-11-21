@@ -34,7 +34,7 @@ SignageCast at its tailnet address. Display, commands and the **terminal** (remo
 
 Then create a player with **At another site** ticked. On its first start the player logs in by link:
 
-- still at your place: its card shows **Approve player (Tailscale)** – click, log in, confirm;
+- still at your place: its card shows **Approve device (Tailscale)** – click, log in, confirm;
 - already at the other site: the TV shows a **QR code** – scan it with a phone that is logged in to Tailscale.
 
 **Remove** in the admin: the player logs itself out of Tailscale at its next contact. If it is no longer reachable,
@@ -117,7 +117,7 @@ as well.
 
 ## 4. Create the player
 
-*Devices → + New device → Add player* (or *Image again* on an existing card) → tick **At another site (through Tailscale)** → create
+*Devices → + New device → Add device* (or *Image again* on an existing card) → tick **At another site (through Tailscale)** → create
 and write the image as usual. Take the player to its site and switch it on: Wi-Fi as usual (hotspot and QR code if
 needed). Within about a minute it joins the tailnet; its card shows the tailnet address and whether the connection is
 **direct** or goes **through a relay**.
@@ -153,7 +153,7 @@ key is invalid at once.
 **Tailscale einrichten** (installiert das offizielle Paket; im Proxmox-Container erst zwei Zeilen auf dem Host, zeigt die
 Seite) → **Mit Tailscale verbinden** (Anmeldung im neuen Fenster) → **Einschalten** → empfohlene **Zugriffsregel**
 kopieren und im Regel-Editor von Tailscale einfügen. Player mit Häkchen *An einem anderen Standort*: beim ersten Start
-auf seiner Karte **Player freigeben** klicken – oder am anderen Ort den **QR-Code** am Fernseher scannen. **Entfernen**:
+auf seiner Karte **Gerät freigeben** klicken – oder am anderen Ort den **QR-Code** am Fernseher scannen. **Entfernen**:
 der Player meldet sich beim nächsten Kontakt selbst ab; sonst in Tailscale unter *Machines* löschen.
 
 Erweitert (unten): OAuth-Client (SignageCast erzeugt Einmal-Schlüssel und löscht entfernte Player selbst) oder Headscale.
@@ -173,7 +173,7 @@ Erweitert (unten): OAuth-Client (SignageCast erzeugt Einmal-Schlüssel und lösc
    *Verbindung prüfen*. Die Zugangsdaten liegen nur in `fernnetz.json` (Rechte 600), nicht in Sicherungen, nicht im MCP.
 3. **Zugriffsregel** aus der Seite übernehmen – Player dürfen nur SignageCast erreichen. Achtung: Ein Abschnitt `acls`
    ersetzt „alle dürfen alles“, eigene Regeln mit hineinnehmen.
-4. **Player anlegen** mit Häkchen **An einem anderen Standort** – nur Image je Gerät. Einmal-Schlüssel (7 Tage, nach dem
+4. **Gerät anlegen** mit Häkchen **An einem anderen Standort** – nur Image je Gerät. Einmal-Schlüssel (7 Tage, nach dem
    Beitritt gelöscht). **Entfernen** löscht den Player auch aus dem Tailnet.
 
 Empfehlung: **Direktmodus** – durch den Tunnel gehen nur Seite und Daten, YouTube kommt vor Ort aus dem Internet.

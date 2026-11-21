@@ -94,13 +94,13 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 <tr>
 <td valign="top">
 
-**Players**
+**Devices**
 - Any TV browser that plays H.265 – just open one address
 - Raspberry Pi or PC from a ready image, managed centrally
-- Direct mode: the player shows the page itself, no encoding on the server
+- Direct mode: the device shows the page itself, no encoding on the server
 - Offline copy: if the server or the network fails, the player keeps showing its last layout – also after a cold start ([details](docs/PLAYER.md#offline-copy-since-051))
 - Browser device: a secret link for a smart TV or kiosk browser
-- Players at another site through Tailscale or Headscale ([REMOTE.md](docs/REMOTE.md))
+- Devices at another site through Tailscale or Headscale ([REMOTE.md](docs/REMOTE.md))
 
 </td>
 <td valign="top">
@@ -150,10 +150,10 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - **Several TVs** – each with its own address, layout, schedule, sound and topics.
 - **Live videos** – one area for the collection (list with panel), topics with search words, automatic stream search
   and rules, clips.
-- **Raspberry Pi as player** (experimental) – a ready SD card image per screen (Wi-Fi included, hotspot with QR code
+- **Raspberry Pi as device** (experimental) – a ready SD card image per screen (Wi-Fi included, hotspot with QR code
   as fallback) or one image for many Pis with a pairing code; status, screenshot, TV on/off via HDMI-CEC, rotation,
   updates; optional terminal in the browser. [PLAYER.md](docs/PLAYER.md)
-- **PC as player** (experimental) – a PC or thin client (x86-64, UEFI, Secure Boot may stay on) starts from a USB stick
+- **PC as device** (experimental) – a PC or thin client (x86-64, UEFI, Secure Boot may stay on) starts from a USB stick
   and shows the page itself. [PLAYER.md](docs/PLAYER.md#pc-as-player-since-036-experimental)
 - **Messages and notifications** – DWD warnings as an element (Germany only; weather itself works worldwide via MET Norway); banners from other systems via a webhook; notifications
   when a TV fails, an update or backup fails or Home Assistant is disconnected.
@@ -164,7 +164,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - **Energy saving** – schedules switch a TV to night mode or black, and really off and on via Home Assistant.
 - **Offline mode** – no cloud and no account; everything runs on your own server. Without internet the video window
   shows your own media or a calm picture by time of day (no error on the TV), values keep their last state. **Offline
-  copy** (since 0.51): players in direct mode keep showing their last layout when the server or the network fails –
+  copy** (since 0.51): devices in direct mode keep showing their last layout when the server or the network fails –
   also after a restart – and mark it with a small crossed-out globe ([details](docs/PLAYER.md#offline-copy-since-051)).
 - **Installation ISO** (since 0.52) – for a mini PC or old laptop without Proxmox: the official Debian 13 installer with
   preset answers on a USB stick (UEFI, Secure Boot may stay on); optionally the computer shows a channel itself via
@@ -207,7 +207,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 <td width="50%" align="center"><img src="docs/tour/04-overview.jpg" alt="Overview in the admin"><br><sub>Overview of all screens</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/tour/01c-tv-offline.jpg" alt="TV page on a player without server: last layout, calm picture instead of the live cam, crossed-out globe at the top right"><br><sub>Offline: the player keeps its last layout</sub></td>
+<td align="center"><img src="docs/tour/01c-tv-offline.jpg" alt="TV page on a device without server: last layout, calm picture instead of the live cam, crossed-out globe at the top right"><br><sub>Offline: the device keeps its last layout</sub></td>
 <td align="center"><img src="docs/tour/05g-server-hdmi.jpg" alt="New device dialog with the option This computer via HDMI"><br><sub>Installed from the ISO: picture via HDMI</sub></td>
 </tr>
 </table>
@@ -215,7 +215,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 ## Installation
 
 You need an **x86 computer with Intel graphics** (e.g. a mini PC with Intel N100) and a TV whose browser plays H.265 –
-or a Raspberry Pi or PC as player. Without usable graphics a Full HD software fallback runs. Details:
+or a Raspberry Pi or PC as device. Without usable graphics a Full HD software fallback runs. Details:
 [hardware](docs/HARDWARE.md).
 
 | Where | How | Guide |
@@ -273,7 +273,7 @@ do this from 0.61 on (video window → *What to show* → “own media only”);
 (Channels → *Video window shows*). In **stream mode** the server records the picture and passes it on to
 the TVs; that is fine for private use at home – for business or public use prefer **direct mode**, where every TV
 plays the official player itself, or switch off *Show YouTube in stream mode too* for the channel (since 0.63; the
-stream then shows own media, TVs and players in direct mode keep YouTube).
+stream then shows own media, TVs and devices in direct mode keep YouTube).
 
 **Search and checks:** without further setup SignageCast fetches public YouTube pages automatically (nightly search,
 live checks) – sparingly and pausing when YouTube says “too many requests”, but YouTube's terms do not really allow

@@ -95,13 +95,13 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 <tr>
 <td valign="top">
 
-**Player**
+**Geräte**
 - Jeder Fernseher-Browser, der H.265 abspielt – nur eine Adresse öffnen
 - Raspberry Pi oder PC aus einem fertigen Image, zentral verwaltet
-- Direktmodus: der Player zeigt die Seite selbst, der Server muss nichts kodieren
+- Direktmodus: das Gerät zeigt die Seite selbst, der Server muss nichts kodieren
 - Offline-Kopie: fällt der Server oder das Netz aus, zeigt der Player sein letztes Layout weiter – auch nach einem Kaltstart ([Details](docs/PLAYER.md#offline-kopie-seit-051))
 - Browser-Gerät: ein geheimer Link für Smart-TV oder Kiosk-Browser
-- Player an anderen Standorten über Tailscale oder Headscale ([REMOTE.md](docs/REMOTE.md#deutsch-kurz))
+- Geräte an anderen Standorten über Tailscale oder Headscale ([REMOTE.md](docs/REMOTE.md#deutsch-kurz))
 
 </td>
 <td valign="top">
@@ -128,7 +128,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
   übersprungen; Favoriten lassen sich schützen, unerwünschte ablehnen. Für den privaten Gebrauch – siehe
   [YouTube und gewerbliche Nutzung](#youtube-und-gewerbliche-nutzung).
 - **Live-Videos** – ein eigener Bereich für die Sammlung (Liste mit Seitenfeld), Themen mit Suchbegriffen,
-  automatische Stream-Suche mit Regeln, Einspieler.
+  automatische Live-Video-Suche mit Regeln, Einspieler.
 - **Layout-Editor** – Uhr, Datum, Wetter, Vorhersage, Räume, Kacheln mit beliebigen Home-Assistant-Werten, Live-Video,
   Radio, freier Text und Laufband, Logo, Kamera, Kalender/Müllabfuhr, Meldungen aus Home Assistant. Bedingungen („nur
   zeigen, wenn …“), Schriften, Farben, 9 Textpositionen. Die Leinwand zeigt die **echte TV-Seite als Live-Vorschau**
@@ -153,14 +153,14 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
   oder gewerblichen Orten braucht es eine Musiklizenz (z. B. GEMA) – siehe [YouTube und gewerbliche Nutzung](#youtube-und-gewerbliche-nutzung).
 - **Einspieler zu festen Zeiten** – z. B. *tagesschau in 100 Sekunden* zur vollen Stunde.
 - **Mehrere Fernseher** – jeder mit eigener Adresse, eigenem Layout, Zeitplan, Ton und eigenen Themen.
-- **Raspberry Pi als Player** (experimentell) – ein fertiges SD-Karten-Image je Bildschirm (mit WLAN, Hotspot mit
+- **Raspberry Pi als Gerät** (experimentell) – ein fertiges SD-Karten-Image je Bildschirm (mit WLAN, Hotspot mit
   QR-Code als Rückfall) oder ein Image für viele Pis mit Kopplungscode; Zustand, Bildschirmfoto, Fernseher ein/aus per
   HDMI-CEC, Drehung, Updates; auf Wunsch ein Terminal im Browser. [PLAYER.md](docs/PLAYER.md)
-- **PC als Player** (experimentell) – ein PC oder Thin Client (x86-64, UEFI, Secure Boot darf an bleiben) startet vom
+- **PC als Gerät** (experimentell) – ein PC oder Thin Client (x86-64, UEFI, Secure Boot darf an bleiben) startet vom
   USB-Stick und zeigt die Seite selbst. [PLAYER.md](docs/PLAYER.md#pc-as-player-since-036-experimental)
 - **Offline-Betrieb** – keine Cloud und kein Konto; alles läuft auf deinem eigenen Server. Ohne Internet zeigt das
   Videofenster eigene Medien oder ein ruhiges Bild zur Tageszeit (keine Fehlermeldung am Fernseher), Werte behalten
-  ihren letzten Stand. **Offline-Kopie** (seit 0.51): Player im Direktmodus zeigen ihr letztes Layout weiter, wenn
+  ihren letzten Stand. **Offline-Kopie** (seit 0.51): Geräte im Direktmodus zeigen ihr letztes Layout weiter, wenn
   Server oder Netz ausfallen – auch nach einem Neustart – und markieren das mit einer kleinen durchgestrichenen
   Weltkugel ([Details](docs/PLAYER.md#offline-kopie-seit-051)).
 - **Installations-ISO** (seit 0.52) – für einen Mini-PC oder ein altes Notebook ohne Proxmox: der offizielle
@@ -183,7 +183,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
   Bilder und Streams und schauen sich Vorschaubilder an; Computer per Klick in der Verwaltung verbinden (Claude
   Desktop: eine Datei zum Doppelklicken) und jederzeit wieder entfernen; jede Änderung landet im Protokoll
   ([MCP.md](docs/MCP.md#deutsch-kurz)). Seit 0.60 auch Vorlagen, Datenquellen, Dateien (PDF, Medien, Galerie), Themen,
-  Stream-Suche, Einspieler und Radio – und `preview` liefert dieselben Lesbarkeits-Hinweise wie der Layout-Editor
+  Live-Video-Suche, Einspieler und Radio – und `preview` liefert dieselben Lesbarkeits-Hinweise wie der Layout-Editor
   (Schriftgröße, Kontrast, Überlauf).
 - **Layouts von einer KI** – die Anleitung mit dem vollständigen [Layout-Format](docs/LAYOUT-FORMAT.md) in ChatGPT,
   Claude oder Gemini kopieren und die Antwort einfügen; der Import repariert, was geht, und sagt was.
@@ -216,7 +216,7 @@ Rundgang mit Bildern aller Bereiche: [Tour](docs/TOUR.de.md).
 <td width="50%" align="center"><img src="docs/tour/de/04-overview.jpg" alt="Übersicht in der Verwaltung"><br><sub>Übersicht aller Bildschirme</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/tour/de/01c-tv-offline.jpg" alt="TV-Seite am Player ohne Server: letztes Layout, ruhiges Bild statt Live-Kamera, durchgestrichene Weltkugel oben rechts"><br><sub>Offline: der Player zeigt sein letztes Layout weiter</sub></td>
+<td align="center"><img src="docs/tour/de/01c-tv-offline.jpg" alt="TV-Seite am Gerät ohne Server: letztes Layout, ruhiges Bild statt Live-Kamera, durchgestrichene Weltkugel oben rechts"><br><sub>Offline: das Gerät zeigt sein letztes Layout weiter</sub></td>
 <td align="center"><img src="docs/tour/de/05g-server-hdmi.jpg" alt="Dialog Neues Gerät mit der Wahl Dieser Rechner per HDMI"><br><sub>Mit der ISO installiert: Bild per HDMI</sub></td>
 </tr>
 </table>
@@ -224,7 +224,7 @@ Rundgang mit Bildern aller Bereiche: [Tour](docs/TOUR.de.md).
 ## Installation
 
 Nötig ist ein **x86-Rechner mit Intel-Grafik** (z. B. Mini-PC mit Intel N100) und ein Fernseher, dessen Browser H.265
-abspielt – oder ein Raspberry Pi bzw. PC als Player. Ohne nutzbare Grafik läuft ein Notbetrieb in Full HD. Mehr:
+abspielt – oder ein Raspberry Pi bzw. PC als Gerät. Ohne nutzbare Grafik läuft ein Notbetrieb in Full HD. Mehr:
 [Hardware](docs/HARDWARE.md#deutsch-kurz).
 
 | Wo | Wie | Anleitung |
@@ -283,7 +283,7 @@ zeigen. Die Geschäftsvorlagen tun das ab 0.61 (Videofenster → *Was zeigen* �
 dort einstellen oder je Kanal (Kanäle → *Videofenster zeigt*). Im **Stream-Modus** nimmt der Server das Bild
 auf und gibt es an die Fernseher weiter; für den privaten Gebrauch zu Hause ist das in Ordnung – gewerblich oder
 öffentlich besser den **Direktmodus** nehmen, dann spielt jeder Fernseher den offiziellen Player selbst, oder beim Kanal
-*YouTube auch im Stream-Modus zeigen* ausschalten (seit 0.63; der Stream zeigt dann eigene Medien, Fernseher und Player
+*YouTube auch im Stream-Modus zeigen* ausschalten (seit 0.63; der Stream zeigt dann eigene Medien, Fernseher und Geräte
 im Direktmodus behalten YouTube).
 
 **Suche und Prüfung:** Ohne weitere Einrichtung ruft SignageCast öffentliche YouTube-Seiten automatisch ab (nächtliche

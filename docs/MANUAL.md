@@ -65,7 +65,7 @@ name, topic, state in plain words (“dark on site · light in 5:05 h”, “pau
 often”) and a switch; the filter buttons narrow it down (*Playing*, *Ready*, *Dark on site*, *Problems*, *Off*, *Newly
 found*). Click a row: on the right you change name, topic and location (or *Search place …*), *Show now*, *Don't count
 failures* (formerly “protected”), keep a found stream permanently, see technical data and remove it – *Never suggest
-again* (formerly “reject”) keeps the search from taking it in again. **Automation** joins the former *Stream search*
+again* (formerly “reject”) keeps the search from taking it in again. **Automation** joins the former *Live video search*
 and *Rules* pages: playback (minutes per stream, daylight), search (time, how many, how long to keep) and under
 *Advanced* blocked words and the location table with a test field (“recognised: Kruger → −24.5 / 31”). Old addresses
 (`#suche`, `#video`) lead there.
@@ -471,7 +471,7 @@ It is never shown again. Create a new one and update the senders.
 Kanäle · Geräte · Layouts · Datenquellen · **Medien** (Bilder & Videos, Galerien, Einspieler) · **Live-Videos** (Sammlung,
 Themen) · **Radiosender**. Rechts getrennt stehen die **Einstellungen** als Kacheln: Allgemein, Home Assistant,
 Benachrichtigungen, **Konten & Zugang** (alle Anmeldungen: Verwaltung, Pult, KI-Assistenten, Webhook), KI-Assistenten,
-Speicherorte, Durchsage-Pult, Live-Videos (Nachtsuche, Minuten je Stream, YouTube-API), Fernstandorte und **System**
+Speicherorte, Durchsage-Pult, Live-Videos (Nachtsuche, Minuten je Live-Video, YouTube-API), Fernstandorte und **System**
 (Zustand, Updates, Sicherung, Protokoll). Jede Kachel zeigt einen Satz und ihren Zustand. **📢 Durchsage** und
 **⚠ Notfall** sind feste Knöpfe oben rechts; der Notfall-Knopf wird rot, solange ein Notfall-Vollbild läuft. Seltenes
 liegt unter „Erweitert“. Alte Adressen (z. B. `#live`) leiten weiter.
@@ -534,7 +534,7 @@ vorspielen. Beim Verschieben **Hilfslinien**, wo Kanten oder Mitten mit anderen 
 
 Seit 0.56: **Live-Videos** statt „Videos & Radio“ – Übersicht (Zahlen, läuft gerade, Probleme, Suche), **Sammlung**
 (statt Streams: Liste, Klick öffnet rechts die Details), **Themen** (statt Kategorien, Suchbegriffe nur noch dort;
-die gemeinsame Tiersuche über „Suche für Tiere …“), **Automatik** (Stream-Suche und Regeln zusammen, Ortserkennung als
+die gemeinsame Tiersuche über „Suche für Tiere …“), **Automatik** (Live-Video-Suche und Regeln zusammen, Ortserkennung als
 Tabelle mit Test) und Einspieler; Radio steht jetzt unter Inhalte.
 
 Seit 0.57: **Datenquellen** als Liste mit Ampel (aktuell / wartet / Fehler in Klartext), letztem Wert und „in Layout …“

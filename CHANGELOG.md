@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.68.0 (2026-11-20)
+- **One term per thing** (UI rules, stage 3, see [docs/GLOSSARY.md](docs/GLOSSARY.md)), German and English:
+  - **Device** instead of “player” in the admin page, messages and notifications (*Add device*, *Pair devices*,
+    *Approve device*; the command that restarts the player software is now *Restart playback*). *Player image* stays.
+  - **Live video** instead of “stream” wherever YouTube cams are meant (*Live video search*, *minutes per live video*,
+    *Add live video*, live video list in backups). “Stream” alone only names the output of a channel (*Restart stream*,
+    *stream mode*).
+  - Topics are called topics everywhere in the UI; IDs in code, API and MCP (`player`, `streams`, `kategorie`) stay.
+- **Tour** (TOUR.md / TOUR.de.md) taken again with 0.68 in both languages: channels and devices as tables with detail
+  tabs, layout overview, settings tiles, *Accounts & access*, the emergency button and live videos.
+- README, MANUAL, PLAYER, REMOTE and MCP docs use the new button names.
+
 ## v0.67.0 (2026-11-20)
 - **Layouts, galleries, clips and data sources follow the same frame** (UI rules, stage 2b):
   - **Layouts** keep their preview tiles, now with search, state, where used and last change, and *+ New layout* at

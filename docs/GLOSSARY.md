@@ -49,10 +49,11 @@ Ein Begriff pro Sache, gleich in Verwaltung, TV-Seite, Doku und Tour. Interne Ke
 | Direct mode / stream mode | Direktmodus / Streammodus | How a device shows a channel: page in the device’s browser or finished video from the server. |
 | Player image | Player-Image | The system image written to a Raspberry Pi or PC. |
 
-## Known inconsistencies (to fix with the next menu change) / Bekannte Abweichungen
+## Kept on purpose / Bewusst so belassen (since 0.68)
 
-- “Player” is still used as a noun in the device pages (“Player hinzufügen”, “Player koppeln”); the term is **device**
-  (Gerät). Exception: *player image*.
-- “Stream” means two things today: a live video from YouTube (“Stream-Suche”) and the output of a channel
-  (“Videostream”). Use **live video** for the first, **video stream** only for the second.
-- “Kategorie” still appears in the API, MCP and some texts; the UI term is **topic** (Thema).
+- **Player** stays in *player image* and where the official YouTube or TV app is meant (“official player on the TV”).
+  *Restart playback* (Wiedergabe neu starten) restarts the player software on a device.
+- **Stream** alone still names the output of a channel where the context is clear (*Restart stream*, *stream mode*,
+  *stream from the server*, *stream port*). Live videos from YouTube are never called “stream” in the admin page.
+- Internal IDs in code, API and MCP (`player`, `streams`, `kategorie`, `category`) do not change, so existing
+  automations and AI assistants keep working.

@@ -29,7 +29,7 @@ The Pis reach the server on the **webhook port 8890**. Native installations (Pro
 
 1. Admin → **Devices → + New device** → **Download player image** (also under Settings → System → Updates, where you download it again after an update; once, about 850 MB; checked with the project's
    signature). After a SignageCast update, *To do* reminds you to download it again – new images then get all fixes.
-2. **Add player:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
+2. **Add device:** name (e.g. *Waiting room*), the TV it shows, the model, and the network: **LAN cable** or **Wi-Fi**
    (name and password – or a saved one). Click **Create and download image**.
 3. Open **Raspberry Pi Imager** → choose your device → operating system: at the bottom **Use custom** → the downloaded
    `signagecast-player-….img.gz` → your SD card → *Next*. When asked about **OS customisation: No** – everything is
@@ -46,10 +46,10 @@ networks again – after a power cut the router is often slower than the Pi.
 
 Instead of one image per screen you can flash **the same image onto any number of cards**:
 
-1. Under **Pair a player**, choose the network and click **Download image for several devices**
+1. Under **Pair devices**, choose the network and click **Download image for several devices**
    (`signagecast-player-kopplung.img.gz` – server address and Wi-Fi, but no key).
 2. Flash it as above, Pi to the TV, power on. After the start the TV shows **“Code: 123 456”**.
-3. In the admin under **Pair a player** enter the code, a name and the TV → **Pair**. A few seconds later the Pi shows the
+3. In the admin under **Pair devices** enter the code, a name and the TV → **Pair**. A few seconds later the Pi shows the
    picture; from then on it is an ordinary player (settings, buttons, *Download image again*).
 
 The admin shows how many Pis are currently showing a code (model and IP, never the code). A code is valid for 10
@@ -94,7 +94,7 @@ from the Pi's HDMI.
   measured on real Pis.
 - Videos and cameras are decoded by the Pi – they may stutter, especially H.264 on the Pi 5 (no hardware decoder).
 - **Fallback:** if the browser crashes or the page does not load three times within 10 minutes, the Pi shows the
-  stream for one hour; the admin shows a note. *Restart player* tries direct mode again right away.
+  stream for one hour; the admin shows a note. *Restart playback* tries direct mode again right away.
 - Images created **before 0.24** have no browser – the admin says so; download and flash a new image.
 - Security: the Pi opens `http://<server>:8890/anzeige/<key>` (with an offline copy, since 0.51, its own local service
   fetches from there). The key is derived from the device key and only gives
@@ -182,14 +182,14 @@ fallback to the stream.
 | Network | LAN cable (nothing to set up) or Wi-Fi (hotspot setup as with the Pi, if the Wi-Fi card can do it) |
 
 1. Admin → **Devices → + New device** → **PC image: Download** (also under Settings → System → Updates; once, about 750 MB; checked with the project's signature).
-2. **Add player** → model **PC** → choose the format:
+2. **Add device** → model **PC** → choose the format:
    - **USB stick (.img.gz)** – write with balenaEtcher, Raspberry Pi Imager (*Use custom*) or Rufus (choose *DD image*).
      The PC keeps pairing, Wi-Fi and player updates on the stick.
    - **ISO (.iso)** – for Ventoy, CD or a virtual machine. Same system; changes made on the device only last until the
      next restart (the settings come from the server anyway).
 3. Plug in the stick, connect the screen, start from USB (boot menu usually F12, F11, F8 or Esc). First start 1–2 min.
 
-**One image for several PCs:** *Pair a player* → *For: PC* – as with the Pi, every PC shows a code.
+**One image for several PCs:** *Pair devices* → *For: PC* – as with the Pi, every PC shows a code.
 
 **Differences to the Pi:** the system is a **live system** – always write-protected, power cuts do no harm. There are
 **no system updates**: new software (also browser security fixes) comes with a new image – *Download image again*, rewrite
@@ -205,7 +205,7 @@ the player's data. No desktop, no SSH, no login on the console.
 ## Browser device – link only (since 0.36)
 
 For devices that already have a browser – smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk)
-or just a browser in full screen. *Add player* → model **Browser device** → *Create link*. The admin shows a secret link
+or just a browser in full screen. *Add device* → model **Browser device** → *Create link*. The admin shows a secret link
 `http://<server>:8890/anzeige/<key>` that shows exactly this TV – set it as the start page.
 
 - “Online” means: the page fetches its data (every 15 s). A notification comes after 5 minutes without (as with the Pi).
@@ -245,7 +245,7 @@ A player at another place (office, holiday flat) reaches SignageCast through **T
 | Black screen, Pi online | Check *Video* in the admin; Pi 3/Zero 2 W: set the TV to H.264 / Full HD; try *Video decoding: CPU only*. |
 | Under-voltage warning | Use the official power supply and a short cable. |
 | TV on/off does nothing | Enable CEC on the TV; some TVs only switch on via CEC from standby, not when fully off. |
-| Direct mode: stream instead of page | Note in the admin: image before 0.24 (flash a new one) or fallback after browser problems (*Restart player*). |
+| Direct mode: stream instead of page | Note in the admin: image before 0.24 (flash a new one) or fallback after browser problems (*Restart playback*). |
 
 ---
 
@@ -280,7 +280,7 @@ weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"
 1. Verwaltung → **Geräte → + Neues Gerät** → **Player-Image laden** (auch unter Einstellungen → System → Updates, dort nach einem Update neu laden; einmalig, etwa 850 MB; mit der Signatur
    des Projekts geprüft). Nach einem SignageCast-Update erinnert „Zu erledigen“ daran, es neu zu laden – neue Images
    bekommen dann alle Korrekturen.
-2. **Player hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
+2. **Gerät hinzufügen:** Name (z. B. *Wartezimmer*), welcher Fernseher gezeigt wird, Modell und Netzwerk: **LAN-Kabel**
    oder **WLAN** (Name und Passwort – oder ein gespeichertes). **Image erstellen und herunterladen** klicken.
 3. **Raspberry Pi Imager** öffnen → Gerät wählen → Betriebssystem: ganz unten **Eigenes Image** (Use custom) → die
    heruntergeladene `signagecast-player-….img.gz` → SD-Karte → *Weiter*. Frage nach **OS-Anpassungen: Nein** – alles
@@ -297,10 +297,10 @@ der Pi die bekannten WLANs erneut – nach einem Stromausfall ist der Router oft
 
 Statt eines Images je Bildschirm kannst du **dasselbe Image auf beliebig viele Karten** schreiben:
 
-1. Unter **Player koppeln** das Netzwerk wählen und **Image für mehrere Geräte herunterladen** klicken
+1. Unter **Geräte koppeln** das Netzwerk wählen und **Image für mehrere Geräte herunterladen** klicken
    (`signagecast-player-kopplung.img.gz` – Server-Adresse und WLAN, aber kein Schlüssel).
 2. Wie oben flashen, Pi an den Fernseher, Strom an. Nach dem Start zeigt der Fernseher **„Code: 123 456“**.
-3. In der Verwaltung unter **Player koppeln** Code, Name und Fernseher eingeben → **Koppeln**. Wenige Sekunden später zeigt
+3. In der Verwaltung unter **Geräte koppeln** Code, Name und Fernseher eingeben → **Koppeln**. Wenige Sekunden später zeigt
    der Pi das Bild; danach ist er ein ganz normaler Player (Einstellungen, Knöpfe, *Image erneut herunterladen*).
 
 Die Verwaltung zeigt, wie viele Pis gerade einen Code anzeigen (Modell und IP, nie den Code). Ein Code gilt 10 Minuten,
@@ -315,7 +315,7 @@ wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht n
   Hardware-Dekodierung), Temperatur, letztes Systemupdate; Warnungen bei Unterspannung, Hitze, fehlendem HDMI und
   unpassenden Einstellungen (z. B. Pi 3 mit H.265 oder 4K). Meldet sich ein Pi 5 Minuten nicht, kommt eine Benachrichtigung.
 - **Knöpfe:** Bildschirmfoto, Name anzeigen (30 s auf dem Fernseher – den richtigen Pi finden), TV ein/aus per HDMI-CEC,
-  Player neu starten, Pi neu starten, Systemupdate jetzt, Protokoll holen.
+  Wiedergabe neu starten, Pi neu starten, Systemupdate jetzt, Protokoll holen.
 - **Letzte Meldung** (seit 0.43) im Kartentitel, zählt live mit: grün bis 30 s, gelb bis 60 s, danach rot (offline).
   Der Pi meldet sich alle 15 s.
 - **Fernverwaltung** (seit 0.43): alles, was an den Pi ging – Knöpfe, geänderte Einstellungen, WLAN, Terminal-Sitzungen –
@@ -347,7 +347,7 @@ Durchsagen, Gong) kommt aus dem HDMI des Pi.
   erlaubt. Die Werte sind geschätzt, auf echten Pis noch nicht gemessen.
 - Videos und Kameras dekodiert der Pi – sie können ruckeln, vor allem H.264 auf dem Pi 5 (ohne Hardware-Dekoder).
 - **Rückfall:** Stürzt der Browser ab oder lädt die Seite dreimal in 10 Minuten nicht, zeigt der Pi eine Stunde lang den
-  Stream; die Verwaltung zeigt einen Hinweis. *Player neu starten* versucht den Direktmodus sofort wieder.
+  Stream; die Verwaltung zeigt einen Hinweis. *Wiedergabe neu starten* versucht den Direktmodus sofort wieder.
 - Images von **vor 0.24** haben keinen Browser – die Verwaltung sagt das; neues Image herunterladen und flashen.
 - Sicherheit: Der Pi öffnet `http://<Server>:8890/anzeige/<Schlüssel>` (mit Offline-Kopie, seit 0.51, holt sein
   lokaler Dienst von dort). Der Schlüssel ist aus dem Geräteschlüssel
@@ -436,14 +436,14 @@ Fernwartung, Kopplungscode, Rückfall auf den Stream.
 | Netz | LAN-Kabel (nichts einzurichten) oder WLAN (Hotspot-Einrichtung wie beim Pi, wenn die WLAN-Karte das kann) |
 
 1. Verwaltung → **Geräte → + Neues Gerät** → **PC-Image laden** (auch unter Einstellungen → System → Updates; einmalig etwa 750 MB, mit der Signatur des Projekts geprüft).
-2. **Player hinzufügen** → Modell **PC** → Format wählen:
+2. **Gerät hinzufügen** → Modell **PC** → Format wählen:
    - **USB-Stick (.img.gz)** – mit balenaEtcher, Raspberry Pi Imager („Eigenes Image“) oder Rufus („DD-Image“) schreiben.
      Der PC merkt sich Kopplung, WLAN und Updates des Players auf dem Stick.
    - **ISO (.iso)** – für Ventoy, CD oder eine virtuelle Maschine. Dasselbe System; am Gerät Geändertes gilt nur bis
      zum Neustart (die Einstellungen kommen ohnehin vom Server).
 3. Stick einstecken, Bildschirm anschließen, vom USB-Stick starten (Startmenü meist F12, F11, F8 oder Esc). Erster Start 1–2 min.
 
-**Ein Image für mehrere PCs:** *Player koppeln* → *Für: PC* – wie beim Pi zeigt jeder PC einen Code.
+**Ein Image für mehrere PCs:** *Geräte koppeln* → *Für: PC* – wie beim Pi zeigt jeder PC einen Code.
 
 **Unterschiede zum Pi:** Das System ist ein **Live-System** – immer schreibgeschützt, Stromausfälle schaden nicht. Es
 gibt **keine Systemupdates**: neue Software (auch Sicherheitsupdates des Browsers) kommt mit einem neuen Image –
@@ -460,7 +460,7 @@ Desktop, kein SSH, keine Anmeldung an der Konsole.
 ## Browser-Gerät – nur ein Link (seit 0.36)
 
 Für Geräte, die schon einen Browser haben – Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus
-Kiosk) oder einfach ein Browser im Vollbild. *Player hinzufügen* → Modell **Browser-Gerät** → *Link erstellen*. Die
+Kiosk) oder einfach ein Browser im Vollbild. *Gerät hinzufügen* → Modell **Browser-Gerät** → *Link erstellen*. Die
 Verwaltung zeigt einen geheimen Link `http://<Server>:8890/anzeige/<Schlüssel>`, der genau diesen Fernseher zeigt –
 als Startseite eintragen.
 
@@ -502,4 +502,4 @@ Anleitung: [REMOTE.md](REMOTE.md#deutsch-kurz).
 | Schwarzes Bild, Pi online | In der Verwaltung *Video* ansehen; Pi 3/Zero 2 W: Fernseher auf H.264 / Full HD; *Video-Dekodierung: nur CPU* probieren. |
 | Warnung Unterspannung | Offizielles Netzteil und kurzes Kabel nehmen. |
 | TV ein/aus tut nichts | CEC am Fernseher einschalten; manche Fernseher lassen sich per CEC nur aus dem Standby einschalten. |
-| Direktmodus: Stream statt Seite | Hinweis in der Verwaltung: Image von vor 0.24 (neues flashen) oder Rückfall nach Browser-Problemen (*Player neu starten*). |
+| Direktmodus: Stream statt Seite | Hinweis in der Verwaltung: Image von vor 0.24 (neues flashen) oder Rückfall nach Browser-Problemen (*Wiedergabe neu starten*). |

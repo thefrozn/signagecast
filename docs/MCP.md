@@ -116,7 +116,7 @@ direkt – Layouts bauen und ändern, Vorschaubild ansehen, Layout einem Fernseh
 Laufschrift, Layout auf Zeit, Durchsage, Bilder hochladen, Streams und Datenquellen. **Seit 0.60** außerdem: Vorlagen als
 Startpunkt, **Lesbarkeits-Hinweise** zur Vorschau (dieselben Regeln wie im Designer: Schrift, Kontrast, Überlauf, verdeckt,
 mehrere Live-Videos), Datenquellen komplett (per Adresse anlegen, ändern, pausieren, löschen, jetzt abrufen), Dateien
-hochladen (PDF, Bilder/Videos, Galerie, Datei-Quellen inkl. CSV), Galerie-Ordner, Themen mit Suchbegriffen, Stream-Suche,
+hochladen (PDF, Bilder/Videos, Galerie, Datei-Quellen inkl. CSV), Galerie-Ordner, Themen mit Suchbegriffen, Live-Video-Suche,
 Einspieler und Radio mit Ton je Fernseher.
 
 **Seit 0.40 per Klick im Heimnetz:** Einstellungen → **KI-Assistenten** → *Computer verbinden*: Name, Programm und Recht
