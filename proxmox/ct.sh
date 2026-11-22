@@ -26,7 +26,7 @@ frage() {   # frage VAR "Text" "Vorschlag"
 echo "SignageCast – Proxmox LXC"
 command -v pct >/dev/null || { rot "This must run on a Proxmox VE host (pct not found)."; exit 1; }
 [ "$(id -u)" = 0 ] || { rot "Please run as root."; exit 1; }
-GRAFIK=(--dev0 /dev/dri/renderD128,mode=0666)
+GRAFIK=(--dev0 "/dev/dri/renderD128,mode=0666")
 if [ ! -e /dev/dri/renderD128 ]; then
   GRAFIK=()
   gelb "No GPU found at /dev/dri/renderD128. SignageCast works anyway: new devices start in direct mode (no GPU needed"
