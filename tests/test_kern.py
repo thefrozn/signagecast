@@ -647,6 +647,20 @@ class Direktmodus024(unittest.TestCase):
         self.assertEqual(PL.modus_fuer(alt), "stream")
         self.assertNotIn("schluessel", json.dumps(PL.liste(lambda g: [])))
 
+    def test_ohne_grafik_direkt(self):
+        """Seit 0.69: Server ohne Grafik – neue Pi 4/5 im Direktmodus, Pi 3 bleibt Stream, Wahl und Bestand bleiben."""
+        PL = self.PL
+        alt = PL.neu({"name": "Bestand", "tv": "tv"}, {"tv"})
+        PL.OHNE_GRAFIK = True
+        try:
+            self.assertEqual(PL.neu({"name": "A", "tv": "tv"}, {"tv"})["anzeige_modus"], "direkt")
+            self.assertEqual(PL.neu({"name": "B", "tv": "tv", "modell": "pi3"}, {"tv"})["anzeige_modus"], "stream")
+            self.assertEqual(PL.neu({"name": "C", "tv": "tv", "anzeige_modus": "stream"}, {"tv"})["anzeige_modus"], "stream")
+            self.assertEqual(PL.neu({"name": "D", "tv": "tv", "modell": "pc"}, {"tv"})["anzeige_modus"], "direkt")
+            self.assertEqual(alt["anzeige_modus"], "stream")                        # vorhandene Geräte bleiben
+        finally:
+            PL.OHNE_GRAFIK = False
+
     def test_ram_hinweis_direktmodus(self):
         """Seit 0.34: unter 2 GB nur ein Hinweis – der Direktmodus bleibt erlaubt. Agent liest MemTotal."""
         PL = self.PL

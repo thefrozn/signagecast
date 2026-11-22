@@ -20,7 +20,10 @@ fi
 
 [ "$(id -u)" = 0 ] || { echo "Bitte als root ausführen."; exit 1; }
 grep -q 'VERSION_ID="13"' /etc/os-release || echo "Warnung: getestet nur mit Debian 13."
-[ -e /dev/dri/renderD128 ] || echo "Warnung: /dev/dri/renderD128 fehlt – ohne Grafikeinheit kann der Stream nicht kodiert werden."
+# Ohne Grafik geht es auch (seit 0.69): neue Geräte starten im Direktmodus, der Streammodus kodiert per CPU
+[ -e /dev/dri/renderD128 ] || echo "Hinweis: keine Grafikeinheit (/dev/dri/renderD128) gefunden. SignageCast läuft trotzdem:
+  neue Geräte starten im Direktmodus (braucht am Server keine Grafik). Der Streammodus geht auch, kodiert dann aber
+  per CPU (ca. 1–2 Kerne je Kanal, höchstens Full HD)."
 
 # Container (lxc, docker …) oder nativ (VM/echter Rechner)?
 UMGEBUNG=$(systemd-detect-virt -c 2>/dev/null || true); [ -n "$UMGEBUNG" ] || UMGEBUNG=none

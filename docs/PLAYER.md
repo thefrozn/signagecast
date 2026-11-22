@@ -88,6 +88,8 @@ from the Pi's HDMI.
 
 - The Pi draws in **Full HD** (a 4K TV upscales); *Output 4K* forces 4K, which is usually too much for the Pi.
 - **Pi 3 and Zero 2 W** always use the stream (not enough memory); the setting is hidden for them.
+- **Server without usable graphics** (since 0.69): new Pi 4/5 start in direct mode, because the server would have to
+  encode the stream on the CPU. Stream mode can still be chosen; a note next to *Display* says what it costs.
 - **Memory:** at least **2 GB**, better **4 GB** – especially with videos, cameras, web pages or 4K output. With write
   protection the system runs in memory, so the browser's cache (up to 64 MB) and profile are kept there too. A Pi with
   less than 2 GB reports its memory, and its card shows a note; direct mode stays allowed. These are estimates, not yet
@@ -341,6 +343,8 @@ Durchsagen, Gong) kommt aus dem HDMI des Pi.
 
 - Der Pi zeichnet in **Full HD** (ein 4K-Fernseher rechnet hoch); *Ausgabe 4K* erzwingt 4K, das ist für den Pi meist zu viel.
 - **Pi 3 und Zero 2 W** zeigen immer den Stream (zu wenig Speicher); die Einstellung ist dort ausgeblendet.
+- **Server ohne nutzbare Grafik** (seit 0.69): Neue Pi 4/5 starten im Direktmodus, weil der Server den Stream sonst per
+  CPU kodieren müsste. Der Streammodus bleibt wählbar; ein Hinweis neben *Anzeige* sagt, was er kostet.
 - **Arbeitsspeicher:** mindestens **2 GB**, besser **4 GB** – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe.
   Mit Schreibschutz läuft das System im Arbeitsspeicher, also liegen auch Cache (bis 64 MB) und Profil des Browsers dort.
   Ein Pi mit weniger als 2 GB meldet seinen Speicher, seine Karte zeigt dann einen Hinweis; der Direktmodus bleibt

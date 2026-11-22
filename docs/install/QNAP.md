@@ -13,7 +13,8 @@ Installation by mouse in **Container Station** – no command line needed.
 - **CPU:** the NAS needs an **Intel or AMD** processor (x86). ARM models (many TS-x33, TS-x28, TS-x32 …) do **not**
   work – the SignageCast image is built for x86 only. The model's data sheet tells you the CPU.
 - **Graphics:** for smooth 4K a CPU with **Intel graphics** (Quick Sync, e.g. Celeron J4125, N5105, N100). Without it
-  SignageCast runs a software fallback in Full HD, which needs about one CPU core per watching TV.
+  SignageCast works too: new devices start in direct mode (no graphics needed on the server); a channel shown as a
+  video stream is encoded on the CPU in Full HD – about one CPU core per watching TV ([without a graphics card](../HARDWARE.md#without-a-graphics-card)).
 - **QTS 5.1 or later** (or QuTS hero) with **Container Station 3**.
 - **Memory:** about 1 GB RAM per TV, 10 GB disk space.
 - The NAS's **IP address** (Control Panel → Network & Virtual Switch, or Qfinder Pro), e.g. `192.168.1.20`.
@@ -71,7 +72,7 @@ The admin shows a note when a new version is out (**System → Updates**).
 
 | Problem | Solution |
 |---|---|
-| “Create” fails with an error about `/dev/dri` | The NAS has no usable graphics: delete the two lines `devices:` and `- /dev/dri:/dev/dri` and create again (software fallback). |
+| “Create” fails with an error about `/dev/dri` | The NAS has no usable graphics: delete the two lines `devices:` and `- /dev/dri:/dev/dri` and create again (SignageCast then works without graphics, see above). |
 | “port is already allocated” | Another app uses 8888 or 19090: change the **left** number, e.g. `"8899:8888"` – the TV address is then `http://<NAS-IP>:8899/tv`. |
 | Image cannot be downloaded / “exec format error” | ARM NAS – not supported. |
 | Clock shows the wrong time | Check `TZ` (list: “TZ identifier” in [this table](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)). |
@@ -95,7 +96,8 @@ Installation per Maus in der **Container Station** – ohne Kommandozeile.
 - **Prozessor:** Das NAS braucht einen **Intel- oder AMD**-Prozessor (x86). ARM-Modelle (viele TS-x33, TS-x28,
   TS-x32 …) gehen **nicht** – das SignageCast-Image gibt es nur für x86. Den Prozessor nennt das Datenblatt des Modells.
 - **Grafik:** Für flüssiges 4K eine CPU mit **Intel-Grafik** (Quick Sync, z. B. Celeron J4125, N5105, N100). Ohne läuft
-  ein Notbetrieb in Full HD per CPU – etwa ein Kern je Fernseher, der gerade zuschaut.
+  geht es auch: Neue Geräte starten im Direktmodus (am Server keine Grafik nötig); ein Kanal als Videostream wird per CPU
+  in Full HD kodiert – etwa ein Kern je Fernseher, der gerade zuschaut.
 - **QTS 5.1 oder neuer** (oder QuTS hero) mit **Container Station 3**.
 - **Speicher:** etwa 1 GB RAM je Fernseher, 10 GB Plattenplatz.
 - Die **IP-Adresse** des NAS (Systemsteuerung → Netzwerk & virtueller Switch oder Qfinder Pro), z. B. `192.168.1.20`.
@@ -133,7 +135,7 @@ Die Verwaltung zeigt einen Hinweis, wenn es eine neue Version gibt (**System →
 
 | Problem | Lösung |
 |---|---|
-| „Erstellen“ scheitert mit Fehler zu `/dev/dri` | Keine nutzbare Grafik: die Zeilen `devices:` und `- /dev/dri:/dev/dri` löschen, neu erstellen (Notbetrieb). |
+| „Erstellen“ scheitert mit Fehler zu `/dev/dri` | Keine nutzbare Grafik: die Zeilen `devices:` und `- /dev/dri:/dev/dri` löschen, neu erstellen (läuft dann ohne Grafik, siehe oben). |
 | „port is already allocated“ | Eine andere App nutzt 8888 oder 19090: die **linke** Zahl ändern, z. B. `"8899:8888"` – der Fernseher öffnet dann `http://<NAS-IP>:8899/tv`. |
 | Image lädt nicht / „exec format error“ | ARM-NAS – wird nicht unterstützt. |
 | Uhr geht falsch | `TZ` prüfen (für Deutschland `Europe/Berlin`). |

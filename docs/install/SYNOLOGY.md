@@ -14,8 +14,9 @@ Installation by mouse in **Container Manager** – no command line needed.
   DS720+, DS920+, DS923+). ARM models (most “j” and many value models) do **not** work – the SignageCast image is built
   for x86 only. Synology's model list (“Which CPU does my NAS have?”) tells you the CPU.
 - **Graphics:** for smooth 4K a CPU with **Intel graphics** – e.g. the Celeron J4125 in DS224+, DS423+, DS720+, DS920+.
-  The AMD Ryzen models (e.g. DS923+, DS1522+) have **no** graphics unit: SignageCast then runs a software fallback in
-  Full HD, which needs about one CPU core per watching TV.
+  The AMD Ryzen models (e.g. DS923+, DS1522+) have **no** graphics unit: SignageCast works anyway: new devices
+  start in direct mode (no graphics needed on the server); a channel shown as a video stream is encoded on the CPU in
+  Full HD – about one CPU core per watching TV ([without a graphics card](../HARDWARE.md#without-a-graphics-card)).
 - **DSM 7.2 or later** with **Container Manager** (older DSM: the “Docker” package – the steps are similar).
 - **Memory:** about 1 GB RAM per TV, 10 GB disk space.
 - The NAS's **IP address** (Control Panel → Network → Network Interface), e.g. `192.168.1.20`.
@@ -77,7 +78,7 @@ The admin shows a note when a new version is out (**System → Updates**). Tip: 
 
 | Problem | Solution |
 |---|---|
-| Build fails with an error about `/dev/dri` | The NAS has no usable graphics: delete the two lines `devices:` and `- /dev/dri:/dev/dri` and build again (software fallback). |
+| Build fails with an error about `/dev/dri` | The NAS has no usable graphics: delete the two lines `devices:` and `- /dev/dri:/dev/dri` and build again (SignageCast then works without graphics, see above). |
 | “port is already allocated” | Another app uses 8888 or 19090: change the **left** number, e.g. `"8899:8888"` – the TV address is then `http://<NAS-IP>:8899/tv`. |
 | Image cannot be downloaded / “exec format error” | ARM NAS – not supported. |
 | Admin or TV page cannot be reached | DSM firewall: allow 8888 and 19090 (see above). |
@@ -103,8 +104,9 @@ Installation per Maus im **Container Manager** – ohne Kommandozeile.
   DS224+, DS423+, DS720+, DS920+, DS923+). ARM-Modelle (die meisten „j“- und viele Einsteiger-Modelle) gehen **nicht** –
   das SignageCast-Image gibt es nur für x86. Welchen Prozessor dein NAS hat, steht in Synologys Modell-Liste.
 - **Grafik:** Für flüssiges 4K eine CPU mit **Intel-Grafik** – z. B. der Celeron J4125 in DS224+, DS423+, DS720+,
-  DS920+. Die AMD-Ryzen-Modelle (z. B. DS923+, DS1522+) haben **keine** Grafikeinheit: Dann läuft ein Notbetrieb in
-  Full HD per CPU – etwa ein Kern je Fernseher, der gerade zuschaut.
+  DS920+. Die AMD-Ryzen-Modelle (z. B. DS923+, DS1522+) haben **keine** Grafikeinheit: Es geht trotzdem: Neue Geräte starten im
+  Direktmodus (am Server keine Grafik nötig); ein Kanal als Videostream wird per CPU in Full HD kodiert – etwa ein Kern
+  je Fernseher, der gerade zuschaut.
 - **DSM 7.2 oder neuer** mit **Container Manager** (älteres DSM: Paket „Docker“ – die Schritte sind ähnlich).
 - **Speicher:** etwa 1 GB RAM je Fernseher, 10 GB Plattenplatz.
 - Die **IP-Adresse** des NAS (Systemsteuerung → Netzwerk → Netzwerkschnittstelle), z. B. `192.168.1.20`.
@@ -148,7 +150,7 @@ Ordners `docker/signagecast` sichert SignageCast mit; zusätzlich macht die Verw
 
 | Problem | Lösung |
 |---|---|
-| Erstellen scheitert mit Fehler zu `/dev/dri` | Keine nutzbare Grafik: die Zeilen `devices:` und `- /dev/dri:/dev/dri` löschen, neu erstellen (Notbetrieb). |
+| Erstellen scheitert mit Fehler zu `/dev/dri` | Keine nutzbare Grafik: die Zeilen `devices:` und `- /dev/dri:/dev/dri` löschen, neu erstellen (läuft dann ohne Grafik, siehe oben). |
 | „port is already allocated“ | Eine andere App nutzt 8888 oder 19090: die **linke** Zahl ändern, z. B. `"8899:8888"` – der Fernseher öffnet dann `http://<NAS-IP>:8899/tv`. |
 | Image lädt nicht / „exec format error“ | ARM-NAS – wird nicht unterstützt. |
 | Verwaltung oder TV-Seite nicht erreichbar | DSM-Firewall: 8888 und 19090 freigeben (siehe oben). |

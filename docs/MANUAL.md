@@ -433,6 +433,13 @@ Browsers block autoplay with sound until you interact once. Click/press OK once 
 **Which TV address do I use in Home Assistant?**
 The same HLS address, e.g. in a media player card or with `media_player.play_media` and content type `video`.
 
+**Do I need a graphics card?**
+No (since 0.69 this is the intended way, not a fallback). Without usable graphics new devices start in **direct mode**
+– the device draws the TV page itself and the server hardly works. Stream mode still works per device, but then the CPU
+encodes the video stream (Full HD, about one more core per channel while someone is watching); the admin page says
+so next to *Display*, in the channel's *Video stream* tab and in the performance test. See
+[hardware](HARDWARE.md#without-a-graphics-card).
+
 **Can I use a Raspberry Pi as server?**
 Not recommended – rendering and encoding need an x86 CPU with Intel/AMD graphics (see [hardware](HARDWARE.md)).
 A Pi is fine as the *player* that opens the stream.
@@ -593,6 +600,12 @@ je Feld; was hier nicht geht, ist ausgegraut, jede Änderung wird vorher kurz pr
 Seit 0.29: **Ausgabe** Standard Full HD (ein 4K-Fernseher rechnet selbst hoch; spart Bitrate) und **Aufnahme (Browser)** je
 Fernseher: 720p (spart CPU, Live-Videos in 720p), 1080p (Standard) oder 1440p (schärfer, deutlich mehr CPU) – das Layout
 bleibt 1920 × 1080 Punkte. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzug und Webhook-Schlüssel.
+
+**Ohne Grafikkarte (seit 0.69):** Findet SignageCast keine nutzbare Grafik, starten neue Geräte im **Direktmodus**
+(Pi 4/5, PC; Browser-Geräte ohnehin), und der Einrichtungsassistent gibt dem Fernseher-Browser die Adresse der
+TV-Seite statt des Videostreams. Vorhandene Geräte behalten ihren Modus. Der Streammodus bleibt je Gerät wählbar – dann
+kodiert die CPU (H.264, höchstens Full HD, etwa ein Kern mehr je Kanal, solange jemand zuschaut); ein Hinweis steht an
+der Wahl *Anzeige*, im Reiter *Videostream* des Kanals und im Leistungstest. Pi 3 und Zero 2 W gehen nur mit Stream.
 
 **Server oder Netz fällt aus (seit 0.51):** Player im **Direktmodus** mit Image ab 0.51 zeigen ihr letztes Layout mit dem
 letzten Datenstand aus ihrer Offline-Kopie weiter – auch nach einem Neustart ohne Netz. Statt Live-Videos, Kameras und

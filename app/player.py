@@ -43,6 +43,7 @@ MODELLE = ("pi45", "pi3", "pc")                        # Pi 5/4/400/CM4 | Pi 3/Z
 BROWSER = "browser"                                    # Browser-Gerät (seit 0.36): nur Link, kein Agent
 AUFLOESUNGEN = ("auto", "720", "1080", "2160")
 ANZEIGE_MODI = ("stream", "direkt")                    # Direktmodus nur Pi 4/5 und PC (Pi 3/Zero 2 W: zu wenig Speicher)
+OHNE_GRAFIK = False      # seit 0.69: setzt der Datendienst nach der Grafik-Erkennung (kein Hardware-Encoder nutzbar)
 BEFEHLE = ("neustart", "player_neu", "bild", "protokoll", "cec_an", "cec_aus", "erkennen", "systemupdate")
 ONLINE_S = 60
 LAENDER = {"Europe/Berlin": "DE", "Europe/Vienna": "AT", "Europe/Zurich": "CH", "Europe/Amsterdam": "NL", "Europe/Brussels": "BE",
@@ -195,6 +196,8 @@ def neu(d, tvs, schluessel=None):
         g["hdmi"] = True
     elif d.get("modell") == "pc" and "anzeige_modus" not in d:
         g["anzeige_modus"] = "direkt"                  # PC: Direktmodus als Standard (genug Speicher, VAAPI)
+    elif OHNE_GRAFIK and "anzeige_modus" not in d:
+        g["anzeige_modus"] = "direkt"                  # Server ohne Grafik: Stream kodiert per CPU – Direktmodus (Pi 3: _felder)
     _felder(g, dict({"name": d.get("name", "")}, **d), tvs)
     with sperre:
         daten["geraete"].append(g)

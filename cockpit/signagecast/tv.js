@@ -57,7 +57,7 @@ const TEXTE = {
             cpu_knapp: (p) => `CPU zu ${p.cpu} % ausgelastet (${p.kerne} Kerne, ${p.ketten} Kanäle) – wenig Reserve. Ein weiterer Kanal oder ein aufwendiges Layout kann zum Ruckeln führen.`,
             ram_knapp: (p) => `Nur noch ${p.frei} MB Speicher frei. Je Kanal etwa 0,9 GB einplanen – dem Container mehr Speicher geben.`,
             gpu_hoch: (p) => `Die Grafikeinheit läuft mit ${p.gpu} % ihres Höchsttakts – nahe an der Grenze. Bitrate oder Auflösung senken.`,
-            software: () => "Keine Grafikeinheit – Video wird per CPU kodiert (nur Full HD, H.264). Für 4K oder mehrere Kanäle die Intel-/AMD-Grafik an den Container durchreichen.",
+            software: () => "Keine Grafikeinheit – der Videostream wird per CPU kodiert (nur Full HD, H.264). Geräte im Direktmodus brauchen ihn nicht; für 4K oder mehrere Kanäle im Streammodus die Intel-/AMD-Grafik an den Container durchreichen.",
             mediamtx_langsam: (p) => `MediaMTX hat in den letzten 10 Minuten ${p.n}-mal Bilder weggeworfen („reader is too slow“) – sichtbar als Sprung um etwa eine Sekunde. Abhilfe: Update auf SignageCast 0.19.2 (größere Warteschlange) bzw. Ausgabe auf Full HD oder niedrigere Bitrate.`,
             server_ok: () => "Server in Ordnung: Erzeugung und Kodierung schaffen Echtzeit. Ruckelt es trotzdem, liegt es an Übertragung oder Abspielgerät – Test auf dem Gerät (unten).",
           } },
@@ -68,6 +68,9 @@ const TEXTE = {
             pi: ["Raspberry Pi", "Für Fernseher ohne brauchbaren Browser: fertiges Image auf eine SD-Karte schreiben, per HDMI anschließen."],
             pc: ["PC", "Mini-PC oder alter Laptop: fertiges Image auf einen USB-Stick, startet direkt in die Anzeige."] },
           fertig: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite:", fertigText: "Alles Weitere – Layout, Live-Videos, Radio, mehr Kanäle – findest du in den Bereichen oben.",
+          fertigDirekt: "Fertig! Öffne diese Adresse im Browser des Fernsehers und setze sie als Startseite – er zeigt den Kanal im Direktmodus:",
+          ohneGrafik: "Dieser Server hat keine nutzbare Grafik. Darum zeichnet der Browser des Fernsehers die TV-Seite selbst (Direktmodus) – das braucht am Server kaum Leistung. Ist der Browser zu schwach oder zu alt, öffne stattdessen die „Adresse des Kanals“ (Videostream, in der Übersicht des Kanals) – den kodiert dann die CPU (ca. 1–2 Kerne je Kanal, höchstens Full HD).",
+          browserName: "Fernseher-Browser",
           fertigPlayer: "Fertig! Lege jetzt das Gerät an: Image erstellen, schreiben, einstecken – es meldet sich danach von selbst unter „Geräte“.",
           zumPlayer: "Gerät anlegen", lokal: "„localhost“ erreicht der Fernseher nicht – nimm die IP dieses Computers im Heimnetz (Docker: SC_HOST_IP setzen).",
           mehr: "Außerdem möglich", mehrListe: { fern: "Fernstandorte – Geräte an anderen Orten über Tailscale oder Headscale", ki: "KI-Assistenten – Claude & Co. bauen Layouts und schreiben Laufschriften", pult: "Durchsage-Pult – eine eigene Seite nur für Meldungen, z. B. am Empfang" },
@@ -108,7 +111,8 @@ const TEXTE = {
           lautstaerke: "Lautstärke (%)", cec: "Fernseher nach Zeitplan ein- und ausschalten (HDMI-CEC)", cecText: "Wenn das Layout „schwarz“ ist (Zeitplan des Fernsehers), schaltet der Pi den Fernseher per HDMI aus und danach wieder ein. Am Fernseher muss CEC an sein (Samsung „Anynet+“, LG „SimpLink“, Sony „Bravia Sync“).",
           schreibschutz: "Schreibschutz (empfohlen)", schreibschutzText: "Das System läuft im Arbeitsspeicher, die SD-Karte bleibt unverändert – Stromausfall und Ausstecken schaden ihr nicht. Ändern startet den Pi neu.",
           systemupdate: "Systemupdates", su: { woechentlich: "wöchentlich (So 3 Uhr)", aus: "nur von Hand" }, hwdec: "Video-Dekodierung", hw: { auto: "Hardware (Standard)", aus: "nur CPU (bei Bildfehlern)" },
-          anzeige: "Anzeige", am: { stream: "Stream vom Server (Standard)", direkt: "Direkt: Pi zeigt die Seite selbst (experimentell)" },
+          streamCpu: "Dieser Server hat keine nutzbare Grafik: Im Streammodus kodiert er per CPU (ca. 1–2 Kerne je Kanal, höchstens Full HD). Sparsamer ist der Direktmodus.",
+          anzeige: "Anzeige", am: { stream: "Stream vom Server", direkt: "Direkt: Pi zeigt die Seite selbst (experimentell)" },
           anzeigeText: "Direkt: Der Pi öffnet die TV-Seite selbst im Browser – gestochen scharf, ohne Verzögerung, und der Server muss für diesen Pi nichts kodieren. Der Pi zeichnet in Full HD (4K-Fernseher rechnen hoch). Nur Pi 4/5 mit mindestens 2 GB Arbeitsspeicher (besser 4 GB); Videos und Kameras können ruckeln. Macht der Browser Probleme, nimmt der Pi für eine Stunde den Stream.",
           direktModus: "Direktmodus (Browser)",
           b: { bild: "Bildschirmfoto", erkennen: "Name anzeigen", cec_an: "TV ein", cec_aus: "TV aus", player_neu: "Wiedergabe neu starten", neustart: "Pi neu starten",
@@ -277,7 +281,7 @@ const TEXTE = {
             player: (n) => `Gerät „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
-            software: "Keine Grafikeinheit erkannt – Video wird in Software kodiert", passwort: "Startpasswort ändern",
+            software: "Keine Grafikeinheit erkannt – der Streammodus kodiert per CPU, sparsamer ist der Direktmodus", passwort: "Startpasswort ändern",
             bildrate: (n) => `„${n}“ ruckelt: zu wenige Bilder/s – Leistungstest starten`,
             allgemein: (g, seit) => `Seit ${seit} fallen alle Live-Videos durch (${{ aufloesung: "Auflösung zu niedrig", puffert: "puffert", steht: "Bild steht", fehler: "Fehler", startet_nicht: "startet nicht" }[g] || g}) – keine Strikes, vermutlich Störung bei YouTube oder im Browser`,
             doppelt: (n) => `„${n}“ ruckelt: Aufnahme verdoppelt Bilder – im Leistungstest „Ton und Stream neu starten“`,
@@ -387,7 +391,8 @@ const TEXTE = {
     verwaltungTitel: "Anmeldung an der Verwaltung", pwAlt: "Bisheriges Passwort", pwNeu: "Neues Passwort (mind. 8 Zeichen)",
     pwAendern: "Passwort ändern", pwGeaendert: "Passwort geändert", abmelden: "Abmelden",
     kodierungKarte: "Videokodierung", kodierungArt: { vaapi: "Grafikeinheit (VAAPI)", software: "Software (CPU)" },
-    kodierungSoftware: "Keine nutzbare Grafik – Notbetrieb: H.264 in Full HD per CPU (ca. 1–2 Kerne, solange jemand zuschaut).",
+    kodierungSoftware: "Keine nutzbare Grafik – der Streammodus kodiert H.264 in Full HD per CPU (ca. 1–2 Kerne je Kanal, solange jemand zuschaut). Der Direktmodus braucht am Server keine Grafik.",
+    streamOhneGrafik: "Dieser Server hat keine nutzbare Grafik: Den Videostream kodiert die CPU (ca. 1–2 Kerne, solange jemand zuschaut; höchstens Full HD). Geräte im Direktmodus brauchen ihn nicht.",
     epPuffer: "Puffer", epPufferArt: { vorab: "im Container vorab laden (empfohlen)", vorlauf: "Vorlauf im Browser", aus: "aus (direkt vom Server)" },
     epMenge: "Menge", epKomplett: "komplett", epMb: "nur den Anfang (MB)", epVorlauf: "Vorlauf (s)",
     epPufferText: "Vorab laden: Der Container holt jede neue Ausgabe, sobald sie erscheint, und der Fernseher spielt sie von dort – kein Hängen. " +
@@ -568,7 +573,7 @@ const TEXTE = {
             cpu_knapp: (p) => `CPU at ${p.cpu} % (${p.kerne} cores, ${p.ketten} channels) – little headroom. Another channel or a heavy layout may cause stutter.`,
             ram_knapp: (p) => `Only ${p.frei} MB memory free. Plan about 0.9 GB per channel – give the container more memory.`,
             gpu_hoch: (p) => `The graphics unit runs at ${p.gpu} % of its maximum clock – close to the limit. Lower bitrate or resolution.`,
-            software: () => "No graphics unit – video is encoded by the CPU (Full HD, H.264 only). For 4K or several channels pass the Intel/AMD graphics through to the container.",
+            software: () => "No graphics unit – the video stream is encoded by the CPU (Full HD, H.264 only). Devices in direct mode do not need it; for 4K or several channels in stream mode pass the Intel/AMD graphics through to the container.",
             mediamtx_langsam: (p) => `MediaMTX discarded frames ${p.n} times in the last 10 minutes (“reader is too slow”) – visible as a jump of about one second. Remedy: update to SignageCast 0.19.2 (larger queue) or Full HD output / lower bitrate.`,
             server_ok: () => "Server is fine: rendering and encoding keep up with real time. If it still stutters, transfer or the playback device is the cause – test on the device (below).",
           } },
@@ -579,6 +584,9 @@ const TEXTE = {
             pi: ["Raspberry Pi", "For TVs without a usable browser: write a ready image to an SD card, connect via HDMI."],
             pc: ["PC", "Mini PC or old laptop: write a ready image to a USB stick, starts straight into the display."] },
           fertig: "Done! Open this address in the TV's browser and set it as start page:", fertigText: "Everything else – layout, live videos, radio, more channels – is in the areas above.",
+          fertigDirekt: "Done! Open this address in the TV's browser and set it as the start page – it shows the channel in direct mode:",
+          ohneGrafik: "This server has no usable graphics. So the TV's browser draws the TV page itself (direct mode) – this needs hardly any power on the server. If the browser is too weak or too old, open the “Channel address” instead (the video stream, in the channel's overview) – the CPU then encodes it (about 1–2 cores per channel, Full HD at most).",
+          browserName: "TV browser",
           fertigPlayer: "Done! Now add the device: create the image, write it, plug it in – it then shows up under “Devices” by itself.",
           zumPlayer: "Add device", lokal: "The TV cannot reach “localhost” – use this computer's IP in your home network (Docker: set SC_HOST_IP).",
           mehr: "Also possible", mehrListe: { fern: "Remote sites – devices in other places via Tailscale or Headscale", ki: "AI assistants – Claude & co. build layouts and write tickers", pult: "Announcement desk – a page just for messages, e.g. at the reception" },
@@ -619,7 +627,8 @@ const TEXTE = {
           lautstaerke: "Volume (%)", cec: "Switch the TV on and off by schedule (HDMI-CEC)", cecText: "When the layout is “black” (schedule of the TV), the Pi switches the TV off via HDMI and on again later. CEC must be enabled on the TV (Samsung “Anynet+”, LG “SimpLink”, Sony “Bravia Sync”).",
           schreibschutz: "Write protection (recommended)", schreibschutzText: "The system runs in memory, the SD card stays unchanged – power cuts and unplugging do not harm it. Changing it restarts the Pi.",
           systemupdate: "System updates", su: { woechentlich: "weekly (Sun 3 am)", aus: "manual only" }, hwdec: "Video decoding", hw: { auto: "hardware (default)", aus: "CPU only (on picture errors)" },
-          anzeige: "Display", am: { stream: "stream from the server (default)", direkt: "direct: the Pi shows the page itself (experimental)" },
+          streamCpu: "This server has no usable graphics: in stream mode it encodes on the CPU (about 1–2 cores per channel, Full HD at most). Direct mode needs less.",
+          anzeige: "Display", am: { stream: "stream from the server", direkt: "direct: the Pi shows the page itself (experimental)" },
           anzeigeText: "Direct: the Pi opens the TV page itself in a browser – sharp, without delay, and the server does not need to encode anything for this Pi. The Pi draws in Full HD (4K TVs upscale). Pi 4/5 with at least 2 GB of memory only (better 4 GB); videos and cameras may stutter. If the browser has problems, the Pi uses the stream for one hour.",
           direktModus: "direct mode (browser)",
           b: { bild: "Screenshot", erkennen: "Show name", cec_an: "TV on", cec_aus: "TV off", player_neu: "Restart playback", neustart: "Restart Pi",
@@ -787,7 +796,7 @@ const TEXTE = {
             player: (n) => `Device “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
-            software: "No graphics unit found – video is encoded in software", passwort: "Change the initial password",
+            software: "No graphics unit found – stream mode encodes on the CPU, direct mode needs less", passwort: "Change the initial password",
             bildrate: (n) => `“${n}” stutters: too few frames/s – run the performance test`,
             allgemein: (g, seit) => `Since ${seit} all live videos fail (${{ aufloesung: "resolution too low", puffert: "buffering", steht: "picture frozen", fehler: "error", startet_nicht: "does not start" }[g] || g}) – no strikes, probably a YouTube or browser problem`,
             doppelt: (n) => `“${n}” stutters: capture duplicates frames – “Restart sound and stream” in the performance test`,
@@ -1029,7 +1038,8 @@ const TEXTE = {
     verwaltungTitel: "Admin login", pwAlt: "Current password", pwNeu: "New password (min. 8 characters)",
     pwAendern: "Change password", pwGeaendert: "Password changed", abmelden: "Log out",
     kodierungKarte: "Video encoding", kodierungArt: { vaapi: "Graphics unit (VAAPI)", software: "Software (CPU)" },
-    kodierungSoftware: "No usable graphics – fallback: H.264 in Full HD on the CPU (about 1–2 cores while someone is watching).",
+    kodierungSoftware: "No usable graphics – stream mode encodes H.264 in Full HD on the CPU (about 1–2 cores per channel while someone is watching). Direct mode needs no graphics on the server.",
+    streamOhneGrafik: "This server has no usable graphics: the CPU encodes the video stream (about 1–2 cores while someone is watching; Full HD at most). Devices in direct mode do not need it.",
     epPuffer: "Buffer", epPufferArt: { vorab: "preload in the container (recommended)", vorlauf: "buffer ahead in the browser", aus: "off (directly from the server)" },
     epMenge: "Amount", epKomplett: "complete", epMb: "only the beginning (MB)", epVorlauf: "Buffer ahead (s)",
     epPufferText: "Preload: the container fetches every new edition as soon as it appears and the TV plays it from there – no stalling. " +
@@ -1476,12 +1486,25 @@ async function assistent(inhalt, n = 1) {
   } else {
     let oben;
     if (asWeg === "browser") {
-      const st = await holen("/api/ha/einrichtung");
+      const [st, pl] = await Promise.all([holen("/api/ha/einrichtung"), holen("/api/player").catch(() => ({ geraete: [] }))]);
       const t = E.fernseher[0];
       const host = st.eigene_ip || location.hostname;
-      const adr = `http://${host.includes(":") ? `[${host}]` : host}:${st.stream_port || 8888}/${t.id}`;
+      const hostUrl = host.includes(":") ? `[${host}]` : host;
       const lokal = !st.eigene_ip && /^(localhost|127\.|\[?::1\]?$)/.test(location.hostname);
-      oben = `<p>${esc(T.as.fertig)}</p><pre>${esc(adr)}</pre>${lokal ? `<p class="schlecht">${esc(T.as.lokal)}</p>` : ""}`;
+      const lokalHtml = lokal ? `<p class="schlecht">${esc(T.as.lokal)}</p>` : "";
+      if (pl.ohne_grafik) {           // seit 0.69: ohne Grafik Browser-Gerät im Direktmodus statt Videostream (ein Gerät je Kanal)
+        const passt = (x) => x.modell === "browser" && !x.hdmi && x.tv === t.id;
+        let g = pl.geraete.find(passt);
+        if (!g) {
+          const r = await senden("/api/player/neu", { name: T.as.browserName, tv: t.id, modell: "browser" });
+          g = (await holen("/api/player")).geraete.find((x) => x.id === r.geraet);
+        }
+        const basis = pl.server || pl.server_auto || `http://${hostUrl}:${pl.webhook_port}`;
+        oben = `<p>${esc(T.as.fertigDirekt)}</p><pre>${esc(basis + g.link_pfad)}</pre>${lokalHtml}<p class="leise">${esc(T.as.ohneGrafik)}</p>`;
+      } else {
+        const adr = `http://${hostUrl}:${st.stream_port || 8888}/${t.id}`;
+        oben = `<p>${esc(T.as.fertig)}</p><pre>${esc(adr)}</pre>${lokalHtml}`;
+      }
     } else {
       oben = `<p>${esc(T.as.fertigPlayer)}</p><div class="zeile"><button class="knopf haupt" id="asPlayer">${esc(T.as.zumPlayer)}</button></div>`;
     }
@@ -2102,6 +2125,7 @@ async function playerSeite(inhalt, einrichten) {
         <div class="zeile"><label>${esc(T.pl.hwdec)}</label><select name="hwdec">${opt(["auto", "aus"], g.hwdec, T.pl.hw)}</select></div>
         <div class="zeile" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}><label>${esc(T.pl.anzeige)}</label><select name="anzeige_modus">${opt(["stream", "direkt"], g.anzeige_modus || "stream", T.pl.am)}</select></div>
         <p class="leise" data-anzeige ${g.modell === "pi3" ? "hidden" : ""}>${esc(T.pl.anzeigeText)}</p>
+        <p class="warn" data-stream-cpu hidden>⚠ ${esc(T.pl.streamCpu)}</p>
         <div class="zeile"><button class="knopf haupt" data-speichern>${esc(T.speichern)}</button></div>
       <details class="erweitert" data-wlan><summary>${esc(T.pl.wlanAendern)}</summary><p class="leise">${esc(T.pl.wlanAendernText)}</p>
         ${plNetz("w" + g.id, P.wlan, false)}<div class="zeile"><button class="knopf" data-wlan-senden>${esc(T.pl.wlanSenden)}</button></div></details>
@@ -2178,7 +2202,11 @@ async function playerSeite(inhalt, einrichten) {
           anzeige_modus: w("modell").value === "pi3" ? "stream" : w("anzeige_modus").value });
         fvOffen.add(g.id); P = await holenP(); listeZeichnen();
       });
-      k.querySelector("[name=modell]").onchange = (e) => k.querySelectorAll("[data-anzeige]").forEach((x) => { x.hidden = e.target.value === "pi3"; });
+      // seit 0.69: Server ohne Grafik – Hinweis, sobald dieses Gerät den Stream nimmt (Pi 3 immer)
+      const streamCpu = () => { k.querySelector("[data-stream-cpu]").hidden = !P.ohne_grafik
+        || (k.querySelector("[name=modell]").value !== "pi3" && k.querySelector("[name=anzeige_modus]").value !== "stream"); };
+      k.querySelector("[name=modell]").onchange = (e) => { k.querySelectorAll("[data-anzeige]").forEach((x) => { x.hidden = e.target.value === "pi3"; }); streamCpu(); };
+      k.querySelector("[name=anzeige_modus]").onchange = streamCpu; streamCpu();
       k.querySelector("[data-wlan-senden]").onclick = (e) => aktion(e.target, async () => {
         await senden(`/api/player/${g.id}/wlan`, { wlan: wlanLesen() }); fvOffen.add(g.id); P = await holenP(); listeZeichnen(); }, T.pl.wlanGesendet);
       k.querySelector("[data-image-laden]").onclick = (e) => aktion(e.target, async () => {
@@ -2613,6 +2641,8 @@ function zeitZeile(z) {
     <button class="knopf gefahr" name="zweg">✕</button></div>`;
 }
 // Seit 0.22: Kodierung je Fernseher (Encoder, Preset, Tune, B-Frames) – was hier nicht geht, ist ausgegraut
+// seit 0.69: kein Hardware-Encoder nutzbar (wie ohne_grafik() im Datendienst)
+const ohneGrafik = (sta) => !!(sta && sta.kodierung) && !["vaapi", "qsv", "nvenc"].some((x) => ((sta.kodierung.encoder || {})[x] || {}).ok);
 const ENC_KURZ = { vaapi: "VAAPI", qsv: "QSV", nvenc: "NVENC", software: "Software" };
 function kodierungTeil(t, sta) {
   const verf = ((sta.kodierung || {}).encoder) || {};
@@ -2795,6 +2825,7 @@ async function fernseherSeite(inhalt) {
         </div><div class="kanal-teil" data-teil="stream"><h3>${esc(T.streamTechnik)}: ${t.aufloesung === 2160 ? "4K" : "Full HD"}${(t.aufnahme || 1080) !== 1080 ? " (" + esc(T.aufnahme) + " " + t.aufnahme + "p)" : ""}, ${t.bitrate_mbit} Mbit/s, ${
           (t.codec === "auto" ? (t.aufloesung === 2160 ? "H.265" : "H.264") + " (auto)" : t.codec === "h264" ? "H.264" : "H.265")}${
           t.encoder && t.encoder !== "auto" ? ", " + ENC_KURZ[t.encoder] : ""}</h3>
+        ${ohneGrafik(sta) ? `<p class="warn">⚠ ${esc(T.streamOhneGrafik)}</p>` : ""}
         <div class="zeile"><label>${esc(T.aufloesung)}</label><select name="aufloesung"><option value="2160" ${t.aufloesung === 2160 ? "selected" : ""}>4K (3840×2160)</option>
           <option value="1080" ${t.aufloesung === 1080 ? "selected" : ""}>Full HD (1920×1080)</option></select></div>
         <div class="zeile"><label>${esc(T.aufnahme)}</label><select name="aufnahme">${[720, 1080, 1440].map((h) =>

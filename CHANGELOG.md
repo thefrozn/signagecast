@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.69.0 (2026-11-22)
+- **Works without a graphics card – now said and built that way:** if the server finds no usable graphics (no
+  hardware encoder passes its test), **new devices start in direct mode** (Pi 4/5, PC; Pi 3/Zero 2 W stay on the
+  stream). Existing devices keep their mode.
+- **Setup assistant:** without graphics, the path *Browser of the TV* creates a browser device and shows the address
+  of the TV page (direct mode) instead of the video stream address.
+- **Notes where stream mode costs CPU:** next to *Display* in the device settings (when stream is chosen or the device
+  is a Pi 3), in the channel's *Video stream* tab, in the overview tip and in the performance test, each pointing to
+  direct mode.
+- **Installation:** `proxmox/ct.sh` no longer stops without a GPU (it used to exit with `SIGNAGECAST_YES`) and only
+  passes `/dev/dri/renderD128` through if it exists; `installieren.sh` no longer claims the stream cannot be encoded.
+- Device setting *Display*: “stream from the server” without “(default)”, since the default now depends on the server.
+- README, HARDWARE (new section *Without a graphics card* with a measurement), INSTALL, PLAYER and MANUAL updated.
+
 ## v0.68.0 (2026-11-20)
 - **One term per thing** (UI rules, stage 3, see [docs/GLOSSARY.md](docs/GLOSSARY.md)), German and English:
   - **Device** instead of “player” in the admin page, messages and notifications (*Add device*, *Pair devices*,

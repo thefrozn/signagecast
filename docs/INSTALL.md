@@ -3,7 +3,8 @@
 [← README](../README.md) · [live demo](https://thefrozn.github.io/signagecast/?sprache=en) · [hardware](HARDWARE.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
 Choose one way. All of them need an **x86 computer** (Intel or AMD CPU); for 4K a CPU with **Intel graphics**
-(Quick Sync) – see [hardware](HARDWARE.md). The TV only opens one address in its browser.
+(Quick Sync) – see [hardware](HARDWARE.md). Without usable graphics it works too: new devices then start in direct
+mode, the stream is encoded on the CPU ([without a graphics card](HARDWARE.md#without-a-graphics-card)). The TV only opens one address in its browser.
 
 | Way | For | Guide |
 |---|---|---|
@@ -24,7 +25,8 @@ Run on the Proxmox host shell, answer the questions (Enter = suggestion):
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 ```
 
-It creates a Debian 13 container, passes the Intel GPU through and installs SignageCast. At the end it shows the
+It creates a Debian 13 container, passes the Intel GPU through (if the host has one; without it only a note
+appears) and installs SignageCast. At the end it shows the
 admin address and a **random initial password** for the user `tvadmin` (since 0.62; before it was `tvadmin`). Read it
 again later on the Proxmox host: `pct exec <ID> -- cat /root/signagecast-startpasswort` – the file disappears by itself
 as soon as you set your own password. Your own password right away: `SC_PASSWORT='…' bash -c "$(curl …)"`.
@@ -80,7 +82,7 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
 
 or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the same command with `podman`.
 
-- `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics (software fallback).
+- `--device /dev/dri` passes the graphics through; leave it out on systems without Intel graphics ([without a graphics card](HARDWARE.md#without-a-graphics-card)).
   **To try SignageCast out, Docker without `/dev/dri` is enough.**
   Rootless Podman additionally needs `--group-add keep-groups`.
 - **Rootless Podman: use host networking.** Its default port forwarder can hide the client address – every request
@@ -224,7 +226,8 @@ Wege: **Proxmox** (Einzeiler oben in der Shell des Proxmox-Hosts), **eigener Rec
 *Geräte → + Neues Gerät → Dieser Rechner per HDMI*; in einer VM getestet, noch nicht auf echtem Mini-PC), **Debian 13** (`install.sh` als root, erneut
 ausführen = Update; Bild per HDMI mit `SC_HDMI=1`), **Docker/Podman** (`docker run …` oder `compose.yaml`), **Windows** ([Anleitung](install/WINDOWS.md): Docker Desktop mit einem PowerShell-Befehl oder WSL, nur Full HD – noch nicht auf echtem Windows getestet), **QNAP** ([Anleitung](install/QNAP.md))
 und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der Container-App des NAS. Nötig ist ein
-x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
+x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ohne Grafik starten neue Geräte im Direktmodus, der Stream wird per
+CPU kodiert ([ohne Grafikkarte](HARDWARE.md#without-a-graphics-card)); ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
 kann ab 0.23 ein **Raspberry Pi als Player** stehen – Image aus der Verwaltung, siehe [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player)
 (braucht Port 8890, im Docker-/NAS-Betrieb freigeben). **Rootless Podman** bitte mit `--network host` starten
 (Befehl oben): Die normale Portweiterleitung kann die Absenderadresse verdecken, dann wären Kamera-Streams (sonst nur im
@@ -242,7 +245,7 @@ kommt nur der Menüpunkt „SignageCast“ dazu, kein zweiter Port, keine zweite
 Cockpit kann Erweiterungen nicht pro Benutzer ausblenden – wer sich an diesem Cockpit anmelden darf, kann auch
 SignageCast einstellen. Docker/Podman nutzt 19090, weil auf vielen Servern Cockpit schon 9090 belegt.
 
-Zum Ausprobieren reicht Docker ohne `/dev/dri` (Software-Fallback). Wetter und Vorhersage kommen weltweit von MET
+Zum Ausprobieren reicht Docker ohne `/dev/dri` (läuft dann ohne Grafik, neue Geräte im Direktmodus). Wetter und Vorhersage kommen weltweit von MET
 Norway, amtliche Unwetterwarnungen (DWD) gibt es nur für Deutschland.
 
 Danach: Verwaltung öffnen, Startpasswort ändern, der Assistent führt durch Sprache, Ort und Home Assistant; am

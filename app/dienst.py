@@ -2464,6 +2464,12 @@ def codec_fuer(t):
     return t["codec"] if t["codec"] != "auto" else ("h265" if t["aufloesung"] == 2160 else "h264")
 
 
+def ohne_grafik():
+    """Kein Hardware-Encoder nutzbar (seit 0.69): der Streammodus kodiert dann per CPU. Solange die Erkennung läuft: nein."""
+    enc = (zustand.get("kodierung") or {}).get("encoder") or {}
+    return bool(zustand.get("kodierung")) and not any((enc.get(x) or {}).get("ok") for x in ("vaapi", "qsv", "nvenc"))
+
+
 def encoder_fuer(t):
     """Tatsächlicher Encoder: der gewählte, wenn er auf diesem Rechner geht und seine Probe bestanden hat – sonst
     automatisch (VAAPI, ohne nutzbare Grafik Software). Solange die Erkennung noch läuft: VAAPI wie bisher."""
@@ -3475,6 +3481,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                                       "server_auto": player_server() if not PL.daten["server"] else "", "stream_port": PL.daten["stream_port"],
                                       "offline_mb": OFF.grenze_mb(PL.daten.get("offline_mb")), "hdmi_moeglich": PL.hdmi_moeglich() and not CONTAINER,
                                       "hls_port": HLS_PORT, "webhook_port": WEBHOOK_PORT, "container": CONTAINER, "wartend": PL.wartend(),
+                                      "ohne_grafik": ohne_grafik(),
                                       "fern": {"art": FERN.k["art"], "server": FERN.k["server"]} if FERN.aktiv() else None})
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/aus", pfad)
         if m:                                        # Fernwartung: lange Anfrage nach Ausgabe (seit 0.33)
@@ -4307,6 +4314,7 @@ def main():
     def kodierung():
         zustand["kodierung"] = HW.pruefen()
         k = zustand["kodierung"]
+        PL.OHNE_GRAFIK = ohne_grafik()
         print(f"Kodierung: {k['art']} ({k['codec']}, bis {k['max_hoehe']}p)" + (f" – {k['grund']}" if k.get("grund") else ""), flush=True)
         render_schreiben(einst())
     threading.Thread(target=kodierung, daemon=True).start()

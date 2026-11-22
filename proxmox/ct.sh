@@ -4,7 +4,8 @@
 #   bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/main/proxmox/ct.sh)"
 #
 # Asks a few questions (Enter = suggested value), creates an unprivileged Debian 13 container with the Intel GPU
-# (/dev/dri/renderD128) passed through and installs SignageCast inside it.
+# (/dev/dri/renderD128) passed through, if there is one, and installs SignageCast inside it. Without a GPU (since 0.69)
+# new devices start in direct mode; stream mode still works but encodes on the CPU.
 # Without questions: SIGNAGECAST_YES=1 plus optional CTID, CT_HOSTNAME, CORES, RAM, DISK, STORAGE, BRIDGE, IP (dhcp or
 # 192.168.1.50/24), GW as environment variables. SC_PASSWORT=… sets the admin password yourself (otherwise random,
 # shown at the end and readable later with: pct exec <ID> -- cat /root/signagecast-startpasswort).
@@ -13,6 +14,7 @@ REPO=thefrozn/signagecast
 INSTALL_URL=${SIGNAGECAST_INSTALL_URL:-https://raw.githubusercontent.com/$REPO/main/install.sh}
 
 rot() { printf '\033[31m%s\033[0m\n' "$*"; }
+gelb() { printf '\033[33m%s\033[0m\n' "$*"; }
 gruen() { printf '\033[32m%s\033[0m\n' "$*"; }
 frage() {   # frage VAR "Text" "Vorschlag"
   local var=$1 text=$2 vorschlag=$3 antwort
@@ -24,10 +26,11 @@ frage() {   # frage VAR "Text" "Vorschlag"
 echo "SignageCast – Proxmox LXC"
 command -v pct >/dev/null || { rot "This must run on a Proxmox VE host (pct not found)."; exit 1; }
 [ "$(id -u)" = 0 ] || { rot "Please run as root."; exit 1; }
+GRAFIK=(--dev0 /dev/dri/renderD128,mode=0666)
 if [ ! -e /dev/dri/renderD128 ]; then
-  rot "No GPU found at /dev/dri/renderD128 – SignageCast needs an Intel GPU (Quick Sync/VAAPI) for H.265 encoding."
-  [ -n "${SIGNAGECAST_YES:-}" ] && exit 1
-  read -r -p "Continue anyway? [y/N]: " w </dev/tty; [ "${w,,}" = y ] || exit 1
+  GRAFIK=()
+  gelb "No GPU found at /dev/dri/renderD128. SignageCast works anyway: new devices start in direct mode (no GPU needed"
+  gelb "on the server). Stream mode also works, but then encodes on the CPU (about 1–2 cores per channel, Full HD at most)."
 fi
 
 frage CTID "Container ID" "$(pvesh get /cluster/nextid)"
@@ -56,7 +59,7 @@ NETZ="name=eth0,bridge=$BRIDGE,ip=$IP"
 [ "$IP" != dhcp ] && [ -n "$GW" ] && NETZ="$NETZ,gw=$GW"
 pct create "$CTID" "$TSTORE:vztmpl/$VORLAGE" --hostname "$CT_HOSTNAME" --cores "$CORES" --memory "$RAM" --swap 512 \
   --rootfs "$STORAGE:$DISK" --net0 "$NETZ" --unprivileged 1 --features nesting=1 --onboot 1 --timezone host \
-  --dev0 /dev/dri/renderD128,mode=0666 --description "SignageCast – https://github.com/$REPO" >/dev/null
+  "${GRAFIK[@]}" --description "SignageCast – https://github.com/$REPO" >/dev/null
 pct start "$CTID"
 
 echo "== Waiting for network"

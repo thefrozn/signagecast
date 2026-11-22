@@ -49,7 +49,7 @@ docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
-Zum Ausprobieren reicht Docker ohne `/dev/dri` (Software-Fallback) – einfach `--device /dev/dri` weglassen.
+Zum Ausprobieren reicht Docker ohne `/dev/dri` (läuft dann ohne Grafik, siehe unten) – einfach `--device /dev/dri` weglassen.
 
 **Eigener Rechner (ISO)** – Mini-PC oder altes Notebook mit UEFI: `signagecast-server-vX.Y.Z.iso` aus dem
 [neuesten Release](https://github.com/thefrozn/signagecast/releases/latest) auf einen USB-Stick schreiben und davon
@@ -224,8 +224,12 @@ Rundgang mit Bildern aller Bereiche: [Tour](docs/TOUR.de.md).
 ## Installation
 
 Nötig ist ein **x86-Rechner mit Intel-Grafik** (z. B. Mini-PC mit Intel N100) und ein Fernseher, dessen Browser H.265
-abspielt – oder ein Raspberry Pi bzw. PC als Gerät. Ohne nutzbare Grafik läuft ein Notbetrieb in Full HD. Mehr:
-[Hardware](docs/HARDWARE.md#deutsch-kurz).
+abspielt – oder ein Raspberry Pi bzw. PC als Gerät. Mehr: [Hardware](docs/HARDWARE.md#deutsch-kurz).
+
+**Ohne Grafikkarte geht es auch** (seit 0.69): Findet SignageCast keine nutzbare Grafik, starten neue Geräte im
+**Direktmodus** – das Gerät am Fernseher zeichnet die TV-Seite selbst, der Server braucht dafür kaum Leistung. Der
+**Streammodus** lässt sich je Gerät trotzdem einschalten; dann kodiert die CPU (H.264, höchstens Full HD, etwa ein
+Kern mehr je Kanal, solange jemand zuschaut), und die Verwaltung weist darauf hin.
 
 | Wo | Wie | Anleitung |
 |---|---|---|
