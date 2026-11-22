@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.69.1 (2026-11-22)
+- **Direct mode is no longer marked experimental:** tested on a real Raspberry Pi 4 (Wi-Fi), also via Tailscale, without
+  stutter. The option under *Display* now reads “direct: the device shows the page itself”; the Raspberry Pi note in
+  *Add device* names what is tested (Pi 4) and what is not yet (Pi 5, Pi 3, Zero 2 W).
+- PLAYER and HARDWARE docs updated.
+
 ## v0.69.0 (2026-11-22)
 - **Works without a graphics card – now said and built that way:** if the server finds no usable graphics (no
   hardware encoder passes its test), **new devices start in direct mode** (Pi 4/5, PC; Pi 3/Zero 2 W stay on the

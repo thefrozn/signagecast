@@ -16,7 +16,7 @@ You create a ready SD card image in the admin and manage all Pis there – no co
 |---|---|
 | **Pi 5, Pi 4, Pi 400** (also CM4) | up to **4K** – the TV in SignageCast can stay on H.265 / 4K |
 | **Pi 3, Zero 2 W** | **Full HD with H.264 only** – set the TV in SignageCast to codec *H.264* and resolution *Full HD* |
-| Memory (RAM) | stream: **1 GB** is enough (Zero 2 W: 512 MB) · [direct mode](#direct-mode-since-024-experimental): **at least 2 GB, better 4 GB** |
+| Memory (RAM) | stream: **1 GB** is enough (Zero 2 W: 512 MB) · [direct mode](#direct-mode-since-024): **at least 2 GB, better 4 GB** |
 | SD card | 8 GB or more, brand card (A1/A2) |
 | Power supply | the **official** one – cheap ones cause under-voltage (the admin warns) |
 | HDMI cable | Pi 4/5: micro HDMI, Zero 2 W: mini HDMI |
@@ -79,9 +79,9 @@ open and 60 new requests per hour. Pairing needs an image from 0.25 on.
   Previous networks stay as fallback.
 - **Download image again** for a new card (same key – an old card keeps working). **Remove** makes the key invalid.
 
-## Direct mode (since 0.24, experimental)
+## Direct mode (since 0.24)
 
-Under *Devices* → the Pi's card → *Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
+Tested on a real Raspberry Pi 4 (4 GB, Wi-Fi), also via Tailscale – smooth. Under *Devices* → the Pi's card → *Display* a Pi 4 or Pi 5 can show the TV page **itself** instead of the stream: Chromium runs in the
 kiosk shell `cage` (no desktop) and opens the page from your server. Text and ticker are sharp, there is no stream
 delay, and the server does not need to render or encode anything for this Pi. Sound (radio, announcements, gong) comes
 from the Pi's HDMI.
@@ -268,7 +268,7 @@ Kommandozeile, ohne Tastatur am Pi.
 |---|---|
 | **Pi 5, Pi 4, Pi 400** (auch CM4) | bis **4K** – der Fernseher in SignageCast kann auf H.265 / 4K bleiben |
 | **Pi 3, Zero 2 W** | **nur Full HD mit H.264** – den Fernseher in SignageCast auf Codec *H.264* und Auflösung *Full HD* stellen |
-| Arbeitsspeicher (RAM) | Stream: **1 GB** reicht (Zero 2 W: 512 MB) · [Direktmodus](#direktmodus-seit-024-experimentell): **mindestens 2 GB, besser 4 GB** |
+| Arbeitsspeicher (RAM) | Stream: **1 GB** reicht (Zero 2 W: 512 MB) · [Direktmodus](#direktmodus-seit-024): **mindestens 2 GB, besser 4 GB** |
 | SD-Karte | ab 8 GB, Markenkarte (A1/A2) |
 | Netzteil | das **offizielle** – billige führen zu Unterspannung (die Verwaltung warnt) |
 | HDMI-Kabel | Pi 4/5: Micro-HDMI, Zero 2 W: Mini-HDMI |
@@ -334,9 +334,9 @@ wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht n
 - **Image erneut herunterladen** für eine neue Karte (gleicher Schlüssel – eine alte Karte läuft weiter). **Entfernen**
   macht den Schlüssel ungültig.
 
-## Direktmodus (seit 0.24, experimentell)
+## Direktmodus (seit 0.24)
 
-Unter *Geräte* → Karte des Pi → *Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
+Getestet auf einem echten Raspberry Pi 4 (4 GB, WLAN), auch über Tailscale – ruckelfrei. Unter *Geräte* → Karte des Pi → *Anzeige* zeigt ein Pi 4 oder Pi 5 die TV-Seite **selbst** statt des Streams: Chromium läuft im
 Kiosk-Rahmen `cage` (ohne Desktop) und öffnet die Seite von deinem Server. Schrift und Laufband sind gestochen scharf,
 es gibt keine Stream-Verzögerung, und der Server muss für diesen Pi nichts zeichnen oder kodieren. Der Ton (Radio,
 Durchsagen, Gong) kommt aus dem HDMI des Pi.

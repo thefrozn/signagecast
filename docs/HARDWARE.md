@@ -55,7 +55,7 @@ What the author has running or has tested. Everything else should work if it mee
 | Installation ISO | server | virtual machine (UEFI, Secure Boot) | tested – **not yet on a real mini PC** |
 | Windows 10/11 Docker Desktop / WSL | server | `schnellstart.ps1` | **untested** on real Windows |
 | QNAP / Synology NAS | server | Container Station / Container Manager | **untested** on a real NAS (guides follow the official apps) |
-| Raspberry Pi 4 (4 GB) | player | player image, Wi-Fi, also via Tailscale | tested (stream and direct mode) |
+| Raspberry Pi 4 (4 GB) | player | player image, Wi-Fi, also via Tailscale | tested (stream and direct mode, smooth also via Tailscale) |
 | Raspberry Pi 5 | player | player image | **untested** on real hardware |
 | Raspberry Pi offline copy | player | player image | **untested** on a real Pi |
 | PC player (x86 image) / browser device | player | image / any browser | tested in a VM / in browsers |
@@ -96,7 +96,7 @@ Testcontainer (i5-7500T) etwa 180 % eines Kerns statt 100 % mit Grafik; die Verw
 **Raspberry Pi** eignet sich nicht als Server: Der Pi 5 hat keinen Video-Encoder, der Pi 4 nur H.264 bis 1080p und zu
 wenig CPU für Browser und Video. **Als Player am Fernseher** geht er ab 0.23 – siehe [Raspberry Pi als Player](PLAYER.md#deutsch-raspberry-pi-als-player). Je Fernseher etwa 1 GB RAM und ein Kern; der Fernseher-Browser muss für 4K H.265 können.
 **Getestete Geräte** (Tabelle oben): im Alltag Mini-PC Core i5-7500T (Proxmox-LXC), AMD Ryzen 9 4900H mit Vega
-(Proxmox-LXC), Raspberry Pi 4 als Player (WLAN, Tailscale), Samsung-Smart-TV (4K, H.265); getestet Docker (im Test-Container, mit und
+(Proxmox-LXC), Raspberry Pi 4 als Player (WLAN, Tailscale; Stream und Direktmodus ruckelfrei), Samsung-Smart-TV (4K, H.265); getestet Docker (im Test-Container, mit und
 ohne `/dev/dri`), Installations-ISO und PC-Player in einer VM. **Ungetestet:** echter Mini-PC mit ISO, Windows,
 QNAP/Synology, rootless Podman, Raspberry Pi 5, Pi-Offline-Kopie. Rückmeldungen gern in den GitHub Discussions.
 

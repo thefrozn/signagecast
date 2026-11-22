@@ -79,7 +79,7 @@ const TEXTE = {
           modelle: "Pi 5, Pi 4, Pi 400: bis 4K (H.265). Pi 3 und Zero 2 W: nur Full HD mit H.264 – den Kanal dann auf Codec „H.264“ und Auflösung „Full HD“ stellen.",
           ram: "Arbeitsspeicher: Für den Stream reicht 1 GB (Zero 2 W: 512 MB). Für den Direktmodus mindestens 2 GB, besser 4 GB – vor allem mit Videos, Kameras, Webseiten oder 4K-Ausgabe; mit Schreibschutz liegt auch alles, was der Browser speichert, im Arbeitsspeicher. Schätzwerte, auf echten Pis noch nicht gemessen.",
           bedarf: "Dazu: SD-Karte ab 8 GB (Markenkarte, A1/A2), für den Direktmodus einen Pi 4/5 mit mindestens 2 GB (besser 4 GB), offizielles Netzteil, HDMI-Kabel (Zero 2 W: Mini-HDMI). Zum Schreiben der Karte: Raspberry Pi Imager oder balenaEtcher.",
-          experimentell: "Neu in 0.23 und noch experimentell: Image-Bau und Verwaltung sind getestet, die Wiedergabe auf echten Pis noch nicht auf allen Modellen. Seit 0.24 kann ein Pi 4/5 die Seite auch direkt zeigen (Geräte → Karte des Pi → Anzeige).",
+          getestet: "Getestet mit einem echten Raspberry Pi 4 (WLAN, auch über Tailscale, Stream und Direktmodus ruckelfrei); Pi 5, Pi 3 und Zero 2 W sind noch nicht auf echter Hardware geprüft. Ein Pi 4/5 kann die Seite auch direkt zeigen (Geräte → Gerät → Einstellungen → Anzeige).",
           basis: "Player-Image", basisFehlt: "noch nicht geladen – einmalig etwa 850 MB", basisLaden: "Player-Image laden", basisNeu: "Neu laden",
           basisLaedt: (a, b) => `wird geladen … ${a} von ${b} MB`, basisBereit: (v, d) => `Version ${v} vom ${d} – bereit`, basisAlt: (s) => `veraltet – bitte neu laden (SignageCast ${s})`, basisFehler: "Laden fehlgeschlagen",
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
@@ -112,7 +112,7 @@ const TEXTE = {
           schreibschutz: "Schreibschutz (empfohlen)", schreibschutzText: "Das System läuft im Arbeitsspeicher, die SD-Karte bleibt unverändert – Stromausfall und Ausstecken schaden ihr nicht. Ändern startet den Pi neu.",
           systemupdate: "Systemupdates", su: { woechentlich: "wöchentlich (So 3 Uhr)", aus: "nur von Hand" }, hwdec: "Video-Dekodierung", hw: { auto: "Hardware (Standard)", aus: "nur CPU (bei Bildfehlern)" },
           streamCpu: "Dieser Server hat keine nutzbare Grafik: Im Streammodus kodiert er per CPU (ca. 1–2 Kerne je Kanal, höchstens Full HD). Sparsamer ist der Direktmodus.",
-          anzeige: "Anzeige", am: { stream: "Stream vom Server", direkt: "Direkt: Pi zeigt die Seite selbst (experimentell)" },
+          anzeige: "Anzeige", am: { stream: "Stream vom Server", direkt: "Direkt: das Gerät zeigt die Seite selbst" },
           anzeigeText: "Direkt: Der Pi öffnet die TV-Seite selbst im Browser – gestochen scharf, ohne Verzögerung, und der Server muss für diesen Pi nichts kodieren. Der Pi zeichnet in Full HD (4K-Fernseher rechnen hoch). Nur Pi 4/5 mit mindestens 2 GB Arbeitsspeicher (besser 4 GB); Videos und Kameras können ruckeln. Macht der Browser Probleme, nimmt der Pi für eine Stunde den Stream.",
           direktModus: "Direktmodus (Browser)",
           b: { bild: "Bildschirmfoto", erkennen: "Name anzeigen", cec_an: "TV ein", cec_aus: "TV aus", player_neu: "Wiedergabe neu starten", neustart: "Pi neu starten",
@@ -595,7 +595,7 @@ const TEXTE = {
           modelle: "Pi 5, Pi 4, Pi 400: up to 4K (H.265). Pi 3 and Zero 2 W: Full HD with H.264 only – then set the channel to codec “H.264” and resolution “Full HD”.",
           ram: "Memory: 1 GB is enough for the stream (Zero 2 W: 512 MB). Direct mode needs at least 2 GB, better 4 GB – especially with videos, cameras, web pages or 4K output; with write protection everything the browser stores is kept in memory too. Estimates, not yet measured on real Pis.",
           bedarf: "You also need: SD card of 8 GB or more (brand card, A1/A2), for direct mode a Pi 4/5 with at least 2 GB (better 4 GB), official power supply, HDMI cable (Zero 2 W: mini HDMI). To write the card: Raspberry Pi Imager or balenaEtcher.",
-          experimentell: "New in 0.23 and still experimental: image building and management are tested, playback on real Pis not yet on all models. Since 0.24 a Pi 4/5 can also show the page directly (Devices → the Pi's card → Display).",
+          getestet: "Tested with a real Raspberry Pi 4 (Wi-Fi, also via Tailscale, stream and direct mode without stutter); Pi 5, Pi 3 and Zero 2 W are not yet checked on real hardware. A Pi 4/5 can also show the page directly (Devices → device → Settings → Display).",
           basis: "Player image", basisFehlt: "not downloaded yet – about 850 MB once", basisLaden: "Download player image", basisNeu: "Download again",
           basisLaedt: (a, b) => `downloading … ${a} of ${b} MB`, basisBereit: (v, d) => `version ${v} from ${d} – ready`, basisAlt: (s) => `outdated – please reload (SignageCast ${s})`, basisFehler: "Download failed",
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
@@ -628,7 +628,7 @@ const TEXTE = {
           schreibschutz: "Write protection (recommended)", schreibschutzText: "The system runs in memory, the SD card stays unchanged – power cuts and unplugging do not harm it. Changing it restarts the Pi.",
           systemupdate: "System updates", su: { woechentlich: "weekly (Sun 3 am)", aus: "manual only" }, hwdec: "Video decoding", hw: { auto: "hardware (default)", aus: "CPU only (on picture errors)" },
           streamCpu: "This server has no usable graphics: in stream mode it encodes on the CPU (about 1–2 cores per channel, Full HD at most). Direct mode needs less.",
-          anzeige: "Display", am: { stream: "stream from the server", direkt: "direct: the Pi shows the page itself (experimental)" },
+          anzeige: "Display", am: { stream: "stream from the server", direkt: "direct: the device shows the page itself" },
           anzeigeText: "Direct: the Pi opens the TV page itself in a browser – sharp, without delay, and the server does not need to encode anything for this Pi. The Pi draws in Full HD (4K TVs upscale). Pi 4/5 with at least 2 GB of memory only (better 4 GB); videos and cameras may stutter. If the browser has problems, the Pi uses the stream for one hour.",
           direktModus: "direct mode (browser)",
           b: { bild: "Screenshot", erkennen: "Show name", cec_an: "TV on", cec_aus: "TV off", player_neu: "Restart playback", neustart: "Restart Pi",
@@ -1856,7 +1856,7 @@ async function playerSeite(inhalt, einrichten) {
     }
     const bereit = !!P.basis.vorhanden;
     inhalt.innerHTML = `<div class="karte"><h2>${esc(T.pl.titel)}</h2><p>${esc(T.pl.text)}</p>
-        <p class="leise">${esc(T.pl.modelle)}</p><p class="leise">${esc(T.pl.bedarf)}</p><p class="leise warn">${esc(T.pl.experimentell)}</p>
+        <p class="leise">${esc(T.pl.modelle)}</p><p class="leise">${esc(T.pl.bedarf)}</p><p class="leise">${esc(T.pl.getestet)}</p>
         <div class="zeile"><label>${esc(T.pl.basis)}</label><span id="plBasis">${basisText(false)}</span>
           <button class="knopf${P.basis.veraltet ? " haupt" : ""}" id="plBasisLaden" ${laedt() ? "disabled" : ""}>${esc(bereit ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
         <h3>${esc(T.pl.pc.titel)}</h3><p>${esc(T.pl.pc.text)}</p><p class="leise">${esc(T.pl.pc.bedarf)}</p>
