@@ -330,7 +330,7 @@ jedem Layout, auch nachts. Der Knopf wird rot, solange ein Notfall-Vollbild läu
 
 Einstellungen → Durchsage-Pult: das Pult für den Empfang (`http://<IP>:8890/pult` – es sendet und beendet Durchsagen,
 mehr nur mit weiteren Rechten des Zugangs),
-die Stimme (offline mit Piper: Kerstin oder Thorsten), Gong und Vorlagen, weiter unten die Vorlagen und der Warnton des
+die Stimme (offline mit Piper: Kerstin oder Thorsten, englisch LJ Speech oder Joe), Gong und Vorlagen, weiter unten die Vorlagen und der Warnton des
 **Notfall-Vollbilds** und die Webhook-Befehle. Die Zugänge zum Pult (eigenes Passwort, Kanäle, Rechte wie
 **Laufschrift**, **Layout vorübergehend umschalten**, **Fernseher ein- und ausschalten**) und der Schlüssel für die
 **Meldung per Webhook** stehen unter Einstellungen → Konten & Zugang.

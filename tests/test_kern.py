@@ -239,6 +239,13 @@ class EinstellungenUndLayouts(unittest.TestCase):
         p = E.pruefen({"pult": {"zugaenge": [{"id": "rezep1", "name": "Rezeption", "passwort": h, "fernseher": ["tv", "../x"]}],
                                 "stimme": "ramona", "dauer_s": 120}})["pult"]
         self.assertEqual((p["zugaenge"][0]["fernseher"], p["stimme"]), (["tv"], "kerstin"))
+        import durchsage as DS                                   # seit 0.69.4: englische Stimmen, Liste überall gleich
+        self.assertEqual(set(DS.STIMMEN), set(E.STIMMEN))
+        self.assertEqual({k for k, v in DS.STIMMEN.items() if v["sprache"] == "en"}, {"ljspeech", "joe"})
+        for k, v in DS.STIMMEN.items():
+            self.assertTrue(v["pfad"].startswith(v["sprache"] + "/"), k)
+            self.assertRegex(v["onnx"] + v["json"], r"^[0-9a-f]{128}$")
+        self.assertEqual(E.zusammenfuehren(E.STANDARD, {"pult": {"stimme": "joe"}})["pult"]["stimme"], "joe")
         with self.assertRaises(E.Fehler):
             E.pruefen({"pult": {"dauer_s": 5000}})
         with self.assertRaises(E.Fehler):

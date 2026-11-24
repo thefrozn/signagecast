@@ -6,18 +6,26 @@ from meldung import Meldung
 DATEN = os.environ.get("SC_DATEN", "/var/lib/signagecast")
 ORDNER = os.path.join(DATEN, "piper")
 AUDIO = os.path.join(DATEN, "durchsage")
-VOICES = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE"
+VOICES = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0"
 
 PIPER = {"url": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz",
          "sha256": "a50cb45f355b7af1f6d758c1b360717877ba0a398cc8cbe6d2a7a3a26e225992"}
-# Nur Stimmen mit freier Lizenz (CC0). Kerstin ist Standard (weiblich, sanft).
+# Nur Stimmen mit freier Lizenz (Datensatz CC0 oder gemeinfrei). Kerstin ist Standard (weiblich, sanft).
+# Seit 0.69.4 auch Englisch: LJ Speech (gemeinfrei, keithito.com) und Joe (CC0, Nabu Casa). Die Stimme liest den Text so,
+# wie er dasteht – für englische Durchsagen eine englische Stimme wählen.
 STIMMEN = {
-    "kerstin": {"name": "Kerstin", "art": "weiblich", "pfad": "kerstin/low/de_DE-kerstin-low",
+    "kerstin": {"name": "Kerstin", "art": "weiblich", "sprache": "de", "pfad": "de/de_DE/kerstin/low/de_DE-kerstin-low",
                 "onnx": "d352a7641892cebf2903859af94e9ba81a141110215fe3943bcda7f7da401b7a",
                 "json": "56e708556b7b9b7a53c4f8957e021421e69f11a600962bba554cffbe72cf2d47"},
-    "thorsten": {"name": "Thorsten", "art": "männlich", "pfad": "thorsten/medium/de_DE-thorsten-medium",
+    "thorsten": {"name": "Thorsten", "art": "männlich", "sprache": "de", "pfad": "de/de_DE/thorsten/medium/de_DE-thorsten-medium",
                  "onnx": "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819",
                  "json": "974adee790533adb273a1ac88f49027d2a1b8f0f2cf4905954a4791e79264e85"},
+    "ljspeech": {"name": "LJ Speech", "art": "weiblich", "sprache": "en", "pfad": "en/en_US/ljspeech/medium/en_US-ljspeech-medium",
+                 "onnx": "6f52a751e2349abe7a76735eb09dc1875298c77ea2342ffd2fef79ff81b87f22",
+                 "json": "141d612cc0a95ed7efc1ca936b845c2364967f2e9217c5dbfcf69fc4d6c65860"},
+    "joe": {"name": "Joe", "art": "männlich", "sprache": "en", "pfad": "en/en_US/joe/medium/en_US-joe-medium",
+            "onnx": "58afce0321b8d9c46d7cdf9c16500cc55a793b4220212dba6b70fb788b3baf06",
+            "json": "3d6d5410b3795cb1950595247ef8f06190719e6fdbfa3a2356d8ec368e1aad33"},
 }
 _laden = threading.Lock()
 stand = {"laeuft": False, "fehler": None}          # Fortschritt des Ladens für die Verwaltung

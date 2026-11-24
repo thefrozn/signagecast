@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.69.4 (2026-11-24)
+- **Two English voices for announcements:** *LJ Speech* (female, dataset public domain) and *Joe* (male, dataset CC0,
+  Nabu Casa), next to Kerstin and Thorsten. Settings → Announcement panel lists each voice with its language; the voice
+  reads the text as written, so pick one in the language of your announcements. Voices are downloaded on demand from
+  piper-voices v1.0.0 and checked against their SHA-256.
+- NOTICE and the component list (SBOM) now name Piper and the voices.
+- Schedule: the English label before a period reads “from” instead of “of”.
+
 ## v0.69.3 (2026-11-24)
 - **Direct mode survives a server restart without a browser restart.** After the service restarted it no longer knew
   when a device had last fetched the TV page and reported “never” – the device then treated that as *page does not

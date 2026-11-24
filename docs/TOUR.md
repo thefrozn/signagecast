@@ -319,7 +319,7 @@ layout, also at night. The button turns red while an emergency screen is shown.
 ![Emergency screen](tour/19b-emergency.jpg)
 
 Settings → Announcement panel: the panel for the reception (`http://<IP>:8890/pult` – it sends and ends
-announcements, nothing else unless the account has more rights), the voice (offline with Piper: Kerstin or Thorsten),
+announcements, nothing else unless the account has more rights), the voice (offline with Piper: Kerstin or Thorsten, English LJ Speech or Joe),
 chime and templates, further down the templates and the warning tone of the **emergency screen** and the webhook
 commands. The panel's accounts (own password, channels, rights such as **ticker**, **switch the layout for a while**,
 **switch TVs on/off**) and the key for **messages via webhook** are under Settings → Accounts & access.

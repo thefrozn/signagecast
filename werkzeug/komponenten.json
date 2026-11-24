@@ -18,6 +18,9 @@
    "pfade": ["cockpit/signagecast/xterm/addon-fit.js", "cockpit/signagecast/xterm/LICENSE-addon-fit"]},
   {"name": "MediaMTX", "id": "mediamtx", "version": "v1.21.3", "lizenz": "MIT",
    "url": "https://github.com/bluenviron/mediamtx", "purl": "pkg:golang/github.com/bluenviron/mediamtx@v1.21.3",
-   "pfade": [], "geladen": "installieren.sh / Dockerfile laden es zur Installation (Prüfsumme geprüft)"}
+   "pfade": [], "geladen": "installieren.sh / Dockerfile laden es zur Installation (Prüfsumme geprüft)"},
+  {"name": "Piper", "id": "piper", "version": "2023.11.14-2", "lizenz": "MIT",
+   "url": "https://github.com/rhasspy/piper", "purl": "pkg:github/rhasspy/piper@2023.11.14-2",
+   "pfade": [], "geladen": "der Datendienst lädt es erst, wenn eine Stimme für Durchsagen geladen wird (Prüfsumme geprüft)"}
  ]
 }

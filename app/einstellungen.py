@@ -8,6 +8,7 @@ import quellen as Q
 from meldung import Meldung
 import sicherung as S
 import speicherorte as SO
+STIMMEN = ("kerstin", "thorsten", "ljspeech", "joe")   # = durchsage.STIMMEN (ohne Import: einstellungen bleibt eigenständig)
 
 PFAD = os.environ.get("SC_EINSTELLUNGEN", "/etc/signagecast/einstellungen.json")
 
@@ -586,7 +587,7 @@ def pruefen(e):
                                        "meldung": bool(z.get("meldung", False)), "layout": bool(z.get("layout", False)),
                                        "schalten": bool(z.get("schalten", False))})
         if "vorlagen" in pu: sp["vorlagen"] = [_text(v, 120) for v in (pu["vorlagen"] or [])[:20] if str(v).strip()]
-        if "stimme" in pu: sp["stimme"] = pu["stimme"] if pu["stimme"] in ("kerstin", "thorsten") else "kerstin"
+        if "stimme" in pu: sp["stimme"] = pu["stimme"] if pu["stimme"] in STIMMEN else "kerstin"
         for k in ("vorlesen", "gong"):
             if k in pu: sp[k] = bool(pu[k])
         if "dauer_s" in pu: sp["dauer_s"] = _zahl(pu["dauer_s"], 10, 3600, int)

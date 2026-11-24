@@ -19,12 +19,12 @@ const TEXTE = {
               video: "Regeln", suche: "Live-Video-Suche", verbindung: "Verbindung", medien: "Bilder & Videos", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Konten & Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", notfall: "Notfall", einstellungen: "Einstellungen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerien", speicher: "Speicher", speicherorte: "Speicherorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Kanäle – keine Einstellungen. Adresse:",
-          stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm).",
+          stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm). Die Stimme liest den Text so, wie er dasteht – für englische Durchsagen eine englische Stimme wählen.",
           geladen: "geladen", nichtGeladen: "nicht geladen", laden: "Stimme laden", laedtGerade: "wird geladen …", vorlesen: "Durchsagen vorlesen",
           gong: "Gong vor der Durchsage", dauer: "Standard-Anzeigedauer (s)", zugaenge: "Zugänge", zugangText: "Jeder Zugang hat ein eigenes Passwort und darf nur die angehakten Kanäle erreichen (keiner angehakt = alle).",
           name: "Name", pwNeu: "neues Passwort", pwGesetzt: "Passwort gesetzt", pwFehlt: "noch kein Passwort", zugangNeu: "Zugang hinzufügen",
           entfernen: "Entfernen", vorlagen: "Vorlagen", vorlagenText: "Eine Vorlage je Zeile; „…“ markiert die Lücke für den Namen.",
-          art: { weiblich: "weiblich", "männlich": "männlich" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Kanäle mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
+          art: { weiblich: "weiblich", "männlich": "männlich" }, sprache: { de: "Deutsch", en: "Englisch" }, probe: "Probedurchsage", probeOk: "Probedurchsage gesendet", tonHinweis: "Kanäle mit Pult-Zugang nehmen echten Ton auf (für das Vorlesen).",
           darfAlarm: "darf das Notfall-Vollbild auslösen",
           recht: { meldung: "darf Laufschrift-Meldungen senden", layout: "darf das Layout vorübergehend umschalten", schalten: "darf Fernseher ein- und ausschalten (HA)" } },
     al: { titel: "Notfall-Vollbild", text: "Zeigt einen Text rot über den ganzen Bildschirm – über jedem Layout, auch nachts („schwarz“); ausgeschaltete Fernseher werden über Home Assistant eingeschaltet (Kanäle → „Über HA schalten“). Bleibt, bis jemand es beendet (Verwaltung, Pult oder Webhook).",
@@ -371,7 +371,7 @@ const TEXTE = {
     abweichung: "Abweichung", zeitWarnung: "Mehr als 2 s Abweichung – bitte die Uhr des Hosts prüfen (z. B. chrony/NTP auf Proxmox).",
     wetterKarte: "Wetter", zeitKarte: "Zeit", layoutWahl: "Layout", zeitplan: "Zeitplan (optional)",
     zeitplanText: "Zu bestimmten Zeiten ein anderes Layout zeigen, z. B. nachts nur die Uhr oder ganz schwarz (spart Strom).",
-    schwarz: "schwarz (aus)", von: "von", bis: "bis", zeitNeu: "Zeitraum hinzufügen", wetterText: "Wetterbild, Temperatur und Vorhersage kommen von dieser Entität; Räume, Kacheln und alles andere stellst du im Reiter „Layout“ ein.",
+    schwarz: "schwarz (aus)", von: "von", zeitVon: "von", bis: "bis", zeitNeu: "Zeitraum hinzufügen", wetterText: "Wetterbild, Temperatur und Vorhersage kommen von dieser Entität; Räume, Kacheln und alles andere stellst du im Reiter „Layout“ ein.",
     speichern: "Speichern", gespeichert: "Gespeichert", deaktiviert: "ausgeschaltet", fehler: "Fehler", laedt: "Lädt …", ja: "ja", nein: "nein",
     passwortHinweis: "Hinweis: Wenn du dich noch mit dem Startpasswort anmeldest, ändere es bitte (oben rechts im Menü → " +
       "Konten → tvadmin → Passwort festlegen).", ausblenden: "Ausblenden",
@@ -535,12 +535,12 @@ const TEXTE = {
               video: "Rules", suche: "Live video search", verbindung: "Connection", medien: "Pictures & videos", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Accounts & access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", notfall: "Emergency", einstellungen: "Settings", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Galleries", speicher: "Storage", speicherorte: "Storage locations" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen channels – no settings. Address:",
-          stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program).",
+          stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program). The voice reads the text as written – pick a voice in the language of your announcements.",
           geladen: "downloaded", nichtGeladen: "not downloaded", laden: "Download voice", laedtGerade: "downloading …", vorlesen: "Read announcements aloud",
           gong: "Chime before the announcement", dauer: "Default display time (s)", zugaenge: "Accounts", zugangText: "Each account has its own password and may only reach the ticked channels (none ticked = all).",
           name: "Name", pwNeu: "new password", pwGesetzt: "password set", pwFehlt: "no password yet", zugangNeu: "Add account",
           entfernen: "Remove", vorlagen: "Templates", vorlagenText: "One template per line; “…” marks the gap for the name.",
-          art: { weiblich: "female", "männlich": "male" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "Channels with a panel account record real sound (for reading aloud).",
+          art: { weiblich: "female", "männlich": "male" }, sprache: { de: "German", en: "English" }, probe: "Test announcement", probeOk: "Test announcement sent", tonHinweis: "Channels with a panel account record real sound (for reading aloud).",
           darfAlarm: "may trigger the emergency screen",
           recht: { meldung: "may send ticker messages", layout: "may switch the layout for a while", schalten: "may switch TVs on and off (HA)" } },
     al: { titel: "Emergency screen", text: "Shows a text in red across the whole screen – above any layout, also at night (“black”); switched-off TVs are switched on via Home Assistant (Channels → “Switch via HA”). Stays until someone ends it (admin, panel or webhook).",
@@ -891,7 +891,7 @@ const TEXTE = {
       "tvadmin → Set password).", ausblenden: "Dismiss",
     stream: "Video stream", laeuft: "running", aus: "off (nobody watching)", zuschauer: "Viewers", aktuell: "Now",
     qualitaet: "Quality", codec: "Codec", verloren: "dropped frames", bandbreite: "Bandwidth", cpu: "CPU", ram: "RAM free",
-    platte: "Disk free", laufzeit: "Uptime", last: "Load", kerne: "cores", von: "of",
+    platte: "Disk free", laufzeit: "Uptime", last: "Load", kerne: "cores", von: "of", zeitVon: "from",
     alleSek: (s) => (s % 60 ? `every ${s} s` : `every ${s / 60} min`), nurStream: "only while the stream runs",
     vorabFehler: "Preload",
     // Meldungen des Dienstes nach Kennung (app/meldung.py); auf Deutsch zeigt die Verwaltung den Text des Dienstes
@@ -1540,7 +1540,7 @@ async function pultSeite(inhalt, teil = "einstellung") {
         <p class="leise">${esc(T.pu.tonHinweis)}</p><p class="leise"><a href="#zugang">${esc(T.zg.pultVerweis)}</a></p></div>
       <div class="karte"><h2>${esc(T.pu.stimme)}</h2><p class="leise">${esc(T.pu.stimmeText)}</p>
         ${Object.entries(info.stimmen).map(([k, v]) => `<div class="zeile"><label><input type="radio" name="stimme" value="${k}" ${P.stimme === k ? "checked" : ""}>
-          ${esc(v.name)} (${esc(T.pu.art[v.art] || v.art)})</label><span class="${v.bereit ? "gut" : "leise"}">${esc(v.bereit ? T.pu.geladen : T.pu.nichtGeladen)}</span>
+          ${esc(v.name)} (${esc([T.pu.sprache[v.sprache] || v.sprache, T.pu.art[v.art] || v.art].filter(Boolean).join(", "))})</label><span class="${v.bereit ? "gut" : "leise"}">${esc(v.bereit ? T.pu.geladen : T.pu.nichtGeladen)}</span>
           ${v.bereit ? "" : `<button class="knopf" data-laden="${k}" ${info.laden.laeuft ? "disabled" : ""}>${esc(info.laden.laeuft ? T.pu.laedtGerade : T.pu.laden)}</button>`}</div>`).join("")}
         ${info.laden.fehler ? `<p class="schlecht">${esc(info.laden.fehler)}</p>` : ""}
         <div class="zeile"><label><input type="checkbox" id="puVorlesen" ${P.vorlesen ? "checked" : ""}> ${esc(T.pu.vorlesen)}</label></div>
@@ -2634,7 +2634,7 @@ async function allgemeinSeite(inhalt) {
 
 // ---------- Fernseher ----------
 function zeitZeile(z) {
-  return `<div class="zeile eintrag"><label>${esc(T.von)}</label><input type="time" name="zvon" value="${esc(z.von)}">
+  return `<div class="zeile eintrag"><label>${esc(T.zeitVon)}</label><input type="time" name="zvon" value="${esc(z.von)}">
     <label>${esc(T.bis)}</label><input type="time" name="zbis" value="${esc(z.bis)}">
     <select name="zlayout"><option value="schwarz" ${z.layout === "schwarz" ? "selected" : ""}>${esc(T.schwarz)}</option>
       ${E.layouts.map((l) => `<option value="${esc(l.id)}" ${l.id === z.layout ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>

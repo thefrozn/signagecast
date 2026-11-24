@@ -260,7 +260,7 @@ with `signagecast_webhook: "Bearer <key>"` in `secrets.yaml`, and in an automati
 From the admin itself (since 0.49): **📢 Announcement** at the top right – text, channels, display time, read aloud;
 the same page shows a ticker or the emergency screen.
 
-Settings → Announcement panel: download a voice (Kerstin or Thorsten, once), add an account with a password and tick the
+Settings → Announcement panel: download a voice (German: Kerstin or Thorsten; English since 0.69.4: LJ Speech or Joe – once), add an account with a password and tick the
 channels it may reach. At the reception open `http://<IP>:8890/pult`, log in, choose channels, click a template (the first “…”
 is selected – type the name), tick “read aloud” and send. The call appears in the middle of the screen and is read
 after a chime; because of the stream it takes about 6–10 seconds. Names are not stored (memory only, 2 hours).

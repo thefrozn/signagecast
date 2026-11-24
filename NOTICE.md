@@ -12,6 +12,7 @@ SignageCast itself is licensed under the MIT License (see `LICENSE`). It contain
 | [hls.js](https://github.com/video-dev/hls.js) 1.5.20 (light build) | `www/hls/` (with its `LICENSE`) | Apache License 2.0 |
 | [xterm.js](https://github.com/xtermjs/xterm.js) 5.5.0 with addon-fit 0.10.0 (The xterm.js authors) – terminal for remote maintenance | `cockpit/signagecast/xterm/` (with its `LICENSE` files) | MIT License |
 | [MediaMTX](https://github.com/bluenviron/mediamtx) v1.21.3 | downloaded by `installieren.sh` (checksum verified), not included | MIT License |
+| [Piper](https://github.com/rhasspy/piper) 2023.11.14-2 (text to speech for announcements) and the voices Kerstin, Thorsten (German, datasets CC0), LJ Speech (English, [dataset](https://keithito.com/LJ-Speech-Dataset/) public domain) and Joe (English, [dataset](https://github.com/NabuCasa/voice-datasets) CC0) from [piper-voices](https://huggingface.co/rhasspy/piper-voices) | downloaded on demand when a voice is loaded (checksum verified), not included | Piper: MIT License; voices: see datasets |
 | Chromium, ffmpeg, Xvfb, PulseAudio, Cockpit, fonts | Debian packages, installed by `installieren.sh` | their respective licenses |
 
 Logo (`docs/logo/`, `www/favicon.svg`, `cockpit/signagecast/logo.svg`): own design, MIT like the rest. The word mark uses
