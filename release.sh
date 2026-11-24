@@ -73,7 +73,13 @@ git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fehler "Tag $TAG gibt e
 OEFFENTLICH=$(sed -n 's/^SCHLUESSEL=//p' werkzeug/aktualisieren.sh)
 [ "$(sed -n 's/^SCHLUESSEL=//p' install.sh)" = "$OEFFENTLICH" ] || fehler "install.sh und aktualisieren.sh nennen verschiedene Schlüssel"
 [ "$(sed -n 's/^SCHLUESSEL = "\(.*\)"$/\1/p' app/player.py)" = "$OEFFENTLICH" ] || fehler "app/player.py nennt einen anderen Schlüssel"
-python3 -m unittest discover -s tests >/dev/null 2>&1 || fehler "Tests schlagen fehl (python3 -m unittest discover -s tests -v)"
+# Ausgabe behalten (seit 0.69.1: ein Trockenlauf scheiterte einmal, ohne Spur) – bei Fehlern die betroffenen Tests zeigen
+TESTLOG=$(mktemp /tmp/signagecast-tests.XXXXXX)
+if ! python3 -m unittest discover -s tests >"$TESTLOG" 2>&1; then
+  grep -E "^(FAIL|ERROR):" "$TESTLOG" | sed 's/^/   /'
+  fehler "Tests schlagen fehl (ganze Ausgabe: $TESTLOG)"
+fi
+rm -f "$TESTLOG"
 find . -name __pycache__ -prune -exec rm -rf {} +
 if command -v shellcheck >/dev/null; then
   shellcheck -S warning install.sh installieren.sh werkzeug/aktualisieren.sh werkzeug/deinstallieren.sh werkzeug/startpasswort.sh \

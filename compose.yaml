@@ -10,7 +10,7 @@ services:
     ports:
       - "8888:8888"                  # Stream für die Fernseher
       - "19090:19090"                # Verwaltung (19090, weil auf vielen Servern Cockpit 9090 belegt)
-      # - "8890:8890"                # optional: Webhook, Durchsage-Pult und Raspberry-Pi-Player
+      - "8890:8890"                  # Geräte (Pi/PC/Browser im Direktmodus), Webhook, Durchsage-Pult
     volumes:
       - signagecast:/data
       # - /mnt/nas/bilder:/speicherorte/nas:ro   # optional (seit 0.48): Ordner als „Speicherort“ (Einstellungen → Speicherorte)

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.69.2 (2026-11-24)
+- **Docker: port 8890 is part of the standard command.** Since 0.69 devices without a graphics unit start in direct
+  mode and fetch the TV page through port 8890 (also browser devices and the link shown by the setup assistant). The
+  `docker run` line in README and INSTALL, `compose.yaml` and the QNAP/Synology files now publish `-p 8890:8890`;
+  before it was optional and following the guide left Pi and browser devices without a connection.
+
 ## v0.69.1 (2026-11-22)
 - **Direct mode is no longer marked experimental:** tested on a real Raspberry Pi 4 (Wi-Fi), also via Tailscale, without
   stutter. The option under *Display* now reads “direct: the device shows the page itself”; the Raspberry Pi note in

@@ -23,7 +23,7 @@ You create a ready SD card image in the admin and manage all Pis there – no co
 | On your computer | [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or [balenaEtcher](https://etcher.balena.io/) |
 
 The Pis reach the server on the **webhook port 8890**. Native installations (Proxmox, Debian) need nothing extra; with
-**Docker / QNAP / Synology** add `- "8890:8890"` under `ports:` (or `-p 8890:8890`).
+**Docker / QNAP / Synology** the standard command and files publish it since 0.69.2 (`-p 8890:8890` or `- "8890:8890"` under `ports:`; add it to older setups).
 
 ## Step by step
 
@@ -275,7 +275,7 @@ Kommandozeile, ohne Tastatur am Pi.
 | Am Computer | [Raspberry Pi Imager](https://www.raspberrypi.com/software/) oder [balenaEtcher](https://etcher.balena.io/) |
 
 Die Pis erreichen den Server über den **Webhook-Port 8890**. Native Installationen (Proxmox, Debian) brauchen nichts
-weiter; bei **Docker / QNAP / Synology** unter `ports:` die Zeile `- "8890:8890"` ergänzen (bzw. `-p 8890:8890`).
+weiter; bei **Docker / QNAP / Synology** geben Befehl und Dateien ihn seit 0.69.2 frei (`-p 8890:8890` bzw. `- "8890:8890"` unter `ports:`; bei älteren Einrichtungen ergänzen).
 
 ## Schritt für Schritt
 

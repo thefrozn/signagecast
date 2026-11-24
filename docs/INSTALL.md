@@ -76,7 +76,7 @@ One line:
 
 ```bash
 docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
-  -p 8888:8888 -p 19090:19090 -v signagecast:/data \
+  -p 8888:8888 -p 8890:8890 -p 19090:19090 -v signagecast:/data \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 
@@ -119,7 +119,7 @@ or with [`compose.yaml`](../compose.yaml): `docker compose up -d`. Podman: the s
   rootless Podman) both would collide. Change it with `SC_VERWALTUNG_PORT`, the stream port with `SC_STREAM_PORT`.
 - **Why a random password?** `tvadmin` is a Linux account that can log in to Cockpit (with a terminal). A known
   default password would be a risk – since 0.62 also in containers. `SC_PASSWORT=…` sets your own (at least 8 characters).
-- **Webhook messages** (optional, from v0.16): port **8890** (`SC_WEBHOOK_PORT`; Docker: add `-p 8890:8890`), only
+- **Webhook messages** (optional, from v0.16): port **8890** (`SC_WEBHOOK_PORT`; Docker: `-p 8890:8890`, in the standard command since 0.69.2), only
   answers with a secret key created in the admin – see the [manual](MANUAL.md). The same port serves the announcement
   panel and the **Raspberry Pi players** (signed requests per device).
 - The installer checks whether the stream port is free and stops with a hint if another program uses it.
@@ -229,7 +229,7 @@ und **Synology** ([Anleitung](install/SYNOLOGY.md)) – beide per Klick in der C
 x86-Rechner (Intel/AMD), für 4K mit Intel-Grafik; ohne Grafik starten neue Geräte im Direktmodus, der Stream wird per
 CPU kodiert ([ohne Grafikkarte](HARDWARE.md#without-a-graphics-card)); ARM (Raspberry Pi, ARM-NAS) geht als Server nicht. Am Fernseher
 kann ab 0.23 ein **Raspberry Pi als Player** stehen – Image aus der Verwaltung, siehe [PLAYER.md](PLAYER.md#deutsch-raspberry-pi-als-player)
-(braucht Port 8890, im Docker-/NAS-Betrieb freigeben). **Rootless Podman** bitte mit `--network host` starten
+(braucht Port 8890; Docker-Befehl und NAS-Dateien geben ihn seit 0.69.2 frei). **Rootless Podman** bitte mit `--network host` starten
 (Befehl oben): Die normale Portweiterleitung kann die Absenderadresse verdecken, dann wären Kamera-Streams (sonst nur im
 Container lesbar) aus dem Netz abrufbar.
 

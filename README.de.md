@@ -45,7 +45,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/thefrozn/signagecast/mai
 
 ```bash
 docker run -d --name signagecast --restart unless-stopped --device /dev/dri \
-  -p 8888:8888 -p 19090:19090 -v signagecast:/data \
+  -p 8888:8888 -p 8890:8890 -p 19090:19090 -v signagecast:/data \
   -e TZ=Europe/Berlin -e SC_HOST_IP=192.168.1.20 ghcr.io/thefrozn/signagecast:latest
 ```
 

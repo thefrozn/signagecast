@@ -40,6 +40,7 @@ Installation by mouse in **Container Station** – no command line needed.
        ports:
          - "8888:8888"                # stream for the TVs
          - "19090:19090"              # admin
+         - "8890:8890"                # devices (Pi/PC/browser in direct mode), webhook, announcement panel
        volumes:
          - signagecast:/data
        environment:
@@ -79,7 +80,7 @@ The admin shows a note when a new version is out (**System → Updates**).
 | Picture stutters | Without Intel graphics the CPU encodes (Full HD) – the NAS may be too weak; check **System → Performance** and run fewer TVs at once. |
 | Home Assistant guide shows a wrong IP | `SC_HOST_IP` must be the IP of the NAS. |
 
-Webhook messages, the announcement panel and [Raspberry Pi players](../PLAYER.md) additionally need the line `- "8890:8890"` under `ports:`.
+Port 8890 (in the file above) is used by devices in direct mode – Raspberry Pi, PC and browser devices – and by webhook messages and the announcement panel. Without a graphics unit new devices start in direct mode, so keep it.
 
 ---
 
@@ -142,4 +143,4 @@ Die Verwaltung zeigt einen Hinweis, wenn es eine neue Version gibt (**System →
 | Bild ruckelt | Ohne Intel-Grafik rechnet die CPU (Full HD) – das NAS ist evtl. zu schwach; **System → Leistungstest** prüfen, weniger Fernseher gleichzeitig. |
 | Home-Assistant-Anleitung zeigt falsche IP | `SC_HOST_IP` muss die IP des NAS sein. |
 
-Meldungen per Webhook, das Durchsage-Pult und [Raspberry-Pi-Player](../PLAYER.md#deutsch-raspberry-pi-als-player) brauchen zusätzlich die Zeile `- "8890:8890"` unter `ports:`.
+Port 8890 (in der Datei oben) brauchen Geräte im Direktmodus – [Raspberry Pi](../PLAYER.md#deutsch-raspberry-pi-als-player), PC und Browser-Geräte – sowie Webhook und Durchsage-Pult. Ohne Grafikeinheit starten neue Geräte im Direktmodus, die Zeile also drin lassen.
