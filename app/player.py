@@ -60,6 +60,7 @@ einmal = {}           # Download-Kennung -> {"id" ("" = Image für mehrere Pis),
 kopplungen = {}       # Anfrage-Kennung -> {"code", "schluessel", "bis", "ip", "modell", "geraet"} (nur im Speicher)
 koppel_zeiten = []    # Zeitpunkte neuer Kopplungsanfragen der letzten Stunde (Grenze gegen Durchprobieren)
 direkt_abruf = {}     # id -> Zeit des letzten Abrufs von daten.json im Direktmodus (zeigt: die Seite lebt)
+START = time.time()   # seit 0.69.3: Bezug, solange seit dem Start des Dienstes noch kein Abruf da ist (nicht „nie“)
 kameras_erlaubt = {}  # TV-Kennung -> {"cam_<id>", …} aus der letzten daten.json (nur diese Kamera-Streams gibt der Zugang frei)
 basis_stand = {a: {"phase": "", "geladen": 0, "gesamt": 0, "fehler": "", "code": "", "p": {}, "version": ""} for a in ARTEN}
 
@@ -644,9 +645,11 @@ def melden(g, bericht, ip, stream, bildschirm):
             g["wlan_soll"] = None
             speichern(daten)
         _verlauf_melden(g, bericht, offen, bool(g.get("wlan_soll")))
-    abruf = direkt_abruf.get(g["id"])
+    # Nach einem Neustart des Dienstes kennt er die Abrufe der Seite noch nicht – dann zählt die Zeit seit dem Start,
+    # sonst meldet der Player „Seite lädt nicht“ und startet den Browser neu (3× in 10 min: eine Stunde Stream)
+    abruf = direkt_abruf.get(g["id"]) or START
     return {"ok": True, "intervall": 15, "name": g["name"], "stream": stream, "lautstaerke": g["lautstaerke"],
-            "modus": modus_fuer(g, bericht), "direkt_abruf": int(time.time() - abruf) if abruf else None,
+            "modus": modus_fuer(g, bericht), "direkt_abruf": int(time.time() - abruf),
             "drehung": g["drehung"], "aufloesung": g["aufloesung"], "hwdec": g["hwdec"], "schreibschutz": g["schreibschutz"],
             "bildschirm": bildschirm, "befehle": [{"id": b["id"], "art": b["art"]} for b in offen],
             "wlan": {"rev": g["wlan_soll"]["rev"], "netze": g["wlan_soll"]["netze"]} if g.get("wlan_soll") else None,

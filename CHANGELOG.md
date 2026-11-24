@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.69.3 (2026-11-24)
+- **Direct mode survives a server restart without a browser restart.** After the service restarted it no longer knew
+  when a device had last fetched the TV page and reported “never” – the device then treated that as *page does not
+  load*, restarted its browser (a short black screen) and, after three restarts within 10 minutes (updates, flaky
+  network), switched to stream mode for an hour. Until the first fetch after a start the server now counts from its
+  own start time, so a page that really does not load is still detected after 90 seconds. Server-side only; existing
+  player images benefit without an update.
+
 ## v0.69.2 (2026-11-24)
 - **Docker: port 8890 is part of the standard command.** Since 0.69 devices without a graphics unit start in direct
   mode and fetch the TV page through port 8890 (also browser devices and the link shown by the setup assistant). The

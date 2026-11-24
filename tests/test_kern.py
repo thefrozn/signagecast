@@ -635,8 +635,16 @@ class Direktmodus024(unittest.TestCase):
         self.assertEqual(PL.modus_fuer(g), "direkt")
         self.assertEqual(PL.modus_fuer(g, {"modell": "Raspberry Pi 3 Model B Rev 1.2"}), "stream")
         self.assertEqual(PL.modus_fuer(g, {"modell": "Raspberry Pi Zero 2 W Rev 1.0"}), "stream")
-        a = PL.melden(g, {"modell": "Raspberry Pi 5 Model B Rev 1.0"}, "1.2.3.4", None, None)
-        self.assertEqual((a["modus"], a["direkt_abruf"]), ("direkt", None))
+        start = PL.START
+        try:
+            PL.START = time.time() - 10                                             # Dienst eben neu gestartet
+            a = PL.melden(g, {"modell": "Raspberry Pi 5 Model B Rev 1.0"}, "1.2.3.4", None, None)
+            self.assertEqual(a["modus"], "direkt")
+            self.assertLessEqual(a["direkt_abruf"], 11)                            # seit 0.69.3: kein falsches „nie“
+            PL.START = time.time() - 600                                            # läuft länger, Seite ruft nie ab
+            self.assertGreaterEqual(PL.melden(g, {}, "1.2.3.4", None, None)["direkt_abruf"], 600)
+        finally:
+            PL.START = start
         PL.direkt_abruf[g["id"]] = time.time() - 5
         self.assertLessEqual(PL.melden(g, {}, "1.2.3.4", None, None)["direkt_abruf"], 6)
         PL.aendern(g["id"], {"modell": "pi3", "anzeige_modus": "direkt"}, {"tv"})   # Pi 3: immer Stream
