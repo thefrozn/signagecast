@@ -8,6 +8,8 @@ die Knöpfe **📢 Durchsage** und **⚠ Notfall** ([UI-Regel](UI-RULES.de.md)).
 
 **🇬🇧 [English version](TOUR.md)**
 
+**🎬 Videos:** [SignageCast in 45 Sekunden](https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-short-de.mp4) · [ganzer Rundgang, 3:24](https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-long-de.mp4) (KI-Stimme, Untertitel)
+
 [← README](../README.md) · [Live-Demo](https://thefrozn.github.io/signagecast/?sprache=de) · [Installation (englisch)](INSTALL.md) · [Handbuch (englisch)](MANUAL.md) · [Technik (englisch)](HOW-IT-WORKS.md)
 
 ---

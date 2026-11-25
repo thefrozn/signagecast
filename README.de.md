@@ -29,6 +29,17 @@
 
 <p align="center"><sub>Aufgenommen auf einer Demo-Instanz, gekürzt: Live-Kamera und Werte wechseln von selbst. Animation läuft nicht? <a href="docs/tour/de/01-tv-wohnzimmer.jpg">Standbild</a>.</sub></p>
 
+### Videos
+
+<table>
+<tr>
+<td width="50%" align="center"><a href="https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-short-de.mp4"><img src="docs/tour/video-short.jpg" alt="SignageCast in 45 Sekunden"></a><br><sub><b>SignageCast in 45 Sekunden</b> · <a href="https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-short-de-vertical.mp4">Hochformat 9:16</a></sub></td>
+<td width="50%" align="center"><a href="https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-long-de.mp4"><img src="docs/tour/video-long.jpg" alt="Ganzer Rundgang (3:24)"></a><br><sub><b>Ganzer Rundgang (3:24)</b>: Installation, Vorlage, Editor, Datenquellen, Home Assistant, Kanäle, Durchsage, offline</sub></td>
+</tr>
+</table>
+
+<p align="center"><sub>Sprecherin: KI-generierte Stimme (OpenAI TTS), mit Untertiteln. Aufgenommen auf einer Demo-Instanz mit erfundenen Daten. Die Oberfläche im Video ist englisch. <a href="https://github.com/thefrozn/signagecast/releases/tag/demo-videos">Alle Videos</a> · <a href="README.md">Englische Fassungen</a></sub></p>
+
 ### Schnellstart
 
 **Erst im Browser ausprobieren:** [**Live-Demo**](https://thefrozn.github.io/signagecast/?sprache=de) – die echte TV-Seite mit

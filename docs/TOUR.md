@@ -8,6 +8,8 @@ the top right ([UI rules](UI-RULES.md)).
 
 **🇩🇪 [Deutsche Version mit deutschen Bildern](TOUR.de.md)**
 
+**🎬 Videos:** [SignageCast in 45 seconds](https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-short-en.mp4) · [full walkthrough, 3:24](https://github.com/thefrozn/signagecast/releases/download/demo-videos/signagecast-demo-long-en.mp4) (AI voice, subtitles)
+
 [← README](../README.md) · [live demo](https://thefrozn.github.io/signagecast/?sprache=en) · [installation](INSTALL.md) · [manual](MANUAL.md) · [how it works](HOW-IT-WORKS.md)
 
 ---
