@@ -21,6 +21,7 @@ import hashlib, hmac, json, lzma, os, re, secrets, shutil, subprocess, threading
 from streams import DATEN
 from meldung import Meldung as Fehler
 import fernwartung as FW
+import samsungtv as STV
 import speicher as SP
 import offline as OFF
 
@@ -196,6 +197,7 @@ def neu(d, tvs, schluessel=None):
         if d.get("plattform") in BROWSER_PLATTFORMEN:  # seit 0.70: per Code gekoppelter Fernseher-Browser
             g["plattform"] = d["plattform"]
             g["geraet_typ"] = str(d.get("geraet_typ", ""))[:40]
+            g["tv_ip"] = str(d.get("tv_ip", ""))[:45]
     if d.get("hdmi"):                                  # seit 0.52: dieser Rechner zeigt den Kanal selbst per HDMI
         if g["modell"] != BROWSER or not hdmi_moeglich():
             raise Fehler("pi_hdmi_nicht")
@@ -544,6 +546,93 @@ def ablehnen(kennung):
         del kopplungen[kennung]
 
 
+# ---------- Samsung-Fernseher übers Netzwerk steuern (seit 0.71) ----------
+# Für per Code gekoppelte Samsung-Geräte: einmal „Zulassen“ am Fernseher (Token), dann Seite öffnen/neu laden,
+# Lautstärke, Aus, Ein (Wake-on-LAN) und – nur auf Wunsch – automatisch öffnen, wenn der Fernseher an ist, die Seite
+# aber nichts mehr abruft (ersetzt den Autostart einer App). Der Token steht nur in player.json, nie in der Verwaltung.
+FS_AUTO_S = 180                     # höchstens so oft je Gerät automatisch öffnen
+fs_stand = {}                       # id -> {"zeit", "erreichbar", "an", "auto_zeit"} (nur im Speicher)
+
+
+def fs_bericht(g):
+    if g.get("plattform") != "samsung":
+        return None
+    st = fs_stand.get(g["id"]) or {}
+    return {"gekoppelt": bool(g.get("fs_token") or g.get("fs_ohne_token")), "auto": bool(g.get("fs_auto")), "ip": g.get("tv_ip", ""),
+            "wol": bool(g.get("fs_mac")), "erreichbar": st.get("erreichbar"), "an": st.get("an"), "geprueft": int(st["zeit"]) if st.get("zeit") else None}
+
+
+def browser_ip(g, ip):
+    """Die Seite eines Samsung-Geräts ruft Daten ab: IP-Adresse aktuell halten (DHCP)."""
+    if g.get("plattform") == "samsung" and ip and g.get("tv_ip") != ip and STV.IP.fullmatch(ip):
+        with sperre:
+            g["tv_ip"] = ip
+            speichern(daten)
+
+
+def fernsteuerung(gid, aktion, url, wert=None):
+    """Aktion aus der Verwaltung: koppeln | oeffnen | lauter | leiser | stumm | aus | an | auto (wert: bool)."""
+    g = geraet(gid)
+    if not g or g.get("plattform") != "samsung":
+        raise Fehler("pi_unbekannt")
+    ip = g.get("tv_ip", "")
+    try:
+        if aktion == "auto":
+            with sperre:
+                g["fs_auto"] = bool(wert)
+                speichern(daten)
+            return
+        if aktion == "an":
+            STV.wecken(g.get("fs_mac", ""), ip)
+            return
+        i = STV.info(ip)
+        if not i:
+            raise Fehler("fs_nicht_erreichbar")
+        if i["mac"] and i["mac"] != g.get("fs_mac"):
+            with sperre:
+                g["fs_mac"] = i["mac"]
+                speichern(daten)
+        if aktion == "oeffnen":                          # braucht keine Kopplung (Browser mit Startseite …/samsung)
+            STV.browser(ip)
+            return
+        if aktion == "koppeln":
+            token = STV.koppeln(ip)
+            with sperre:
+                g["fs_token"], g["fs_ohne_token"] = token, not token
+                speichern(daten)
+            return
+        if not (g.get("fs_token") or g.get("fs_ohne_token")):
+            raise Fehler("fs_nicht_gekoppelt")
+        if aktion in STV.TASTEN:
+            STV.taste(ip, g.get("fs_token", ""), aktion)
+        else:
+            raise Fehler("fs_aktion")
+    except STV.Fehler as f:
+        raise Fehler({"abgelehnt": "fs_abgelehnt", "mac": "fs_kein_wol", "kein_browser": "fs_kein_browser"}.get(str(f), "fs_nicht_erreichbar")) from None
+
+
+def fs_pruefen(url):
+    """Alle 30 s (Dienst): Zustand der Samsung-Geräte; bei „automatisch öffnen“ die Seite öffnen, wenn der Fernseher an
+    ist, aber seit über einer Minute nichts abruft. Gibt die Namen der geöffneten Geräte zurück."""
+    geoeffnet, jetzt = [], time.time()
+    for g in [g for g in daten["geraete"] if g.get("plattform") == "samsung" and g.get("tv_ip")]:
+        i = STV.info(g["tv_ip"], zeit=2)
+        st = fs_stand.setdefault(g["id"], {})
+        st.update(zeit=jetzt, erreichbar=bool(i), an=bool(i and i["an"]))
+        if not (i and i["an"] and g.get("fs_auto")):
+            continue
+        a = direkt_abruf.get(g["id"])
+        if a and jetzt - a < ONLINE_S or jetzt - st.get("auto_zeit", 0) < FS_AUTO_S:
+            continue
+        st["auto_zeit"] = jetzt
+        try:
+            STV.browser(g["tv_ip"])
+            geoeffnet.append(g["name"])
+        except STV.Fehler:
+            pass
+    return geoeffnet
+
+
 def koppel_status(kennung):
     """(HTTP-Code, Antwort, Gerät): 202 = Code noch nicht eingegeben, 404 = abgelaufen, 200 = gekoppelt (signiert)."""
     with sperre:
@@ -573,7 +662,7 @@ def koppeln(code, d, tvs, kennung=""):
     if not e:
         raise Fehler("pi_code")
     if e["plattform"] in BROWSER_PLATTFORMEN:
-        g = neu(dict(d, modell=BROWSER, plattform=e["plattform"], geraet_typ=e["modell"]), tvs)
+        g = neu(dict(d, modell=BROWSER, plattform=e["plattform"], geraet_typ=e["modell"], tv_ip=e["ip"]), tvs)
         with sperre:
             e["geraet"], e["bis"] = g["id"], time.time() + KOPPEL_S
         return g
@@ -782,7 +871,8 @@ def liste(hinweise):
         s = stand.get(g["id"]) or {}
         bild = os.path.join(ORDNER, g["id"] + ".jpg")
         z = zuletzt(g["id"])
-        aus.append(dict({k: v for k, v in g.items() if k not in ("schluessel", "wlan_soll", "hotspot_pw")},
+        aus.append(dict({k: v for k, v in g.items() if k not in ("schluessel", "wlan_soll", "hotspot_pw", "fs_token")},
+                        fs=fs_bericht(g),
                         online=online(g["id"]), zuletzt=int(z) if z else None, seit=int(s.get("seit") or 0) or None,
                         link_pfad="/anzeige/" + anzeige_schluessel(g) if g.get("modell") == BROWSER else None,
                         bericht={k: v for k, v in (s.get("bericht") or {}).items() if k != "offline"},

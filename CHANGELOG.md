@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.71.0 (2026-11-27)
+- **Samsung TVs: remote control over the network – no app needed.** In the device's overview: *Open / reload page*
+  restarts the TV's browser with its start page (set the pairing page as start page once; no pairing needed). After
+  *Pair remote control* (the TV asks once “Allow?”): volume down/up, mute, switch off and switch on (Wake-on-LAN – over Wi-Fi
+  many TVs do not react, e.g. the AU8000; reliable with a network cable or HDMI-CEC from a Pi).
+  Uses the network interface that remote control apps and Home Assistant use (ports 8001/8002); no developer mode, no
+  certificates, no Samsung files. The token stays on the server.
+- **Open automatically when the TV is on** (opt-in, for screens that show only SignageCast): if the TV is on but the
+  page shows nothing for over a minute, SignageCast opens it – replaces the autostart of an app. The admin shows whether
+  the TV is on, off (standby) or not reachable; the IP address follows the TV (DHCP).
+- Why no app: Samsung binds app certificates to each TV's device ID, so a ready-made app for everyone is not possible.
+
 ## v0.70.1 (2026-11-27)
 - **Admin notices updates:** an open admin keeps running the old code after an update (the browser caches the files).
   It now checks the version every 2 minutes and shows “SignageCast was updated to … – Reload”; the button fetches the

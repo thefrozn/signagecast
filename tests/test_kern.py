@@ -4675,3 +4675,196 @@ class Geruest067(unittest.TestCase):
         for k in ("galerie:ab12cd34", "einspieler:tagesx", "quelle:wetter"):
             self.assertTrue(PR.DING.fullmatch(k), k)
         self.assertFalse(PR.DING.fullmatch("medien:x"))
+
+
+class SamsungFernsteuerung071(unittest.TestCase):
+    """Seit 0.71: Samsung-Fernseher übers Netzwerk – gegen einen nachgebauten Fernseher (HTTP-Info + WebSocket)."""
+    def setUp(self):
+        import samsungtv as STV
+        import http.server
+        import socket
+        import threading
+        self.STV, self.empfangen, self.anfragen = STV, [], []
+        test = self
+
+        class Info(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def antworten(self, code, obj):
+                roh = json.dumps(obj).encode()
+                self.send_response(code); self.send_header("Content-Length", str(len(roh))); self.end_headers(); self.wfile.write(roh)
+
+            def app(self):
+                test.apps.append((self.command, self.path.rsplit("/", 1)[1]))
+                if not self.path.endswith("/3202010022079"):
+                    return self.antworten(404, {"code": 404})
+                if self.command == "POST":
+                    test.laeuft = True
+                elif self.command == "DELETE":
+                    test.laeuft = False
+                self.antworten(200, {"id": "3202010022079", "running": test.laeuft} if self.command == "GET" else True)
+
+            def do_GET(self):
+                if "/applications/" in self.path:
+                    return self.app()
+                self.antworten(200, {"device": {"modelName": "UE55TEST", "name": "Wohnzimmer", "PowerState": test.zustand,
+                                                "wifiMac": "64:07:F6:89:59:16", "TokenAuthSupport": "true"}})
+
+            do_POST = do_DELETE = app
+        self.zustand, self.apps, self.laeuft = "on", [], True
+        self.http = http.server.HTTPServer(("127.0.0.1", 0), Info)
+        threading.Thread(target=self.http.serve_forever, daemon=True).start()
+        self.ws = socket.socket(); self.ws.bind(("127.0.0.1", 0)); self.ws.listen(5)
+        self.antwort = "ms.channel.connect"
+        threading.Thread(target=self.ws_schleife, daemon=True).start()
+        self.alt = (STV.PORT_INFO, STV.PORT_WS, STV.TLS)
+        STV.PORT_INFO, STV.PORT_WS, STV.TLS = self.http.server_port, self.ws.getsockname()[1], False
+
+    def tearDown(self):
+        self.STV.PORT_INFO, self.STV.PORT_WS, self.STV.TLS = self.alt
+        self.http.shutdown(); self.ws.close()
+
+    def ws_schleife(self):
+        import base64, hashlib, socket, struct
+        while True:
+            try:
+                c, _ = self.ws.accept()
+            except OSError:
+                return
+            kopf = b""
+            while b"\r\n\r\n" not in kopf:
+                kopf += c.recv(4096)
+            self.anfragen.append(kopf.split(b"\r\n")[0].decode())
+            k = [z.split(b": ")[1] for z in kopf.split(b"\r\n") if z.lower().startswith(b"sec-websocket-key")][0]
+            acc = base64.b64encode(hashlib.sha1(k + b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest())
+            c.sendall(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + acc + b"\r\n\r\n")
+            t = json.dumps({"event": self.antwort, "data": {"token": "12345678", "id": "x"}}).encode()
+            c.sendall(bytes([0x81, len(t)]) + t)
+            try:
+                c.settimeout(2)
+                b = c.recv(2)
+                n = b[1] & 0x7F
+                if n == 126:
+                    n = struct.unpack(">H", c.recv(2))[0]
+                m = c.recv(4)
+                d = b""
+                while len(d) < n:
+                    d += c.recv(n - len(d))
+                self.empfangen.append(json.loads(bytes(x ^ m[i % 4] for i, x in enumerate(d))))
+            except (OSError, IndexError, ValueError):
+                pass
+            c.close()
+
+    def letzte(self, n):
+        """Wartet, bis der nachgebaute Fernseher n Nachrichten verarbeitet hat (eigener Thread)."""
+        ende = time.time() + 3
+        while len(self.empfangen) < n and time.time() < ende:
+            time.sleep(0.02)
+        return self.empfangen[-1]
+
+    def test_info_koppeln_tasten_browser_wol(self):
+        STV = self.STV
+        i = STV.info("127.0.0.1")
+        self.assertEqual((i["modell"], i["an"], i["mac"], i["token_noetig"]), ("UE55TEST", True, "64:07:F6:89:59:16", True))
+        self.zustand = "standby"
+        self.assertFalse(STV.info("127.0.0.1")["an"])
+        self.assertIsNone(STV.info("127.0.0.2"))                        # nichts erreichbar
+        self.assertIsNone(STV.info("kein ip; rm -rf"))
+        self.assertEqual(STV.koppeln("127.0.0.1", zeit=3), "12345678")
+        self.assertIn("name=U2lnbmFnZUNhc3Q=", self.anfragen[-1])     # Base64 von „SignageCast“
+        STV.taste("127.0.0.1", "12345678", "lauter")
+        self.assertIn("token=12345678", self.anfragen[-1])
+        self.assertEqual(self.letzte(1)["params"]["DataOfCmd"], "KEY_VOLUP")
+        self.assertEqual(STV.browser("127.0.0.1"), "3202010022079")        # läuft schon: beenden, dann starten (neu laden)
+        self.assertEqual(self.apps, [("GET", "3202010022079"), ("DELETE", "3202010022079"), ("POST", "3202010022079")])
+        self.laeuft, self.apps[:] = False, []
+        STV.browser("127.0.0.1")
+        self.assertEqual(self.apps, [("GET", "3202010022079"), ("POST", "3202010022079")])
+        with self.assertRaises(STV.Fehler):
+            STV.browser("127.0.0.2")
+        with self.assertRaises(STV.Fehler):
+            STV.taste("127.0.0.1", "1", "KEY_POWER")                   # nur bekannte Aktionen
+        self.antwort = "ms.channel.unauthorized"
+        with self.assertRaises(STV.Fehler) as f:
+            STV.koppeln("127.0.0.1", zeit=3)
+        self.assertEqual(str(f.exception), "abgelehnt")
+        with self.assertRaises(STV.Fehler):
+            STV.wecken("kaputt")
+        gesendet = []
+
+        class Sock:                                                    # Magic Packet prüfen, ohne zu senden
+            def __init__(self, *a):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                pass
+
+            def setsockopt(self, *a):
+                pass
+
+            def sendto(self, d, ziel):
+                gesendet.append((d, ziel))
+        alt = STV.socket.socket
+        STV.socket.socket = Sock
+        try:
+            STV.wecken("64:07:f6:89:59:16")
+        finally:
+            STV.socket.socket = alt
+        self.assertEqual(len(gesendet), 3)
+        self.assertEqual(gesendet[0][0], b"\xff" * 6 + bytes.fromhex("6407f6895916") * 16)
+        self.assertEqual(gesendet[0][1], ("255.255.255.255", 9))
+        gesendet[:] = []
+        STV.socket.socket = Sock
+        try:
+            STV.wecken("64:07:f6:89:59:16", "192.168.1.57")
+        finally:
+            STV.socket.socket = alt
+        self.assertEqual({z for _, z in gesendet}, {("255.255.255.255", 9), ("192.168.1.255", 9), ("192.168.1.57", 9)})
+
+    def test_geraet_fernsteuerung_und_autostart(self):
+        import player as PL
+        d = tempfile.mkdtemp()
+        PL.DATEI, PL.ORDNER = os.path.join(d, "player.json"), os.path.join(d, "p")
+        PL.daten.clear(); PL.daten.update(PL._leer()); PL.kopplungen.clear(); PL.koppel_zeiten.clear()
+        PL.direkt_abruf.clear(); PL.fs_stand.clear()
+        r = PL.browser_anfrage("Mozilla/5.0 (SMART-TV; Tizen 6.0)", "127.0.0.1", "samsung")
+        g = PL.koppeln(r["code"], {"name": "Theke", "tv": "tv"}, {"tv"}, kennung=r["kennung"])
+        self.assertEqual(g["tv_ip"], "127.0.0.1")
+        liste = PL.liste(lambda g: [])
+        self.assertFalse(liste[0]["fs"]["gekoppelt"])
+        with self.assertRaises(M.Meldung) as f:                         # erst koppeln
+            PL.fernsteuerung(g["id"], "lauter", "http://x/samsung")
+        self.assertEqual(f.exception.code, "fs_nicht_gekoppelt")
+        PL.fernsteuerung(g["id"], "koppeln", "http://x/samsung")
+        self.assertEqual((g["fs_token"], g["fs_mac"]), ("12345678", "64:07:F6:89:59:16"))
+        liste = PL.liste(lambda g: [])
+        self.assertNotIn("fs_token", liste[0])                         # Token nie in der Verwaltung
+        self.assertNotIn("12345678", json.dumps(liste))
+        self.assertTrue(liste[0]["fs"]["gekoppelt"] and liste[0]["fs"]["wol"])
+        PL.fernsteuerung(g["id"], "stumm", "http://x/samsung")
+        self.assertEqual(self.letzte(1)["params"]["DataOfCmd"], "KEY_MUTE")
+        self.apps[:] = []
+        PL.fernsteuerung(g["id"], "oeffnen", "http://x/samsung")       # Browser neu starten (Startseite)
+        self.assertIn(("POST", "3202010022079"), self.apps)
+        # Autostart: aus → nichts; an + Seite ruft nichts ab → öffnen; danach 3 min Ruhe; Seite aktiv → nichts
+        self.assertEqual(PL.fs_pruefen("http://192.0.2.5:8890/samsung"), [])
+        PL.fernsteuerung(g["id"], "auto", "", True)
+        self.apps[:] = []
+        self.assertEqual(PL.fs_pruefen("http://192.0.2.5:8890/samsung"), ["Theke"])
+        self.assertIn(("POST", "3202010022079"), self.apps)
+        self.assertEqual(PL.fs_pruefen("http://192.0.2.5:8890/samsung"), [])
+        PL.fs_stand[g["id"]]["auto_zeit"] = 0
+        PL.direkt_abruf[g["id"]] = time.time()
+        self.assertEqual(PL.fs_pruefen("http://192.0.2.5:8890/samsung"), [])
+        self.zustand = "standby"
+        PL.direkt_abruf.clear()
+        self.assertEqual(PL.fs_pruefen("http://192.0.2.5:8890/samsung"), [])  # Fernseher aus: nicht öffnen
+        self.assertFalse(PL.liste(lambda g: [])[0]["fs"]["an"])
+        PL.browser_ip(g, "192.0.2.9")                                   # neue IP (DHCP) wird übernommen
+        self.assertEqual(g["tv_ip"], "192.0.2.9")
+        PL.browser_ip(g, "nicht; gültig")
+        self.assertEqual(g["tv_ip"], "192.0.2.9")

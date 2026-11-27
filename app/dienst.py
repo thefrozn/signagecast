@@ -1250,6 +1250,7 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         ziel = u.path + ("?" + urllib.parse.urlencode(q) if q else "")
         if u.path == "/daten.json":
             PL.direkt_abruf[g["id"]] = time.time()
+            PL.browser_ip(g, self.client_address[0])
             self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel, kameras=t["id"], fernwartung=bool(FW.zustand(g["id"])))
         else:
             self.weiterleiten(int(os.environ.get("SC_PORT", "8080")), ziel)
@@ -1645,6 +1646,7 @@ PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennu
     (re.compile(r"/api/einspieler/([a-z0-9]{4,12})/jetzt"), "einspieler_jetzt"),
     (re.compile(r"/api/player/([0-9a-f]{8})/terminal/(start|ende)"), "terminal_{1}"),       # nie die Eingaben („ein“)
     (re.compile(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image|link-neu)"), "player_{1}"),
+    (re.compile(r"/api/player/([0-9a-f]{8})/(samsung)"), "player_{1}"),
 ]
 EINST_BEREICHE_STILL = {"assistent_fertig"}        # zählt nicht als Änderung
 
@@ -2314,6 +2316,19 @@ def todo_warnungen(e):
     if sp["stufe"] != "gruen":
         w.append({"key": "speicher", "stufe": sp["stufe"], "frei": SP.gb(sp["frei"]), "reserve": SP.gb(sp["reserve"])})
     return w
+
+
+def samsung_schleife():
+    """Seit 0.71: alle 30 s Zustand der Samsung-Geräte (an/aus, erreichbar) und – wenn eingeschaltet – die Seite von
+    selbst öffnen, sobald der Fernseher an ist, aber nichts mehr abruft."""
+    time.sleep(20)
+    while True:
+        try:
+            for name in PL.fs_pruefen(player_server().rstrip("/") + "/samsung"):
+                PROTOKOLL.eintragen("SignageCast", "system", "samsung_geoeffnet", name)
+        except Exception as f:                  # nie die Schleife verlieren
+            print("Samsung-Fernsteuerung:", f, flush=True)
+        time.sleep(30)
 
 
 def todo_schleife():
@@ -4260,6 +4275,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/terminal/(start|ein|ende)", p)
         if m:                                        # Fernwartung (seit 0.33)
             return self.terminal_post(m.group(1), m.group(2), d)
+        m = re.fullmatch(r"/api/player/([0-9a-f]{8})/samsung", p)
+        if m:                                        # seit 0.71: Samsung-Fernseher übers Netzwerk steuern
+            PL.fernsteuerung(m.group(1), str(d.get("aktion", "")), player_server().rstrip("/") + "/samsung", d.get("wert"))
+            return {}
         m = re.fullmatch(r"/api/player/([0-9a-f]{8})/(aendern|entfernen|befehl|wlan|image|link-neu)", p)
         if not m:
             raise KeyError(p)
@@ -4387,7 +4406,7 @@ def main():
     for ziel in (ha_schleife, streams_schleife, vorab_schleife, suche_schleife, cpu_schleife, kalender_schleife, einspieler_schleife, update_schleife,
                  wetter_schleife, zeit_schleife, qn.schleife, verlauf_ha_schleife, sicherung_schleife,
                  update_auto_schleife, unwetter_schleife, benachrichtigung_schleife, fotograf.schleife,
-                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife, NETZ.schleife, ausgabe_schleife, abgleich_schleife):
+                 pdf_schleife, schalten_schleife, player_schleife, todo_schleife, samsung_schleife, NETZ.schleife, ausgabe_schleife, abgleich_schleife):
         threading.Thread(target=ziel, daemon=True).start()
     threading.Thread(target=wache.schleife, daemon=True,
                      args=(streams, zustand, lambda: [(t["id"], wache.BASIS_PORT + t["nr"]) for t in einst()["fernseher"]

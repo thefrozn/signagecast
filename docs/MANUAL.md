@@ -610,7 +610,9 @@ der Wahl *Anzeige*, im Reiter *Videostream* des Kanals und im Leistungstest. Pi 
 **Samsung und Fernseher-Browser per Code (seit 0.70):** Am Gerät `http://<Server>:8890/samsung` (oder `/tv`) öffnen –
 es zeigt einen Code und erscheint unter **Geräte** als *Neues Gerät wartet*. Code vergleichen, Name und Kanal wählen,
 **Annehmen**. Samsung-Signage-Displays starten über den URL Launcher nach dem Einschalten von allein; bei Fernsehern die
-Adresse als Startseite setzen. Pis mit Kopplungs-Image erscheinen dort genauso. Details: [PLAYER.md](PLAYER.md).
+Adresse als Startseite setzen. Pis mit Kopplungs-Image erscheinen dort genauso. Seit 0.71 steuert SignageCast
+Samsung-Fernseher übers Netzwerk (einmal „Zulassen“ am Fernseher): Seite öffnen/neu laden, Lautstärke, aus/ein und auf
+Wunsch automatisch öffnen, wenn der Fernseher an ist. Details: [PLAYER.md](PLAYER.md).
 
 **Server oder Netz fällt aus (seit 0.51):** Player im **Direktmodus** mit Image ab 0.51 zeigen ihr letztes Layout mit dem
 letzten Datenstand aus ihrer Offline-Kopie weiter – auch nach einem Neustart ohne Netz. Statt Live-Videos, Kameras und

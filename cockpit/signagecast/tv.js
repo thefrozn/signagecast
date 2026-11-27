@@ -185,7 +185,16 @@ const TEXTE = {
             text: "Ohne Image und ohne Link abtippen: Am Gerät diese Adresse öffnen – es zeigt einen Code und erscheint hier unter „Neues Gerät wartet“. Annehmen, fertig.",
             signage: "Samsung-Signage-Display: Menü → URL Launcher → Adresse eintragen und als Startquelle wählen. Es startet dann nach dem Einschalten von allein.",
             fernseher: "Samsung-Fernseher und andere Marken: Adresse im Browser öffnen und als Startseite festlegen.",
-            marke: "Samsung ist eine Marke der Samsung Electronics Co., Ltd.; SignageCast ist kein Samsung-Produkt." },
+            marke: "Samsung ist eine Marke der Samsung Electronics Co., Ltd.; SignageCast ist kein Samsung-Produkt.",
+            fs: "Fernsteuerung (Samsung)", fsText: "SignageCast steuert den Fernseher übers Netzwerk – wie eine Fernbedienungs-App.",
+            fsKoppeln: "Fernsteuerung koppeln", fsKoppelnLaeuft: "Am Fernseher jetzt „Zulassen“ wählen …", fsGekoppelt: "Gekoppelt",
+            fsNicht: "nicht gekoppelt", fsAn: "Fernseher an", fsStandby: "Fernseher aus (Standby)", fsWeg: "Fernseher nicht erreichbar (aus oder anderes Netz)",
+            fsOeffnen: "Seite öffnen / neu laden", fsLeiser: "Leiser", fsLauter: "Lauter", fsStumm: "Stumm", fsAus: "Ausschalten", fsEin: "Einschalten",
+            fsEinText: "Einschalten per Wake-on-LAN: am Fernseher „Einschalten mit Mobilgerät“ (bzw. „Über WLAN einschalten“) aktivieren. Über WLAN klappt das bei vielen Fernsehern nicht – zuverlässig per Netzwerkkabel oder HDMI-CEC (Pi).",
+            fsAuto: "Automatisch öffnen, wenn der Fernseher an ist", fsAutoText: "Nur für Bildschirme, die ausschließlich SignageCast zeigen: Ist der Fernseher an, zeigt die Seite aber seit über einer Minute nichts, öffnet SignageCast sie von selbst – auch wenn gerade eine andere App läuft.",
+            fsGesendet: "Gesendet", fsIp: (ip) => `Adresse ${ip}`,
+            fsOeffnenText: "Startet den Browser des Fernsehers neu – er zeigt seine Startseite. Dafür einmal im Browser des Fernsehers diese Kopplungsseite (…:8890/samsung) als Startseite festlegen.",
+            fsKoppelnText: "Für Lautstärke, Stumm, Aus und Ein: einmal koppeln und am Fernseher „Zulassen“ wählen." },
           wa: { titel: "Neues Gerät wartet", code: "Code", vergleichen: "Nur annehmen, wenn derselbe Code auf dem Bildschirm steht.",
             annehmen: "Annehmen", ablehnen: "Ablehnen", angenommen: "Angenommen – das Gerät zeigt den Kanal in wenigen Sekunden.", abgelehnt: "Abgelehnt" },
           br: { m: "Browser-Gerät (nur Link, ohne Image)", titel: "Browser-Gerät",
@@ -267,10 +276,10 @@ const TEXTE = {
                       meldung_aus: "Laufschrift-Meldung beendet", layout: "Layout umgeschaltet", layout_aus: "Layout zurückgeschaltet",
                       internet_weg: "Internet nicht erreichbar seit", internet_wieder: "Internet wieder da (Ausfall)",
                       bild_neu_laden: "Bildprüfung: TV-Seite neu geladen", bild_kette_neu: "Bildprüfung: Wiedergabe neu gestartet",
-                      ki_neu: "Computer für KI-Assistenten verbunden", ki_entfernen: "Computer für KI-Assistenten entfernt", ki_gekoppelt: "Claude Desktop hat sich verbunden", fernnetz: "Fernstandorte geändert",
+                      samsung_geoeffnet: "Samsung-Fernseher: Seite automatisch geöffnet", ki_neu: "Computer für KI-Assistenten verbunden", ki_entfernen: "Computer für KI-Assistenten entfernt", ki_gekoppelt: "Claude Desktop hat sich verbunden", fernnetz: "Fernstandorte geändert",
                       "stream_*": (a) => `Live-Video: ${{ aendern: "geändert", entfernen: "entfernt", zeigen: "jetzt gezeigt", "strikes-zuruecksetzen": "Strikes zurückgesetzt" }[a] || a}`,
                       "radio_*": (a) => `Radiosender ${a === "entfernen" ? "entfernt" : "geändert"}`,
-                      "player_*": (a) => `Gerät: ${{ neu: "neu angelegt", koppeln: "gekoppelt", einstellungen: "Einstellungen", wlan: "WLAN", image: "Image erstellt", entfernen: "entfernt", aendern: "geändert", befehl: "Befehl", "link-neu": "neuer Link" }[a] || a}`,
+                      "player_*": (a) => `Gerät: ${{ neu: "neu angelegt", koppeln: "gekoppelt", einstellungen: "Einstellungen", wlan: "WLAN", image: "Image erstellt", entfernen: "entfernt", aendern: "geändert", befehl: "Befehl", "link-neu": "neuer Link", samsung: "Fernsteuerung", ablehnen: "abgelehnt" }[a] || a}`,
                       "terminal_*": (a) => a === "start" ? "Terminal geöffnet" : "Terminal beendet" } },
     internet: "Internet", online: "erreichbar", offline: "nicht erreichbar", onlineText: "Live-Kameras laufen",
     offlineSeit: (z) => `seit ${z} – die Kanäle zeigen eigene Medien bzw. ein Ersatzbild`,
@@ -709,7 +718,16 @@ const TEXTE = {
             text: "No image and no link to type: open this address on the device – it shows a code and appears here under “New device waiting”. Accept, done.",
             signage: "Samsung signage display: menu → URL Launcher → enter the address and choose it as the source. It then starts by itself after switching on.",
             fernseher: "Samsung TVs and other brands: open the address in the browser and set it as the start page.",
-            marke: "Samsung is a trademark of Samsung Electronics Co., Ltd.; SignageCast is not a Samsung product." },
+            marke: "Samsung is a trademark of Samsung Electronics Co., Ltd.; SignageCast is not a Samsung product.",
+            fs: "Remote control (Samsung)", fsText: "SignageCast controls the TV over the network – like a remote control app.",
+            fsKoppeln: "Pair remote control", fsKoppelnLaeuft: "Choose “Allow” on the TV now …", fsGekoppelt: "Paired",
+            fsNicht: "not paired", fsAn: "TV on", fsStandby: "TV off (standby)", fsWeg: "TV not reachable (off or other network)",
+            fsOeffnen: "Open / reload page", fsLeiser: "Volume down", fsLauter: "Volume up", fsStumm: "Mute", fsAus: "Switch off", fsEin: "Switch on",
+            fsEinText: "Switching on uses Wake-on-LAN: enable “Power on with mobile” (or “Turn on via Wi-Fi”) on the TV. Over Wi-Fi many TVs do not react – reliable with a network cable or HDMI-CEC (Pi).",
+            fsAuto: "Open automatically when the TV is on", fsAutoText: "Only for screens that show nothing but SignageCast: if the TV is on but the page has shown nothing for over a minute, SignageCast opens it by itself – even while another app is running.",
+            fsGesendet: "Sent", fsIp: (ip) => `Address ${ip}`,
+            fsOeffnenText: "Restarts the TV's browser – it shows its start page. For this, set this pairing page (…:8890/samsung) as the start page in the TV's browser once.",
+            fsKoppelnText: "For volume, mute, off and on: pair once and choose “Allow” on the TV." },
           wa: { titel: "New device waiting", code: "Code", vergleichen: "Only accept if the same code is shown on the screen.",
             annehmen: "Accept", ablehnen: "Decline", angenommen: "Accepted – the device shows the channel in a few seconds.", abgelehnt: "Declined" },
           br: { m: "Browser device (link only, no image)", titel: "Browser device",
@@ -790,10 +808,10 @@ const TEXTE = {
                       meldung_aus: "Ticker message ended", layout: "Layout switched", layout_aus: "Layout switched back",
                       internet_weg: "Internet not reachable since", internet_wieder: "Internet back (outage)",
                       bild_neu_laden: "Picture check: TV page reloaded", bild_kette_neu: "Picture check: playback restarted",
-                      ki_neu: "Computer for AI assistants connected", ki_entfernen: "Computer for AI assistants removed", ki_gekoppelt: "Claude Desktop connected", fernnetz: "Remote sites changed",
+                      samsung_geoeffnet: "Samsung TV: page opened automatically", ki_neu: "Computer for AI assistants connected", ki_entfernen: "Computer for AI assistants removed", ki_gekoppelt: "Claude Desktop connected", fernnetz: "Remote sites changed",
                       "stream_*": (a) => `Live-Video: ${{ aendern: "changed", entfernen: "removed", zeigen: "shown now", "strikes-zuruecksetzen": "strikes reset" }[a] || a}`,
                       "radio_*": (a) => `Radio station ${a === "entfernen" ? "removed" : "changed"}`,
-                      "player_*": (a) => `Device: ${{ neu: "created", koppeln: "paired", einstellungen: "settings", wlan: "Wi-Fi", image: "image created", entfernen: "removed", aendern: "changed", befehl: "command", "link-neu": "new link" }[a] || a}`,
+                      "player_*": (a) => `Device: ${{ neu: "created", koppeln: "paired", einstellungen: "settings", wlan: "Wi-Fi", image: "image created", entfernen: "removed", aendern: "changed", befehl: "command", "link-neu": "new link", samsung: "remote control", ablehnen: "declined" }[a] || a}`,
                       "terminal_*": (a) => a === "start" ? "Terminal opened" : "Terminal closed" } },
     internet: "Internet", online: "reachable", offline: "not reachable", onlineText: "Live cams are running",
     offlineSeit: (z) => `since ${z} – the channels show own media or a fallback picture`,
@@ -1031,6 +1049,10 @@ const TEXTE = {
       pi_koppel_ungueltig: "Invalid pairing request", pi_koppel_voll: "Too many pairing requests – try again in an hour",
       pi_basis_alt: "The downloaded player image ({v}) cannot pair yet – click “Download again” above (0.25 or later)",
       pi_code: "No device shows this code – check the code on the TV (it is valid for 10 minutes)",
+      fs_nicht_erreichbar: "TV not reachable – is it on and in the same network?",
+      fs_abgelehnt: "The TV did not allow it – choose “Allow” on the TV (the question shows for about 30 seconds)",
+      fs_kein_wol: "Switching on works once the TV has been on once (MAC address unknown)",
+      fs_nicht_gekoppelt: "First “Pair remote control” and choose “Allow” on the TV", fs_aktion: "Unknown action", fs_kein_browser: "No browser found on this TV",
       pi_hdmi_nicht: "Picture via HDMI only works when SignageCast is installed directly on a computer (installation ISO or SC_HDMI=1)",
       pi_hdmi_doppelt: "This computer already shows a channel via HDMI – change or remove that device",
       pi_browser_befehl: "A browser device has no player software – it only shows the page behind its link",
@@ -2010,7 +2032,8 @@ async function playerSeite(inhalt, einrichten) {
       ${g.hinweise.map((h) => `<p class="warn">⚠ ${esc(T.pl.h[h] || h)}</p>`).join("")}
       ${g.hdmi ? `<p class="leise">${esc(T.pl.hd.karte)}</p>` : `<div class="zeile"><label>${esc(T.pl.br.link)}</label><input type="text" readonly data-link value="${esc(linkUrl(g))}">
         <button class="knopf" data-kopieren>${esc(T.pl.br.kopieren)}</button></div>
-      <p class="leise">${esc(T.pl.br.linkText)}</p>`}</div>
+      <p class="leise">${esc(T.pl.br.linkText)}</p>`}
+      ${g.fs ? fsHtml(g) : ""}</div>
       <div class="g-teil" data-teil="einst">
         <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" name="name" maxlength="40" value="${esc(g.name)}"></div>
         <div class="zeile"><label>${esc(T.pl.tv)}</label><select name="tv">${tvOpt(g.tv)}</select></div>
@@ -2018,7 +2041,30 @@ async function playerSeite(inhalt, einrichten) {
         <div class="zeile"><button class="knopf" data-link-neu>${esc(T.pl.br.neu)}</button></div></div>
       ${geraetEnde(g)}</div>`;
   };
+  // seit 0.71: Samsung-Fernseher übers Netzwerk steuern (nur per Code gekoppelte Samsung-Geräte)
+  const fsHtml = (g) => { const S = T.pl.sa, f = g.fs;
+    const zustand = !f.geprueft ? "" : f.erreichbar ? (f.an ? `<span class="gut">● ${esc(S.fsAn)}</span>` : `<span class="leise">● ${esc(S.fsStandby)}</span>`)
+      : `<span class="leise">● ${esc(S.fsWeg)}</span>`;
+    return `<h3>${esc(S.fs)}</h3><p class="leise">${esc(S.fsText)}</p>
+      <p>${f.gekoppelt ? `<span class="gut">✓ ${esc(S.fsGekoppelt)}</span>` : `<span class="leise">${esc(S.fsNicht)}</span>`} · ${zustand}${f.ip ? ` · <span class="leise">${esc(S.fsIp(f.ip))}</span>` : ""}</p>
+      <div class="zeile"><button class="knopf" data-fs="oeffnen">${esc(S.fsOeffnen)}</button>${f.gekoppelt ? [["leiser", S.fsLeiser], ["lauter", S.fsLauter], ["stumm", S.fsStumm], ["aus", S.fsAus], ["an", S.fsEin]]
+        .map(([a, t]) => `<button class="knopf" data-fs="${a}"${a === "an" && !f.wol ? " disabled" : ""}>${esc(t)}</button>`).join("") : ""}</div>
+      <p class="leise">${esc(S.fsOeffnenText)}</p>${f.gekoppelt ? `<p class="leise">${esc(S.fsEinText)}</p>` : ""}
+      <div class="zeile"><label><input type="checkbox" data-fs-auto${f.auto ? " checked" : ""}> ${esc(S.fsAuto)}</label></div>
+      <p class="leise">${esc(S.fsAutoText)}</p>
+      <div class="zeile"><button class="knopf" data-fs="koppeln">${esc(S.fsKoppeln)}</button></div>${f.gekoppelt ? "" : `<p class="leise">${esc(S.fsKoppelnText)}</p>`}`; };
+  const fsAnbinden = (k, g) => {
+    k.querySelectorAll("[data-fs]").forEach((b) => { b.onclick = (e) => {
+      const a = b.dataset.fs;
+      if (a === "koppeln") melden(T.pl.sa.fsKoppelnLaeuft);
+      aktion(e.target, async () => { await senden(`/api/player/${g.id}/samsung`, { aktion: a }); P = await holenP(); listeZeichnen(); },
+        a === "koppeln" ? T.pl.sa.fsGekoppelt : T.pl.sa.fsGesendet);
+    }; });
+    const auto = k.querySelector("[data-fs-auto]");
+    if (auto) auto.onchange = () => aktion(auto, async () => { await senden(`/api/player/${g.id}/samsung`, { aktion: "auto", wert: auto.checked }); P = await holenP(); });
+  };
   const browserAnbinden = (k, g) => {
+    if (g.fs) fsAnbinden(k, g);
     if (k.querySelector("[data-kopieren]")) k.querySelector("[data-kopieren]").onclick = async (e) => {
       const f = k.querySelector("[data-link]");
       f.select();

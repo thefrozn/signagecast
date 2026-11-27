@@ -235,6 +235,19 @@ If you remove the device, the screen shows a new code. **Decline** discards a re
 device link: port 8890 is plain HTTP in your own network; a device only gets the page of its own channel. Codes are
 random, valid for 10 minutes, at most 20 open and 60 new requests per hour (shared with the Pis).
 
+**Remote control for Samsung TVs (since 0.71).** In the device's *Overview*: *Open / reload page* restarts the TV's
+browser, which shows its start page – so set the pairing page (`…:8890/samsung`) as the browser's start page once
+(newer TVs ignore an address sent with the start command). This needs no pairing. For volume down/up, mute, switch off
+and switch on (Wake-on-LAN; enable “Power on with mobile” on the TV): **Pair remote control** – the TV asks once
+“Allow?”, confirm with the remote. It uses the network interface of Samsung TVs that remote
+control apps and Home Assistant use (ports 8001/8002) – no app, no developer mode, no Samsung files. The token stays on
+the server and never appears in the admin. *Switch on* does not work on every TV: over Wi-Fi many TVs (tested:
+AU8000, 2021) do not react to Wake-on-LAN at all. Reliable: network cable, or HDMI-CEC from a Pi on the TV.
+**Open automatically when the TV is on** (off by default): if the TV is on but the page has shown nothing for over a
+minute, SignageCast opens it – even while another app runs. Only for screens that show nothing but SignageCast. Every
+30 s SignageCast checks whether the TV is on (also shown in the admin); after an automatic opening it waits at least
+3 minutes. The IP address follows the TV when DHCP gives it a new one.
+
 *Tested:* Tizen browser identification and the whole flow in Chromium; Samsung signage displays (URL Launcher) not yet
 tested on real hardware. Samsung and Tizen are trademarks of their owners; SignageCast is not a Samsung product.
 
@@ -516,6 +529,21 @@ merkt sich die Kopplung (Cookie, ein Jahr) und läuft nach Strom- oder Netzausfa
 entfernt, zeigt der Bildschirm wieder einen Code. **Ablehnen** verwirft eine Anfrage. Sicherheit wie beim Link des
 Browser-Geräts: Port 8890 ist unverschlüsseltes HTTP im eigenen Netz; ein Gerät bekommt nur die Seite seines Kanals.
 Codes sind zufällig, gelten 10 Minuten, höchstens 20 offene und 60 neue Anfragen je Stunde (gemeinsam mit den Pis).
+
+**Fernsteuerung für Samsung-Fernseher (seit 0.71).** In der *Übersicht* des Geräts: *Seite öffnen / neu laden* startet
+den Browser des Fernsehers neu, und er zeigt seine Startseite – dafür die Kopplungsseite (`…:8890/samsung`) einmal als
+Startseite des Browsers festlegen (neuere Fernseher ignorieren eine mitgeschickte Adresse). Das braucht keine Kopplung.
+Für leiser/lauter, stumm, ausschalten und einschalten (Wake-on-LAN; am Fernseher „Einschalten mit Mobilgerät“
+aktivieren): **Fernsteuerung koppeln** – der Fernseher fragt einmal „Zulassen?“, mit der Fernbedienung bestätigen. Genutzt wird die
+Netzwerkschnittstelle der Samsung-Fernseher, die auch Fernbedienungs-Apps und Home Assistant verwenden (Ports 8001/8002)
+– keine App, kein Entwicklermodus, keine Samsung-Dateien. Der Schlüssel (Token) bleibt auf dem Server und erscheint nie
+in der Verwaltung. *Einschalten* klappt nicht bei jedem Fernseher: über WLAN reagieren viele (getestet:
+AU8000, 2021) gar nicht auf Wake-on-LAN. Zuverlässig: Netzwerkkabel oder HDMI-CEC von einem Pi am Fernseher.
+**Automatisch öffnen, wenn der Fernseher an ist** (Standard: aus): Ist der Fernseher an, zeigt die Seite aber seit über
+einer Minute nichts, öffnet SignageCast sie – auch wenn gerade eine andere App läuft. Nur für Bildschirme, die
+ausschließlich SignageCast zeigen. Alle 30 s prüft SignageCast, ob der Fernseher an ist (steht auch in der Verwaltung);
+nach einem automatischen Öffnen wartet es mindestens 3 Minuten. Die IP-Adresse folgt dem Fernseher, wenn DHCP ihm eine
+neue gibt.
 
 *Getestet:* Erkennung des Tizen-Browsers und der ganze Ablauf in Chromium; Samsung-Signage-Displays (URL Launcher) noch
 nicht auf echter Hardware. Samsung und Tizen sind Marken ihrer Inhaber; SignageCast ist kein Samsung-Produkt.
