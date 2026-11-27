@@ -29,7 +29,7 @@ Since 0.65 the admin page follows four simple ideas (details for developers: [UI
 |---|---|---|
 | **Overview** | – | To-do list (problems first, then tips; entries can be hidden), state of every channel and what it plays, viewers, CPU/RAM, time check, Home Assistant |
 | **Channels** | – | A **channel** is what a TV shows. The list is a table with state in plain words, its devices (online/offline) and the last change; *Open* shows the channel with tabs *Overview* (state, devices, quick actions such as *Reload TV page*, *Restart stream*, a fresh picture), *Display & schedule* (with *On/off via Home Assistant*), *Live video*, *Sound*, *Video stream* (technical options) and *History*. *Delete* is at the bottom and says where the channel is still used |
-| **Devices** | – | The players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)). The list shows state in plain words, the channel and the last change; *Open* shows tabs *Overview* (status, picture, commands), *Remote management*, *Settings* and *History*; *Remove* at the bottom. *+ New device* creates images and pairs players |
+| **Devices** | – | The players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)). The list shows state in plain words, the channel and the last change; *Open* shows tabs *Overview* (status, picture, commands), *Remote management*, *Settings* and *History*; *Remove* at the bottom. *+ New device* creates images and pairs players. Since 0.70 a device that shows a code (Samsung display/TV or any TV browser at `…:8890/samsung`, Pi with the pairing image) appears on top as *New device waiting* – compare the code, *Accept* or *Decline* |
 | **Layouts** | – | Tiles with a preview, state, where used and last change; *Edit* opens the designer, the tabs *Overview* (preview, usage, copy, export, versions) and *History* sit next to it; *Delete* at the bottom (not while a channel uses the layout) |
 | **Data sources** | – | Every source as a row with state and last value; an assistant for JSON APIs, feeds, iCal, CSV (also as uploaded file) and cameras |
 | **Media** | Pictures & videos · Galleries · Clips | Own pictures and videos for the video window (a list; deleting says where own media play); galleries as a table – open one for *Overview*, *Pictures & pages* and *History*; clips as a table – open one for *Overview* (*Show now*), *Settings* and *History* |
@@ -606,6 +606,11 @@ bleibt 1920 × 1080 Punkte. Danach FAQ zu Bild, Ton, Hardware, Datenschutz, Umzu
 TV-Seite statt des Videostreams. Vorhandene Geräte behalten ihren Modus. Der Streammodus bleibt je Gerät wählbar – dann
 kodiert die CPU (H.264, höchstens Full HD, etwa ein Kern mehr je Kanal, solange jemand zuschaut); ein Hinweis steht an
 der Wahl *Anzeige*, im Reiter *Videostream* des Kanals und im Leistungstest. Pi 3 und Zero 2 W gehen nur mit Stream.
+
+**Samsung und Fernseher-Browser per Code (seit 0.70):** Am Gerät `http://<Server>:8890/samsung` (oder `/tv`) öffnen –
+es zeigt einen Code und erscheint unter **Geräte** als *Neues Gerät wartet*. Code vergleichen, Name und Kanal wählen,
+**Annehmen**. Samsung-Signage-Displays starten über den URL Launcher nach dem Einschalten von allein; bei Fernsehern die
+Adresse als Startseite setzen. Pis mit Kopplungs-Image erscheinen dort genauso. Details: [PLAYER.md](PLAYER.md).
 
 **Server oder Netz fällt aus (seit 0.51):** Player im **Direktmodus** mit Image ab 0.51 zeigen ihr letztes Layout mit dem
 letzten Datenstand aus ihrer Offline-Kopie weiter – auch nach einem Neustart ohne Netz. Statt Live-Videos, Kameras und

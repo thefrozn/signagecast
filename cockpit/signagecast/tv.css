@@ -366,3 +366,6 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 .loeschen p { margin: 0; }
 .mini.lk-gross { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; }   /* Layout-Übersicht (seit 0.66) */
 .karte > .loeschen:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+/* seit 0.70: Gerät zeigt einen Code und wartet aufs Annehmen */
+.karte.wartet { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+.karte.wartet .code { font-size: 1.4em; letter-spacing: .08em; font-variant-numeric: tabular-nums; }

@@ -8,7 +8,7 @@ import hashlib, json, os, re, threading
 
 RANG_SEITE, RANG_LAYOUT, RANG_GALERIE, RANG_MEDIEN = 0, 1, 2, 3
 GRENZE_STANDARD_MB, GRENZE_MAX_MB = 512, 65536
-NICHT = {"pult.html", "leistungstest.html"}           # gehören nicht zur TV-Seite
+NICHT = {"pult.html", "leistungstest.html", "koppeln.html"}   # gehören nicht zur TV-Seite (koppeln.html seit 0.70)
 PFAD_OK = re.compile(r"/([A-Za-z0-9_\-][A-Za-z0-9_.\-]*/)*[A-Za-z0-9_\-][A-Za-z0-9_.\-]*")
 _summen, _sperre = {}, threading.Lock()
 

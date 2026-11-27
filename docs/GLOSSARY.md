@@ -14,6 +14,7 @@ Ein Begriff pro Sache, gleich in Verwaltung, TV-Seite, Doku und Tour. Interne Ke
 |---|---|---|---|
 | Channel | Kanal | What one TV shows: layout, schedule, live video, sound, output stream. Was ein Fernseher zeigt. | TV, Fernseher (for the output / für die Ausgabe) |
 | Device | Gerät | The hardware at the TV that plays a channel: Raspberry Pi, PC or browser device. Die Hardware am Fernseher. | Player (as a noun in the UI / als Hauptwort in der Oberfläche) |
+| Pairing code | Kopplungscode | 6-digit code a new device shows; compare it and click Accept under Devices (since 0.70). Code, den ein neues Gerät zeigt – vergleichen und unter Geräte annehmen. | PIN, Passwort |
 | TV | Fernseher | The real screen (switched on/off via Home Assistant or CEC). Der echte Bildschirm. | – |
 | Layout | Layout | Arrangement of elements on the screen. Anordnung der Bausteine. | Seite, Ansicht |
 | Template | Vorlage | A ready layout to start from. Fertiges Layout als Ausgangspunkt. | Muster |

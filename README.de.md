@@ -112,6 +112,7 @@ Gemacht für Wohnzimmer, Wartezimmer und Firmenempfang. Selbst betrieben, ohne C
 - Direktmodus: das Gerät zeigt die Seite selbst, der Server muss nichts kodieren
 - Offline-Kopie: fällt der Server oder das Netz aus, zeigt der Player sein letztes Layout weiter – auch nach einem Kaltstart ([Details](docs/PLAYER.md#offline-kopie-seit-051))
 - Browser-Gerät: ein geheimer Link für Smart-TV oder Kiosk-Browser
+- Samsung-Signage-Displays und Fernseher-Browser: `…:8890/samsung` öffnen, das Gerät zeigt einen Code – in der Verwaltung annehmen ([Details](docs/PLAYER.md#samsung-displays-und-fernseher-browser--koppeln-per-code-seit-070))
 - Geräte an anderen Standorten über Tailscale oder Headscale ([REMOTE.md](docs/REMOTE.md#deutsch-kurz))
 
 </td>

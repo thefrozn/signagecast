@@ -52,10 +52,12 @@ Instead of one image per screen you can flash **the same image onto any number o
 3. In the admin under **Pair devices** enter the code, a name and the TV → **Pair**. A few seconds later the Pi shows the
    picture; from then on it is an ordinary player (settings, buttons, *Download image again*).
 
-The admin shows how many Pis are currently showing a code (model and IP, never the code). A code is valid for 10
-minutes, then the Pi shows a new one. Security: the Pi and the server negotiate the key with Diffie-Hellman (RFC 3526,
+Since 0.70 the device also appears under **Devices** as **New device waiting** with model, IP and the code: compare
+the code with the TV and click **Accept** (typing it in still works). A code is valid for 10 minutes, then the Pi shows
+a new one. Security: the Pi and the server negotiate the key with Diffie-Hellman (RFC 3526,
 2048 bit); the code is derived from it. Someone in the network who intercepts the exchange would get a different code –
-so only the Pi whose code you read off the TV gets paired, and the key never travels over the network. At most 20
+so only the Pi whose code matches the TV gets paired (therefore: only accept if the codes are the same, as with
+Bluetooth pairing), and the key never travels over the network. At most 20
 open and 60 new requests per hour. Pairing needs an image from 0.25 on.
 
 ## In the admin
@@ -215,6 +217,27 @@ or just a browser in full screen. *Add device* → model **Browser device** → 
 - The link only opens this TV's page, never the admin. Treat it like a password; port 8890 is unencrypted HTTP – only
   in your own network. *Create new link* makes the old one invalid immediately, *Remove* as well.
 
+## Samsung displays and TV browsers – pairing by code (since 0.70)
+
+The simplest way for screens that have a browser: no image, no link to type in.
+
+1. On the device open **`http://<server>:8890/samsung`** (neutral alias `/tv`). It shows a big **6-digit code**.
+2. In the admin under **Devices** the box **New device waiting** appears (model, IP, code; also in *To do* on the
+   overview). Compare the code, choose name and channel → **Accept**. Two seconds later the screen shows the channel.
+3. To start by itself after switching on:
+   - **Samsung signage display** (e.g. QB/QM/QH series, Tizen): menu → **URL Launcher** → enter the address and choose
+     the URL Launcher as the source.
+   - **Samsung TV and other brands:** set the address as the browser's start page.
+
+It is a browser device (direct mode) with the platform shown in the list (e.g. “Samsung (Tizen) (by code)”). The
+device remembers the pairing (cookie, one year); after a power or network failure it continues without a new code.
+If you remove the device, the screen shows a new code. **Decline** discards a request. Security as with the browser
+device link: port 8890 is plain HTTP in your own network; a device only gets the page of its own channel. Codes are
+random, valid for 10 minutes, at most 20 open and 60 new requests per hour (shared with the Pis).
+
+*Tested:* Tizen browser identification and the whole flow in Chromium; Samsung signage displays (URL Launcher) not yet
+tested on real hardware. Samsung and Tizen are trademarks of their owners; SignageCast is not a Samsung product.
+
 ## Player at another site (since 0.41)
 
 A player at another place (office, holiday flat) reaches SignageCast through **Tailscale** or **Headscale** – tick
@@ -305,10 +328,12 @@ Statt eines Images je Bildschirm kannst du **dasselbe Image auf beliebig viele K
 3. In der Verwaltung unter **Geräte koppeln** Code, Name und Fernseher eingeben → **Koppeln**. Wenige Sekunden später zeigt
    der Pi das Bild; danach ist er ein ganz normaler Player (Einstellungen, Knöpfe, *Image erneut herunterladen*).
 
-Die Verwaltung zeigt, wie viele Pis gerade einen Code anzeigen (Modell und IP, nie den Code). Ein Code gilt 10 Minuten,
-dann zeigt der Pi einen neuen. Sicherheit: Pi und Server handeln den Schlüssel per Diffie-Hellman aus (RFC 3526,
+Seit 0.70 erscheint das Gerät außerdem unter **Geräte** als **Neues Gerät wartet** mit Modell, IP und Code: Code mit dem
+Fernseher vergleichen und **Annehmen** klicken (Eintippen geht weiterhin). Ein Code gilt 10 Minuten, dann zeigt der Pi
+einen neuen. Sicherheit: Pi und Server handeln den Schlüssel per Diffie-Hellman aus (RFC 3526,
 2048 Bit), der Code ist daraus abgeleitet. Wer sich im Netz dazwischenschiebt, bekäme einen anderen Code – gekoppelt
-wird nur der Pi, dessen Code du vom Fernseher abliest, und der Schlüssel geht nie übers Netz. Höchstens 20 offene und
+wird nur der Pi, dessen Code zum Fernseher passt (darum: nur annehmen, wenn die Codes gleich sind – wie beim Koppeln per
+Bluetooth), und der Schlüssel geht nie übers Netz. Höchstens 20 offene und
 60 neue Anfragen je Stunde. Die Kopplung braucht ein Image ab 0.25.
 
 ## In der Verwaltung
@@ -472,6 +497,28 @@ als Startseite eintragen.
 - Kein Image, kein Bildschirmfoto, kein Rückfall auf den Stream, keine Fernwartung.
 - Der Link öffnet nur die Seite dieses Fernsehers, nie die Verwaltung. Wie ein Passwort behandeln; Port 8890 ist
   unverschlüsseltes HTTP – nur im eigenen Netz. *Neuen Link erzeugen* macht den alten sofort ungültig, *Entfernen* ebenso.
+
+## Samsung-Displays und Fernseher-Browser – Koppeln per Code (seit 0.70)
+
+Der einfachste Weg für Bildschirme mit Browser: kein Image, kein Link zum Abtippen.
+
+1. Am Gerät **`http://<Server>:8890/samsung`** öffnen (neutral auch `/tv`). Es zeigt einen großen **6-stelligen Code**.
+2. In der Verwaltung erscheint unter **Geräte** der Kasten **Neues Gerät wartet** (Modell, IP, Code; außerdem in
+   *Zu erledigen* auf der Übersicht). Code vergleichen, Name und Kanal wählen → **Annehmen**. Zwei Sekunden später zeigt
+   der Bildschirm den Kanal.
+3. Damit es nach dem Einschalten von allein startet:
+   - **Samsung-Signage-Display** (z. B. Serien QB/QM/QH, Tizen): Menü → **URL Launcher** → Adresse eintragen und den
+     URL Launcher als Startquelle wählen.
+   - **Samsung-Fernseher und andere Marken:** Adresse als Startseite des Browsers festlegen.
+
+Es ist ein Browser-Gerät (Direktmodus); die Liste zeigt die Plattform (z. B. „Samsung (Tizen) (per Code)“). Das Gerät
+merkt sich die Kopplung (Cookie, ein Jahr) und läuft nach Strom- oder Netzausfall ohne neuen Code weiter. Wird es
+entfernt, zeigt der Bildschirm wieder einen Code. **Ablehnen** verwirft eine Anfrage. Sicherheit wie beim Link des
+Browser-Geräts: Port 8890 ist unverschlüsseltes HTTP im eigenen Netz; ein Gerät bekommt nur die Seite seines Kanals.
+Codes sind zufällig, gelten 10 Minuten, höchstens 20 offene und 60 neue Anfragen je Stunde (gemeinsam mit den Pis).
+
+*Getestet:* Erkennung des Tizen-Browsers und der ganze Ablauf in Chromium; Samsung-Signage-Displays (URL Launcher) noch
+nicht auf echter Hardware. Samsung und Tizen sind Marken ihrer Inhaber; SignageCast ist kein Samsung-Produkt.
 
 ## Player an einem anderen Standort (seit 0.41)
 

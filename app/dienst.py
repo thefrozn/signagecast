@@ -624,6 +624,8 @@ def kalender_schleife():
 # ---------- Meldung per Webhook (seit 0.16) ----------
 WEBHOOK_PORT = int(os.environ.get("SC_WEBHOOK_PORT", "8890"))
 webhook_versuche = {}                             # IP -> [Zeitpunkte] (höchstens 20 Anfragen je Minute)
+tv_koppel_versuche = {}                           # seit 0.70: IP -> [Zeitpunkte] der Kopplungsseite (Nachfragen alle 3 s)
+KOPPEL_SEITEN = {"/samsung": "samsung", "/tv": "tv"}   # seit 0.70: Kopplungsseite für Fernseher-Browser
 
 
 def meldung_fuer(tv_id):
@@ -1114,6 +1116,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         return self.antwort(404, {"ok": False})
 
     def do_GET(self):
+        if urllib.parse.urlparse(self.path).path in KOPPEL_SEITEN:
+            return self.koppelseite(KOPPEL_SEITEN[urllib.parse.urlparse(self.path).path])
         if self.anzeige():
             return
         if urllib.parse.urlparse(self.path).path == "/mcp":
@@ -1167,6 +1171,42 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
             self.send_response(202); self.send_header("Content-Length", "0"); self.end_headers()
             return
         return self.antwort(200, a)
+
+    # --- Fernseher-Browser koppeln (seit 0.70): /samsung bzw. /tv zeigt einen Code, die Verwaltung nimmt das Gerät an ---
+    def koppelseite(self, seite):
+        """Schon gekoppelt (gültiges Anzeige-Cookie) → weiter zur Anzeige; sonst die Seite mit dem Code."""
+        c = re.search(r"(?:^|;\s*)sc_anzeige=([0-9a-f]{32})", self.headers.get("Cookie") or "")
+        if c and PL.geraet_fuer_anzeige(c.group(1)):
+            self.send_response(302); self.send_header("Location", "/anzeige/" + c.group(1))
+            self.send_header("Set-Cookie", f"sc_koppel={seite}; SameSite=Strict; Path=/; Max-Age=31536000")
+            self.send_header("Content-Length", "0"); self.end_headers()
+            return
+        return self.datei(os.path.join(WWW, "koppeln.html"), "text/html; charset=utf-8")
+
+    def tv_koppeln(self, pfad, roh):
+        """POST /tv/koppeln → Code anfragen; POST /tv/koppeln/status {kennung} → warten, abgelaufen oder Pfad der Anzeige."""
+        jetzt, ip = time.time(), self.client_address[0]
+        liste = [t for t in tv_koppel_versuche.get(ip, []) if jetzt - t < 60]
+        tv_koppel_versuche[ip] = (liste + [jetzt])[-100:]
+        if len(liste) >= 40:
+            return self.antwort(429, {"ok": False})
+        try:
+            d = json.loads(roh or b"{}")
+            d = d if isinstance(d, dict) else {}
+        except ValueError:
+            d = {}
+        if pfad == "/tv/koppeln":
+            try:
+                return self.antwort(200, dict(PL.browser_anfrage(self.headers.get("User-Agent", ""), ip, "samsung" if d.get("seite") == "samsung" else "tv"),
+                                              sprache=einst()["sprache"] or "en"))
+            except M.Meldung as f:
+                return self.antwort(429, {"ok": False, "code": f.code})
+        code, antwort = PL.browser_status(str(d.get("kennung", ""))[:64])
+        roh_a = json.dumps(antwort).encode()
+        self.send_response(code); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(roh_a)))
+        if code == 200:                           # merkt sich die Seite: nach Löschen des Geräts zeigt die Anzeige wieder den Code
+            self.send_header("Set-Cookie", f"sc_koppel={'samsung' if d.get('seite') == 'samsung' else 'tv'}; SameSite=Strict; Path=/; Max-Age=31536000")
+        self.end_headers(); self.wfile.write(roh_a)
 
     # --- Direktmodus (seit 0.24): der Pi zeigt die TV-Seite selbst ---
     def anzeige(self):
@@ -1326,6 +1366,8 @@ class WebhookBearbeiter(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         if urllib.parse.urlparse(self.path).path in ("/mcp", "/mcp/koppeln"):
             return self.mcp(urllib.parse.urlparse(self.path).path, n)
+        if urllib.parse.urlparse(self.path).path in ("/tv/koppeln", "/tv/koppeln/status"):
+            return self.tv_koppeln(urllib.parse.urlparse(self.path).path, self.rfile.read(min(n, 1024)) if n else b"")
         if urllib.parse.urlparse(self.path).path.startswith("/player/"):
             if n > 8_000_000:
                 return self.antwort(413, {"ok": False})
@@ -1588,7 +1630,7 @@ PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion 
     "/api/kategorien/loeschen": "kategorie_loeschen", "/api/streams": "stream_neu", "/api/suche/starten": "suche",
     "/api/radio/sender": "radio_neu", "/api/aktion/seite-neu-laden": "seite_neu_laden", "/api/aktion/kette-neu-starten": "kette_neu",
     "/api/aktion/ton-neu": "ton_neu", "/api/layouts/wiederherstellen": "layout_wiederherstellen", "/api/pult/stimme-laden": "stimme_laden",
-    "/api/pult/probe": "probedurchsage", "/api/player/neu": "player_neu", "/api/player/koppeln": "player_koppeln",
+    "/api/pult/probe": "probedurchsage", "/api/player/neu": "player_neu", "/api/player/koppeln": "player_koppeln", "/api/player/ablehnen": "player_ablehnen",
     "/api/player/einstellungen": "player_einstellungen", "/api/player/wlan-vergessen": "player_wlan", "/api/player/sammel-image": "player_image",
     "/api/meldung": "meldung", "/api/layout-vorrang": "layout", "/api/durchsage": "durchsage",
     "/api/ki/neu": "ki_neu", "/api/ki/entfernen": "ki_entfernen",
@@ -2247,6 +2289,9 @@ def todo_warnungen(e):
         w.append({"key": "allgemein", "grund": a["grund"], "seit": a["seit"]})
     w += [{"key": "doppelt:" + t["id"], "name": t["name"]} for t in doppelt_hoch(e)]
     w += [{"key": "player:" + g["id"], "name": g["name"]} for g in PL.daten["geraete"] if PL.gesehen(g["id"]) and not PL.online(g["id"])]
+    wartet = PL.wartend()                                  # seit 0.70: Gerät zeigt einen Code und wartet aufs Annehmen
+    if wartet:
+        w.append({"key": "geraet_wartet", "anzahl": len(wartet), "modell": wartet[-1]["modell"]})
     if (zustand.get("sicherung_auto") or {}).get("fehler") or (zustand.get("sicherung_auto") or {}).get("ziel_ok") is False:
         w.append({"key": "sicherung_fehler"})
     if any(any((x.get("ergebnis") or {}).values()) for x in melder.letzte or []):
@@ -4190,8 +4235,12 @@ class Bearbeiter(SimpleHTTPRequestHandler):
         tvs = {t["id"] for t in einst()["fernseher"]}
         if p == "/api/player/neu":
             return {"geraet": PL.neu(d, tvs)["id"]}
-        if p == "/api/player/koppeln":                # Code vom Fernseher eingeben (seit 0.25)
-            return {"geraet": PL.koppeln(d.get("code"), {"name": d.get("name", ""), "tv": d.get("tv", "")}, tvs)["id"]}
+        if p == "/api/player/koppeln":                # Code vom Fernseher eingeben (seit 0.25), seit 0.70 auch „Annehmen“
+            return {"geraet": PL.koppeln(d.get("code"), {"name": d.get("name", ""), "tv": d.get("tv", "")}, tvs,
+                                         kennung=str(d.get("kennung", ""))[:64])["id"]}
+        if p == "/api/player/ablehnen":               # seit 0.70: wartendes Gerät abweisen
+            PL.ablehnen(str(d.get("kennung", ""))[:64])
+            return {}
         if p == "/api/player/sammel-image":           # Image für mehrere Geräte, ohne Schlüssel (seit 0.25; PC seit 0.36)
             if d.get("fern"):                        # anderer Standort nur je Gerät (kein Schlüssel für viele)
                 raise M.Meldung("fn_nur_geraet")

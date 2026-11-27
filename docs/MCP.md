@@ -85,6 +85,8 @@ the container too (port 8890 must be published, as for the panel).
 | `list_clips`, `save_clip`, `delete_clip`, `play_clip_now` | Since 0.60: clips at fixed times (e.g. *tagesschau in 100 Sekunden*, own video, YouTube) |
 | `list_radio`, `search_radio`, `add_radio_station`, `remove_radio_station`, `set_tv_sound` | Since 0.60: internet radio and the sound of every TV (off, radio, original sound of the cams), volume |
 | `list_players` | Raspberry Pi/PC players, **read only** (since 0.44): online, seconds since the last report, display mode wanted/actual, temperature, hints and the newest remote management entries – no keys, Wi-Fi or IP addresses |
+| `list_pending_devices` | Devices waiting to be accepted (since 0.70: Samsung displays/TVs, TV browsers, Pis with the pairing image) – model, platform, since when; **without the code** |
+| `accept_device` | Accept a waiting device with the code from its screen (the assistant asks you for it), name and channel (since 0.70) |
 | `get_log` | Change log |
 
 A computer with the right **only read** sees only the reading tools (status, lists, layouts, preview, templates, topics,
@@ -132,6 +134,6 @@ Einspieler und Radio mit Ton je Fernseher.
 `ssh-copy-id tvadmin@<IP>`). Claude Code: `claude mcp add signagecast -- ssh -T tvadmin@<IP> signagecast-mcp`.
 Docker: `docker exec -i signagecast signagecast-mcp`.
 
-Player nur lesen (`list_players`, seit 0.44: letzte Meldung, Anzeigemodus, Fernverwaltung). Nicht möglich: das rote
+Player nur lesen (`list_players`, seit 0.44: letzte Meldung, Anzeigemodus, Fernverwaltung). Seit 0.70 wartende Geräte auflisten (`list_pending_devices`, ohne Code) und mit dem Code vom Bildschirm annehmen (`accept_device`). Nicht möglich: das rote
 Notfall-Vollbild (bewusst – dafür gibt es das Durchsage-Pult), Speicherorte mit Zugangsdaten, Updates, Sicherungen, Befehle und Einstellungen für Player, Terminal, HA-Verbindung, Passwörter und Schlüssel, weitere Computer
 verbinden. Jede Änderung steht im Protokoll („MCP *Computer*“), jede Layout-Änderung hinterlässt eine Version.

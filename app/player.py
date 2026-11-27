@@ -10,6 +10,9 @@
 # Kopplung (seit 0.25): Ein Image für mehrere Pis enthält Server und WLAN, aber keinen Schlüssel. Der Pi handelt ihn mit
 # dem Server per Diffie-Hellman aus und zeigt einen daraus abgeleiteten 6-stelligen Code; erst die Eingabe dieses Codes
 # in der Verwaltung macht aus der Anfrage ein Gerät. Wer sich im Netz dazwischenschiebt, hätte einen anderen Code.
+# Fernseher-Browser (seit 0.70, z. B. Samsung-Signage-Displays per URL Launcher, Samsung-Fernseher): Die Seite
+# /samsung bzw. /tv holt einen zufälligen 6-stelligen Code und fragt nach; in der Verwaltung „Annehmen“ (Code vergleichen)
+# oder den Code eintippen macht daraus ein Browser-Gerät, und die Seite leitet auf /anzeige/<Schlüssel> weiter.
 # PC-Player (seit 0.36, experimentell): derselbe Agent auf x86-64-Geräten mit UEFI – eigenes Grundimage (ISO, auch für
 # USB-Sticks), Modell „pc“, Direktmodus als Standard. Browser-Gerät (seit 0.36): kein Agent, nur ein geheimer Link
 # /anzeige/<Schlüssel> für eine beliebige Kiosk-Live-CD oder einen Browser im Vollbild; online = die Seite ruft Daten ab.
@@ -57,7 +60,8 @@ befehle = {}          # id -> [{"id", "art", "zeit"}] noch nicht abgeholt
 ergebnisse = {}       # id -> [{"art", "ok", "hinweis", "zeit"}] (die letzten 10)
 verlauf = {}          # id -> [Eintrag] Fernverwaltung (seit 0.43): gesendet → abgeholt → Ergebnis, neueste zuerst
 einmal = {}           # Download-Kennung -> {"id" ("" = Image für mehrere Pis), "netze", "server", "bis"}
-kopplungen = {}       # Anfrage-Kennung -> {"code", "schluessel", "bis", "ip", "modell", "geraet"} (nur im Speicher)
+kopplungen = {}       # Anfrage-Kennung -> {"code", "schluessel", "bis", "ip", "modell", "geraet", "plattform"} (nur im Speicher)
+                      # plattform: pi | pc (Agent, DH-Schlüssel) | samsung | browser (seit 0.70: Fernseher-Browser, ohne Schlüssel)
 koppel_zeiten = []    # Zeitpunkte neuer Kopplungsanfragen der letzten Stunde (Grenze gegen Durchprobieren)
 direkt_abruf = {}     # id -> Zeit des letzten Abrufs von daten.json im Direktmodus (zeigt: die Seite lebt)
 START = time.time()   # seit 0.69.3: Bezug, solange seit dem Start des Dienstes noch kein Abruf da ist (nicht „nie“)
@@ -189,6 +193,9 @@ def neu(d, tvs, schluessel=None):
          "hotspot_pw": "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz23456789") for _ in range(10))}
     if d.get("modell") == BROWSER:                     # seit 0.36: Gerät ohne Agent, nur Link
         g["modell"] = BROWSER
+        if d.get("plattform") in BROWSER_PLATTFORMEN:  # seit 0.70: per Code gekoppelter Fernseher-Browser
+            g["plattform"] = d["plattform"]
+            g["geraet_typ"] = str(d.get("geraet_typ", ""))[:40]
     if d.get("hdmi"):                                  # seit 0.52: dieser Rechner zeigt den Kanal selbst per HDMI
         if g["modell"] != BROWSER or not hdmi_moeglich():
             raise Fehler("pi_hdmi_nicht")
@@ -478,11 +485,71 @@ def koppel_anfrage(d, ip):
     return {"kennung": kennung, "b": format(b_pub, "x"), "gueltig": KOPPEL_S}
 
 
+BROWSER_PLATTFORMEN = ("samsung", "browser")
+
+
+def browser_erkennen(ua):
+    """(plattform, Anzeigename) aus der Browser-Kennung eines Fernsehers – nur zur Anzeige in der Verwaltung."""
+    ua = str(ua or "")
+    if re.search(r"Tizen|SMART-TV|SamsungBrowser|Samsung", ua, re.I):
+        return "samsung", "Samsung (Tizen)" if "Tizen" in ua else "Samsung"
+    for muster, name in ((r"Web0S|webOS", "LG (webOS)"), (r"AFT[A-Z]|Silk", "Fire TV"), (r"Android", "Android"),
+                         (r"CrKey|Chromecast", "Chromecast"), (r"PlayStation|Xbox", "Konsole"), (r"Linux", "Linux"),
+                         (r"Windows", "Windows"), (r"Macintosh|iPad|iPhone", "Apple")):
+        if re.search(muster, ua):
+            return "browser", name
+    return "browser", "Browser"
+
+
+def browser_anfrage(ua, ip, seite):
+    """Fernseher-Browser ohne Gerät (Seite /samsung oder /tv) fragt einen Code an: zufällig, 6 Ziffern, 10 min gültig."""
+    jetzt = time.time()
+    plattform, name = browser_erkennen(ua)
+    if seite == "samsung":
+        plattform = "samsung"
+    with sperre:
+        _koppel_aufraeumen(jetzt)
+        for k in [k for k, v in kopplungen.items() if v["ip"] == ip and not v["geraet"] and v["plattform"] in BROWSER_PLATTFORMEN]:
+            del kopplungen[k]                     # dasselbe Gerät fragt neu (Seite neu geladen): alte Anfrage weg
+        if len(kopplungen) >= KOPPEL_OFFEN or len(koppel_zeiten) >= KOPPEL_STUNDE:
+            raise Fehler("pi_koppel_voll")
+        koppel_zeiten.append(jetzt)
+        offen = {v["code"] for v in kopplungen.values()}
+        code = next(c for c in iter(lambda: f"{secrets.randbelow(10**6):06d}", None) if c not in offen)
+        kennung = secrets.token_hex(16)
+        kopplungen[kennung] = {"code": code, "schluessel": None, "bis": jetzt + KOPPEL_S, "ip": ip, "geraet": "",
+                               "modell": name, "zeit": jetzt, "plattform": plattform}
+    return {"ok": True, "kennung": kennung, "code": code, "gueltig": KOPPEL_S}
+
+
+def browser_status(kennung):
+    """(HTTP-Code, Antwort): 202 = warten, 404 = abgelaufen oder abgelehnt, 200 = angenommen (Pfad der Anzeige)."""
+    with sperre:
+        _koppel_aufraeumen(time.time())
+        e = kopplungen.get(kennung)
+        if not e or e["plattform"] not in BROWSER_PLATTFORMEN:
+            return 404, {"ok": False}
+        g = geraet(e["geraet"]) if e["geraet"] else None
+    if not g:
+        return 202, {"ok": True, "warten": True}
+    return 200, {"ok": True, "pfad": "/anzeige/" + anzeige_schluessel(g), "name": g["name"]}
+
+
+def ablehnen(kennung):
+    """Wartende Anfrage verwerfen (der Fernseher fragt danach mit neuem Code an, bis jemand ihn annimmt)."""
+    with sperre:
+        e = kopplungen.get(str(kennung or ""))
+        if not e or e["geraet"]:
+            raise Fehler("pi_code")
+        del kopplungen[kennung]
+
+
 def koppel_status(kennung):
     """(HTTP-Code, Antwort, Gerät): 202 = Code noch nicht eingegeben, 404 = abgelaufen, 200 = gekoppelt (signiert)."""
     with sperre:
         _koppel_aufraeumen(time.time())
         e = kopplungen.get(kennung)
+        e = e if e and e["plattform"] not in BROWSER_PLATTFORMEN else None    # Fernseher-Browser fragen bei browser_status
         g = geraet(e["geraet"]) if e and e["geraet"] else None
     if not e:
         return 404, {"ok": False}, None
@@ -491,14 +558,25 @@ def koppel_status(kennung):
     return 200, {"ok": True, "id": g["id"], "name": g["name"], "hostname": hostname(g)}, g
 
 
-def koppeln(code, d, tvs):
-    """Code aus der Verwaltung: passende Anfrage suchen und daraus ein Gerät machen."""
+def koppeln(code, d, tvs, kennung=""):
+    """Code aus der Verwaltung (eingetippt oder seit 0.70 per „Annehmen“ mit der Kennung der Anfrage): passende
+    Anfrage suchen und daraus ein Gerät machen – ein Pi/PC mit dem ausgehandelten Schlüssel, ein Fernseher-Browser als
+    Browser-Gerät. Auch beim Annehmen muss der Code passen (die Verwaltung zeigt ihn zum Vergleich mit dem Bildschirm)."""
     code = re.sub(r"\D", "", str(code or ""))
     with sperre:
         _koppel_aufraeumen(time.time())
-        e = next((v for v in kopplungen.values() if len(code) == 6 and hmac.compare_digest(v["code"], code) and not v["geraet"]), None)
+        if kennung:
+            e = kopplungen.get(str(kennung))
+            e = e if e and not e["geraet"] and len(code) == 6 and hmac.compare_digest(e["code"], code) else None
+        else:
+            e = next((v for v in kopplungen.values() if len(code) == 6 and hmac.compare_digest(v["code"], code) and not v["geraet"]), None)
     if not e:
         raise Fehler("pi_code")
+    if e["plattform"] in BROWSER_PLATTFORMEN:
+        g = neu(dict(d, modell=BROWSER, plattform=e["plattform"], geraet_typ=e["modell"]), tvs)
+        with sperre:
+            e["geraet"], e["bis"] = g["id"], time.time() + KOPPEL_S
+        return g
     modell = "pc" if e.get("plattform") == "pc" else "pi3" if re.search(r"Pi 3|Zero 2", e["modell"]) else "pi45"
     g = neu(dict(d, modell=modell), tvs, schluessel=e["schluessel"])
     with sperre:
@@ -507,10 +585,13 @@ def koppeln(code, d, tvs):
 
 
 def wartend():
-    """Pis, die gerade einen Code zeigen (für die Verwaltung: Modell, IP und Zeit – nie der Code)."""
+    """Geräte, die gerade einen Code zeigen – für die Verwaltung. Seit 0.70 mit Kennung und Code zum „Annehmen“: Die
+    Verwaltung zeigt den Code, man vergleicht ihn mit dem Bildschirm (bei Pis ist er aus dem ausgehandelten Schlüssel
+    abgeleitet – wer sich dazwischenschiebt, hätte einen anderen)."""
     with sperre:
         _koppel_aufraeumen(time.time())
-        return [{"modell": v["modell"], "ip": v["ip"], "seit": int(v["zeit"])} for v in kopplungen.values() if not v["geraet"]]
+        return sorted(({"kennung": k, "code": v["code"], "modell": v["modell"], "ip": v["ip"], "seit": int(v["zeit"]),
+                        "plattform": v["plattform"]} for k, v in kopplungen.items() if not v["geraet"]), key=lambda x: x["seit"])
 
 
 # ---------- Anfragen der Player ----------

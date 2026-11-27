@@ -111,6 +111,7 @@ Made for living rooms, waiting rooms and company receptions. Self-hosted, no clo
 - Direct mode: the device shows the page itself, no encoding on the server
 - Offline copy: if the server or the network fails, the player keeps showing its last layout – also after a cold start ([details](docs/PLAYER.md#offline-copy-since-051))
 - Browser device: a secret link for a smart TV or kiosk browser
+- Samsung signage displays and TV browsers: open `…:8890/samsung`, the device shows a code – accept it in the admin ([details](docs/PLAYER.md#samsung-displays-and-tv-browsers--pairing-by-code-since-070))
 - Devices at another site through Tailscale or Headscale ([REMOTE.md](docs/REMOTE.md))
 
 </td>

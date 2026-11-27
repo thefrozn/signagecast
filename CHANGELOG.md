@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.70.0 (2026-11-27)
+- **Samsung displays and TV browsers – pairing by code:** open `http://<server>:8890/samsung` (or `/tv`) on the screen;
+  it shows a 6-digit code and appears under **Devices** as **New device waiting** (also in *To do*). Compare the code,
+  pick name and channel, **Accept** – the screen switches to the channel within seconds and remembers the pairing.
+  Samsung signage displays start it by themselves via the **URL Launcher**; on TVs set it as the browser's start page.
+  Works in any TV browser (detected: Samsung/Tizen, LG/webOS, Fire TV, Android …). **Decline** discards a request;
+  after removing the device the screen shows a new code.
+- **Accept instead of typing for Pis too:** Pis with the pairing image now appear in the same box with their code –
+  compare and accept (typing still works). The admin therefore shows the code now (numeric comparison, as with
+  Bluetooth pairing).
+- MCP: `list_pending_devices` (without the code) and `accept_device` (code from the screen, name, channel).
+- Samsung and Tizen are trademarks of their owners; SignageCast is not a Samsung product. Signage displays are not yet
+  tested on real hardware.
+
 ## v0.69.4 (2026-11-24)
 - **Two English voices for announcements:** *LJ Speech* (female, dataset public domain) and *Joe* (male, dataset CC0,
   Nabu Casa), next to Kerstin and Thorsten. Settings → Announcement panel lists each voice with its language; the voice

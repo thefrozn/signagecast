@@ -11,7 +11,8 @@
 # ändern – Layouts, Zuweisung an Fernseher, Zeitplan, Karussell, Laufschrift, Durchsagen, Bilder, Streams, Datenquellen;
 # seit 0.60 auch Vorlagen, Lesbarkeits-Hinweise, Dateien (PDF, Medien, Galerie, Datei-Quellen), Galerie-Ordner, Themen,
 # Stream-Suche, Einspieler und Radio – aber bewusst nichts am System und kein Notfall-Vollbild: keine Updates, keine Sicherungen, keine Befehle an Player, keine Terminals, keine
-# Passwörter oder Schlüssel. Player nur lesen (seit 0.44: list_players – Zustand, letzte Meldung, Fernverwaltung). Jede Änderung steht im Änderungsprotokoll („MCP <Benutzer>“); Layouts bekommen vorher eine Version.
+# Passwörter oder Schlüssel. Player nur lesen (seit 0.44: list_players – Zustand, letzte Meldung, Fernverwaltung); seit 0.70
+# wartende Geräte auflisten (ohne Code) und mit dem Code vom Bildschirm annehmen. Jede Änderung steht im Änderungsprotokoll („MCP <Benutzer>“); Layouts bekommen vorher eine Version.
 # Nur Python-Standardbibliothek.
 import base64, json, os, re, sys, threading, time, urllib.error, urllib.parse, urllib.request
 
@@ -794,6 +795,18 @@ def w_list_players(a):
     return aus
 
 
+def w_list_pending_devices(a):
+    """Seit 0.70: Geräte, die gerade einen Code zeigen – bewusst ohne den Code (der Nutzer liest ihn vom Bildschirm ab)."""
+    return [{"model": w.get("modell"), "platform": w.get("plattform"), "waiting_since": w.get("seit")}
+            for w in get("/api/player").get("wartend", [])]
+
+
+def w_accept_device(a):
+    """Seit 0.70: Gerät mit dem Code vom Bildschirm annehmen (wie „Annehmen“ bzw. Code eingeben in der Verwaltung)."""
+    r = post("/api/player/koppeln", {"code": str(a.get("code", "")), "name": str(a.get("name", "")), "tv": str(a.get("tv", ""))})
+    return {"device": r.get("geraet")}
+
+
 S, I, B, O, A = ({"type": "string"}, {"type": "integer"}, {"type": "boolean"}, {"type": "object"},
                  {"type": "array", "items": {"type": "string"}})
 TVS = dict(A, description="TV ids; empty = all TVs")
@@ -904,6 +917,11 @@ WERKZEUGE = {
                      schema({"tv": S, "sound": {"type": "string", "enum": ["off", "radio", "cams"]}, "station": S, "volume": I}, ["tv"]), True),
     "list_players": (w_list_players, "Raspberry Pi/PC players (read only): online, seconds since the last report, display mode wanted/actual, "
                      "temperature, hints and the newest remote management entries (sent → picked up → result).", schema({"limit": I}), False),
+    "list_pending_devices": (w_list_pending_devices, "Devices (Samsung displays/TVs, TV browsers, Pis with the pairing image) "
+                             "that show a pairing code and wait to be accepted. The code is not included – ask the user to read it "
+                             "from the screen.", schema({}), False),
+    "accept_device": (w_accept_device, "Accept a waiting device with the 6-digit code shown on its screen (ask the user for it), "
+                      "give it a name and the TV id (channel) it should show.", schema({"code": S, "name": S, "tv": S}, ["code", "name"]), True),
     "get_log": (w_get_log, "Change log (who changed what and when).", schema({"limit": I}), False),
 }
 

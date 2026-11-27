@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- Kopplungsseite für Fernseher-Browser (seit 0.70): /samsung bzw. /tv auf dem Webhook-Port. Zeigt einen Code; in der
+     Verwaltung „Annehmen“ (oder Code eintippen) macht daraus ein Gerät, dann geht es weiter zur Anzeige. Bewusst ohne
+     Bibliotheken und ohne neuere Sprachmittel (alte Fernseher-Browser ab etwa 2017). -->
+<html lang="de" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignageCast</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0e1726; color: #f2f5fa; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; }
+  main { width: 86vw; max-width: 1400px; text-align: center; }
+  .kopf { display: flex; align-items: center; justify-content: center; gap: 1.2vw; font-size: 3.2vw; font-weight: 600; }
+  .kopf svg { width: 4.6vw; height: 4.6vw; }
+  #code { font-size: 11vw; font-weight: 700; letter-spacing: .6vw; margin: 3vh 0 1vh; font-variant-numeric: tabular-nums; color: #fff; }
+  #text { font-size: 2.6vw; line-height: 1.4; }
+  #klein { font-size: 1.6vw; color: #9fb0c8; margin-top: 2vh; min-height: 2em; }
+  .hilfe { margin-top: 5vh; text-align: left; font-size: 1.55vw; line-height: 1.5; color: #c7d3e3; background: #18243a; border-radius: 1vw; padding: 2vh 2.5vw; }
+  .hilfe b { color: #fff; }
+  .hilfe ul { margin: .8vh 0 1vh 1.2em; padding: 0; }
+  .hilfe li { margin: .4vh 0; }
+  .adr { font-family: Consolas, "DejaVu Sans Mono", monospace; color: #ffd27a; font-size: 1.9vw; display: block; margin: .6vh 0 1vh; }
+  .gut { color: #7be0a2; }
+  .schlecht { color: #ff9b8f; }
+</style>
+</head>
+<body>
+<main>
+  <div class="kopf"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="#0066cc"/><g fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"><ellipse cx="32" cy="32" rx="12" ry="27"/><path d="M5 32H59M9 19H55M9 45H55"/></g><path d="M27 21.5 46.5 32 27 42.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><circle cx="49" cy="13" r="5.5" fill="#ffb21e" stroke="#fff" stroke-width="2"/></svg>SignageCast</div>
+  <div id="code">– – –</div>
+  <div id="text"></div>
+  <div id="klein"></div>
+  <div class="hilfe" id="hilfe"></div>
+</main>
+<script>
+"use strict";
+var TEXTE = {
+  de: {
+    annehmen: "In SignageCast unter <b>Geräte</b> auf <b>Annehmen</b> klicken – fertig.",
+    gilt: "Der Code gilt 10 Minuten, danach erscheint von selbst ein neuer.",
+    angenommen: function (n) { return "Angenommen" + (n ? " als „" + n + "“" : "") + " – einen Moment …"; },
+    abgelehnt: "Die Anfrage wurde abgelehnt oder ist abgelaufen – neuer Code …",
+    voll: "Gerade warten zu viele Geräte – neuer Versuch in einer Minute.",
+    weg: "Server nicht erreichbar – neuer Versuch …",
+    hilfeTitel: "Damit es nach dem Einschalten von allein startet",
+    adresse: "Diese Adresse am Gerät hinterlegen:",
+    signage: "<b>Samsung-Signage-Display:</b> Menü → <b>URL Launcher</b> → Adresse eintragen und als Startquelle wählen.",
+    fernseher: "<b>Fernseher und andere Geräte mit Browser:</b> Adresse als Startseite des Browsers festlegen.",
+    marke: "Samsung ist eine Marke der Samsung Electronics Co., Ltd. SignageCast ist kein Samsung-Produkt."
+  },
+  en: {
+    annehmen: "In SignageCast, click <b>Accept</b> under <b>Devices</b> – done.",
+    gilt: "The code is valid for 10 minutes; a new one appears by itself.",
+    angenommen: function (n) { return "Accepted" + (n ? " as “" + n + "”" : "") + " – one moment …"; },
+    abgelehnt: "The request was declined or has expired – new code …",
+    voll: "Too many devices are waiting right now – trying again in a minute.",
+    weg: "Server not reachable – trying again …",
+    hilfeTitel: "To start by itself after switching on",
+    adresse: "Store this address on the device:",
+    signage: "<b>Samsung signage display:</b> menu → <b>URL Launcher</b> → enter the address and choose it as the source.",
+    fernseher: "<b>TVs and other devices with a browser:</b> set the address as the browser's start page.",
+    marke: "Samsung is a trademark of Samsung Electronics Co., Ltd. SignageCast is not a Samsung product."
+  }
+};
+var SEITE = location.pathname.indexOf("/samsung") === 0 ? "samsung" : "tv";
+var T = TEXTE[(navigator.language || "").slice(0, 2) === "de" ? "de" : "en"];
+var kennung = "", timer = null;
+
+function $(id) { return document.getElementById(id); }
+function zeige(code, text, klein, klasse) {
+  if (code !== null) $("code").textContent = code;
+  $("text").innerHTML = text;
+  $("klein").textContent = klein || "";
+  $("klein").className = klasse || "";
+}
+function hilfe() {
+  var adr = location.protocol + "//" + location.host + location.pathname;
+  $("hilfe").innerHTML = "<b>" + T.hilfeTitel + "</b><br>" + T.adresse + "<span class=\"adr\">" + adr + "</span><ul>" +
+    (SEITE === "samsung" ? "<li>" + T.signage + "</li>" : "") + "<li>" + T.fernseher + "</li></ul>" +
+    (SEITE === "samsung" ? "<small>" + T.marke + "</small>" : "");
+}
+function senden(pfad, daten) {
+  return fetch(pfad, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+                       cache: "no-store", body: JSON.stringify(daten || {}) });
+}
+function spaeter(f, ms) { clearTimeout(timer); timer = setTimeout(f, ms); }
+
+function anfragen() {
+  senden("/tv/koppeln", { seite: SEITE }).then(function (r) {
+    if (r.status === 429) { zeige("– – –", T.annehmen, T.voll, "schlecht"); return spaeter(anfragen, 60000); }
+    return r.json().then(function (d) {
+      if (!d.ok) return spaeter(anfragen, 30000);
+      if (d.sprache && TEXTE[d.sprache]) { T = TEXTE[d.sprache]; document.documentElement.lang = d.sprache; hilfe(); }
+      kennung = d.kennung;
+      zeige(d.code.slice(0, 3) + " " + d.code.slice(3), T.annehmen, T.gilt);
+      spaeter(nachfragen, 3000);
+    });
+  }).catch(function () { zeige(null, T.annehmen, T.weg, "schlecht"); spaeter(anfragen, 15000); });
+}
+
+function nachfragen() {
+  senden("/tv/koppeln/status", { kennung: kennung, seite: SEITE }).then(function (r) {
+    if (r.status === 202) return spaeter(nachfragen, 3000);
+    if (r.status === 404) { zeige(null, T.annehmen, T.abgelehnt); return spaeter(anfragen, 2000); }
+    if (r.status !== 200) return spaeter(nachfragen, 10000);
+    return r.json().then(function (d) {
+      zeige(null, T.angenommen(d.name), "", "gut");
+      setTimeout(function () { location.replace(d.pfad); }, 1200);
+    });
+  }).catch(function () { $("klein").textContent = T.weg; spaeter(nachfragen, 10000); });
+}
+
+hilfe();
+zeige(null, T.annehmen, "");
+anfragen();
+</script>
+</body>
+</html>

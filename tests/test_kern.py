@@ -821,7 +821,7 @@ class Kopplung025(unittest.TestCase):
             code = p.kopplung["code"]
             self.assertEqual(p.anzeige.zeilen[0], f"Code: {code[:3]} {code[3:]}")
             self.assertEqual(len(PL.wartend()), 1)
-            self.assertNotIn(code, json.dumps(PL.wartend()))
+            self.assertIn(code, json.dumps(PL.wartend()))   # seit 0.70: die Verwaltung zeigt den Code zum Vergleichen („Annehmen“)
             falsch = f"{(int(code) + 1) % 1_000_000:06d}"
             with self.assertRaises(M.Meldung) as f:
                 PL.koppeln(falsch, {"name": "Flur", "tv": "tv"}, {"tv"})
@@ -876,6 +876,46 @@ class Kopplung025(unittest.TestCase):
         finally:
             agent.modell = alt
         self.assertNotIn("schluessel", p.k)                    # gefälschte Antwort: nichts übernommen
+
+    def test_fernseher_browser_koppeln(self):
+        """Seit 0.70: Fernseher-Browser (/samsung, /tv) – Code anfragen, warten, Annehmen mit Kennung + Code, Weiterleitung."""
+        PL = self.PL
+        ua = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) 76.0.3809.146/6.0 TV Safari/537.36"
+        r = PL.browser_anfrage(ua, "192.0.2.40", "tv")
+        self.assertRegex(r["code"], r"^\d{6}$")
+        self.assertEqual(PL.browser_status(r["kennung"])[0], 202)
+        w = PL.wartend()
+        self.assertEqual((w[0]["kennung"], w[0]["code"], w[0]["plattform"], w[0]["modell"]), (r["kennung"], r["code"], "samsung", "Samsung (Tizen)"))
+        self.assertEqual(PL.koppel_status(r["kennung"])[0], 404)          # der Pi-Weg kennt Browser-Anfragen nicht
+        falsch = f"{(int(r['code']) + 1) % 10**6:06d}"
+        with self.assertRaises(M.Meldung):                                # Annehmen nur mit dem passenden Code
+            PL.koppeln(falsch, {"name": "Theke", "tv": "tv"}, {"tv"}, kennung=r["kennung"])
+        g = PL.koppeln(r["code"], {"name": "Theke", "tv": "tv"}, {"tv"}, kennung=r["kennung"])
+        self.assertEqual((g["modell"], g["plattform"], g["geraet_typ"], g["anzeige_modus"]), (PL.BROWSER, "samsung", "Samsung (Tizen)", "direkt"))
+        code, a = PL.browser_status(r["kennung"])
+        self.assertEqual((code, a["pfad"]), (200, "/anzeige/" + PL.anzeige_schluessel(g)))
+        self.assertEqual(PL.geraet_fuer_anzeige(a["pfad"][9:])["id"], g["id"])
+        self.assertEqual(PL.wartend(), [])
+        with self.assertRaises(M.Meldung):                                # schon angenommen
+            PL.koppeln(r["code"], {"name": "Nochmal", "tv": "tv"}, {"tv"}, kennung=r["kennung"])
+        # Eintippen geht weiter; LG über /tv bleibt „browser“
+        r2 = PL.browser_anfrage("Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36", "192.0.2.41", "tv")
+        self.assertEqual(PL.wartend()[0]["plattform"], "browser")
+        g2 = PL.koppeln(r2["code"][:3] + " " + r2["code"][3:], {"name": "Flur", "tv": "tv"}, {"tv"})
+        self.assertEqual((g2["plattform"], g2["geraet_typ"]), ("browser", "LG (webOS)"))
+        # /samsung setzt die Plattform auch bei unbekanntem Browser; neue Anfrage derselben IP ersetzt die alte
+        PL.browser_anfrage("irgendwas", "192.0.2.42", "samsung")
+        r3 = PL.browser_anfrage("irgendwas", "192.0.2.42", "samsung")
+        self.assertEqual([x["kennung"] for x in PL.wartend()], [r3["kennung"]])
+        self.assertEqual(PL.wartend()[0]["plattform"], "samsung")
+        PL.ablehnen(r3["kennung"])                                        # Ablehnen: Seite bekommt 404 und fragt neu
+        self.assertEqual((PL.wartend(), PL.browser_status(r3["kennung"])[0]), ([], 404))
+        with self.assertRaises(M.Meldung):
+            PL.ablehnen(r3["kennung"])
+        PL.koppel_zeiten[:] = [time.time()] * PL.KOPPEL_STUNDE          # gemeinsame Grenze mit den Pis
+        with self.assertRaises(M.Meldung) as f:
+            PL.browser_anfrage(ua, "192.0.2.43", "tv")
+        self.assertEqual(f.exception.code, "pi_koppel_voll")
 
     def test_grenzen(self):
         PL = self.PL

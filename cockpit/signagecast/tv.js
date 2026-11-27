@@ -85,8 +85,8 @@ const TEXTE = {
           port: (p) => `Die Pis erreichen den Server über Port ${p} – im Docker-/NAS-Betrieb muss er freigegeben sein (Zeile "${p}:${p}" unter ports).`,
           koppeln: "Geräte koppeln (ein Image für mehrere Geräte)", koppelnText: "Ein Image für beliebig viele Pis oder PCs: Es enthält Server-Adresse und WLAN, aber noch keinen Schlüssel. Jedes Gerät zeigt beim Start einen 6-stelligen Code auf dem Fernseher – hier eingeben, Name und Kanal wählen, fertig. Der Schlüssel wird dabei sicher ausgehandelt und geht nie übers Netz.",
           sammelImage: "Image für mehrere Geräte herunterladen", fuer: "Für", code: "Code vom Fernseher", codePlatz: "123 456", koppelnKnopf: "Koppeln",
-          gekoppelt: "Gekoppelt – der Pi startet in wenigen Sekunden.", wartend: (n) => n === 1 ? "1 Pi zeigt gerade einen Code" : `${n} Pis zeigen gerade einen Code`,
-          keinerWartet: "Gerade zeigt kein Pi einen Code.",
+          gekoppelt: "Gekoppelt – der Pi startet in wenigen Sekunden.", wartend: (n) => n === 1 ? "1 Gerät zeigt gerade einen Code" : `${n} Geräte zeigen gerade einen Code`,
+          keinerWartet: "Gerade zeigt kein Gerät einen Code.",
           neu: "Gerät hinzufügen", name: "Name", namePlatz: "z. B. Wartezimmer", tv: "Zeigt den Kanal", keinTv: "– noch keiner –", modell: "Modell",
           m: { pi45: "Pi 5, Pi 4 oder Pi 400", pi3: "Pi 3 oder Zero 2 W" }, netz: "Netzwerk", kabel: "LAN-Kabel", wlan: "WLAN",
           wlanGesp: "Gespeichertes WLAN", wlanNeu: "neues WLAN eingeben", ssid: "WLAN-Name (SSID)", pw: "WLAN-Passwort", merken: "WLAN in der Verwaltung speichern (für weitere Pis)",
@@ -181,6 +181,13 @@ const TEXTE = {
           hd: { m: "Dieser Rechner per HDMI", titel: "Dieser Rechner per HDMI", name: "Dieser Rechner (HDMI)", erstellen: "Bild per HDMI einschalten",
             text: "SignageCast läuft direkt auf diesem Rechner (Installations-ISO): Er kann den Kanal auch selbst zeigen – Fernseher oder Monitor per HDMI anschließen. Kein Image, kein zweites Gerät. Der Bildschirm zeigt bis zum Abschluss des Einrichtungsassistenten die Konsole mit der Adresse der Verwaltung.",
             karte: "Zeigt diesen Kanal per HDMI an diesem Rechner. „Entfernen“ schaltet das Bild aus – die Konsole erscheint wieder." },
+          sa: { titel: "Samsung-Displays und Fernseher-Browser (per Code)", perCode: "per Code",
+            text: "Ohne Image und ohne Link abtippen: Am Gerät diese Adresse öffnen – es zeigt einen Code und erscheint hier unter „Neues Gerät wartet“. Annehmen, fertig.",
+            signage: "Samsung-Signage-Display: Menü → URL Launcher → Adresse eintragen und als Startquelle wählen. Es startet dann nach dem Einschalten von allein.",
+            fernseher: "Samsung-Fernseher und andere Marken: Adresse im Browser öffnen und als Startseite festlegen.",
+            marke: "Samsung ist eine Marke der Samsung Electronics Co., Ltd.; SignageCast ist kein Samsung-Produkt." },
+          wa: { titel: "Neues Gerät wartet", code: "Code", vergleichen: "Nur annehmen, wenn derselbe Code auf dem Bildschirm steht.",
+            annehmen: "Annehmen", ablehnen: "Ablehnen", angenommen: "Angenommen – das Gerät zeigt den Kanal in wenigen Sekunden.", abgelehnt: "Abgelehnt" },
           br: { m: "Browser-Gerät (nur Link, ohne Image)", titel: "Browser-Gerät",
             text: "Für Geräte, die schon einen Browser haben: Smart-TV, Fire-TV-Stick, ein PC mit fertiger Kiosk-Live-CD (z. B. Porteus Kiosk) oder einfach ein Browser im Vollbild (F11). Es gibt kein Image – du bekommst einen geheimen Link, der genau diesen Kanal zeigt. Ohne Bildschirmfoto, Rückfall auf den Stream und Fernwartung; „online“ heißt: die Seite holt ihre Daten (alle 15 s).",
             erstellen: "Link erstellen", link: "Link", kopieren: "Kopieren", kopiert: "Kopiert",
@@ -278,7 +285,8 @@ const TEXTE = {
             playerBasis: (art, alt, neu) => `${art === "pc" ? "PC-Image" : "Player-Image"} ${alt} ist älter als SignageCast ${neu} – unter Einstellungen → System → Updates neu laden, damit neue Geräte alle Korrekturen haben (z. B. WLAN beim ersten Start)`,
             internet: (s) => `Internet seit ${s} nicht erreichbar – die Kanäle zeigen eigene Medien bzw. ein Ersatzbild`,
             bild: (n, b) => b === "steht" ? `Bild von „${n}“ stand still – Seite neu geladen bzw. Wiedergabe neu gestartet` : `„${n}“ zeigte nur Schwarz – Seite neu geladen bzw. Wiedergabe neu gestartet`,
-            player: (n) => `Gerät „${n}“ meldet sich nicht`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
+            player: (n) => `Gerät „${n}“ meldet sich nicht`,
+            geraetWartet: (n, m) => n === 1 ? `Neues Gerät wartet (${m}) – unter Geräte annehmen` : `${n} neue Geräte warten – unter Geräte annehmen`, update: (v) => `Neue Version ${v} verfügbar`, ha: "Home Assistant ist nicht erreichbar", wetter: "Wetter konnte nicht geladen werden",
             sicherung: "Automatische Sicherung ist ausgeschaltet", sicherungFehler: "Letzte automatische Sicherung fehlgeschlagen",
             benachrichtigung: "Noch keine Benachrichtigung eingerichtet (z. B. bei Ausfall)", bnFehler: "Benachrichtigung konnte nicht gesendet werden",
             software: "Keine Grafikeinheit erkannt – der Streammodus kodiert per CPU, sparsamer ist der Direktmodus", passwort: "Startpasswort ändern",
@@ -601,8 +609,8 @@ const TEXTE = {
           port: (p) => `The Pis reach the server on port ${p} – with Docker/NAS it must be published (line "${p}:${p}" under ports).`,
           koppeln: "Pair devices (one image for several devices)", koppelnText: "One image for any number of Pis or PCs: it contains the server address and Wi-Fi, but no key yet. At startup each device shows a 6-digit code on the TV – enter it here, choose name and channel, done. The key is negotiated securely and never travels over the network.",
           sammelImage: "Download image for several devices", fuer: "For", code: "Code from the TV", codePlatz: "123 456", koppelnKnopf: "Pair",
-          gekoppelt: "Paired – the Pi starts in a few seconds.", wartend: (n) => n === 1 ? "1 Pi is showing a code" : `${n} Pis are showing a code`,
-          keinerWartet: "No Pi is showing a code right now.",
+          gekoppelt: "Paired – the Pi starts in a few seconds.", wartend: (n) => n === 1 ? "1 device is showing a code" : `${n} devices are showing a code`,
+          keinerWartet: "No device is showing a code right now.",
           neu: "Add device", name: "Name", namePlatz: "e.g. waiting room", tv: "Shows the channel", keinTv: "– none yet –", modell: "Model",
           m: { pi45: "Pi 5, Pi 4 or Pi 400", pi3: "Pi 3 or Zero 2 W" }, netz: "Network", kabel: "LAN cable", wlan: "Wi-Fi",
           wlanGesp: "Saved Wi-Fi", wlanNeu: "enter new Wi-Fi", ssid: "Wi-Fi name (SSID)", pw: "Wi-Fi password", merken: "Save the Wi-Fi in the admin (for more Pis)",
@@ -697,6 +705,13 @@ const TEXTE = {
           hd: { m: "This computer via HDMI", titel: "This computer via HDMI", name: "This computer (HDMI)", erstellen: "Turn on picture via HDMI",
             text: "SignageCast runs directly on this computer (installation ISO): it can show the channel itself – connect a TV or monitor via HDMI. No image, no second device. Until the setup assistant is finished, the screen shows the console with the admin address.",
             karte: "Shows this channel via HDMI on this computer. “Remove” turns the picture off – the console appears again." },
+          sa: { titel: "Samsung displays and TV browsers (by code)", perCode: "by code",
+            text: "No image and no link to type: open this address on the device – it shows a code and appears here under “New device waiting”. Accept, done.",
+            signage: "Samsung signage display: menu → URL Launcher → enter the address and choose it as the source. It then starts by itself after switching on.",
+            fernseher: "Samsung TVs and other brands: open the address in the browser and set it as the start page.",
+            marke: "Samsung is a trademark of Samsung Electronics Co., Ltd.; SignageCast is not a Samsung product." },
+          wa: { titel: "New device waiting", code: "Code", vergleichen: "Only accept if the same code is shown on the screen.",
+            annehmen: "Accept", ablehnen: "Decline", angenommen: "Accepted – the device shows the channel in a few seconds.", abgelehnt: "Declined" },
           br: { m: "Browser device (link only, no image)", titel: "Browser device",
             text: "For devices that already have a browser: smart TV, Fire TV stick, a PC with a ready kiosk live CD (e.g. Porteus Kiosk) or just a browser in full screen (F11). There is no image – you get a secret link that shows exactly this channel. No screenshot, no fallback to the stream, no remote maintenance; “online” means: the page fetches its data (every 15 s).",
             erstellen: "Create link", link: "Link", kopieren: "Copy", kopiert: "Copied",
@@ -793,7 +808,8 @@ const TEXTE = {
             playerBasis: (art, alt, neu) => `${art === "pc" ? "PC image" : "Player image"} ${alt} is older than SignageCast ${neu} – download it again under Settings → System → Updates so new devices get all fixes (e.g. Wi-Fi on first start)`,
             internet: (s) => `Internet not reachable since ${s} – the channels show own media or a fallback picture`,
             bild: (n, b) => b === "steht" ? `Picture of “${n}” was frozen – page reloaded or playback restarted` : `“${n}” showed only black – page reloaded or playback restarted`,
-            player: (n) => `Device “${n}” is not responding`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
+            player: (n) => `Device “${n}” is not responding`,
+            geraetWartet: (n, m) => n === 1 ? `New device waiting (${m}) – accept it under Devices` : `${n} new devices waiting – accept them under Devices`, update: (v) => `New version ${v} available`, ha: "Home Assistant is not reachable", wetter: "Weather could not be loaded",
             sicherung: "Automatic backup is switched off", sicherungFehler: "Last automatic backup failed",
             benachrichtigung: "No notification set up yet (e.g. on failure)", bnFehler: "A notification could not be sent",
             software: "No graphics unit found – stream mode encodes on the CPU, direct mode needs less", passwort: "Change the initial password",
@@ -1848,7 +1864,7 @@ async function playerSeite(inhalt, einrichten) {
   const zeichnen = () => {
     if (!einrichten) {
       inhalt.innerHTML = geraetOffen ? `<div class="zeile"><button class="knopf" id="plAlle">← ${esc(T.ding.alleGeraete)}</button></div><div id="plListe"></div>`
-        : `<div class="kopfzeile"><h2>${esc(T.pl.liste)}</h2><button class="knopf" id="plZuEinrichten">+ ${esc(T.pl.neuGeraet)}</button></div><div id="plListe"></div>`;
+        : `<div class="kopfzeile"><h2>${esc(T.pl.liste)}</h2><button class="knopf" id="plZuEinrichten">+ ${esc(T.pl.neuGeraet)}</button></div><div id="plWartet"></div><div id="plListe"></div>`;
       if (geraetOffen) $("#plAlle").onclick = () => { geraetOffen = null; zeichnen(); };
       else $("#plZuEinrichten").onclick = () => zeigeSeite("einrichten");
       listeZeichnen();
@@ -1862,6 +1878,9 @@ async function playerSeite(inhalt, einrichten) {
         <h3>${esc(T.pl.pc.titel)}</h3><p>${esc(T.pl.pc.text)}</p><p class="leise">${esc(T.pl.pc.bedarf)}</p>
         <div class="zeile"><label>${esc(T.pl.pc.basis)}</label><span id="plBasisPc">${basisText(true)}</span>
           <button class="knopf${P.basis_pc.veraltet ? " haupt" : ""}" id="plBasisPcLaden" ${laedt() ? "disabled" : ""}>${esc(P.basis_pc.vorhanden ? T.pl.basisNeu : T.pl.basisLaden)}</button></div>
+        <h3>${esc(T.pl.sa.titel)}</h3><p class="leise">${esc(T.pl.sa.text)}</p>
+        <pre>${esc((P.server || P.server_auto || `http://${location.hostname}:${P.webhook_port}`).replace(/\/+$/, "") + "/samsung")}</pre>
+        <ul class="leise"><li>${esc(T.pl.sa.signage)}</li><li>${esc(T.pl.sa.fernseher)}</li></ul><p class="leise"><small>${esc(T.pl.sa.marke)}</small></p>
         <h3>${esc(T.pl.br.titel)}</h3><p class="leise">${esc(T.pl.br.text)}</p>
         ${P.hdmi_moeglich ? `<h3>${esc(T.pl.hd.titel)}</h3><p class="leise">${esc(T.pl.hd.text)}</p>` : ""}
         ${P.container ? `<p class="leise">${esc(T.pl.port(P.webhook_port))}</p>` : ""}</div>
@@ -2150,7 +2169,7 @@ async function playerSeite(inhalt, einrichten) {
     const l = P.geraete.filter((g) => !suche || (g.name + " " + kanalName(g.tv)).toLowerCase().includes(suche.toLowerCase()));
     ziel.innerHTML = !P.geraete.length ? `<p class="leise">${esc(T.pl.keine)}</p>` : `<div class="zeile"><input type="search" id="plSuche" placeholder="${esc(T.ding.suchen)}" aria-label="${esc(T.ding.suchen)}" value="${esc(suche)}"></div>
       ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th>${esc(T.ding.name)}</th><th>${esc(T.ding.status)}</th><th>${esc(T.ding.verwendung)}</th>
-        <th>${esc(T.ding.zuletzt)}</th><th></th></tr></thead><tbody>${l.map((g) => `<tr><td><b>${esc(g.name)}</b><br><span class="leise">${esc(MT()[g.modell] || g.modell)}</span></td>
+        <th>${esc(T.ding.zuletzt)}</th><th></th></tr></thead><tbody>${l.map((g) => `<tr><td><b>${esc(g.name)}</b><br><span class="leise">${esc(g.plattform ? `${g.geraet_typ || "Browser"} (${T.pl.sa.perCode})` : MT()[g.modell] || g.modell)}</span></td>
           <td class="${g.online ? "gut" : g.zuletzt ? "schlecht" : "leise"}">${esc(statusKlar(g))}${g.hinweise.length ? `<br><span class="warn">⚠ ${esc(T.pl.h[g.hinweise[0]] || g.hinweise[0])}</span>` : ""}</td>
           <td>${esc(g.tv ? kanalName(g.tv) : T.ding.keinKanal)}</td><td class="leise">${esc(zuletztText(PZ, "geraet:" + g.id))}</td>
           <td><button class="knopf" data-goeffnen="${g.id}">${esc(T.ding.oeffnen)}</button></td></tr>`).join("")}</tbody></table></div>`
@@ -2173,7 +2192,35 @@ async function playerSeite(inhalt, einrichten) {
     }
     catch (_) { i.remove(); }
   });
+  // seit 0.70: Geräte, die gerade einen Code zeigen – Annehmen (Code vergleichen) oder Ablehnen. Neu gezeichnet nur, wenn
+  // sich die Liste ändert und niemand gerade tippt.
+  let wartetStand = "";
+  const wartetZeichnen = () => {
+    const ziel = $("#plWartet");
+    if (!ziel) return;
+    const l = P.wartend || [], st = l.map((w) => w.kennung).join(",");
+    if (st === wartetStand || ziel.querySelector(":focus")) return;
+    wartetStand = st;
+    const tv0 = E.fernseher[0] ? E.fernseher[0].id : "";
+    ziel.innerHTML = l.map((w) => `<div class="karte wartet" data-k="${esc(w.kennung)}"><h3>🔔 ${esc(T.pl.wa.titel)}</h3>
+      <p>${esc(w.modell || "?")} · ${esc(w.ip || "")} · ${esc(T.pl.wa.code)} <b class="code">${esc(w.code.slice(0, 3) + " " + w.code.slice(3))}</b></p>
+      <p class="leise">${esc(T.pl.wa.vergleichen)}</p>
+      <div class="zeile"><label>${esc(T.pl.name)}</label><input type="text" data-name maxlength="40" value="${esc(w.modell || "")}"></div>
+      <div class="zeile"><label>${esc(T.pl.tv)}</label><select data-tv>${tvOpt(tv0)}</select></div>
+      <div class="zeile"><button class="knopf haupt" data-an>${esc(T.pl.wa.annehmen)}</button><button class="knopf" data-ab>${esc(T.pl.wa.ablehnen)}</button></div></div>`).join("");
+    ziel.querySelectorAll("[data-k]").forEach((k) => {
+      const w = l.find((x) => x.kennung === k.dataset.k);
+      k.querySelector("[data-an]").onclick = (e) => aktion(e.target, async () => {
+        await senden("/api/player/koppeln", { kennung: w.kennung, code: w.code, name: k.querySelector("[data-name]").value || w.modell, tv: k.querySelector("[data-tv]").value });
+        P = await holenP(); wartetStand = ""; wartetZeichnen(); listeZeichnen();
+      }, T.pl.wa.angenommen);
+      k.querySelector("[data-ab]").onclick = (e) => aktion(e.target, async () => {
+        await senden("/api/player/ablehnen", { kennung: w.kennung }); P = await holenP(); wartetStand = ""; wartetZeichnen();
+      }, T.pl.wa.abgelehnt);
+    });
+  };
   const listeZeichnen = () => {
+    wartetZeichnen();
     const ziel = $("#plListe");
     if (!ziel) return;
     const offen = P.geraete.find((g) => g.id === geraetOffen);
@@ -2229,7 +2276,7 @@ async function playerSeite(inhalt, einrichten) {
       if (aktiv !== seite || holt) return;
       fvTicken();
       const unterwegs = P.geraete.some((g) => (g.verlauf || []).some(fvOffenE));
-      if (Date.now() - P._geholt < (laedt() ? 2000 : unterwegs ? 3000 : 10000)) return;
+      if (Date.now() - P._geholt < (laedt() ? 2000 : unterwegs || (P.wartend || []).length ? 3000 : 10000)) return;
       const alt = laedt();
       holt = true;
       try { P = await holenP(); } finally { holt = false; }
@@ -2240,6 +2287,7 @@ async function playerSeite(inhalt, einrichten) {
       }
       const w = $("#plWartend");
       if (w) w.textContent = wartendText();
+      wartetZeichnen();
       if (!inhalt.querySelector("#plListe :focus, #plListe details[open]:not([data-fv]), #plListe pre:not([hidden]), #plListe .geaendert, #plListe .g-teil[data-teil=einst]:not([hidden]), #plListe .g-teil[data-teil=verlauf]:not([hidden])")) listeZeichnen();
       else fvTicken();
     }, 1000);
@@ -2298,7 +2346,7 @@ let TODO_ZEIGEN = false;
 const TODO_WARN = {
   ha: () => [T.todo.ha, "ha"], bildrate: (w) => [T.todo.bildrate(w.name), "leistung"],
   allgemein: (w) => [T.todo.allgemein(w.grund, String(w.seit || "").slice(11)), "streams"], doppelt: (w) => [T.todo.doppelt(w.name), "leistung"],
-  player: (w) => [T.todo.player(w.name), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
+  player: (w) => [T.todo.player(w.name), "player"], geraet_wartet: (w) => [T.todo.geraetWartet(w.anzahl, w.modell), "player"], sicherung_fehler: () => [T.todo.sicherungFehler, "sicherung"],
   bn_fehler: () => [T.todo.bnFehler, "benachrichtigung"], wetter: () => [T.todo.wetter, "allgemein"],
   internet: (w) => [T.todo.internet(w.seit), "uebersicht"], bild: (w) => [T.todo.bild(w.name, w.befund), "leistung"],
   player_basis: (w) => [T.todo.playerBasis(w.art, w.alt, w.neu), "updates"],

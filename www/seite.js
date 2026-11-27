@@ -799,6 +799,9 @@ async function laden() {
   try {
     const r = await fetch(A("/daten.json?tv=" + encodeURIComponent(TV) + (VORSCHAU_LAYOUT ? "&layout=" + encodeURIComponent(VORSCHAU_LAYOUT) : "")
                             + (ENTWURF ? "&entwurf=" + encodeURIComponent(ENTWURF) : "") + (KETTE ? "&kette=1" : "")), { cache: "no-store" });
+    // seit 0.70: per Code gekoppelter Fernseher-Browser, Gerät in der Verwaltung gelöscht → zurück zur Seite mit dem Code
+    const koppel = /(?:^|;\s*)sc_koppel=(samsung|tv)/.exec(document.cookie);
+    if (r.status === 403 && koppel) { location.replace("/" + koppel[1]); return; }
     const d = await r.json();
     if (!d || !d.ok) return;
     // seit 0.28.1: nach einem Update (andere Version im Dienst) sofort mit dem neuen Code neu laden
