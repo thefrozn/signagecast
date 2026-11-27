@@ -118,7 +118,7 @@ ul.fv-liste { list-style: none; padding: 0; margin: 6px 0 0; font-size: 13px; } 
 img.vorschau { width: 100%; border-radius: 8px; border: 1px solid var(--linie); background: #000; aspect-ratio: 16/9; object-fit: contain; }
 pre { white-space: pre-wrap; background: var(--eingabe); border: 1px solid var(--linie); border-radius: 8px; padding: 10px;
   font-size: 13px; overflow-x: auto; }
-.hinweis { margin: 12px auto 0; max-width: 1168px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--warn); background: var(--karte); }
+.hinweis { margin: 12px auto 0; max-width: 1168px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--warn); background: var(--karte); display: flow-root; }
 .hinweis button { float: right; }
 #meldung { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--hg);
   padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; z-index: 5; }

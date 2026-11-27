@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.70.1 (2026-11-27)
+- **Admin notices updates:** an open admin keeps running the old code after an update (the browser caches the files).
+  It now checks the version every 2 minutes and shows “SignageCast was updated to … – Reload”; the button fetches the
+  files past the cache and reloads. No automatic reload, so nothing you are typing gets lost. Helps from the next update
+  on – after updating to 0.70.1 reload the admin once by hand.
+
 ## v0.70.0 (2026-11-27)
 - **Samsung displays and TV browsers – pairing by code:** open `http://<server>:8890/samsung` (or `/tv`) on the screen;
   it shows a 6-digit code and appears under **Devices** as **New device waiting** (also in *To do*). Compare the code,

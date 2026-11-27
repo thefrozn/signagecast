@@ -381,7 +381,7 @@ const TEXTE = {
     zeitplanText: "Zu bestimmten Zeiten ein anderes Layout zeigen, z. B. nachts nur die Uhr oder ganz schwarz (spart Strom).",
     schwarz: "schwarz (aus)", von: "von", zeitVon: "von", bis: "bis", zeitNeu: "Zeitraum hinzufügen", wetterText: "Wetterbild, Temperatur und Vorhersage kommen von dieser Entität; Räume, Kacheln und alles andere stellst du im Reiter „Layout“ ein.",
     speichern: "Speichern", gespeichert: "Gespeichert", deaktiviert: "ausgeschaltet", fehler: "Fehler", laedt: "Lädt …", ja: "ja", nein: "nein",
-    passwortHinweis: "Hinweis: Wenn du dich noch mit dem Startpasswort anmeldest, ändere es bitte (oben rechts im Menü → " +
+    neuLaden: "Neu laden", versionAktualisiert: (v) => `SignageCast wurde auf ${v} aktualisiert – Verwaltung neu laden, um die neue Version zu nutzen.`, passwortHinweis: "Hinweis: Wenn du dich noch mit dem Startpasswort anmeldest, ändere es bitte (oben rechts im Menü → " +
       "Konten → tvadmin → Passwort festlegen).", ausblenden: "Ausblenden",
     stream: "Videostream", laeuft: "läuft", aus: "aus (niemand schaut)", zuschauer: "Zuschauer", aktuell: "Gerade",
     qualitaet: "Qualität", codec: "Codec", verloren: "verlorene Bilder", bandbreite: "Bandbreite", cpu: "CPU", ram: "RAM frei",
@@ -903,7 +903,7 @@ const TEXTE = {
     zeitplanText: "Show another layout at certain times, e.g. only the clock or completely black at night (saves power).",
     schwarz: "black (off)", von: "from", bis: "to", zeitNeu: "Add period", wetterText: "Weather picture, temperature and forecast come from this entity; rooms, tiles and everything else are set in the “Layout” tab.",
     speichern: "Save", gespeichert: "Saved", deaktiviert: "switched off", fehler: "Error", laedt: "Loading …", ja: "yes", nein: "no",
-    passwortHinweis: "Note: if you still log in with the initial password, please change it (menu top right → Accounts → " +
+    neuLaden: "Reload", versionAktualisiert: (v) => `SignageCast was updated to ${v} – reload the admin to use the new version.`, passwortHinweis: "Note: if you still log in with the initial password, please change it (menu top right → Accounts → " +
       "tvadmin → Set password).", ausblenden: "Dismiss",
     stream: "Video stream", laeuft: "running", aus: "off (nobody watching)", zuschauer: "Viewers", aktuell: "Now",
     qualitaet: "Quality", codec: "Codec", verloren: "dropped frames", bandbreite: "Bandwidth", cpu: "CPU", ram: "RAM free",
@@ -1405,6 +1405,26 @@ function hinweiseZeichnen() {
   const n = el(`<div class="hinweis"><button class="knopf">${esc(T.ausblenden)}</button>${esc(T.passwortHinweis)}</div>`);
   n.querySelector("button").onclick = () => { try { localStorage.setItem("signagecast-pw-hinweis", "weg"); } catch (_) { /* egal */ } n.remove(); };
   h.appendChild(n);
+}
+
+// seit 0.70.1: Nach einem Update läuft eine offene Verwaltung sonst mit dem alten Programmcode weiter (Cockpit hält die
+// Dateien im Browser-Cache). Alle 2 min die Version des Dienstes prüfen; ändert sie sich, Hinweis mit „Neu laden“ – kein
+// automatisches Neuladen, damit Eingaben nicht verloren gehen. Der Knopf holt die Dateien am Cache vorbei und lädt neu.
+let VERSION_START = null;
+const VERWALTUNG_DATEIEN = ["tv.css", "layout.js", "csvimport.js", "quellen.js", "speicherorte.js", "live.js", "tv.js", "index.html"];
+function versionPruefen() {
+  holen("/api/status").then((s) => {
+    if (!s || !s.version) return;
+    if (!VERSION_START) { VERSION_START = s.version; return; }
+    if (s.version === VERSION_START || $("#versionHinweis")) return;
+    const n = el(`<div class="hinweis" id="versionHinweis"><button class="knopf haupt">${esc(T.neuLaden)}</button>${esc(T.versionAktualisiert(s.version))}</div>`);
+    n.querySelector("button").onclick = async (e) => {
+      e.target.disabled = true;
+      await Promise.allSettled(VERWALTUNG_DATEIEN.map((f) => fetch(f, { cache: "reload", credentials: "same-origin" })));
+      location.reload();
+    };
+    $("#hinweise").prepend(n);
+  }).catch(() => {});
 }
 
 async function einstellungenLaden() {
@@ -4016,6 +4036,7 @@ async function updatesSeite(inhalt) {
 
 // ---------- Start ----------
 document.addEventListener("DOMContentLoaded", async () => {
+  versionPruefen(); setInterval(versionPruefen, 120000);
   try { await einstellungenLaden(); } catch (e) {
     $("#inhalt").innerHTML = `<div class="karte schlecht">SignageCast-Dienst nicht erreichbar / service not reachable: ${esc(e.message || e)}</div>`;
     return;
