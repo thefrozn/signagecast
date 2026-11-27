@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.71.0 (2026-11-27)
+## v0.71.0 (2026-11-28)
 - **Samsung TVs: remote control over the network – no app needed.** In the device's overview: *Open / reload page*
   restarts the TV's browser with its start page (set the pairing page as start page once; no pairing needed). After
   *Pair remote control* (the TV asks once “Allow?”): volume down/up, mute, switch off and switch on (Wake-on-LAN – over Wi-Fi
