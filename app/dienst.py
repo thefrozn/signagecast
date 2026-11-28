@@ -54,6 +54,7 @@ import hardware as HW                         # noqa: E402
 import meldung as M                           # noqa: E402
 import sicherung as S                         # noqa: E402
 import medien as MED                          # noqa: E402
+import mediathek as MT                        # noqa: E402
 import unwetter as UW                         # noqa: E402
 import benachrichtigung as BN                 # noqa: E402
 import durchsage as DS                        # noqa: E402
@@ -74,7 +75,7 @@ import kizugang as KZ                         # noqa: E402
 import fernnetz as FN                         # noqa: E402
 import mcp as MCP                             # noqa: E402
 import speicherorte as SO                     # noqa: E402
-import base64, hashlib, datetime, html, queue   # noqa: E402
+import base64, copy, hashlib, datetime, html, queue   # noqa: E402
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WWW = os.path.join(BASIS, "www")
@@ -1638,6 +1639,7 @@ PROTOKOLL_PFADE = {                                # Pfad -> Kennung der Aktion 
     "/api/galerie/ordner": "galerie_ordner", "/api/galerie/loeschen": "galerie_loeschen", "/api/galerie/ordnen": "galerie_ordnen",
     "/api/galerie/umbenennen": "galerie_umbenennen",
     "/api/speicherorte": "speicherorte", "/api/speicherorte/holen": "medien_neu", "/api/galerie/abgleichen": "galerie_abgleichen",
+    "/api/mediathek/datei": "mt_datei", "/api/mediathek/loeschen": "mt_loeschen", "/api/mediathek/zur-galerie": "mt_galerie",
 }
 PROTOKOLL_MUSTER = [                               # (Muster, Kennung) – Kennung mit {0} = erste Gruppe
     (re.compile(r"/api/streams/([\w-]{11}|UC[\w-]{22})(?:/([a-z-]+))?"), "stream_{1}"),
@@ -1845,7 +1847,8 @@ PDF_ORDNER = os.path.join(DATEN, "pdf")
 def pdf_schleife():
     """Stündlich: umgewandelte PDFs entfernen, die kein Layout mehr nutzt, und Reste gelöschter Fernseher."""
     while True:
-        PDF.aufraeumen(PDF_ORDNER, {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf"})
+        PDF.aufraeumen(PDF_ORDNER, {x["optionen"]["datei"] for l in einst()["layouts"] for x in l["elemente"] if x["typ"] == "pdf"}
+                       | set(einst()["mediathek"]["dateien"]))     # seit 0.72: PDFs aus der Mediathek bleiben
         fernseher_reste_entfernen({t["id"] for t in einst()["fernseher"]})   # Kette lief beim Löschen noch
         try:
             GALERIE.aufraeumen({o["id"] for o in einst()["galerie"]["ordner"]})   # seit 0.45
@@ -2021,8 +2024,9 @@ def tv_daten(tv_id, vorschau_layout=None, entwurf=None, kette=False):
     sender = next((x for x in e["radio"]["sender"] if x["id"] == t["radio_sender"]), None)
     liste = [x for x in streams.liste if x["kategorie"] not in t["kategorien_aus"]] \
         if v["aktiv"] and t["video"] and hat_video and quelle != "medien" else []
+    ok = mt_ok()                                  # seit 0.72: Gültigkeit aus der Mediathek
     alle_medien = [{"id": m["id"], "name": m["name"], "art": m["art"], "url": f"/medien/{m['datei']}", "dauer_s": m["dauer_s"]}
-                   for m in e["medien"] if m["aktiv"]] if t["video"] and hat_video else []
+                   for m in e["medien"] if m["aktiv"] and ok(m["datei"][:16])] if t["video"] and hat_video else []
     medien = alle_medien if quelle != "youtube" else []
     with sperre:
         teil = dict(zustand["ha_teil"])
@@ -2055,10 +2059,10 @@ def tv_daten(tv_id, vorschau_layout=None, entwurf=None, kette=False):
                 einspieler_jetzt=zustand.get("einspieler_jetzt") if zustand.get("einspieler_jetzt", {}).get("bis", 0) > time.time() else None,
                 tv=t["id"], layout=layout, kalender=kal, api=api,
                 webbild={x["id"]: fotograf.bild(a) for x in layout.get("elemente", []) if (a := webbild_auftrag(x))},
-                pdf={x["id"]: {"datei": x["optionen"]["datei"], "seiten": PDF.seiten(PDF_ORDNER, x["optionen"]["datei"])}
+                pdf={x["id"]: {"datei": x["optionen"]["datei"], "seiten": PDF.seiten(PDF_ORDNER, x["optionen"]["datei"]) if ok(x["optionen"]["datei"]) else 0}
                      for x in layout.get("elemente", []) if x["typ"] == "pdf" and x["optionen"]["datei"]},
                 # Galerie (seit 0.45): je gezeigtem Ordner nur der Stand – die Folien holt die Seite bei einer Änderung
-                galerie={oid: GALERIE.stand(oid) for oid in galerie_im_layout(layout) if oid in {o["id"] for o in e["galerie"]["ordner"]}},
+                galerie={oid: GALERIE.stand(oid, ok) for oid in galerie_im_layout(layout) if oid in {o["id"] for o in e["galerie"]["ordner"]}},
                 jetzt_lokal=time.strftime("%Y-%m-%dT%H:%M"), alarm=alarm_fuer(t["id"]),
                 medien=medien, medien_modus=quelle, medien_alle=t["medien_alle"],
                 # Internet weg (seit 0.38): statt der Live-Kameras eigene Medien im Kreis, sonst ein ruhiges Bild
@@ -2864,6 +2868,280 @@ def galerie_stand():
             "max_eintraege": GAL.MAX_EINTRAEGE}
 
 
+# ---------- Mediathek (seit 0.72, app/mediathek.py) ----------
+# Ein Katalog über allen drei Ablagen (medien, galerie, pdf) – Schlüssel ist die Prüfsumme. Die Dateien bleiben liegen.
+mt_sperre = threading.RLock()                     # Medienliste und Katalog nicht gleichzeitig aus zwei Threads ändern
+
+
+def mt_ok():
+    """-> ok(prüfsumme): darf diese Datei jetzt laufen (Gültigkeit der Mediathek)?"""
+    meta, jetzt = einst()["mediathek"]["dateien"], time.strftime("%Y-%m-%dT%H:%M")
+    return lambda h: MT.gueltig(meta, h, jetzt)
+
+
+def mt_speichern(medien=None, meta=None):
+    """Medienliste und/oder Katalog ersetzen (nicht zusammenführen: gelöschte Einträge sollen verschwinden)."""
+    neu = copy.deepcopy(einst())
+    if medien is not None:
+        neu["medien"] = medien
+    if meta is not None:
+        neu["mediathek"]["dateien"] = meta
+    zustand["einstellungen"] = E.speichern(neu)
+
+
+def mt_pdf_layouts(h):
+    return [l["id"] for l in einst()["layouts"] if any(x["typ"] == "pdf" and x["optionen"]["datei"] == h for x in l["elemente"])]
+
+
+def mt_katalog():
+    """Alle Dateien für die Verwaltung (Reiter Medien › Dateien)."""
+    e = einst()
+    meta, jetzt = e["mediathek"]["dateien"], time.strftime("%Y-%m-%dT%H:%M")
+    z = {}
+
+    def zeile(h):
+        return z.setdefault(h, {"id": h, "name": "", "art": "", "bytes": 0, "zeit": 0, "seiten": 0, "dauer_s": 0,
+                                "medium": False, "videofenster": False, "galerien": [], "pdf": False, "pdf_layouts": []})
+    for m in e["medien"]:
+        r, pfad = zeile(m["datei"][:16]), os.path.join(MEDIEN, m["datei"])
+        r.update(art=m["art"], medium=True, videofenster=r["videofenster"] or m["aktiv"], dauer_s=m["dauer_s"], name=r["name"] or m["name"])
+        try:
+            r["bytes"], r["zeit"] = os.path.getsize(pfad), int(os.path.getmtime(pfad))
+        except OSError:
+            pass
+    for o in e["galerie"]["ordner"]:
+        for g in GALERIE.liste(o["id"]):
+            r = zeile(g["id"])
+            r["galerien"].append(o["id"])
+            r.update(art=r["art"] or g["art"], name=r["name"] or g["name"], seiten=g["seiten"] if g["art"] == "pdf" else r["seiten"],
+                     zeit=r["zeit"] or g["zeit"], bytes=r["bytes"] or g["bytes"])
+    try:
+        pdfs = [n for n in os.listdir(PDF_ORDNER) if PDF.NAME.fullmatch(n)]
+    except OSError:
+        pdfs = []
+    for h in pdfs:
+        n = PDF.seiten(PDF_ORDNER, h)
+        if not n:
+            continue
+        r = zeile(h)
+        r.update(art="pdf", pdf=True, seiten=n, pdf_layouts=mt_pdf_layouts(h))
+        if not r["zeit"]:
+            try:
+                r["zeit"] = int(os.path.getmtime(os.path.join(PDF_ORDNER, h)))
+            except OSError:
+                pass
+    for h, r in z.items():
+        k = meta.get(h) or {}
+        r["name"] = k.get("name") or r["name"] or ("PDF" if r["art"] == "pdf" else h)
+        r.update(tags=k.get("tags", []), ab=k.get("ab", ""), bis=k.get("bis", ""))
+        r["status"], r["status_wert"] = MT.status(k, jetzt)
+    return {"dateien": sorted(z.values(), key=lambda r: -r["zeit"]), "umwandeln": e["mediathek"]["umwandeln"],
+            "auftraege": [dict(a, fehler_text=str(M.Meldung(a["fehler"]))) if a["fehler"] else a for a in UMWANDLER.liste()], "tags": sorted({t for k in meta.values() for t in k.get("tags", [])})}
+
+
+def mt_meta(h, name=None, tags=None, ab=None, bis=None):
+    """Katalogeintrag h ändern (None = unverändert) -> neues Katalog-Dict (noch nicht gespeichert)."""
+    meta = copy.deepcopy(einst()["mediathek"]["dateien"])
+    k = dict(meta.get(h) or {"name": "", "tags": [], "ab": "", "bis": ""})
+    for feld, w in (("name", name), ("tags", tags), ("ab", ab), ("bis", bis)):
+        if w is not None:
+            k[feld] = w
+    meta[h] = k
+    return MT.pruefen({"dateien": meta}, einst()["mediathek"])["dateien"]
+
+
+def mt_medium_eintragen(datei, art, name, dauer, aktiv):
+    """Medium in die Medienliste (gibt es die Datei schon, nur einschalten, wenn gewünscht) -> Medium."""
+    with mt_sperre:
+        alle = copy.deepcopy(einst()["medien"])
+        schon = next((m for m in alle if m["datei"] == datei), None)
+        if schon:
+            schon["aktiv"] = schon["aktiv"] or aktiv
+        else:
+            schon = {"id": MED.neue_kennung(), "name": str(name or datei)[:60], "art": art, "datei": datei, "dauer_s": dauer, "aktiv": aktiv}
+            alle.append(schon)
+        mt_speichern(medien=alle)
+        return schon
+
+
+def mt_umwandlung_fertig(a, pfad):
+    """Umwandler: fertiges MP4 unter seiner Prüfsumme ablegen und eintragen; Katalogeintrag des Originals übernehmen."""
+    h = GAL._pruefsumme(pfad)
+    datei = f"{h}.mp4"
+    os.replace(pfad, os.path.join(MEDIEN, datei))
+    dauer = MT.video_info(os.path.join(MEDIEN, datei))["dauer"]
+    mt_medium_eintragen(datei, "video", a["name"], dauer, a["videofenster"])
+    if a.get("meta"):
+        with mt_sperre:
+            mt_speichern(meta=mt_meta(h, **a["meta"]))
+    print(f"Umwandlung fertig: {a['name']} -> {datei}", flush=True)
+
+
+UMWANDLER = MT.Umwandler(MEDIEN, mt_umwandlung_fertig)
+
+
+MT_VORSCHAU = os.path.join(DATEN, "mediathek", "vorschau")
+
+
+def mt_vorschau(h):
+    """Pfad eines kleinen Vorschaubilds (320 px) – aus der Galerie, sonst einmal erzeugt (Bild, Video bei 1 s, PDF Seite 1)."""
+    k = os.path.join(GALERIE.dateien, f"{h}.k.jpg")
+    if os.path.exists(k):
+        return k
+    ziel = os.path.join(MT_VORSCHAU, f"{h}.jpg")
+    if os.path.exists(ziel):
+        return ziel
+    quelle = next((os.path.join(MEDIEN, m["datei"]) for m in einst()["medien"] if m["datei"][:16] == h), None)
+    if not quelle and PDF.seiten(PDF_ORDNER, h):
+        quelle = os.path.join(PDF_ORDNER, h, "1.jpg")
+    if not quelle or not os.path.exists(quelle):
+        return None
+    os.makedirs(MT_VORSCHAU, exist_ok=True)
+    tmp = ziel + f".{os.urandom(3).hex()}.jpg"
+    vor = ["-ss", "1"] if quelle.endswith((".mp4", ".webm")) else []
+    code, _ = GAL._ffmpeg(vor + ["-i", quelle, "-frames:v", "1", "-vf", f"scale='min({GAL.KLEIN},iw)':-2:flags=bilinear", "-q:v", "5",
+                                 "-update", "1", "-y", tmp], 30)
+    if code != 0 and vor:                         # Video kürzer als 1 s
+        code, _ = GAL._ffmpeg(["-i", quelle, "-frames:v", "1", "-vf", f"scale='min({GAL.KLEIN},iw)':-2", "-update", "1", "-y", tmp], 30)
+    if code == 0 and os.path.exists(tmp):
+        os.replace(tmp, ziel)
+        return ziel
+    MT._weg(tmp)
+    return None
+
+
+def mt_aufnehmen(roh, d):
+    """Hochgeladene Datei (Reiter Dateien, zweck "mediathek") in die passende Ablage übernehmen. roh wird verbraucht.
+    d: name, videofenster (bool), galerien [ids], tags, ab, bis."""
+    name = re.sub(r"[\x00-\x1f]", "", str(d.get("name") or ""))[:80] or "?"
+    ordner = {o["id"] for o in einst()["galerie"]["ordner"]}
+    galerien = [str(x) for x in (d.get("galerien") or [])[:50] if str(x) in ordner]
+    meta = {"tags": MT.tags_pruefen(d.get("tags")), "ab": L._zeitpunkt(d.get("ab")), "bis": L._zeitpunkt(d.get("bis"))}
+    video = bool(d.get("videofenster", True))
+    try:
+        with open(roh, "rb") as f:
+            kopf = f.read(16)
+        if PDF.ist_pdf(kopf):
+            if os.path.getsize(roh) > GAL.MAX_PDF:
+                raise M.Meldung("gal_gross", mb=GAL.MAX_PDF // 2 ** 20)
+            SP.pruefen(DATEN, os.path.getsize(roh) * 2 + PDF.SEITEN_MAX * 1024 * 1024)
+            for oid in galerien:
+                GALERIE.hinzufuegen(oid, roh, name, galerie_grenze())
+            h, _ = PDF.umwandeln(roh, PDF_ORDNER)
+            with mt_sperre:
+                mt_speichern(meta=mt_meta(h, name=name, **meta))
+            return {"id": h, "art": "pdf"}
+        try:
+            art, endung = MED.art_erkennen(kopf)
+        except M.Meldung:
+            GAL.art_erkennen(kopf)                  # WebP/GIF/HEIC: ein Bild, das erst umgewandelt wird – sonst Meldung
+            art, endung = "bild", ""
+        if art == "bild":
+            if os.path.getsize(roh) > GAL.MAX_BILD:
+                raise M.Meldung("gal_gross", mb=GAL.MAX_BILD // 2 ** 20)
+            h = GAL._pruefsumme(roh)
+            for oid in galerien:
+                GALERIE.hinzufuegen(oid, roh, name, galerie_grenze())
+            datei = next((x for x in (f"{h}.jpg", f"{h}.png") if os.path.exists(os.path.join(MEDIEN, x))), None)
+            if not datei and endung:
+                datei = f"{h}.{endung}"
+                os.replace(roh, os.path.join(MEDIEN, datei))
+            elif not datei:
+                datei = GAL.bild_umwandeln(roh, MEDIEN, h)
+            mt_medium_eintragen(datei, "bild", name, 10, video)
+            if any(meta.values()):
+                with mt_sperre:
+                    mt_speichern(meta=mt_meta(h, **meta))
+            return {"id": h, "art": "bild"}
+        # Video: wie bisher über den Hochlader (Prüfung, Prüfsumme) – mit Umwandlung, wenn eingeschaltet
+        kennung = hochladen.uebernehmen(roh)
+        erg = hochladen.fertig(kennung, umwandeln=einst()["mediathek"]["umwandeln"])
+        if erg[0] == "umwandeln":
+            aid = MED.neue_kennung()
+            UMWANDLER.anstellen({"id": aid, "name": name, "roh": erg[1], "dauer": erg[2]["dauer"], "videofenster": video,
+                                 "meta": meta if any(meta.values()) else None})
+            return {"umwandeln": aid, "art": "video"}
+        _, datei, dauer = erg
+        mt_medium_eintragen(datei, "video", name, dauer, video)
+        if any(meta.values()):
+            with mt_sperre:
+                mt_speichern(meta=mt_meta(datei[:16], **meta))
+        return {"id": datei[:16], "art": "video"}
+    finally:
+        if os.path.exists(roh):
+            os.remove(roh)
+
+
+def mt_aendern(d):
+    """Eine Datei bearbeiten: Name, Schlagwörter, Gültigkeit, im Videofenster an/aus, Anzeigedauer (Bild)."""
+    h = str(d.get("id", ""))
+    if not MT.H.fullmatch(h) or not any(r["id"] == h for r in mt_katalog()["dateien"]):
+        raise M.Meldung("mt_unbekannt")
+    name = re.sub(r"[\x00-\x1f]", "", str(d.get("name") or ""))[:80].strip() if "name" in d else None
+    with mt_sperre:
+        meta = mt_meta(h, name=name if name is not None else None, tags=MT.tags_pruefen(d["tags"]) if "tags" in d else None,
+                       ab=d.get("ab") if "ab" in d else None, bis=d.get("bis") if "bis" in d else None)
+        medien = copy.deepcopy(einst()["medien"])
+        for m in medien:
+            if m["datei"][:16] == h:
+                if name:
+                    m["name"] = name[:60]
+                if "videofenster" in d:
+                    m["aktiv"] = bool(d["videofenster"])
+                if "dauer_s" in d and m["art"] == "bild":
+                    m["dauer_s"] = int(E._zahl(d["dauer_s"], 1, 3600))
+        if name:
+            for oid in GALERIE.eintraege_von(h):
+                GALERIE.umbenennen(oid, h, name)
+        mt_speichern(medien=medien, meta=meta)
+
+
+def mt_loeschen(h):
+    """Datei überall entfernen: Medienliste, alle Galerien, PDF-Ablage, Katalog."""
+    if not MT.H.fullmatch(h or ""):
+        raise M.Meldung("mt_unbekannt")
+    with mt_sperre:
+        medien = [m for m in einst()["medien"] if m["datei"][:16] != h]
+        weg = [m["datei"] for m in einst()["medien"] if m["datei"][:16] == h]
+        meta = {k: w for k, w in einst()["mediathek"]["dateien"].items() if k != h}
+        mt_speichern(medien=medien, meta=meta)
+    for datei in weg:
+        try:
+            os.remove(os.path.join(MEDIEN, datei))
+        except OSError:
+            pass
+    for oid in GALERIE.eintraege_von(h):
+        GALERIE.loeschen(oid, [h])
+    MT._weg(os.path.join(MT_VORSCHAU, f"{h}.jpg"))
+    if not mt_pdf_layouts(h):                     # ein Layout zeigt das PDF noch: Seiten behalten, dann blendet es sich aus
+        shutil.rmtree(os.path.join(PDF_ORDNER, h), ignore_errors=True)
+
+
+def mt_zur_galerie(ids, oid):
+    """Dateien aus der Mediathek in eine Galerie aufnehmen -> Anzahl."""
+    if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
+        raise M.Meldung("gal_ordner")
+    katalog = {r["id"]: r for r in mt_katalog()["dateien"]}
+    for h in ids:                                 # erst alles prüfen, dann übernehmen (nichts halb)
+        if h not in katalog:
+            raise M.Meldung("mt_unbekannt")
+        if katalog[h]["art"] == "video":
+            raise M.Meldung("mt_kein_video")
+    n = 0
+    for h in ids:
+        r = katalog[h]
+        if GALERIE.verknuepfen(oid, h):
+            n += 1
+            continue
+        if r["medium"]:
+            datei = next(m["datei"] for m in einst()["medien"] if m["datei"][:16] == h)
+            GALERIE.hinzufuegen(oid, os.path.join(MEDIEN, datei), r["name"], galerie_grenze())
+        elif r["pdf"]:
+            GALERIE.pdf_uebernehmen(oid, os.path.join(PDF_ORDNER, h), h, r["name"], galerie_grenze())
+        n += 1
+    return n
+
+
 # ---------- Abgleich mit Speicherorten (seit 0.48) ----------
 # Ein Galerie-Ordner kann mit einem Ordner eines Speicherorts verknüpft sein (einst galerie.ordner[].quelle). Alle
 # intervall_min Minuten: Liste holen, neue/geänderte Dateien (Größe oder Änderungszeit anders) holen und wie hochgeladene
@@ -3443,11 +3721,16 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             endung = m.group(2)
             return self.unveraenderlich(os.path.join(GALERIE.dateien, f"{m.group(1)}.{endung}"),
                                         "image/png" if endung == "png" else "image/jpeg")
+        m = re.fullmatch(r"/mediathek/vorschau/([0-9a-f]{16})\.jpg", p.path)
+        if m:                                     # seit 0.72: Vorschaubild jeder Datei der Mediathek (auch Videos)
+            pfad = mt_vorschau(m.group(1))
+            return self.unveraenderlich(pfad, "image/jpeg") if pfad else self.antwort(404, {"ok": False})
         m = re.fullmatch(r"/galerie/ordner/([a-z0-9]{2,12})\.json", p.path)
         if m:                                     # Folien eines Ordners für die TV-Seite (nur, wenn sich der Stand ändert)
             if m.group(1) not in {o["id"] for o in einst()["galerie"]["ordner"]}:
                 return self.antwort(404, {"ok": False})
-            return self.antwort(200, {"ok": True, "stand": GALERIE.stand(m.group(1)), "folien": GALERIE.folien(m.group(1))})
+            ok = mt_ok()
+            return self.antwort(200, {"ok": True, "stand": GALERIE.stand(m.group(1), ok), "folien": GALERIE.folien(m.group(1), ok)})
         m = re.fullmatch(r"/bild/([0-9a-f]{16}\.(jpg|png))", p.path)
         if m:
             try:
@@ -3501,6 +3784,8 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             except M.Meldung as ex:
                 m = M.als_dict(ex)
                 return self.antwort(200, {"ok": False, "fehler": str(ex), "code": m["code"], "p": m["p"]})
+        if pfad == "/api/mediathek":                   # seit 0.72: alle Dateien, Umwandlungen, Schlagwörter
+            return self.antwort(200, dict(mt_katalog(), ok=True))
         if pfad == "/api/galerie":                     # seit 0.45: Ordner, Belegung, Grenze
             return self.antwort(200, dict(galerie_stand(), ok=True))
         if pfad == "/api/galerie/ordner":
@@ -3719,6 +4004,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
     def upload_fertig(self, d):
         """Vollständig angekommene Datei (hochgeladen oder seit 0.48 aus einem Speicherort geholt) übernehmen."""
         oid = str(d.get("ordner", ""))
+        if d.get("zweck") == "mediathek":       # seit 0.72: Reiter Dateien – Art am Inhalt, Ziele aus dem Dialog
+            erg = mt_aufnehmen(hochladen.fertig_roh(str(d["kennung"])), d)
+            self.protokoll_detail = {"text": str(d.get("name") or "?")[:60]}
+            return dict(erg, einstellungen=einst_aussen())
         if d.get("zweck") == "galerie":
             roh = hochladen.fertig_roh(str(d["kennung"]))
             try:
@@ -3817,7 +4106,7 @@ class Bearbeiter(SimpleHTTPRequestHandler):
                 if oid not in {o["id"] for o in einst()["galerie"]["ordner"]}:
                     raise M.Meldung("gal_ordner")
                 max_b = GAL.MAX_PDF
-            elif zweck in ("medien", "pdf"):
+            elif zweck in ("medien", "pdf", "mediathek"):
                 max_b = GAL.MAX_PDF if zweck == "pdf" else MED.MAX_DATEI
             else:
                 raise M.Meldung("so_typ")
@@ -3833,6 +4122,10 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             tmp = os.path.join(MEDIEN, f".speicherort-{os.urandom(4).hex()}")
             ORTE.kopieren(ort, rel, tmp, max_b)
             name = rel.rsplit("/", 1)[-1]
+            if zweck == "mediathek":
+                return self.upload_fertig(dict({k: d[k] for k in ("videofenster", "galerien", "tags", "ab", "bis") if k in d},
+                                               kennung=hochladen.uebernehmen(tmp, max_b), zweck="mediathek",
+                                               name=re.sub(r"\.[^.]+$", "", name)))
             return self.upload_fertig({"kennung": hochladen.uebernehmen(tmp, max_b), "zweck": "" if zweck == "medien" else zweck,
                                        "ordner": oid, "name": name if zweck != "medien" else re.sub(r"\.[^.]+$", "", name)})
         if p == "/api/galerie/abgleichen":        # seit 0.48: verknüpften Ordner jetzt abgleichen (läuft im Hintergrund)
@@ -3915,6 +4208,25 @@ class Bearbeiter(SimpleHTTPRequestHandler):
             if not d.get("fertig"):
                 return {}
             return self.upload_fertig(d)
+        if p == "/api/mediathek/datei":            # seit 0.72: Datei bearbeiten
+            mt_aendern(d)
+            self.protokoll_detail = {"text": str(d.get("name") or d.get("id"))[:60]}
+            return dict(mt_katalog(), einstellungen=einst_aussen())
+        if p == "/api/mediathek/loeschen":
+            namen = {r["id"]: r["name"] for r in mt_katalog()["dateien"]}
+            if str(d.get("id")) not in namen:
+                raise M.Meldung("mt_unbekannt")
+            self.protokoll_detail = {"text": namen[str(d["id"])][:60]}
+            mt_loeschen(str(d["id"]))
+            return dict(mt_katalog(), einstellungen=einst_aussen())
+        if p == "/api/mediathek/zur-galerie":
+            ids = [str(x) for x in (d.get("ids") or [])[:GAL.MAX_EINTRAEGE] if MT.H.fullmatch(str(x))]
+            n = mt_zur_galerie(ids, str(d.get("ordner", "")))
+            self.protokoll_detail = {"text": str(n)}
+            return dict(mt_katalog(), anzahl=n, galerie=galerie_stand())
+        if p == "/api/mediathek/umwandlung-verwerfen":
+            UMWANDLER.verwerfen(str(d.get("id", "")))
+            return mt_katalog()
         if p == "/api/medien/loeschen":
             alle = einst()["medien"]
             weg = next((m for m in alle if m["id"] == d.get("id")), None)

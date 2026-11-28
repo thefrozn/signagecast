@@ -14,8 +14,10 @@ def art_erkennen(kopf):
         return "bild", "jpg"
     if kopf[:8] == b"\x89PNG\r\n\x1a\n":
         return "bild", "png"
-    if kopf[4:8] == b"ftyp":
-        return "video", "mp4"
+    if kopf[4:8] == b"ftyp":                 # seit 0.72: QuickTime (iPhone) erkennen – wird umgewandelt
+        return "video", "mov" if kopf[8:12] == b"qt  " else "mp4"
+    if kopf[:4] == b"RIFF" and kopf[8:11] == b"AVI":
+        return "video", "avi"
     if kopf[:4] == b"\x1a\x45\xdf\xa3":
         return "video", "webm"
     raise Meldung("med_art")
@@ -80,7 +82,10 @@ class Hochladen:
             f.write(daten)
         u["naechste"], u["zeit"] = nr + 1, time.time()
 
-    def fertig(self, kennung):
+    def fertig(self, kennung, umwandeln=False):
+        """-> (art, datei, dauer). Seit 0.72 mit umwandeln=True: ein Video, das der Browser so nicht sicher abspielt, kommt
+        als ("umwandeln", roh_pfad, info) zurück – der Aufrufer stellt es beim Umwandler an (app/mediathek.py)."""
+        import mediathek as MT
         u = self.offen.pop(kennung, None)
         if not u:
             raise Meldung("med_upload")
@@ -91,10 +96,20 @@ class Hochladen:
                 h = hashlib.sha256()
                 for block in iter(lambda: f.read(1 << 20), b""):
                     h.update(block)
-            name = f"{h.hexdigest()[:16]}.{endung}"
             dauer = 15
             if art == "video":
-                dauer, _ = video_pruefen(u["pfad"])
+                info = MT.video_info(u["pfad"])
+                if umwandeln and MT.braucht_umwandlung(info, endung):
+                    roh = os.path.join(self.ordner, f".roh-{kennung}.{endung}")
+                    os.replace(u["pfad"], roh)
+                    return "umwandeln", roh, info
+                if info["codec"] in ("hevc", "h265"):
+                    raise Meldung("med_hevc")
+                if endung == "avi":
+                    raise Meldung("med_art")
+                endung = "mp4" if endung == "mov" else endung
+                dauer = info["dauer"]
+            name = f"{h.hexdigest()[:16]}.{endung}"
             os.replace(u["pfad"], os.path.join(self.ordner, name))
             return art, name, dauer
         except Exception:

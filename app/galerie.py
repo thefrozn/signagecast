@@ -153,16 +153,20 @@ class Galerie:
         with self.sperre:
             return len(self.daten.get(oid, []))
 
-    def stand(self, oid):
-        """Kurzer Fingerabdruck des Ordnerinhalts – die TV-Seite lädt die Liste nur neu, wenn er sich ändert."""
+    def stand(self, oid, ok=None):
+        """Kurzer Fingerabdruck des Ordnerinhalts – die TV-Seite lädt die Liste nur neu, wenn er sich ändert.
+        ok (seit 0.72): ok(prüfsumme) -> darf jetzt laufen (Gültigkeit aus der Mediathek); ändert sie sich, ändert sich der Stand."""
         with self.sperre:
-            roh = json.dumps([(e["id"], e["name"]) for e in self.daten.get(oid, [])])
+            roh = json.dumps([(e["id"], e["name"]) for e in self.daten.get(oid, []) if not ok or ok(e["id"])])
         return hashlib.sha1(roh.encode()).hexdigest()[:10]
 
-    def folien(self, oid):
-        """Alles, was die TV-Seite zeigt: je Bild eine Folie, je PDF-Seite eine; Reihenfolge = eigene Reihenfolge."""
+    def folien(self, oid, ok=None):
+        """Alles, was die TV-Seite zeigt: je Bild eine Folie, je PDF-Seite eine; Reihenfolge = eigene Reihenfolge.
+        ok wie bei stand(): nicht (mehr) gültige Einträge fehlen."""
         aus = []
         for i, e in enumerate(self.liste(oid)):
+            if ok and not ok(e["id"]):
+                continue
             if e["art"] == "pdf":
                 aus += [dict({"u": f"galerie/{e['id']}/{n}.jpg", "n": e["name"], "z": e["zeit"], "i": i},
                              **({"h": f"galerie/{e['id']}/{n}.hd.jpg"} if e.get("hd") else {})) for n in range(1, e["seiten"] + 1)]
@@ -235,6 +239,62 @@ class Galerie:
                 self.daten.setdefault(oid, []).append(e)
                 self._speichern()
         return dict(e)
+
+    def verknuepfen(self, oid, h):
+        """Seit 0.72: Eintrag h, der schon in einem anderen Ordner liegt, auch in oid aufnehmen (die Datei gibt es nur einmal).
+        -> Eintrag oder None (h liegt in keinem Ordner)."""
+        if not ORDNER_ID.fullmatch(oid or ""):
+            raise Meldung("gal_ordner")
+        with self.sperre:
+            schon = next((e for e in self.daten.get(oid, []) if e["id"] == h), None)
+            if schon:
+                return dict(schon)
+            vorlage = next((e for l in self.daten.values() for e in l if e["id"] == h), None)
+            if not vorlage:
+                return None
+            if len(self.daten.get(oid, [])) >= MAX_EINTRAEGE:
+                raise Meldung("gal_viele", n=MAX_EINTRAEGE)
+            e = dict(vorlage, zeit=int(time.time()))
+            self.daten.setdefault(oid, []).append(e)
+            self._speichern()
+        return dict(e)
+
+    def pdf_uebernehmen(self, oid, quelle, h, name, grenze_bytes):
+        """Seit 0.72: schon umgewandelte PDF-Seiten (DATEN/pdf/<h>/n.jpg) in den Ordner übernehmen – das PDF selbst wird
+        nicht aufbewahrt. -> Eintrag."""
+        if not ORDNER_ID.fullmatch(oid or "") or not NAME.fullmatch(h or ""):
+            raise Meldung("gal_ordner")
+        n = PDF.seiten(os.path.dirname(quelle), h)
+        if not n:
+            raise Meldung("mt_unbekannt")
+        if self.anzahl(oid) >= MAX_EINTRAEGE:
+            raise Meldung("gal_viele", n=MAX_EINTRAEGE)
+        ziel = os.path.join(self.dateien, h)
+        with self.umwandeln:
+            vorher = self.belegt()
+            os.makedirs(ziel, exist_ok=True)
+            for i in range(1, n + 1):
+                if not os.path.exists(os.path.join(ziel, f"{i}.jpg")):
+                    shutil.copyfile(os.path.join(quelle, f"{i}.jpg"), os.path.join(ziel, f"{i}.jpg"))
+            hd = all(os.path.exists(os.path.join(ziel, f"{i}.hd.jpg")) or
+                     hd_fassung(os.path.join(ziel, f"{i}.jpg"), os.path.join(ziel, f"{i}.hd.jpg")) for i in range(1, n + 1))
+            bytes_ = sum(os.path.getsize(os.path.join(ziel, x)) for x in os.listdir(ziel))
+            if not self._benutzt(h) and vorher + bytes_ > grenze_bytes:
+                self._datei_weg(h)
+                raise Meldung("gal_voll", gb=round(grenze_bytes / 1024 ** 3, 1))
+            if not os.path.exists(os.path.join(self.dateien, f"{h}.k.jpg")):
+                vorschau(os.path.join(ziel, "1.jpg"), os.path.join(self.dateien, f"{h}.k.jpg"))
+            e = {"id": h, "name": re.sub(r"[\x00-\x1f]", "", str(name or h))[:80] or h, "art": "pdf", "datei": None, "seiten": n,
+                 "zeit": int(time.time()), "bytes": bytes_, "hd": hd}
+            with self.sperre:
+                self.daten.setdefault(oid, []).append(e)
+                self._speichern()
+        return dict(e)
+
+    def eintraege_von(self, h):
+        """Ordner, in denen h liegt (seit 0.72, „wo läuft das“)."""
+        with self.sperre:
+            return [oid for oid, l in self.daten.items() if any(e["id"] == h for e in l)]
 
     def _benutzt(self, h):
         return any(e["id"] == h for l in self.daten.values() for e in l)

@@ -20,7 +20,10 @@ Ein Begriff pro Sache, gleich in Verwaltung, TV-Seite, Doku und Tour. Interne Ke
 | Template | Vorlage | A ready layout to start from. Fertiges Layout als Ausgangspunkt. | Muster |
 | Element | Baustein | One part of a layout (clock, weather, list …). Ein Teil eines Layouts. | Widget, Kachel |
 | Data source | Datenquelle | Where an element gets its values (JSON, feed, iCal, CSV, camera). | Quelle (alone / allein), Feed |
-| Media | Medien | Own pictures and videos. Eigene Bilder und Videos. | Dateien |
+| Media | Medien | All own pictures, videos and PDFs (menu item). Alle eigenen Bilder, Videos und PDFs (Menüpunkt). | Mediathek (UI) |
+| File | Datei | One picture, video or PDF under Media › Files, with tags and validity. Ein Bild, Video oder PDF unter Medien › Dateien, mit Schlagwörtern und Gültigkeit. | Medium (in the UI / in der Oberfläche) |
+| Tag | Schlagwort | A word on a file for filters (and playlists from 0.73). Ein Wort an einer Datei zum Filtern. | Label, Etikett |
+| Validity | Gültigkeit | Period in which a file may play (valid from/until). Zeitraum, in dem eine Datei laufen darf. | Laufzeit |
 | Gallery | Galerie | A folder of pictures/PDFs shown as a slideshow. | Album |
 | Clip | Einspieler | A video fetched from an address and played at set times. | Spot |
 | Live video | Live-Video | A live stream from YouTube shown in the video window. | Stream (in the UI / in der Oberfläche) |

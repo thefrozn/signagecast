@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.72.0 (2026-11-28)
+- **Media › Files – one media library for everything.** *Pictures & videos* becomes **Files**: all pictures, videos and
+  PDFs (also those in galleries and PDF elements) in one table with preview, type, state, where used and date; filter by
+  search, type, state and tags. Nothing moves on disk – addresses, offline copies and players stay as they are.
+- **Upload once, play where you want:** *+ Upload* asks *Where should it play?* (video window, galleries) and *How long?*
+  (always, until Sunday, 1 week, 1 month, until a date), optionally a start date and tags.
+- **Validity per file:** outside *valid from/until* no TV shows the file – video window, galleries and the PDF element
+  leave it out and bring it back when the period starts. States: *playing*, *until …*, *expires …*, *from …*, *expired*.
+- **Video conversion:** phone videos (H.265/MOV), MKV, AVI and 4K are converted to H.264 (at most Full HD, AAC sound) in
+  the background – `nice 19`, limited threads (about two cores), one at a time; progress in the list, original deleted afterwards. Settings ›
+  System › Health › *Convert videos* (on by default; off = H.265 is rejected as before).
+- **Galleries: *From files*** adds pictures and PDFs from the library without uploading them again.
+- Coming next: playlists (0.73) built from these files.
+
 ## v0.71.0 (2026-11-28)
 - **Samsung TVs: remote control over the network – no app needed.** In the device's overview: *Open / reload page*
   restarts the TV's browser with its start page (set the pairing page as start page once; no pairing needed). After

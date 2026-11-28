@@ -16,7 +16,7 @@ const IMAGE = "ghcr.io/thefrozn/signagecast:latest";
 const TEXTE = {
   de: {
     reiter: { uebersicht: "Übersicht", fernseher: "Kanäle", player: "Geräte", einrichten: "+ Neues Gerät", layout: "Layouts", quellen: "Datenquellen", live: "Übersicht", streams: "Sammlung", kategorien: "Themen", automatik: "Live-Videos", radio: "Radiosender", einspieler: "Einspieler", anzeige: "Anzeige",
-              video: "Regeln", suche: "Live-Video-Suche", verbindung: "Verbindung", medien: "Bilder & Videos", updates: "Updates", sicherung: "Sicherung",
+              video: "Regeln", suche: "Live-Video-Suche", verbindung: "Verbindung", medien: "Dateien", updates: "Updates", sicherung: "Sicherung",
               allgemein: "Allgemein", ha: "Home Assistant", benachrichtigung: "Benachrichtigungen", zugang: "Konten & Zugang", leistung: "Leistung", zustand: "Zustand", pult: "Durchsage-Pult", durchsage: "Durchsage", notfall: "Notfall", einstellungen: "Einstellungen", protokoll: "Protokoll", ki: "KI-Assistenten", fern: "Fernstandorte", galerie: "Galerien", speicher: "Speicher", speicherorte: "Speicherorte" },
     pu: { titel: "Durchsage-Pult", text: "Eine eigene Seite, z. B. für die Rezeption: nur Meldungen und Durchsagen an ausgewählte Kanäle – keine Einstellungen. Adresse:",
           stimme: "Stimme", stimmeText: "Die Sprache wird offline auf diesem Server erzeugt (Piper). Stimmen werden einmalig geladen (ca. 90 MB mit Programm). Die Stimme liest den Text so, wie er dasteht – für englische Durchsagen eine englische Stimme wählen.",
@@ -491,6 +491,24 @@ const TEXTE = {
     karussellAn: "an", karussellMin: "alle (min)", videoQuelle: "Videofenster zeigt", streamRecht: "Im Stream-Modus nimmt der Server das YouTube-Bild auf und gibt es an die Fernseher weiter. Für den privaten Gebrauch zu Hause ist das in Ordnung. Gewerblich oder öffentlich besser den Direktmodus nehmen (offizieller Player am Fernseher bzw. Gerät im Direktmodus) oder unten YouTube im Stream ausschalten.", ytStream: "YouTube auch im Stream-Modus zeigen", ytStreamText: "Aus: Der Stream dieses Kanals zeigt im Videofenster nur eigene Medien; Fernseher und Geräte im Direktmodus zeigen YouTube weiter.", hinweisWeg: "Verstanden, ausblenden", hinweisWegTitel: "Hinweis auf allen Geräten ausblenden (unter Einstellungen → Allgemein wieder einblendbar)",
     hinweiseEin: "Ausgeblendete Rechtshinweise wieder zeigen", videoRecht: "YouTube erlaubt nur die private, nicht-gewerbliche Nutzung. In Praxis, Laden, Hotel, Verein oder an anderen öffentlichen Orten bitte nur eigene Medien zeigen oder die Rechte selbst klären (YouTube-Bedingungen, Betreiber der Kamera, GEMA bei Ton).",
     videoQuelleArt: { youtube: "Live-Videos (YouTube)", medien: "nur eigene Medien", gemischt: "gemischt" }, medienAlle: "jedes N-te Mal ein eigenes Medium",
+    mt: { galerie: (n) => `Galerie „${n}“`, layout: (n) => `Layout „${n}“`, hochladen: "Hochladen", hochladenLos: "Hochladen", woLaufen: "Wo soll das laufen?", videofenster: "Videofenster (eigene Medien)",
+          woText: "Bilder und Videos fürs Videofenster, Bilder und PDFs für Galerien – jede Datei nur einmal hochladen, egal wo sie läuft.",
+          wieLange: "Wie lange?", wie: { immer: "immer", sonntag: "bis Sonntag", woche: "1 Woche", monat: "1 Monat", datum: "bis …" },
+          mehrAngaben: "Später starten, Schlagwörter", ab: "Gültig ab", bis: "Gültig bis", tags: "Schlagwörter", tagsBeispiel: "z. B. angebote, team",
+          umwandelnAn: "Videos, die der Fernseher nicht sicher abspielt (H.265, MOV, MKV, AVI, 4K), wandelt der Server in H.264 um.",
+          umwandelnAus: "Die Umwandlung von Videos ist ausgeschaltet – H.265-Videos werden abgelehnt.",
+          wandelt: (p) => `wird umgewandelt … ${p} %`, wartet: "wartet auf Umwandlung", keineDatei: "Bitte zuerst Dateien wählen.",
+          fertig: (n, von) => `${n} von ${von} hochgeladen`, hochgeladen: "Hochgeladen",
+          leer: "Noch keine Dateien. Mit „+ Hochladen“ Bilder, Videos oder PDFs hinzufügen.",
+          artWahl: "Art", alleArten: "alle Arten", arten: { bild: "Bilder", video: "Videos", pdf: "PDFs" }, art: { bild: "Bild", video: "Video", pdf: "PDF" },
+          filter: { alle: "jeder Status", aktiv: "läuft", bald: "läuft bald ab", ab: "geplant", abgelaufen: "abgelaufen" },
+          artSpalte: "Art", hinzu: "Hinzugefügt", bearbeiten: "Bearbeiten", mehr: (n) => `${n} weitere zeigen`,
+          statusLaeuft: "läuft", statusBis: (d) => `läuft bis ${d}`, statusAb: (d) => `ab ${d}`, statusBald: (d) => `läuft ab ${d}`, statusWeg: (d) => `abgelaufen (${d})`,
+          ohneKanal: "(noch kein Kanal)", gueltigText: "Außerhalb dieses Zeitraums zeigt kein Fernseher die Datei – im Videofenster, in Galerien und im PDF-Baustein. Leer = unbegrenzt.",
+          imVideofenster: "im Videofenster", zurGalerie: "In Galerie aufnehmen", hinzufuegen: "Hinzufügen", hinzugefuegt: "Aufgenommen",
+          loeschen: "Datei löschen", wegFrage: (n) => `„${n}“ überall löschen?`,
+          umwandelnKarte: "Videos umwandeln", umwandelnSchalter: "Videos beim Hochladen in H.264 umwandeln (empfohlen)",
+          umwandelnKarteText: "Handyvideos (H.265/MOV), MKV, AVI und 4K-Videos spielt der Browser nicht sicher ab. Der Server wandelt sie im Hintergrund in H.264 (höchstens Full HD) um – mit niedriger Priorität und immer nur eins zur Zeit, die Fernseher gehen vor. Das Original wird danach gelöscht." },
     medText: "Eigene Bilder (JPG, PNG) und Videos (MP4/H.264, WebM) für das Videofenster – je Kanal unter „Kanäle“ einstellen: nur eigene Medien oder gemischt mit den Live-Videos. Bilder stehen für ihre Anzeigedauer, Videos laufen ganz.",
     medHoch: "Dateien hochladen", medLaedt: (n, p) => `Lade ${n} … ${p} %`, medKeine: "Noch keine eigenen Medien.", medDauer: "Anzeigedauer (s)",
     // Galerie und Speicher (seit 0.45)
@@ -501,7 +519,7 @@ const TEXTE = {
     galZiehen: "Bilder und PDFs hierher ziehen", galUmbenennen: "Umbenennen", galOrdnerWeg: "Galerie löschen", galOrdnerWegFrage: (n) => `Galerie „${n}“ mit allen Bildern löschen?`,
     galAlle: "Alle auswählen", galKeine2: "Auswahl aufheben", galAuswahlWeg: (n) => `${n} löschen`, galWegFrage: (n) => n === 1 ? "1 Datei löschen?" : `${n} Dateien löschen?`,
     galLaedt: (i, n, name, p) => `Datei ${i} von ${n}: ${name} – ${p} %`, galFertig: (ok, f) => `${ok} hochgeladen` + (f ? `, ${f} nicht übernommen` : ""),
-    galAbbruch: "Abgebrochen:", galSeiten: (n) => `${n} Seiten`, galZiehenText: "Reihenfolge: Bilder mit der Maus verschieben (gilt für „wie im Ordner“).",
+    galAbbruch: "Abgebrochen:", galSeiten: (n) => `${n} Seiten`, galAusDateien: "Aus den Dateien", galAusDateienText: "Bilder und PDFs aus Medien › Dateien in diese Galerie aufnehmen.", galAusDateienLeer: "In den Dateien gibt es keine weiteren Bilder oder PDFs.", galZiehenText: "Reihenfolge: Bilder mit der Maus verschieben (gilt für „wie im Ordner“).",
     galFormat: "nicht unterstütztes Format", galAnzahl: (n) => n === 1 ? "1 Datei" : `${n} Dateien`, galStufe: { gelb: "Speicher wird knapp – bitte aufräumen.", rot: "Speicher voll – Uploads gesperrt, bis Platz frei ist." },
     spText: "Freier Platz im Datenverzeichnis. Eine Reserve bleibt immer frei, damit Streams, Protokolle und Sicherungen weiterlaufen: Ist sie erreicht, nimmt SignageCast keine Uploads mehr an – alles andere läuft weiter.",
     spFrei: (f, g) => `${f} GB frei von ${g} GB`, spReserve: (r) => `Reserve ${r} GB`, spStufe: { gruen: "in Ordnung", gelb: "wird knapp", rot: "voll – Uploads gesperrt" },
@@ -549,7 +567,7 @@ const TEXTE = {
   },
   en: {
     reiter: { uebersicht: "Overview", fernseher: "Channels", player: "Devices", einrichten: "+ New device", layout: "Layouts", quellen: "Data sources", live: "Overview", streams: "Collection", kategorien: "Topics", automatik: "Live videos", radio: "Radio stations", einspieler: "Clips", anzeige: "Display",
-              video: "Rules", suche: "Live video search", verbindung: "Connection", medien: "Pictures & videos", updates: "Updates", sicherung: "Backup",
+              video: "Rules", suche: "Live video search", verbindung: "Connection", medien: "Files", updates: "Updates", sicherung: "Backup",
               allgemein: "General", ha: "Home Assistant", benachrichtigung: "Notifications", zugang: "Accounts & access", leistung: "Performance", zustand: "Health", pult: "Announcement panel", durchsage: "Announcement", notfall: "Emergency", einstellungen: "Settings", protokoll: "Log", ki: "AI assistants", fern: "Remote sites", galerie: "Galleries", speicher: "Storage", speicherorte: "Storage locations" },
     pu: { titel: "Announcement panel", text: "A separate page, e.g. for the reception: only messages and announcements to chosen channels – no settings. Address:",
           stimme: "Voice", stimmeText: "Speech is generated offline on this server (Piper). Voices are downloaded once (approx. 90 MB including the program). The voice reads the text as written – pick a voice in the language of your announcements.",
@@ -955,8 +973,10 @@ const TEXTE = {
       sich_ungueltig: "Not a SignageCast backup", sich_zu_gross: "Backup too large", sich_kein_aes: "Encryption not available (package python3-pyzipper missing)",
       todo_unbekannt: "This entry cannot be hidden",
       sich_geheim_ohne_pw: "With credentials and passwords only with a password (AES-256)", sich_name: "Unknown backup",
-      med_art: "Only pictures (JPG, PNG) and videos (MP4, WebM)", med_kaputt: "Video not readable",
-      med_hevc: "The video is H.265 – the browser in the container cannot play it; please save it as H.264 (MP4)",
+      med_art: "Only pictures (JPG, PNG), videos (MP4, WebM, MOV, MKV, AVI) and PDFs", med_kaputt: "Video not readable",
+      med_hevc: "The video is H.265 – the browser cannot play it; turn on Settings › System › Health: “Convert videos” or save it as H.264 (MP4)",
+      med_umwandeln: "Converting to H.264 failed", mt_zeitraum: "Valid until is before valid from", mt_unbekannt: "This file does not exist (any more)",
+      mt_kein_video: "Videos cannot go into a gallery",
       med_upload: "Upload interrupted – please try again", med_gross: "File larger than 1 GB", med_unbekannt: "Unknown medium",
       upd_laeuft: "An update is already running – please wait", upd_aktion: "Unknown update action",
       upd_container: "With Docker/Podman update via the image (docker pull)",
@@ -1158,6 +1178,24 @@ const TEXTE = {
     karussellAn: "on", karussellMin: "every (min)", videoQuelle: "Video window shows", streamRecht: "In stream mode the server records the YouTube picture and passes it on to the TVs. That is fine for private use at home. For business or public use better choose direct mode (official player on the TV or a device in direct mode) or switch YouTube off for the stream below.", ytStream: "Show YouTube in stream mode too", ytStreamText: "Off: the stream of this channel shows only own media in the video window; TVs and devices in direct mode still show YouTube.", hinweisWeg: "Got it, hide", hinweisWegTitel: "Hide this note on all devices (can be shown again under Settings → General)",
     hinweiseEin: "Show hidden legal notes again", videoRecht: "YouTube only allows private, non-commercial use. In a practice, shop, hotel, club or other public place please show own media only or clear the rights yourself (YouTube terms, camera operator, music licensing for sound).",
     videoQuelleArt: { youtube: "live videos (YouTube)", medien: "own media only", gemischt: "mixed" }, medienAlle: "every N-th time own media",
+    mt: { galerie: (n) => `Gallery “${n}”`, layout: (n) => `Layout “${n}”`, hochladen: "Upload", hochladenLos: "Upload", woLaufen: "Where should it play?", videofenster: "Video window (own media)",
+          woText: "Pictures and videos for the video window, pictures and PDFs for galleries – upload each file only once, wherever it plays.",
+          wieLange: "How long?", wie: { immer: "always", sonntag: "until Sunday", woche: "1 week", monat: "1 month", datum: "until …" },
+          mehrAngaben: "Start later, tags", ab: "Valid from", bis: "Valid until", tags: "Tags", tagsBeispiel: "e.g. offers, team",
+          umwandelnAn: "Videos the TV cannot play reliably (H.265, MOV, MKV, AVI, 4K) are converted to H.264 by the server.",
+          umwandelnAus: "Video conversion is turned off – H.265 videos are rejected.",
+          wandelt: (p) => `converting … ${p} %`, wartet: "waiting for conversion", keineDatei: "Please choose files first.",
+          fertig: (n, von) => `${n} of ${von} uploaded`, hochgeladen: "Uploaded",
+          leer: "No files yet. Add pictures, videos or PDFs with “+ Upload”.",
+          artWahl: "Type", alleArten: "all types", arten: { bild: "Pictures", video: "Videos", pdf: "PDFs" }, art: { bild: "Picture", video: "Video", pdf: "PDF" },
+          filter: { alle: "any state", aktiv: "playing", bald: "expiring soon", ab: "scheduled", abgelaufen: "expired" },
+          artSpalte: "Type", hinzu: "Added", bearbeiten: "Edit", mehr: (n) => `Show ${n} more`,
+          statusLaeuft: "playing", statusBis: (d) => `playing until ${d}`, statusAb: (d) => `from ${d}`, statusBald: (d) => `expires ${d}`, statusWeg: (d) => `expired (${d})`,
+          ohneKanal: "(no channel yet)", gueltigText: "Outside this period no TV shows the file – in the video window, in galleries and in the PDF element. Empty = unlimited.",
+          imVideofenster: "in the video window", zurGalerie: "Add to gallery", hinzufuegen: "Add", hinzugefuegt: "Added",
+          loeschen: "Delete file", wegFrage: (n) => `Delete “${n}” everywhere?`,
+          umwandelnKarte: "Convert videos", umwandelnSchalter: "Convert videos to H.264 when uploading (recommended)",
+          umwandelnKarteText: "The browser cannot reliably play phone videos (H.265/MOV), MKV, AVI and 4K videos. The server converts them to H.264 (at most Full HD) in the background – with low priority and one at a time, the TVs come first. The original is deleted afterwards." },
     medText: "Your own pictures (JPG, PNG) and videos (MP4/H.264, WebM) for the video window – set per channel under “Channels”: own media only or mixed with the live videos. Pictures stay for their duration, videos play completely.",
     medHoch: "Upload files", medLaedt: (n, p) => `Uploading ${n} … ${p} %`, medKeine: "No own media yet.", medDauer: "Duration (s)",
     // Gallery and storage (since 0.45)
@@ -1168,7 +1206,7 @@ const TEXTE = {
     galZiehen: "Drag pictures and PDFs here", galUmbenennen: "Rename", galOrdnerWeg: "Delete gallery", galOrdnerWegFrage: (n) => `Delete gallery “${n}” with all pictures?`,
     galAlle: "Select all", galKeine2: "Clear selection", galAuswahlWeg: (n) => `Delete ${n}`, galWegFrage: (n) => n === 1 ? "Delete 1 file?" : `Delete ${n} files?`,
     galLaedt: (i, n, name, p) => `File ${i} of ${n}: ${name} – ${p} %`, galFertig: (ok, f) => `${ok} uploaded` + (f ? `, ${f} not taken` : ""),
-    galAbbruch: "Stopped:", galSeiten: (n) => `${n} pages`, galZiehenText: "Order: drag pictures with the mouse (used by “as in the folder”).",
+    galAbbruch: "Stopped:", galSeiten: (n) => `${n} pages`, galAusDateien: "From files", galAusDateienText: "Add pictures and PDFs from Media › Files to this gallery.", galAusDateienLeer: "There are no further pictures or PDFs in the files.", galZiehenText: "Order: drag pictures with the mouse (used by “as in the folder”).",
     galFormat: "unsupported format", galAnzahl: (n) => n === 1 ? "1 file" : `${n} files`, galStufe: { gelb: "Storage is getting low – please clean up.", rot: "Storage full – uploads blocked until space is free." },
     spText: "Free space in the data directory. A reserve always stays free so streams, logs and backups keep running: once it is reached, SignageCast accepts no more uploads – everything else keeps running.",
     spFrei: (f, g) => `${f} GB free of ${g} GB`, spReserve: (r) => `reserve ${r} GB`, spStufe: { gruen: "OK", gelb: "getting low", rot: "full – uploads blocked" },
@@ -1299,7 +1337,7 @@ const teile = (...fs) => async (i) => {
   i.innerHTML = fs.map((_, n) => `<div id="teil${n}"></div>`).join("");
   for (let n = 0; n < fs.length; n++) await fs[n]($("#teil" + n));
 };
-// Medien (seit 0.65 Hauptpunkt: Bilder & Videos, Galerien, Einspieler) – unter Bildern und Galerien der Weg zu den Speicherorten
+// Medien (seit 0.65 Hauptpunkt; seit 0.72 Dateien, Galerien, Einspieler) – unter Bildern und Galerien der Weg zu den Speicherorten
 const mitOrte = (f) => async (i) => {
   i.innerHTML = `<div id="mtInhalt"></div>
     <p class="leise">${esc(T.mediathek.orte)} <a href="#speicherorte">${esc(T.bereiche.einstellungen)} → ${esc(T.reiter.speicherorte)}</a></p>`;
@@ -1311,7 +1349,7 @@ const SEITEN = { uebersicht, fernseher: fernseherSeite, player: (i) => playerSei
                  einstellungen: einstellungenSeite,
                  allgemein: allgemeinSeite, ha: (i) => verbindung(i, "ha"), benachrichtigung: (i) => verbindung(i, "benachrichtigung"),
                  pult: (i) => pultSeite(i, "einstellung"), durchsage: (i) => durchsageSeite(i, "durchsage"), notfall: (i) => durchsageSeite(i, "notfall"),
-                 updates: teile(updatesSeite, playerImagesKarte), sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, abschaltenKarte), zugang: zugangSeite,
+                 updates: teile(updatesSeite, playerImagesKarte), sicherung: sicherungSeite, zustand: teile(speicherSeite, leistungSeite, umwandelnKarte, abschaltenKarte), zugang: zugangSeite,
                  protokoll: protokollSeite, ki: (i) => kiSeite(i, "einrichten"), fern: fernSeite, speicherorte: speicherorteSeite };
 // Bereiche (seit 0.17; seit 0.65 nach docs/UI-RULES.md): Hauptpunkte sind Dinge, höchstens zwei Ebenen, Adresse je Seite als #<seite>.
 // Die Einstellungen stehen getrennt am Ende und öffnen eine Kachelseite (KACHELN); Durchsage und Notfall sind Knöpfe im Kopf.
@@ -2597,6 +2635,14 @@ async function webhookKarte(inhalt) {
 }
 
 // „Abschalten ohne Zuschauer“ (seit 0.31.1 unter Einstellungen → System → Leistung)
+// Videos umwandeln (seit 0.72): global, deshalb hier unter System › Zustand (UI-Regel, Entscheidungsbaum Punkt 3)
+function umwandelnKarte(inhalt) {
+  const S = T.mt;
+  inhalt.innerHTML = `<div class="karte"><h2>${esc(S.umwandelnKarte)}</h2><p class="leise">${esc(S.umwandelnKarteText)}</p>
+      <div class="zeile"><label>${schalter("umwandeln", E.mediathek.umwandeln)} ${esc(S.umwandelnSchalter)}</label></div>
+      <div class="zeile"><button class="knopf haupt" id="okUmw">${esc(T.speichern)}</button></div></div>`;
+  $("#okUmw").onclick = (e) => speichernE({ mediathek: { umwandeln: inhalt.querySelector("[name=umwandeln]").checked } }, e.target);
+}
 function abschaltenKarte(inhalt) {
   inhalt.innerHTML = `<div class="karte"><h2>${esc(T.abschaltenTitel)}</h2>
       <div class="zeile"><label>${esc(T.abschalten)}</label><input type="number" id="abschalten" value="${E.stream.abschalten_s}" min="10" max="3600"></div>
@@ -3677,69 +3723,182 @@ async function sicherungSeite(inhalt) {
   await zeichnen();
 }
 
-// ---------- Eigene Medien (seit 0.15): hochladen in Stücken, Liste mit Name, Dauer, an/aus ----------
+// ---------- Dateien (seit 0.72, vorher „Bilder & Videos“): die Mediathek – alle Bilder, Videos und PDFs an einem Ort ----------
 // Wo eigene Medien laufen (seit 0.66): Kanäle mit Videoquelle „eigene Medien“/„gemischt“ und Layouts mit Videofenster aus eigenen Medien
 function medienVerwendung() {
   const k = E.fernseher.filter((t) => ["medien", "gemischt"].includes(t.video_quelle)).map((t) => t.name);
   const l = E.layouts.filter((x) => (x.elemente || []).some((el) => el.typ === "video" && el.sichtbar !== false && (el.optionen || {}).herkunft === "medien")).map((x) => x.name);
   return [k.length ? T.reiter.fernseher + ": " + k.join(", ") : "", l.length ? T.bereiche.layout + ": " + l.join(", ") : ""].filter(Boolean).join("; ");
 }
+let MT_SUCHE = "", MT_ART = "", MT_TAG = "", MT_STATUS = "", MT_OFFEN = null, MT_MEHR = 60;
+const mtDatum = (w) => { if (!w) return ""; const d = new Date(w.length === 10 ? w + "T00:00" : w);
+  return d.toLocaleDateString(ORT(), { day: "2-digit", month: "2-digit", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" })
+    + (w.length > 10 ? " " + w.slice(11, 16) : ""); };
+const mtStatusText = (r) => { const S = T.mt; return r.status === "ab" ? S.statusAb(mtDatum(r.status_wert)) : r.status === "bald" ? S.statusBald(mtDatum(r.status_wert))
+  : r.status === "abgelaufen" ? S.statusWeg(mtDatum(r.status_wert)) : r.bis ? S.statusBis(mtDatum(r.bis)) : S.statusLaeuft; };
+const mtStatusKlasse = (r) => r.status === "abgelaufen" ? "schlecht" : r.status === "bald" || r.status === "ab" ? "warn" : "gut";
+const mtArtText = (r) => { const S = T.mt; if (r.art === "video") return `${S.art.video} · ${Math.floor(r.dauer_s / 60)}:${String(Math.round(r.dauer_s % 60)).padStart(2, "0")}`;
+  if (r.art === "pdf") return `${S.art.pdf} · ${T.galSeiten(r.seiten)}`; return S.art.bild + (r.medium && r.videofenster ? ` · ${r.dauer_s} s` : ""); };
+// Verwendung einer Datei: Videofenster (Kanäle/Layouts mit eigenen Medien), Galerien (mit ihren Layouts), Layouts mit PDF-Baustein
+const mtVerwendung = (r) => {
+  const S = T.mt, teile = [];
+  if (r.videofenster) teile.push(S.videofenster + (medienVerwendung() ? "" : " " + S.ohneKanal));
+  r.galerien.forEach((g) => { const o = E.galerie.ordner.find((x) => x.id === g); if (o) teile.push(S.galerie(o.name)); });
+  r.pdf_layouts.forEach((l) => { const x = E.layouts.find((y) => y.id === l); if (x) teile.push(S.layout(x.name)); });
+  return teile;
+};
+// „Wie lange?“ – bis wann eine neue Datei läuft (leer = immer)
+const mtBisVon = (wahl) => {
+  const d = new Date(), iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  if (wahl === "sonntag") { d.setDate(d.getDate() + (7 - d.getDay()) % 7); return iso(d); }
+  if (wahl === "woche") { d.setDate(d.getDate() + 7); return iso(d); }
+  if (wahl === "monat") { d.setMonth(d.getMonth() + 1); return iso(d); }
+  return "";
+};
 async function medienSeite(inhalt) {
   const STUECK = 3 * 1024 * 1024;               // 3 MB je Stück (als Base64 unter der Grenze des Dienstes)
-  const zeichnen = () => {
-    inhalt.innerHTML = `<div class="karte"><p class="leise">${esc(T.medText)}</p>
-        <div class="zeile"><input type="file" id="medDatei" data-so="aus" multiple accept="image/jpeg,image/png,video/mp4,video/webm"><button class="knopf haupt" id="medHoch">${esc(T.medHoch)}</button>
-          <button class="knopf" id="medOrt" hidden>📁 ${esc(SOT().wahl)}</button></div>
-        <p class="leise" id="medStand"></p><p class="leise">${esc(T.medSicherung)}</p></div>
-      <div class="karte">${medienVerwendung() ? `<p class="leise">${esc(T.medLaeuft(medienVerwendung()))}</p>` : `<p class="leise">${esc(T.medUnbenutzt)}</p>`}
-        <div id="medListe">${E.medien.length ? "" : `<p class="leise">${esc(T.medKeine)}</p>`}</div>
-        ${E.medien.length ? `<div class="zeile"><button class="knopf haupt" id="medOk">${esc(T.speichern)}</button></div>` : ""}</div>`;
-    const liste = $("#medListe");
-    E.medien.forEach((m) => {
-      const z = el(`<div class="zeile eintrag" data-id="${esc(m.id)}"><span class="medvorschau">${m.art === "bild" ? "🖼" : "🎬"}</span>
-        <input type="text" name="name" value="${esc(m.name)}" class="flex1">
-        ${m.art === "bild" ? `<label>${esc(T.medDauer)}</label><input type="number" name="dauer" min="1" max="3600" value="${m.dauer_s}" class="b80">`
-                           : `<span class="leise">${Math.floor(m.dauer_s / 60)}:${String(Math.round(m.dauer_s % 60)).padStart(2, "0")}</span>`}
-        ${schalter("aktiv", m.aktiv)}<button class="knopf gefahr" name="weg">✕</button></div>`);
-      if (m.art === "bild") dienstBinaer.get(`/medien/${m.datei}`, {}, {}).then((d) => {
-        const b = document.createElement("img"); b.src = URL.createObjectURL(new Blob([d])); b.style.cssText = "height:40px;border-radius:4px";
-        z.querySelector(".medvorschau").replaceChildren(b);
+  const S = T.mt;
+  let k = await holen("/api/mediathek"), urls = [], neuOffen = false, wieLange = "", stand = "", beobachten = null;
+  const ziele = () => ({ videofenster: $("#mtZielVideo").checked, galerien: [...inhalt.querySelectorAll("[name=mtZielGal]:checked")].map((x) => x.value),
+                         tags: $("#mtTags").value, ab: $("#mtAb").value, bis: wieLange === "datum" ? $("#mtBis").value : mtBisVon(wieLange) });
+  const neuLaden = async () => { k = await holen("/api/mediathek"); await zeichnen(); };
+  const auftraegeBeobachten = () => {           // laufende Umwandlungen: alle 3 s den Stand holen
+    clearTimeout(beobachten);
+    if (!k.auftraege.some((a) => !a.fehler)) return;
+    beobachten = setTimeout(async () => {
+      if (aktiv !== "medien") return;
+      const vorher = k.auftraege.length;
+      try { k = await holen("/api/mediathek"); } catch (_) { return auftraegeBeobachten(); }
+      if (k.auftraege.length !== vorher || !k.auftraege.length) { E = await holen("/api/einstellungen").then((d) => d.einstellungen || E).catch(() => E); await zeichnen(); }
+      else { const z = $("#mtAuftraege"); if (z) z.innerHTML = auftraegeHtml(); auftraegeBeobachten(); }
+    }, 3000);
+  };
+  const auftraegeHtml = () => k.auftraege.map((a) => `<div class="zeile"><span>🎬 ${esc(a.name)}</span>
+      ${a.fehler ? `<span class="schlecht">✗ ${esc(meldungText({ code: a.fehler }, a.fehler_text))}</span><button class="knopf" data-verwerfen="${esc(a.id)}">✕</button>`
+                 : `<span class="leise">${esc(a.laeuft ? S.wandelt(a.stand) : S.wartet)}</span>`}</div>`).join("");
+  const zeichnen = async () => {
+    urls.forEach((u) => URL.revokeObjectURL(u)); urls = [];
+    const alle = k.dateien, D = T.ding;
+    const l = alle.filter((r) => (!MT_SUCHE || (r.name + " " + r.tags.join(" ")).toLowerCase().includes(MT_SUCHE.toLowerCase()))
+      && (!MT_ART || r.art === MT_ART) && (!MT_TAG || r.tags.includes(MT_TAG))
+      && (MT_STATUS ? (MT_STATUS === "aktiv" ? !["abgelaufen", "ab"].includes(r.status) : r.status === MT_STATUS) : true));
+    const gals = E.galerie.ordner;
+    inhalt.innerHTML = `<div class="kopfzeile"><h2>${esc(T.reiter.medien)}</h2><button class="knopf haupt" id="mtNeu">+ ${esc(S.hochladen)}</button></div>
+      <div class="karte" id="mtNeuKarte" ${neuOffen ? "" : "hidden"}><h3>${esc(S.hochladen)}</h3>
+        <div class="zeile"><input type="file" id="mtDatei" data-so="aus" multiple accept="image/*,video/*,.mov,.mkv,.avi,application/pdf">
+          <button class="knopf" id="mtOrt" hidden>📁 ${esc(SOT().wahl)}</button></div>
+        <p><b>${esc(S.woLaufen)}</b></p>
+        <div class="zeile"><label><input type="checkbox" id="mtZielVideo" checked> ${esc(S.videofenster)}</label>
+          ${gals.map((o) => `<label><input type="checkbox" name="mtZielGal" value="${esc(o.id)}"> ${esc(S.galerie(o.name))}</label>`).join("")}</div>
+        <p class="leise">${esc(S.woText)}</p>
+        <p><b>${esc(S.wieLange)}</b></p>
+        <div class="zeile" id="mtWie">${["", "sonntag", "woche", "monat", "datum"].map((w) => `<button type="button" class="knopf ${w === wieLange ? "an" : ""}" data-wie="${w}">${esc(S.wie[w || "immer"])}</button>`).join("")}
+          <input type="date" id="mtBis" aria-label="${esc(S.bis)}" ${wieLange === "datum" ? "" : "hidden"}></div>
+        <details class="erweitert"><summary>${esc(S.mehrAngaben)}</summary>
+          <div class="zeile"><label for="mtAb">${esc(S.ab)}</label><input type="date" id="mtAb"></div>
+          <div class="zeile"><label for="mtTags">${esc(S.tags)}</label><input type="text" id="mtTags" class="flex1" placeholder="${esc(S.tagsBeispiel)}"></div></details>
+        <div class="zeile"><button class="knopf haupt" id="mtHoch">${esc(S.hochladenLos)}</button></div>
+        <p class="leise" id="mtStand">${esc(stand)}</p>
+        <p class="leise">${esc(k.umwandeln ? S.umwandelnAn : S.umwandelnAus)} <a href="#zustand">${esc(T.bereiche.system)} → ${esc(T.reiter.zustand)}</a> · ${esc(T.medSicherung)}</p></div>
+      <div id="mtAuftraege">${auftraegeHtml()}</div>
+      <p class="leise">${esc(medienVerwendung() ? T.medLaeuft(medienVerwendung()) : T.medUnbenutzt)}</p>
+      ${alle.length ? `<div class="zeile"><input type="search" id="mtSuche" placeholder="${esc(D.suchen)}" aria-label="${esc(D.suchen)}" value="${esc(MT_SUCHE)}">
+        <select id="mtArt" aria-label="${esc(S.artWahl)}">${["", "bild", "video", "pdf"].map((a) => `<option value="${a}" ${a === MT_ART ? "selected" : ""}>${esc(a ? S.arten[a] : S.alleArten)}</option>`).join("")}</select>
+        <select id="mtStatus" aria-label="${esc(D.status)}">${["", "aktiv", "bald", "ab", "abgelaufen"].map((a) => `<option value="${a}" ${a === MT_STATUS ? "selected" : ""}>${esc(S.filter[a || "alle"])}</option>`).join("")}</select></div>
+        ${k.tags.length ? `<div class="marken">${k.tags.map((t) => `<button type="button" class="marke ${t === MT_TAG ? "gut" : ""}" data-tag="${esc(t)}">#${esc(t)}</button>`).join("")}</div>` : ""}
+        ${l.length ? `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr><th></th><th>${esc(D.name)}</th><th>${esc(S.artSpalte)}</th><th>${esc(D.status)}</th><th>${esc(D.verwendung)}</th><th>${esc(S.hinzu)}</th><th></th></tr></thead><tbody>
+          ${l.slice(0, MT_MEHR).map((r) => { const v = mtVerwendung(r); return `<tr data-id="${esc(r.id)}"><td><span class="mtvorschau">${r.art === "video" ? "🎬" : r.art === "pdf" ? "📄" : "🖼"}</span></td>
+            <td><b>${esc(r.name)}</b>${r.tags.length ? `<br><span class="leise">${r.tags.map((t) => "#" + esc(t)).join(" ")}</span>` : ""}</td>
+            <td>${esc(mtArtText(r))}</td><td><span class="${mtStatusKlasse(r)}">${esc(mtStatusText(r))}</span></td>
+            <td>${v.length ? esc(v.join(", ")) : `<span class="leise">${esc(D.nichtVerwendet)}</span>`}</td>
+            <td class="leise">${r.zeit ? esc(new Date(r.zeit * 1000).toLocaleDateString(ORT(), { day: "2-digit", month: "2-digit", year: "2-digit" })) : "–"}</td>
+            <td><button class="knopf" data-bearbeiten="${esc(r.id)}">${esc(S.bearbeiten)}</button></td></tr>
+            ${MT_OFFEN === r.id ? `<tr class="mtdetail"><td colspan="7">${detailHtml(r, v)}</td></tr>` : ""}`; }).join("")}</tbody></table></div>
+          ${l.length > MT_MEHR ? `<div class="zeile"><button class="knopf" id="mtMehr">${esc(S.mehr(l.length - MT_MEHR))}</button></div>` : ""}`
+          : `<p class="leise">${esc(D.keine)}</p>`}`
+      : `<p class="leise">${esc(S.leer)}</p>`}`;
+    // Vorschaubilder (klein, vom Server einmal erzeugt)
+    inhalt.querySelectorAll("tr[data-id]").forEach((z) => {
+      dienstBinaer.get(`/mediathek/vorschau/${z.dataset.id}.jpg`, {}, {}).then((d) => {
+        const b = document.createElement("img"); b.src = URL.createObjectURL(new Blob([d])); b.alt = ""; urls.push(b.src);
+        const ziel = z.querySelector(".mtvorschau"); if (ziel) ziel.replaceChildren(b);
       }).catch(() => {});
-      z.querySelector("[name=weg]").onclick = (e) => { if (confirm(T.medWeg + (medienVerwendung() ? "\n\n" + T.ding.verwendetVon(medienVerwendung()) : ""))) aktion(e.target, async () => { const d = await senden("/api/medien/loeschen", { id: m.id }); E = d.einstellungen; zeichnen(); }); };
-      liste.appendChild(z);
     });
-    const ok = $("#medOk");
-    if (ok) ok.onclick = (e) => speichernE({ medien: E.medien.map((m) => {
-      const z = liste.querySelector(`[data-id="${m.id}"]`);
-      return { ...m, name: z.querySelector("[name=name]").value, aktiv: z.querySelector("[name=aktiv]").checked,
-               dauer_s: m.art === "bild" ? Number(z.querySelector("[name=dauer]").value) || 15 : m.dauer_s };
-    }) }, e.target);
-    soLaden().then((d) => { if (d.orte.length && $("#medOrt")) $("#medOrt").hidden = false; }).catch(() => {});
-    $("#medOrt").onclick = async () => {                // seit 0.48: direkt aus einem Speicherort (der Server holt die Datei)
-      const wahl = await soWaehlen({ filter: /\.(jpe?g|png|mp4|m4v|webm)$/i, mehrere: true });
+    $("#mtNeu").onclick = () => { neuOffen = !neuOffen; $("#mtNeuKarte").hidden = !neuOffen; };
+    inhalt.querySelectorAll("[data-wie]").forEach((b) => { b.onclick = () => {
+      wieLange = b.dataset.wie; inhalt.querySelectorAll("[data-wie]").forEach((x) => x.classList.toggle("an", x === b)); $("#mtBis").hidden = wieLange !== "datum"; }; });
+    inhalt.querySelectorAll("[data-verwerfen]").forEach((b) => { b.onclick = (e) => aktion(e.target, async () => { k = await senden("/api/mediathek/umwandlung-verwerfen", { id: b.dataset.verwerfen }); await zeichnen(); }); });
+    if ($("#mtSuche")) {
+      $("#mtSuche").oninput = (e) => { MT_SUCHE = e.target.value; const pos = e.target.selectionStart; zeichnen().then(() => { const s = $("#mtSuche"); s.focus(); s.setSelectionRange(pos, pos); }); };
+      $("#mtArt").onchange = (e) => { MT_ART = e.target.value; zeichnen(); };
+      $("#mtStatus").onchange = (e) => { MT_STATUS = e.target.value; zeichnen(); };
+    }
+    inhalt.querySelectorAll("[data-tag]").forEach((b) => { b.onclick = () => { MT_TAG = MT_TAG === b.dataset.tag ? "" : b.dataset.tag; zeichnen(); }; });
+    if ($("#mtMehr")) $("#mtMehr").onclick = () => { MT_MEHR += 60; zeichnen(); };
+    inhalt.querySelectorAll("[data-bearbeiten]").forEach((b) => { b.onclick = () => { MT_OFFEN = MT_OFFEN === b.dataset.bearbeiten ? null : b.dataset.bearbeiten; zeichnen(); }; });
+    const offen = MT_OFFEN && alle.find((r) => r.id === MT_OFFEN);
+    if (offen) detailAn(offen);
+    soLaden().then((d) => { if (d.orte.length && $("#mtOrt")) $("#mtOrt").hidden = false; }).catch(() => {});
+    $("#mtOrt").onclick = async () => {               // direkt aus einem Speicherort (der Server holt die Datei)
+      const wahl = await soWaehlen({ filter: /\.(jpe?g|png|webp|gif|heic|heif|mp4|m4v|mov|mkv|webm|avi|pdf)$/i, mehrere: true });
       if (!wahl || !wahl.length) return;
-      const r = await soHolenViele(wahl, { zweck: "medien" }, (t) => { $("#medStand").textContent = t; });
+      const r = await soHolenViele(wahl, Object.assign({ zweck: "mediathek" }, ziele()), (t) => { $("#mtStand").textContent = t; });
+      stand = SOT().uebernommen(r.ok, wahl.length - r.ok) + (r.abbruch ? ` – ${r.abbruch}` : "") + (r.fehler.length ? " – " + r.fehler.slice(0, 3).join(" · ") : "");
       if (r.letzte && r.letzte.einstellungen) E = r.letzte.einstellungen;
-      const text = SOT().uebernommen(r.ok, wahl.length - r.ok) + (r.abbruch ? ` – ${r.abbruch}` : "") + (r.fehler.length ? " – " + r.fehler.slice(0, 3).join(" · ") : "");
-      zeichnen(); melden(text, !!(r.abbruch || r.fehler.length));
+      melden(stand, !!(r.abbruch || r.fehler.length)); await neuLaden();
     };
-    $("#medHoch").onclick = (e) => aktion(e.target, async () => {
-      for (const f of $("#medDatei").files) {
+    $("#mtHoch").onclick = (e) => aktion(e.target, async () => {
+      const dateien = [...$("#mtDatei").files], z = ziele(), fehler = [];
+      if (!dateien.length) throw new Error(S.keineDatei);
+      let ok = 0;
+      for (const f of dateien) {
         const kennung = Math.random().toString(36).slice(2, 12).replace(/[^a-z0-9]/g, "a").padEnd(10, "x");
         const teile = Math.max(1, Math.ceil(f.size / STUECK));
-        let d = null;
-        for (let nr = 0; nr < teile; nr++) {
-          const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
-          let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
-          d = await senden("/api/medien/teil", { kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, name: f.name.replace(/\.[^.]+$/, ""), gesamt: f.size });
-          $("#medStand").textContent = T.medLaedt(f.name, Math.round((nr + 1) / teile * 100));
-        }
-        if (d && d.einstellungen) E = d.einstellungen;
+        try {
+          let d = null;
+          for (let nr = 0; nr < teile; nr++) {
+            const roh = new Uint8Array(await f.slice(nr * STUECK, (nr + 1) * STUECK).arrayBuffer());
+            let bin = ""; for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
+            d = await senden("/api/medien/teil", Object.assign({ kennung, nr, daten: btoa(bin), fertig: nr === teile - 1, name: f.name.replace(/\.[^.]+$/, ""), gesamt: f.size, zweck: "mediathek" }, z));
+            $("#mtStand").textContent = T.medLaedt(f.name, Math.round((nr + 1) / teile * 100));
+          }
+          if (d && d.einstellungen) E = d.einstellungen;
+          ok++;
+        } catch (ex) { fehler.push(`${f.name}: ${ex.message}`); }
       }
-      zeichnen();
-    });
+      stand = S.fertig(ok, dateien.length) + (fehler.length ? " – " + fehler.slice(0, 3).join(" · ") : "");
+      await neuLaden();
+      if (fehler.length) throw new Error(stand);
+    }, S.hochgeladen);
+    auftraegeBeobachten();
   };
-  zeichnen();
+  // Bearbeiten einer Datei (UI-Regel Punkt 12: kleine Dinge ohne eigene Detailseite – aufklappen in der Liste)
+  const detailHtml = (r, v) => { const D = T.ding, frei = E.galerie.ordner.filter((o) => !r.galerien.includes(o.id));
+    return `<div class="zeile"><label for="mtName">${esc(D.name)}</label><input type="text" id="mtName" class="flex1" maxlength="80" value="${esc(r.name)}"></div>
+      <div class="zeile"><label for="mtETags">${esc(S.tags)}</label><input type="text" id="mtETags" class="flex1" value="${esc(r.tags.join(", "))}" placeholder="${esc(S.tagsBeispiel)}"></div>
+      <div class="zeile"><label for="mtEAb">${esc(S.ab)}</label><input type="date" id="mtEAb" value="${esc(r.ab.slice(0, 10))}">
+        <label for="mtEBis">${esc(S.bis)}</label><input type="date" id="mtEBis" value="${esc(r.bis.slice(0, 10))}"></div>
+      <p class="leise">${esc(S.gueltigText)}</p>
+      ${r.medium ? `<div class="zeile"><label>${schalter("mtEVideo", r.videofenster)} ${esc(S.imVideofenster)}</label>
+        ${r.art === "bild" ? `<label for="mtEDauer">${esc(T.medDauer)}</label><input type="number" id="mtEDauer" class="b80" min="1" max="3600" value="${r.dauer_s}">` : ""}</div>` : ""}
+      <div class="zeile"><button class="knopf haupt" id="mtESpeichern">${esc(T.speichern)}</button></div>
+      ${r.art !== "video" && frei.length ? `<div class="zeile"><label for="mtEGal">${esc(S.zurGalerie)}</label><select id="mtEGal">${frei.map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join("")}</select>
+        <button class="knopf" id="mtEGalOk">${esc(S.hinzufuegen)}</button></div>` : ""}
+      <div class="loeschen"><p class="leise">${esc(v.length ? D.verwendetVon(v.join(", ")) : D.nichtVerwendet)}</p>
+        <button class="knopf gefahr" id="mtEWeg">${esc(S.loeschen)}</button></div>`; };
+  const detailAn = (r) => {
+    $("#mtESpeichern").onclick = (e) => aktion(e.target, async () => {
+      const d = { id: r.id, name: $("#mtName").value, tags: $("#mtETags").value, ab: $("#mtEAb").value, bis: $("#mtEBis").value };
+      if (r.medium) { d.videofenster = inhalt.querySelector("[name=mtEVideo]").checked; if ($("#mtEDauer")) d.dauer_s = Number($("#mtEDauer").value) || 10; }
+      const a = await senden("/api/mediathek/datei", d); E = a.einstellungen; k = a; MT_OFFEN = null; await zeichnen();
+    }, T.gespeichert);
+    if ($("#mtEGalOk")) $("#mtEGalOk").onclick = (e) => aktion(e.target, async () => {
+      const a = await senden("/api/mediathek/zur-galerie", { ids: [r.id], ordner: $("#mtEGal").value }); k = a; await zeichnen(); }, S.hinzugefuegt);
+    $("#mtEWeg").onclick = (e) => { const v = mtVerwendung(r);
+      if (confirm(S.wegFrage(r.name) + (v.length ? "\n\n" + T.ding.verwendetVon(v.join(", ")) : ""))) aktion(e.target, async () => {
+        const a = await senden("/api/mediathek/loeschen", { id: r.id }); E = a.einstellungen; k = a; MT_OFFEN = null; await zeichnen(); }); };
+  };
+  await zeichnen();
 }
 
 // ---------- Galerie (seit 0.45): Ordner mit Bildern/PDFs, hochladen in Stücken, Reihenfolge per Ziehen ----------
@@ -3868,8 +4027,10 @@ async function galerieSeite(inhalt) {
           <div class="galablage" id="galAblage"><p>${esc(T.galZiehen)}</p>
             <div class="zeile"><label class="knopf haupt">${esc(T.galDateien)}<input type="file" id="galDatei" data-so="aus" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" hidden></label>
               <label class="knopf">${esc(T.galOrdnerWahl)}<input type="file" id="galVerz" webkitdirectory multiple hidden></label>
-              <button class="knopf" id="galOrt" hidden>📁 ${esc(SOT().galAus)}</button></div>
+              <button class="knopf" id="galOrt" hidden>📁 ${esc(SOT().galAus)}</button>
+              <button class="knopf" id="galAusMt">🗂 ${esc(T.galAusDateien)}</button></div>
             <p class="leise" id="galStand">${esc(bericht)}</p></div>
+          <div class="karte" id="galMtWahl" hidden></div>
           ${eintraege.length ? `<div class="zeile"><button class="knopf" id="galAlle">${esc(auswahl.size === eintraege.length ? T.galKeine2 : T.galAlle)}</button>
               <button class="knopf gefahr" id="galAuswahlWeg" ${auswahl.size ? "" : "disabled"}>${esc(T.galAuswahlWeg(auswahl.size))}</button>
               <span class="leise">${esc(T.galAnzahl(eintraege.length))} · ${esc(groesseText(o.bytes))} · ${esc(T.galZiehenText)}</span></div>
@@ -3889,6 +4050,23 @@ async function galerieSeite(inhalt) {
       inhalt.querySelectorAll("[data-galzu]").forEach((b) => { b.onclick = () => teil(b.dataset.galzu); });
       teil(GAL_TEIL);
       $("#galZurListe").onclick = () => { GAL_ORDNER = null; auswahl.clear(); bericht = ""; zeichnen(); };
+      $("#galAusMt").onclick = async () => {        // seit 0.72: Bilder und PDFs aus Medien › Dateien übernehmen (die Datei gibt es nur einmal)
+        const w = $("#galMtWahl");
+        if (!w.hidden) { w.hidden = true; return; }
+        const frei = (await holen("/api/mediathek")).dateien.filter((r) => r.art !== "video" && !r.galerien.includes(o.id));
+        w.innerHTML = frei.length ? `<p class="leise">${esc(T.galAusDateienText)}</p><div class="zeile"><input type="search" id="galMtSuche" placeholder="${esc(T.ding.suchen)}" aria-label="${esc(T.ding.suchen)}"></div>
+          <div id="galMtListe">${frei.map((r) => `<div class="zeile" data-name="${esc((r.name + " " + r.tags.join(" ")).toLowerCase())}"><label><input type="checkbox" value="${esc(r.id)}"> ${esc(r.name)}
+            <span class="leise">${esc(T.mt.art[r.art])}${r.tags.length ? " · " + r.tags.map((t) => "#" + esc(t)).join(" ") : ""}</span></label></div>`).join("")}</div>
+          <div class="zeile"><button class="knopf haupt" id="galMtOk">${esc(T.mt.hinzufuegen)}</button></div>` : `<p class="leise">${esc(T.galAusDateienLeer)}</p>`;
+        w.hidden = false;
+        if (!frei.length) return;
+        $("#galMtSuche").oninput = (e) => { const q = e.target.value.toLowerCase(); w.querySelectorAll("[data-name]").forEach((z) => { z.hidden = !!q && !z.dataset.name.includes(q); }); };
+        $("#galMtOk").onclick = (e) => aktion(e.target, async () => {
+          const ids = [...w.querySelectorAll("input[type=checkbox]:checked")].map((x) => x.value);
+          if (!ids.length) return;
+          const d = await senden("/api/mediathek/zur-galerie", { ids, ordner: o.id }); g = d.galerie; await zeichnen();
+        }, T.mt.hinzugefuegt);
+      };
     }
     breitenSetzen(inhalt);
     // Ordner wählen, anlegen, umbenennen, löschen

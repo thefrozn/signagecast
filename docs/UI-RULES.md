@@ -101,5 +101,8 @@ Cases where the rules were not clear-cut, and how they are decided (since 0.65):
     pages with tabs where several tabs are needed.
 11. **Things with a picture** (layouts) keep tiles with a preview instead of a table; every tile shows the same as a
     table row (name, state, used by, last change), with search and “+ New” at the top right.
-12. **Small things without a detail page:** single pictures and videos under Media and single radio stations stay list
-    entries with name, where they are used and delete with that note.
+12. **Small things without a detail page:** single files (pictures, videos, PDFs) under Media › Files and single radio
+    stations stay list entries with name, where they are used and delete with that note. Since 0.72 *Edit* unfolds a
+    file's row (name, tags, validity, video window, add to gallery, delete) instead of opening a page.
+13. **Media › Files** (since 0.72) is the media library: one table for all pictures, videos and PDFs; galleries and the
+    video window use these files. A global option (*Convert videos*) lives under Settings › System › Health.

@@ -32,7 +32,7 @@ Since 0.65 the admin page follows four simple ideas (details for developers: [UI
 | **Devices** | – | The players at the TV – Raspberry Pi, PC or browser device ([PLAYER.md](PLAYER.md)). The list shows state in plain words, the channel and the last change; *Open* shows tabs *Overview* (status, picture, commands), *Remote management*, *Settings* and *History*; *Remove* at the bottom. *+ New device* creates images and pairs players. Since 0.70 a device that shows a code (Samsung display/TV or any TV browser at `…:8890/samsung`, Pi with the pairing image) appears on top as *New device waiting* – compare the code, *Accept* or *Decline* |
 | **Layouts** | – | Tiles with a preview, state, where used and last change; *Edit* opens the designer, the tabs *Overview* (preview, usage, copy, export, versions) and *History* sit next to it; *Delete* at the bottom (not while a channel uses the layout) |
 | **Data sources** | – | Every source as a row with state and last value; an assistant for JSON APIs, feeds, iCal, CSV (also as uploaded file) and cameras |
-| **Media** | Pictures & videos · Galleries · Clips | Own pictures and videos for the video window (a list; deleting says where own media play); galleries as a table – open one for *Overview*, *Pictures & pages* and *History*; clips as a table – open one for *Overview* (*Show now*), *Settings* and *History* |
+| **Media** | Files · Galleries · Clips | Since 0.72 **Files** is the media library: all pictures, videos and PDFs in one table with preview, type, state (*playing*, *until …*, *from …*, *expired*), where used and date; filter by search, type, state and tags; *Edit* opens the row (name, tags, valid from/until, video window on/off, duration, add to a gallery, delete everywhere); galleries as a table – open one for *Overview*, *Pictures & pages* and *History*; clips as a table – open one for *Overview* (*Show now*), *Settings* and *History* |
 | **Live videos** | Collection · Topics | Search state and *Search now* above the list of all live streams – click one for details on the right; topics (edit, create, switch on/off, search terms) |
 | **Radio stations** | – | Your stations, suggestions for your location, search by name |
 | **Settings** | tiles | General · Home Assistant · Notifications · **Accounts & access** · AI assistants · Storage locations · Announcement panel · Live videos (nightly search, minutes per stream, daylight, blocked words, YouTube API) · Remote sites · **System** (health, updates incl. the player images for new devices, backup, log) |
@@ -121,7 +121,15 @@ Channels → *Schedule*: add a time range with another layout or “black”. A 
 Channels → *Carousel*: tick the layouts and set the minutes. Example: weather dashboard and photo layout every 5 minutes.
 
 ### Own pictures and videos instead of (or between) live cams
-Media → Pictures & videos → *Media for the video window* → upload JPG/PNG/MP4 (H.264)/WebM. Then Channels → *Video source*: “own media” or “mixed” (every N-th item own media).
+Media → Files → **+ Upload**: choose pictures, videos or PDFs, tick *Where should it play?* (video window and/or
+galleries) and *How long?* (always, until Sunday, 1 week, 1 month or a date; *Start later, tags* for a start date and
+tags). Then Channels → *Video source*: “own media” or “mixed” (every N-th item own media).
+
+**Validity (since 0.72):** outside *valid from/until* no TV shows the file – not in the video window, not in a gallery,
+not in the PDF element; it reappears by itself when the period starts. **Video conversion:** videos the browser cannot
+play reliably (phone videos in H.265/MOV, MKV, AVI, 4K) are converted to H.264 (at most Full HD) in the background –
+low priority, one at a time, the original is deleted afterwards. Switch it off under Settings → System → Health →
+*Convert videos* (then H.265 is rejected as before).
 Since 0.61 a single layout can do this too: select the video window → *What to show* → “own media only (no YouTube)”.
 The business templates (practice, company, hotel, gym/club) come set this way. **YouTube allows private, non-commercial
 use only** – in business or public places show own media or clear the rights yourself (see the README). Sound in
@@ -293,7 +301,7 @@ e.g. an uploaded CSV with the columns `text`, `info`, `wert` – other column na
 
 ### Show a folder of pictures (gallery, since 0.45)
 **Media → Galleries:** create a folder (e.g. “Family”, “Notices”) and drag pictures (JPG, PNG, WebP, GIF) and PDFs into
-it – or choose files or a whole folder; from a phone use the file picker (iPhone photos arrive as JPG). Photos are
+it – or choose files or a whole folder, or since 0.72 *From files* (pictures and PDFs already under Media → Files); from a phone use the file picker (iPhone photos arrive as JPG). Photos are
 scaled down to at most 3840 × 2160 when uploaded and only this version is kept; PDFs become one picture per page. Drag
 thumbnails to change the order, tick several to delete them. Limits: 50 MB per photo, 100 MB per PDF, 1000 files per
 folder, and the gallery limit (default 5 GB for all folders, adjustable on the same page).
@@ -475,7 +483,7 @@ It is never shown again. Create a new one and update the senders.
 ## Deutsch (kurz)
 
 **So ist die Verwaltung aufgebaut (seit 0.65):** Das Menü zeigt Dinge, die du anlegst und pflegst – Übersicht ·
-Kanäle · Geräte · Layouts · Datenquellen · **Medien** (Bilder & Videos, Galerien, Einspieler) · **Live-Videos** (Sammlung,
+Kanäle · Geräte · Layouts · Datenquellen · **Medien** (Dateien, Galerien, Einspieler) · **Live-Videos** (Sammlung,
 Themen) · **Radiosender**. Rechts getrennt stehen die **Einstellungen** als Kacheln: Allgemein, Home Assistant,
 Benachrichtigungen, **Konten & Zugang** (alle Anmeldungen: Verwaltung, Pult, KI-Assistenten, Webhook), KI-Assistenten,
 Speicherorte, Durchsage-Pult, Live-Videos (Nachtsuche, Minuten je Live-Video, YouTube-API), Fernstandorte und **System**
@@ -574,6 +582,7 @@ Test-Knopf je Kanal.
 Seit 0.53: **Liste** (Speisekarte, Öffnungszeiten, Wegweiser) – Text, Zusatz, Wert rechts, Symbol, Hervorhebung, bis 20
 Zeilen in 1–3 Spalten, wahlweise aus einer CSV-Datenquelle (Spalten `text`, `info`, `wert`); dazu Vorlagen für Imbiss,
 Einkaufszentrum, Praxis, Krankenhaus, Hotel, Fitnessstudio und Kantine ([alle Vorlagen](TEMPLATES.de.md)).
+Seit 0.72: **Medien → Dateien** ist die Mediathek – alle Bilder, Videos und PDFs in einer Tabelle mit Vorschau, Art, Status (läuft, läuft bis …, ab …, abgelaufen), Verwendung und Datum; Filter nach Suche, Art, Status und Schlagwort. **+ Hochladen**: „Wo soll das laufen?“ (Videofenster, Galerien) und „Wie lange?“ (immer, bis Sonntag, 1 Woche, 1 Monat, bis …). **Gültigkeit**: außerhalb von *gültig ab/bis* zeigt kein Fernseher die Datei (Videofenster, Galerie, PDF-Baustein). Handyvideos (H.265/MOV), MKV, AVI und 4K wandelt der Server im Hintergrund in H.264 (höchstens Full HD) um – abschaltbar unter Einstellungen → System → Zustand → *Videos umwandeln*. *Bearbeiten* klappt die Zeile auf: Name, Schlagwörter, Gültigkeit, im Videofenster an/aus, Anzeigedauer, in Galerie aufnehmen, überall löschen.
 Seit 0.45: **Galerie** – Medien → Galerien: Ordner anlegen, Bilder (JPG, PNG, WebP, GIF) und PDFs hineinziehen oder
 auswählen (auch ganze Ordner, vom Handy über die Dateiauswahl). Fotos werden beim Hochladen auf höchstens 4K
 verkleinert, nur diese Fassung bleibt; Reihenfolge per Ziehen, mehrere auswählen und löschen. Im Layout der Baustein

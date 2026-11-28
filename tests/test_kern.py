@@ -4868,3 +4868,93 @@ class SamsungFernsteuerung071(unittest.TestCase):
         self.assertEqual(g["tv_ip"], "192.0.2.9")
         PL.browser_ip(g, "nicht; gültig")
         self.assertEqual(g["tv_ip"], "192.0.2.9")
+
+
+class Mediathek072(unittest.TestCase):
+    """Seit 0.72: Katalog über der Prüfsumme, Gültigkeit an der Datei, Videoumwandlung."""
+
+    def test_pruefen_tags_und_zeitraum(self):
+        e = E.pruefen({"mediathek": {"umwandeln": False, "dateien": {
+            "0123456789abcdef": {"name": " Aktion\x01 ", "tags": "#Angebote, team; TEAM, ungültig!", "ab": "2026-12-01", "bis": "2026-12-24 18:00"},
+            "fedcba9876543210": {"tags": []},               # leer -> nicht gespeichert
+            "kein-hash": {"name": "x"}}}})
+        m = e["mediathek"]
+        self.assertFalse(m["umwandeln"])
+        self.assertEqual(list(m["dateien"]), ["0123456789abcdef"])
+        self.assertEqual(m["dateien"]["0123456789abcdef"], {"name": "Aktion", "tags": ["angebote", "team"], "ab": "2026-12-01", "bis": "2026-12-24T18:00"})
+        self.assertTrue(E.pruefen({})["mediathek"]["umwandeln"])          # Standard: an
+        with self.assertRaises(M.Meldung) as f:
+            E.pruefen({"mediathek": {"dateien": {"0123456789abcdef": {"ab": "2026-12-05", "bis": "2026-12-01"}}}})
+        self.assertEqual(f.exception.code, "mt_zeitraum")
+
+    def test_gueltig_und_status(self):
+        import mediathek as MT
+        meta = {"0123456789abcdef": {"ab": "2026-12-01", "bis": "2026-12-10"}}
+        h = "0123456789abcdef"
+        self.assertFalse(MT.gueltig(meta, h, "2026-11-30T23:59"))
+        self.assertTrue(MT.gueltig(meta, h, "2026-12-01T00:00"))
+        self.assertTrue(MT.gueltig(meta, h, "2026-12-10T23:59"))         # reines Datum gilt bis Tagesende
+        self.assertFalse(MT.gueltig(meta, h, "2026-12-11T00:00"))
+        self.assertTrue(MT.gueltig(meta, "ffffffffffffffff", "2030-01-01T00:00"))   # ohne Eintrag: immer
+        self.assertEqual(MT.status(meta[h], "2026-11-30T10:00"), ("ab", "2026-12-01"))
+        self.assertEqual(MT.status(meta[h], "2026-12-02T10:00"), ("laeuft", ""))
+        self.assertEqual(MT.status(meta[h], "2026-12-08T10:00"), ("bald", "2026-12-10"))
+        self.assertEqual(MT.status(meta[h], "2026-12-11T00:00"), ("abgelaufen", "2026-12-10"))
+        self.assertEqual(MT.status({}, "2026-12-11T00:00"), ("laeuft", ""))
+
+    def test_braucht_umwandlung(self):
+        import mediathek as MT
+        i = lambda codec, b=1920, h=1080, marke="isom": {"codec": codec, "breite": b, "hoehe": h, "marke": marke}
+        self.assertFalse(MT.braucht_umwandlung(i("h264"), "mp4"))
+        self.assertFalse(MT.braucht_umwandlung(i("h264", 1080, 1920), "mp4"))     # Hochkant Full HD
+        self.assertFalse(MT.braucht_umwandlung(i("vp9"), "webm"))
+        self.assertTrue(MT.braucht_umwandlung(i("hevc"), "mp4"))
+        self.assertTrue(MT.braucht_umwandlung(i("h264", marke="qt"), "mp4"))     # QuickTime-Hülle
+        self.assertTrue(MT.braucht_umwandlung(i("h264"), "webm"))                # H.264 in MKV
+        self.assertTrue(MT.braucht_umwandlung(i("mpeg4"), "avi"))
+        self.assertTrue(MT.braucht_umwandlung(i("h264", 3840, 2160), "mp4"))     # 4K: Pi dekodiert H.264 nur bis Full HD
+
+    def test_art_erkennen_mov_avi(self):
+        self.assertEqual(MED.art_erkennen(b"\x00\x00\x00\x14ftypqt  \x00\x00\x00\x00"), ("video", "mov"))
+        self.assertEqual(MED.art_erkennen(b"\x00\x00\x00\x18ftypisom\x00\x00\x02\x00"), ("video", "mp4"))
+        self.assertEqual(MED.art_erkennen(b"RIFF\x10\x00\x00\x00AVI LIST"), ("video", "avi"))
+
+    def test_galerie_filter_und_verknuepfen(self):
+        import galerie as GAL
+        tmp = tempfile.mkdtemp()
+        g = GAL.Galerie(os.path.join(tmp, "galerie"))
+        e1 = {"id": "1111111111111111", "name": "A", "art": "bild", "datei": "1111111111111111.jpg", "seiten": 1, "zeit": 1, "bytes": 5, "hd": False}
+        e2 = dict(e1, id="2222222222222222", name="B", datei="2222222222222222.jpg")
+        g.daten = {"fam": [e1, e2]}
+        st = g.stand("fam")
+        ok = lambda h: h != e2["id"]
+        self.assertEqual([f["n"] for f in g.folien("fam", ok)], ["A"])
+        self.assertNotEqual(g.stand("fam", ok), st)                         # Ablauf ändert den Stand -> TV lädt neu
+        self.assertEqual(g.verknuepfen("arbeit", e2["id"])["name"], "B")     # Datei liegt nur einmal da
+        self.assertEqual(sorted(g.eintraege_von(e2["id"])), ["arbeit", "fam"])
+        self.assertIsNone(g.verknuepfen("arbeit", "3333333333333333"))
+        self.assertEqual(len(g.liste("arbeit")), 1)
+        g.verknuepfen("arbeit", e2["id"])                                    # doppelt -> kein zweiter Eintrag
+        self.assertEqual(len(g.liste("arbeit")), 1)
+
+    @unittest.skipUnless(__import__("shutil").which("ffmpeg"), "ffmpeg fehlt")
+    def test_umwandeln_hevc(self):
+        import subprocess, mediathek as MT
+        tmp = tempfile.mkdtemp()
+        fertig = []
+        u = MT.Umwandler(tmp, lambda a, p: fertig.append(MT.video_info(p)))   # zuerst: räumt beim Start alte .roh-* weg
+        roh = os.path.join(tmp, ".roh-test.mov")
+        r = subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=2560x1440:rate=25", "-t", "2", "-c:v", "libx265",
+                            "-x265-params", "log-level=none", "-tag:v", "hvc1", "-y", roh], capture_output=True)
+        if r.returncode:
+            self.skipTest("ffmpeg ohne libx265")
+        i = MT.video_info(roh)
+        self.assertEqual((i["codec"], i["marke"]), ("hevc", "qt"))
+        u.anstellen({"id": "t1", "name": "Test", "roh": roh, "dauer": i["dauer"]})
+        grenze = time.time() + 120
+        while not fertig and time.time() < grenze:
+            time.sleep(0.2)
+        self.assertTrue(fertig, u.liste())
+        self.assertEqual((fertig[0]["codec"], fertig[0]["breite"], fertig[0]["hoehe"]), ("h264", 1920, 1080))
+        self.assertFalse(os.path.exists(roh))                               # Original weg
+        self.assertEqual(u.liste(), [])

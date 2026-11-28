@@ -102,5 +102,9 @@ Fälle, in denen die Regel nicht eindeutig war, und wie sie entschieden sind (se
     Detailseiten mit Reitern dort, wo mehrere Reiter nötig sind.
 11. **Dinge mit Bild** (Layouts) behalten Kacheln mit Vorschau statt einer Tabelle; jede Kachel zeigt dieselben Angaben
     wie eine Tabellenzeile (Name, Status, Verwendung, letzte Änderung), darüber Suche und „+ Neu“ oben rechts.
-12. **Kleine Dinge ohne eigene Detailseite:** einzelne Bilder und Videos unter Medien sowie einzelne Radiosender bleiben
-    Listeneinträge mit Name, Verwendung und Löschen samt Hinweis, wo sie verwendet werden.
+12. **Kleine Dinge ohne eigene Detailseite:** einzelne Dateien (Bilder, Videos, PDFs) unter Medien › Dateien sowie
+    einzelne Radiosender bleiben Listeneinträge mit Name, Verwendung und Löschen samt Hinweis, wo sie verwendet werden.
+    Seit 0.72 klappt *Bearbeiten* die Zeile einer Datei auf (Name, Schlagwörter, Gültigkeit, Videofenster, in Galerie
+    aufnehmen, löschen), statt eine eigene Seite zu öffnen.
+13. **Medien › Dateien** (seit 0.72) ist die Mediathek: eine Tabelle für alle Bilder, Videos und PDFs; Galerien und das
+    Videofenster nutzen diese Dateien. Die globale Option *Videos umwandeln* steht unter Einstellungen › System › Zustand.

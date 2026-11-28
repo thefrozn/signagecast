@@ -369,3 +369,9 @@ table.orte input[type=text] { width: 100%; min-width: 160px; box-sizing: border-
 /* seit 0.70: Gerät zeigt einen Code und wartet aufs Annehmen */
 .karte.wartet { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
 .karte.wartet .code { font-size: 1.4em; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+/* Mediathek (seit 0.72): Vorschaubild in der Dateiliste, aufgeklappte Zeile, Schlagwörter als Filterknöpfe */
+.mtvorschau { display: inline-block; min-width: 64px; text-align: center; font-size: 24px; line-height: 40px; }
+.mtvorschau img { display: block; width: 64px; height: 40px; object-fit: cover; border-radius: 4px; background: #000; }
+tr.mtdetail > td { background: var(--hg); padding: 12px; }
+button.marke { background: none; cursor: pointer; font: inherit; font-size: 12px; }
+#mtWie .knopf.an { border-color: var(--akzent); color: var(--akzent); font-weight: 600; }

@@ -4,6 +4,7 @@
 import copy, json, os, re
 import hardware as HW
 import layouts as L
+import mediathek as MT
 import quellen as Q
 from meldung import Meldung
 import sicherung as S
@@ -160,6 +161,9 @@ STANDARD = {
     # Galerie (seit 0.45): Ordner mit Bildern/PDFs für den Baustein „Galerie“ und den Hintergrund; Inhalt in DATEN/galerie
     # (app/galerie.py). grenze_gb = höchstens so viel Platz für alle Ordner zusammen (nie mehr als über der Reserve frei ist)
     "galerie": {"grenze_gb": 5, "ordner": []},
+    # Mediathek (seit 0.72, app/mediathek.py): Katalog über der Prüfsumme {h: {"name", "tags", "ab", "bis"}};
+    # umwandeln = Videos, die der Browser nicht sicher abspielt, im Hintergrund in H.264 umwandeln
+    "mediathek": {"umwandeln": True, "dateien": {}},
     # Meldung per Webhook (seit 0.16): eigener Port (SC_WEBHOOK_PORT, Standard 8890), nur mit geheimem Schlüssel
     "webhook": {"aktiv": False, "token": ""},
     # Durchsage-Pult (seit 0.19): Zugänge nur für Meldungen; Passwort nur als Hash; fernseher leer = alle
@@ -631,6 +635,7 @@ def pruefen(e):
                           "datei": _text(m.get("datei", ""), 40, r"[0-9a-f]{16}\.(jpg|png|mp4|webm)"),
                           "dauer_s": _zahl(m.get("dauer_s", 15), 1, 7200), "aktiv": bool(m.get("aktiv", True))})
         s["medien"] = aus_m
+    s["mediathek"] = MT.pruefen(e.get("mediathek") or {}, s["mediathek"])
     ga = e.get("galerie") or {}
     if "grenze_gb" in ga:
         s["galerie"]["grenze_gb"] = _zahl(ga["grenze_gb"], 1, 2000, int)

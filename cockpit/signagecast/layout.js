@@ -222,7 +222,7 @@ const LBED = {
     layoutText: "Gilt für das ganze Layout. Einen Baustein auf der Leinwand anklicken, um ihn einzustellen.",
     zoom: "Zoom", einpassen: "Einpassen", zoomHilfe: "Strg+Mausrad über der Leinwand zoomt", hilfe: "Hilfe",
     h: { herkunft: "YouTube erlaubt nur private, nicht-gewerbliche Nutzung. In Praxis, Laden, Hotel oder Verein „nur eigene Medien“ wählen – "
-           + "die Medien lädst du unter Medien → Bilder & Videos hoch. Ohne Medien zeigt das Fenster ein ruhiges Bild.",
+           + "die Medien lädst du unter Medien → Dateien hoch. Ohne Medien zeigt das Fenster ein ruhiges Bild.",
          sichtbar: "Ausgeschaltet bleibt der Baustein im Layout, der Fernseher zeigt ihn aber nicht.",
          karte: "Legt eine halbdurchsichtige Karte hinter den Inhalt – besser lesbar auf unruhigem Hintergrund.",
          ausrichtung: "Wo der Inhalt innerhalb des Bausteins sitzt.",
@@ -265,7 +265,7 @@ const LBED = {
     layoutText: "Applies to the whole layout. Click an element on the canvas to configure it.",
     zoom: "Zoom", einpassen: "Fit", zoomHilfe: "Ctrl+mouse wheel over the canvas zooms", hilfe: "Help",
     h: { herkunft: "YouTube only allows private, non-commercial use. In a practice, shop, hotel or club choose “own media only” – "
-           + "upload the media under Media → Pictures & videos. Without media the window shows a calm picture.",
+           + "upload the media under Media → Files. Without media the window shows a calm picture.",
          sichtbar: "When switched off the element stays in the layout, but the TV does not show it.",
          karte: "Puts a semi-transparent card behind the content – easier to read on a busy background.",
          ausrichtung: "Where the content sits inside the element.",
